@@ -1,1 +1,4 @@
 
+[submodule "lib/pyLibrary"]
+	path = lib/pyLibrary
+	url = https://github.com/klahnakoski/pyLibrary.git
