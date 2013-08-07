@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
-import itertools
 from util.cnv import CNV
 from util.debug import D
 from util.query import Q
 from util.startup import startup
+from util.files import File
 from util.multiset import multiset
 from util.elasticsearch import ElasticSearch
 
@@ -17,11 +17,36 @@ def transform(data):
     return data
 
 
+def fix_json(json):
+    #return json.decode(encoding='UTF-8',errors='backslashreplace')
+
+    try:
+        json.decode('ascii')
+        return json
+    except UnicodeDecodeError:
+        pass
+
+    #JSON HAS SOME BAD BYTE SEQUENCES
+    output=[]
+    for i, c in enumerate(json):
+        a=CNV.char2ascii(c)
+        if a>0x80:
+            hex=CNV.int2hex(a, 2)
+            output.append("\\u00"+hex)
+        else:
+            output.append(c)
+    return "".join(output)
+
+
 def load_from_file(source_settings, destination):
-    with open(source_settings.filename, "r") as handle:
+    with File(source_settings.filename).iter() as handle:
         for g, d in Q.groupby(handle, size=BATCH_SIZE):
-            d2=map(transform, map(CNV.JSON2object, d))
-            destination.load(d2, "_id")
+            try:
+                d2=map(transform, map(lambda(x): CNV.JSON2object(fix_json(x)), d))
+                destination.load(d2, "_id")
+            except Exception, e:
+                D.warning("Can not convert block ${block}", {"block":g}, e)
+
 
 
 def get_last_updated(es):
@@ -109,15 +134,16 @@ def get_or_create_index(destination_settings, source):
 def main(settings):
     #USE A FILE
     if settings.source.filename is not None:
-        with open (settings.source.schema_filename, "r") as file:
-            settings.destination.alias=settings.destination.index
-            settings.destination.index=settings.destination.alias+CNV.datetime2string(datetime.utcnow(), "%Y%m%d_%H%M%S")
-            schema=CNV.JSON2object("".join(file.readlines()))
+        settings.destination.alias=settings.destination.index
+        settings.destination.index=settings.destination.alias+CNV.datetime2string(datetime.utcnow(), "%Y%m%d_%H%M%S")
+        schema=CNV.JSON2object(File(settings.source.schema_filename).read())
 
         dest=ElasticSearch.create_index(settings.destination, schema)
         dest.set_refresh_interval(-1)
         load_from_file(settings.source, dest)
         dest.set_refresh_interval(1)
+
+        dest.delete_all_but(settings.destination.alias, settings.destination.index)
         return
 
     #SYNCH WITH source ES INDEX
@@ -126,7 +152,7 @@ def main(settings):
     last_updated=get_last_updated(destination)
     pending=get_pending(source, last_updated)
 
-    
+
     # pending IS IN {"bug_id":b, "count":c} FORM
     for g, bugs in Q.groupby(pending, min_size=BATCH_SIZE):
         data=source.search({
@@ -144,6 +170,14 @@ def main(settings):
 
         destination.load(map(transform, Q.select(data.hits.hits, "_source")), "_id")
 
+
+#
+#json=File("./data/badfile.txt").read_ascii()
+#File("./data/badfile.txt").write_ascii(json.replace(".4 \u0080", ".4"+CNV.ascii2char(0xe3)+"\u0080"))
+#new_json=fix_json(json)
+#D.println(str(len(json)))
+#D.println(str(len(new_json)))
+#D.println(CNV.object2JSON(CNV.JSON2object(new_json)))
 
 
 settings=startup.read_settings()
