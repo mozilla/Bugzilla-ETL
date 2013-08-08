@@ -11,9 +11,25 @@ from util.elasticsearch import ElasticSearch
 far_back=datetime.utcnow()-timedelta(weeks=52)
 BATCH_SIZE=10000
 
+def to_int_list(prop):
+    if prop is None:
+        prop=[]
+    elif isinstance(prop, list):
+        prop=[int(d) for d in prop]
+    elif data.strip()=="":
+        prop=[]
+    else:
+        prop=[int(prop)]
 
+    return prop
+
+
+#ALL ETL HAS A TRANSFORM STEP
 def transform(data):
     data._id=str(data.bug_id)+"."+str(data.modified_ts)
+
+    data.depends_on=to_int_list(data.depends_on)
+    data.blocks=to_int_list(data.blocks)
     return data
 
 
@@ -38,7 +54,7 @@ def fix_json(json):
     return "".join(output)
 
 
-def load_from_file(source_settings, destination):
+def extract_from_file(source_settings, destination):
     with File(source_settings.filename).iter() as handle:
         for g, d in Q.groupby(handle, size=BATCH_SIZE):
             try:
@@ -67,24 +83,13 @@ def get_last_updated(es):
     except Exception, e:
         D.error("Can not get_last_updated from ${host}/${index}", {"host":es.settings.host, "index":es.settings.index}, e)
 
-#USING CUBES
-#    result=Q({
-#        "from":es,
-#        "select":{"name":"max_date", "value":"modified_ts", "aggregate":"max"},
-#        "esfilter":{"range":{"modified_ts":{"gte":str(CNV.datetime2unixmilli(far_back))}}}
-#    })
-#
-#    return CNV.unix2datetime(result.cube/1000)
 
 def get_pending(es, since):
 
     result=es.search({
         "query":{"filtered":{
             "query":{"match_all":{}},
-            "filter":{"and":[
-                {"script":{"script":"true"}},
-                {"range":{"modified_ts":{"gte":CNV.datetime2unixmilli(since)}}}
-            ]}
+            "filter":{"range":{"modified_ts":{"gte":CNV.datetime2unixmilli(since)}}}
         }},
         "from":0,
         "size":0,
@@ -96,17 +101,10 @@ def get_pending(es, since):
 
     pending_bugs=multiset(result.facets.default.terms, key_field="term", count_field="count")
     return pending_bugs
-#USING CUBES
-#    pending_bugs=Q({
-#        "from":es,
-#        "select":{"name":"count", "value":"bug_id", "aggregate":"count"},
-#        "edges":[
-#            "bug_id"
-#        ],
-#        "esfilter":{"range":{"modified_ts":{"gte":CNV.datetime2unixmilli(since)}}}
-#    })
 
-#    return Q.stack(pending_bugs)
+
+
+# USE THE source TO GET THE INDEX SCHEMA
 def get_or_create_index(destination_settings, source):
     #CHECK IF INDEX, OR ALIAS, EXISTS
     es=ElasticSearch(destination_settings)
@@ -140,21 +138,22 @@ def main(settings):
 
         dest=ElasticSearch.create_index(settings.destination, schema)
         dest.set_refresh_interval(-1)
-        load_from_file(settings.source, dest)
+        extract_from_file(settings.source, dest)
         dest.set_refresh_interval(1)
 
         dest.delete_all_but(settings.destination.alias, settings.destination.index)
+        dest.add_alias(settings.destination.alias)
         return
 
-    #SYNCH WITH source ES INDEX
+    # SYNCH WITH source ES INDEX
     source=ElasticSearch(settings.source)
     destination=get_or_create_index(settings["destination"], source)
-    last_updated=get_last_updated(destination)
+    last_updated=get_last_updated(destination)-timedelta(days=7)
     pending=get_pending(source, last_updated)
 
-
     # pending IS IN {"bug_id":b, "count":c} FORM
-    for g, bugs in Q.groupby(pending, min_size=BATCH_SIZE):
+    # MAIN ETL LOOP
+    for g, bugs in Q.groupby(pending, max_size=BATCH_SIZE):
         data=source.search({
             "query":{"filtered":{
                 "query":{"match_all":{}},
@@ -169,15 +168,6 @@ def main(settings):
         })
 
         destination.load(map(transform, Q.select(data.hits.hits, "_source")), "_id")
-
-
-#
-#json=File("./data/badfile.txt").read_ascii()
-#File("./data/badfile.txt").write_ascii(json.replace(".4 \u0080", ".4"+CNV.ascii2char(0xe3)+"\u0080"))
-#new_json=fix_json(json)
-#D.println(str(len(json)))
-#D.println(str(len(new_json)))
-#D.println(CNV.object2JSON(CNV.JSON2object(new_json)))
 
 
 settings=startup.read_settings()

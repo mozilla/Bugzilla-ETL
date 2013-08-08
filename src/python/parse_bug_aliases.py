@@ -16,23 +16,27 @@
 ##  Used to split a flag into (type, status [,requestee])
 ##  Example: "review?(mreid@mozilla.com)" -> (review, ?, mreid@mozilla.com)
 ##  Example: "review-" -> (review, -)
-#const FLAG_PATTERN=/^(.*)([?+-])(\([^)]*\))?$/
+import re
+from util.query import Q
+
+FLAG_PATTERN=re.compile("^(.*)([?+-])(\\([^)]*\\))?$")
 #
 ##  Used to reformat incoming dates into the expected form.
 ##  Example match: "2012/01/01 00:00:00.000"
-#const DATE_PATTERN=/^[0-9]{4}\/[0-9]{2}\/[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}/
+DATE_PATTERN=re.compile("^[0-9]{4}\\/[0-9]{2}\\/[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}")
 #
 ##  Fields that could have been truncated per bug 55161
-#const TRUNC_FIELDS=["cc", "blocked", "dependson", "keywords"]
+TRUNC_FIELDS=["cc", "blocked", "dependson", "keywords"]
 #
-##  Keep track of potential aliases (dupes)
-##  Singles are where we have only one possible match left over (high confidence)
-#dupeSingles={}
-##  Multis are where we have more than one possible match left over (uncertain)
 from util.cnv import CNV
 from util.debug import D
 from util.map import Map
 
+
+##  Keep track of potential aliases (dupes)
+##  Singles are where we have only one possible match left over (high confidence)
+dupeSingles={}
+##  Multis are where we have more than one possible match left over (uncertain)
 dupeMultis={}
 currBugID=None
 prevBugID=None
@@ -55,7 +59,7 @@ def processRow(bug_id, modified_ts, modified_by, field_name, field_value_in, fie
 
     currBugID=bug_id
 
-    D.println("d", "bug_id={" + bug_id + "}, modified_ts={" + modified_ts + "}, modified_by={" + modified_by \
+    D.println("bug_id={" + bug_id + "}, modified_ts={" + modified_ts + "}, modified_by={" + modified_by \
           + "}, field_name={" + field_name + "}, field_value={" + field_value_in + "}, field_value_removed={"\
           + field_value_removed + "}, attach_id={" + attach_id + "}, _merge_order={" + _merge_order + "}")
 
@@ -68,7 +72,7 @@ def processRow(bug_id, modified_ts, modified_by, field_name, field_value_in, fie
     #  If we have switched to a new bug
     if prevBugID < currBugID:
         #  Start replaying versions in ascending order to build full data on each version
-        D.println("d", "Emitting intermediate versions for " + prevBugID)
+        D.println("Emitting intermediate versions for " + prevBugID)
         populateIntermediateVersionObjects()
         startNewBug(bug_id, modified_ts, modified_by, _merge_order)
     
@@ -82,11 +86,11 @@ def processRow(bug_id, modified_ts, modified_by, field_name, field_value_in, fie
        if field_value_in == "? ?" or field_value_removed == "? ?":
           uncertain=True
           if field_value_in == "? ?":
-             D.println("d", "Encountered uncertain added value.  Skipping.")
+             D.println("Encountered uncertain added value.  Skipping.")
              field_value_in=""
           
           if field_value_removed == "? ?":
-             D.println("d", "Encountered uncertain removed value.  Skipping.")
+             D.println("Encountered uncertain removed value.  Skipping.")
              field_value_removed=""
           
        
@@ -94,26 +98,26 @@ def processRow(bug_id, modified_ts, modified_by, field_name, field_value_in, fie
        #  Possibly truncated value extracted from a possibly truncated field
        if field_value_in.indexOf("? ") == 0:
           uncertain=True
-          field_value_in=field_value_in.substring(2)
+          field_value_in=field_value_in[2:]
        
        if field_value_removed.indexOf("? ") == 0:
           uncertain=True
-          field_value_removed=field_value_removed.substring(2)
+          field_value_removed=field_value_removed[2:]
        
 
        if uncertain:
           #  Process the "uncertain" flag as an activity
-          D.println("d", "Setting this bug to be uncertain.")
+          D.println("Setting this bug to be uncertain.")
           processBugsActivitiesTableItem(modified_ts, modified_by, "uncertain", "1", "", "")
           if field_value_in == "" and field_value_removed == "":
-             D.println("d", "Nothing added or removed. Skipping update.")
+             D.println("Nothing added or removed. Skipping update.")
              return
           
        
      
 
     #  Treat timestamps as int values
-    field_value=field_name.match(/_ts$/) ? parseInt(field_value_in) : field_value_in
+    field_value=int(field_value_in) if field_name.endsWith("_ts") else field_value_in
 
     if currBugID < 999999999:
         #  Determine where we are in the bug processing workflow
@@ -188,9 +192,9 @@ def processAttachmentsTableItem(modified_ts, modified_by, field_name, field_valu
         bugVersionsMap[currActivityID]=currActivity
         prevActivityID=currActivityID
         currActivity.changes.push({
-            "field_name": "attachment_added",
-            "attach_id": attach_id
-        })
+                "field_name": "attachment_added",
+                "attach_id": attach_id
+            })
     
     if not currBugAttachmentsMap[attach_id]:
         currBugAttachmentsMap[attach_id]={
@@ -321,21 +325,21 @@ def populateIntermediateVersionObjects() :
     #  continue if there are more bug versions, or there is one final nextVersion
     while (len(bugVersions) > 0 or nextVersion) :
         currVersion=nextVersion
-        if bugVersions.length > 0:
+        if len(bugVersions) > 0:
           nextVersion=bugVersions.pop() #  Oldest version
         else:
           nextVersion=None
         
-        D.println("d", "Populating JSON for version " + currVersion._id)
+        D.println("Populating JSON for version " + currVersion._id)
 
         #  Link this version to the next one (if there is a next one)
         if nextVersion:
-          D.println("d", "We have a nextVersion:" + nextVersion.modified_ts
+          D.println("We have a nextVersion:" + nextVersion.modified_ts
               + " (ver " + (currBugVersion + 1) + ")")
           currBugState.expires_on=nextVersion.modified_ts
         else:
           #  Otherwise, we don't know when the version expires.
-          D.println("d", "We have no nextVersion after #" + currBugVersion)
+          D.println("We have no nextVersion after #" + currBugVersion)
           currBugState.expires_on=None
         
 
@@ -346,9 +350,9 @@ def populateIntermediateVersionObjects() :
 
         #  Now walk currBugState forward in time by applying the changes from currVersion
         changes=currVersion.changes
-        # D.println("d", "Processing changes: "+CNV.object2JSON(changes))
-        for changeIdx, change in enumerate(changes):
-            D.println("d", "Processing change: " + CNV.object2JSON(change))
+        # D.println("Processing changes: "+CNV.object2JSON(changes))
+        for change in changes:
+            D.println("Processing change: " + CNV.object2JSON(change))
             target=currBugState
             targetName="currBugState"
             attachID=change["attach_id"]
@@ -363,12 +367,12 @@ def populateIntermediateVersionObjects() :
                     target=currBugAttachmentsMap[attachID]
                     targetName="attachment"
                     if target is None:
-                        D.println("e", "Encountered a change to missing attachment for bug '"
+                        D.error("Encountered a change to missing attachment for bug '"
                               + currVersion["bug_id"] + "': " + CNV.object2JSON(change) + ".")
 
-                                #  treat it as a change to the main bug instead :(
-                                target=currBugState
-                                targetName="currBugState"
+                        #  treat it as a change to the main bug instead :(
+                        target=currBugState
+                        targetName="currBugState"
                     
                 
             
@@ -381,19 +385,19 @@ def populateIntermediateVersionObjects() :
                 if target[change.field_name] != change.field_value:
                    setPrevious(target, change.field_name, target[change.field_name], currVersion.modified_ts)
                 else:
-                   D.println("d", "Skipping fake change to " + targetName + ": "\
+                   D.println("Skipping fake change to " + targetName + ": "\
                       + CNV.object2JSON(target) + ", change: " + CNV.object2JSON(change))
                
             elif change.field_name == "flags":
                 processFlagChange(target, change, currVersion.modified_ts, currVersion.modified_by)
             else:
-                D.println("d", "Skipping previous_value for " + targetName + " multi-value field " + change.field_name)
+                D.println("Skipping previous_value for " + targetName + " multi-value field " + change.field_name)
             
 
             #  Multi-value fields
             if change.field_name == "flags":
                 #  Already handled by "processFlagChange" above.
-                D.println("d", "Skipping previously processed flag change")
+                D.println("Skipping previously processed flag change")
             elif isinstance(target[change.field_name], list):
                 a=target[change.field_name]
                 multi_field_value=getMultiFieldValue(change.field_name, change.field_value)
@@ -427,17 +431,17 @@ def populateIntermediateVersionObjects() :
             elif currBugState[dateField] and currBugState[dateField].match(DATE_PATTERN):
                 #  Convert "2012/01/01 00:00:00.000" to "2012-01-01"
                 #  Example: bug 643420 (deadline)
-                currBugState[dateField]=currBugState[dateField].substring(0,10).replace(/\//g, '-')
+                currBugState[dateField]=currBugState[dateField][0:10].replace("/", '-')
 
         
 
-        currBugState.bug_version_num=currBugVersion++
-
+        currBugState.bug_version_num=currBugVersion
+        currBugVersion+=1
 
     
     #  Output our wicked-sweet dupe lists:
     for dupe in dupeSingles:
-        D.println("d", "Found single dupe '" + dupe + "' " + dupeSingles[dupe] + " times.")
+        D.println("Found single dupe '" + dupe + "' " + dupeSingles[dupe] + " times.")
         newRow=Map()
         rowIndex=inputRowSize
         newRow[rowIndex++]=dupe
@@ -449,7 +453,7 @@ def populateIntermediateVersionObjects() :
     dupeSingles={}
 
     for dupe in dupeMultis:
-        D.println("d", "Found multi dupe '" + dupe + "' " + dupeMultis[dupe] + " times.")
+        D.println("Found multi dupe '" + dupe + "' " + dupeMultis[dupe] + " times.")
         newRow=Map()
         rowIndex=inputRowSize
         newRow[rowIndex++]=dupe
@@ -462,9 +466,9 @@ def populateIntermediateVersionObjects() :
 
 
 def processFlagChange(aTarget, aChange, aTimestamp, aModifiedBy) :
-    D.println("d", "Processing flag change.  Added: '" + aChange.field_value
+    D.println("Processing flag change.  Added: '" + aChange.field_value
        + "', removed: '" + aChange.field_value_removed + "'")
-    D.println("d", "Target was: " + CNV.object2JSON(aTarget))
+    D.println("Target was: " + CNV.object2JSON(aTarget))
     addedFlags=getMultiFieldValue("flags", aChange.field_value)
     removedFlags=getMultiFieldValue("flags", aChange.field_value_removed)
 
@@ -496,7 +500,7 @@ def processFlagChange(aTarget, aChange, aTimestamp, aModifiedBy) :
             duration_ms=existingFlag["modified_ts"] - existingFlag["previous_modified_ts"]
             existingFlag["duration_days"]= Math.floor(duration_ms / (1000.0 * 60 * 60 * 24))
         else:
-            D.println("e", "Did not find a corresponding flag for removed value '"+ flagStr + "' in " + CNV.object2JSON(aTarget["flags"]))
+            D.error("Did not find a corresponding flag for removed value '"+ flagStr + "' in " + CNV.object2JSON(aTarget["flags"]))
       
    
 
@@ -510,7 +514,7 @@ def processFlagChange(aTarget, aChange, aTimestamp, aModifiedBy) :
         flag=makeFlag(flagStr, aTimestamp, aModifiedBy)
 
         if not aTarget["flags"]:
-            D.println("d", "Warning: processFlagChange called with unset 'flags'")
+            D.println("Warning: processFlagChange called with unset 'flags'")
             aTarget["flags"]=[]
       
 
@@ -525,35 +529,35 @@ def processFlagChange(aTarget, aChange, aTimestamp, aModifiedBy) :
                 chosen_one=candidates[0]
                 if len(candidates) > 1:
                     #  Multiple matches - use the best one.
-                    D.println("d", "Matched added flag " + CNV.object2JSON(flag) + " to multiple removed flags.  Using the best of these:")
+                    D.println("Matched added flag " + CNV.object2JSON(flag) + " to multiple removed flags.  Using the best of these:")
                     for candidate in candidates:
-                        D.println("d", "      " + CNV.object2JSON(candidate))
+                        D.println("      " + CNV.object2JSON(candidate))
                
                     matched_ts=candidates.filter(lambda(element, index, array) :
                         flag["modified_ts"] == element["modified_ts"]
                     )
                     if matched_ts and len(matched_ts) == 1:
-                        D.println("d", "Matching on modified_ts fixed it")
+                        D.println("Matching on modified_ts fixed it")
                         chosen_one=matched_ts[0]
                     else:
-                        D.println("d", "Matching on modified_ts left us with " +( len(matched_ts)  if matched_ts  else  "no")+ " matches")
+                        D.println("Matching on modified_ts left us with " +( len(matched_ts)  if matched_ts  else  "no")+ " matches")
                         #  If we had no matches (or many matches), try matching on requestee.
                         matched_req=candidates.filter(lambda(element, index, array) :
                             #  Do case-insenitive comparison
                             flag["modified_by"].toLowerCase() ==  element["requestee"].toLowerCase() if element["requestee"] else False
                         )
                         if matched_req and len(matched_req) == 1:
-                            D.println("d", "Matching on requestee fixed it")
+                            D.println("Matching on requestee fixed it")
                             chosen_one=matched_req[0]
                         else:
-                            D.println("e", "Matching on requestee left us with " +( len(matched_req)  if matched_req  else  "no")+ " matches. Skipping match.")
+                            D.error("Matching on requestee left us with " +( len(matched_req)  if matched_req  else  "no")+ " matches. Skipping match.")
                      #  TODO: add "uncertain" flag?
                             chosen_one=None
                   
                
                 else:
                #  Obvious case - matched exactly one.
-                    D.println("d", "Matched added flag " + CNV.object2JSON(flag) + " to removed flag " + CNV.object2JSON(chosen_one))
+                    D.println("Matched added flag " + CNV.object2JSON(flag) + " to removed flag " + CNV.object2JSON(chosen_one))
             
 
                 if chosen_one:
@@ -566,7 +570,7 @@ def processFlagChange(aTarget, aChange, aTimestamp, aModifiedBy) :
             #  We need to avoid later adding this flag twice, since we rolled an add into a delete.
             else:
                 #  No matching candidate. Totally new flag.
-                D.println("d", "Did not match added flag " + CNV.object2JSON(flag) + " to anything: " + CNV.object2JSON(aTarget["flags"]))
+                D.println("Did not match added flag " + CNV.object2JSON(flag) + " to anything: " + CNV.object2JSON(aTarget["flags"]))
                 aTarget["flags"].push(flag)
          
       
@@ -611,10 +615,10 @@ def findByKey(aList, aField, aValue) :
 def stabilize(aBug) :
     if aBug["cc"] and aBug["cc"][0]:
         aBug["cc"].sort()
-   
-    if aBug["changes"]:
-        aBug["changes"].sort(def(a,b){ return sortAscByField(a, b, "field_name") })
-   
+
+    if aBug.changes is not None:
+        Q.sort(aBug.changes, "field_name")
+
 
 
 def makeFlag(flag, modified_ts, modified_by) :
@@ -627,15 +631,15 @@ def makeFlag(flag, modified_ts, modified_by) :
     if matches:
         flagParts.request_type=matches[1]
         flagParts.request_status=matches[2]
-        if matches[3] and matches[3].length > 2:
-            flagParts.requestee=matches[3].substring(1, matches[3].length - 1)
+        if matches[3] and len(matches[3]) > 2:
+            flagParts.requestee=matches[3].substring(1, len(matches[3]) - 1)
       
    
     return flagParts
 
 
 def addValues(anArray, someValues, valueType, fieldName, anObj) :
-    D.println("d", "Adding " + valueType + " " + fieldName + " values:" + CNV.object2JSON(someValues))
+    D.println("Adding " + valueType + " " + fieldName + " values:" + CNV.object2JSON(someValues))
     if fieldName == "flags":
         for added in someValues:
             if added != "":
@@ -648,7 +652,7 @@ def addValues(anArray, someValues, valueType, fieldName, anObj) :
 #                                and element["modified_ts"] == anObj.modified_ts
 #                  })
 #                  if dupes and len(dupes) > 0:
-#                     D.println("d", "Skipping duplicated added flag '" + added + "' since info is already in " + CNV.object2JSON(dupes[0]))
+#                     D.println("Skipping duplicated added flag '" + added + "' since info is already in " + CNV.object2JSON(dupes[0]))
 #                  else:
 
                  addedFlag=makeFlag(added, anObj.modified_ts, anObj.modified_by)
@@ -665,8 +669,8 @@ def addValues(anArray, someValues, valueType, fieldName, anObj) :
 def removeValues(anArray, someValues, valueType, fieldName, arrayDesc, anObj) :
     if fieldName == "flags":
         for v in someValues:
-            len=len(anArray)
-            for i in range(0, len):
+            length=len(anArray)
+            for i in range(0, length):
                 #  Match on flag name (incl. status) and flag value
                 if anArray[i].value == v:
                     anArray.splice(i, 1)
@@ -674,8 +678,8 @@ def removeValues(anArray, someValues, valueType, fieldName, arrayDesc, anObj) :
                 
             
 
-            if len == len(anArray):
-                D.println("e", "Unable to find " + valueType + " flag " + fieldName + ":" + v
+            if length == len(anArray):
+                D.error("Unable to find " + valueType + " flag " + fieldName + ":" + v
                                  + " in " + arrayDesc + ": " + CNV.object2JSON(anObj))
 
                 dupeTarget=dupeSingles
@@ -693,14 +697,14 @@ def removeValues(anArray, someValues, valueType, fieldName, arrayDesc, anObj) :
                             dupeTarget[vFlag.requestee + "=" + item.requestee]=1
 
                     else:
-                          D.println("d", "Skipping potential dupe: '" + v + "' != '" + item.value + "'")
+                          D.println("Skipping potential dupe: '" + v + "' != '" + item.value + "'")
     else:
         for v in someValues:
             foundAt=anArray.indexOf(v)
             if foundAt >= 0:
                 anArray.splice(foundAt, 1)
             else:
-                D.println("e", "Unable to find " + valueType + " value " + fieldName + ":" + v + " in " + arrayDesc + ": " + CNV.object2JSON(anObj))
+                D.error("Unable to find " + valueType + " value " + fieldName + ":" + v + " in " + arrayDesc + ": " + CNV.object2JSON(anObj))
             
         
     
