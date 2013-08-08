@@ -4,6 +4,7 @@ from util.debug import D
 from util.query import Q
 from util.startup import startup
 from util.files import File
+from util.map import MapList
 from util.multiset import multiset
 from util.elasticsearch import ElasticSearch
 
@@ -13,23 +14,23 @@ BATCH_SIZE=10000
 
 def to_int_list(prop):
     if prop is None:
-        prop=[]
-    elif isinstance(prop, list):
-        prop=[int(d) for d in prop]
-    elif data.strip()=="":
-        prop=[]
+        return None
+    elif isinstance(prop, MapList):
+        if len(prop)==0: return None
+        return [int(d) for d in prop]
+    elif prop.strip()=="":
+        return None
     else:
-        prop=[int(prop)]
+        return [int(prop)]
 
-    return prop
 
 
 #ALL ETL HAS A TRANSFORM STEP
 def transform(data):
     data._id=str(data.bug_id)+"."+str(data.modified_ts)
 
-    data.depends_on=to_int_list(data.depends_on)
-    data.blocks=to_int_list(data.blocks)
+    data.dependson=to_int_list(data.dependson)
+    data.blocked=to_int_list(data.blocked)
     return data
 
 

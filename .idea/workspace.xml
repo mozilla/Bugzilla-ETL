@@ -59,10 +59,10 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="esReplicate.py" pinned="false" current="false" current-in-tab="false">
+      <file leaf-file-name="esReplicate.py" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/python/esReplicate.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="156" column="28" selection-start="4802" selection-end="4802" vertical-scroll-proportion="0.0">
+            <state line="19" column="0" selection-start="490" selection-end="490" vertical-scroll-proportion="0.33183858">
               <folding />
             </state>
           </provider>
@@ -77,7 +77,7 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="fileload.bat" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="fileload.bat" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/scripts/fileload.bat">
           <provider selected="true" editor-type-id="text-editor">
             <state line="0" column="10" selection-start="10" selection-end="10" vertical-scroll-proportion="0.0">
@@ -177,9 +177,9 @@
         <option value="$PROJECT_DIR$/src/python/parse_bug_aliases.py" />
         <option value="$PROJECT_DIR$/replication_settings.json" />
         <option value="$PROJECT_DIR$/lib/pyLibrary/util/query.py" />
-        <option value="$PROJECT_DIR$/src/python/esReplicate.py" />
         <option value="$PROJECT_DIR$/src/scripts/esReplicate.bat" />
         <option value="$PROJECT_DIR$/src/scripts/fileload.bat" />
+        <option value="$PROJECT_DIR$/src/python/esReplicate.py" />
       </list>
     </option>
   </component>
@@ -563,12 +563,12 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="54" y="-8" width="1554" height="916" extended-state="6" />
-    <editor active="true" />
+    <editor active="false" />
     <layout>
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.41460395" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.41460395" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Script Monkey" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
@@ -637,6 +637,18 @@
           <url>file://$PROJECT_DIR$/../pyLibrary/util/query.py</url>
           <line>162</line>
         </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/src/python/esReplicate.py</url>
+          <line>21</line>
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/src/python/esReplicate.py</url>
+          <line>23</line>
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/src/python/esReplicate.py</url>
+          <line>20</line>
+        </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
@@ -677,13 +689,6 @@
     <entry file="file://$PROJECT_DIR$/replication_settings.json">
       <provider selected="true" editor-type-id="text-editor">
         <state line="14" column="0" selection-start="243" selection-end="243" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/python/esReplicate.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="156" column="28" selection-start="4802" selection-end="4802" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
@@ -731,6 +736,13 @@
         <state line="4" column="24" selection-start="92" selection-end="107" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/src/scripts/fileload.bat">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="10" selection-start="10" selection-end="10" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/scripts/esReplicate.bat">
       <provider selected="true" editor-type-id="text-editor">
         <state line="0" column="10" selection-start="10" selection-end="10" vertical-scroll-proportion="0.0">
@@ -738,9 +750,9 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/scripts/fileload.bat">
+    <entry file="file://$PROJECT_DIR$/src/python/esReplicate.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="0" column="10" selection-start="10" selection-end="10" vertical-scroll-proportion="0.0">
+        <state line="19" column="0" selection-start="490" selection-end="490" vertical-scroll-proportion="0.33183858">
           <folding />
         </state>
       </provider>
