@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from util.randoms import Random
 from util.cnv import CNV
 from util.debug import D
 from util.query import Q
@@ -17,7 +18,7 @@ def to_int_list(prop):
         return None
     elif isinstance(prop, MapList):
         if len(prop)==0: return None
-        return [int(d) for d in prop]
+        return [int(d) for d in prop if d!=""]
     elif prop.strip()=="":
         return None
     else:
@@ -31,6 +32,7 @@ def transform(data):
 
     data.dependson=to_int_list(data.dependson)
     data.blocked=to_int_list(data.blocked)
+    data.dupe_by=to_int_list(data.dupe_by)
     return data
 
 
@@ -62,7 +64,9 @@ def extract_from_file(source_settings, destination):
                 d2=map(transform, map(lambda(x): CNV.JSON2object(fix_json(x)), d))
                 destination.load(d2, "_id")
             except Exception, e:
-                D.warning("Can not convert block ${block}", {"block":g}, e)
+                filename=Random.hex(20)+".txt"
+                File(filename).write(d)
+                D.warning("Can not convert block ${block} (file=${filename})", {"block":g, "filename":filename}, e)
 
 
 
@@ -172,5 +176,6 @@ def main(settings):
 
 
 settings=startup.read_settings()
+D.settings(settings.debug)
 main(settings)
 
