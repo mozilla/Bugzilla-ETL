@@ -52,7 +52,7 @@ function processRow(bug_id, modified_ts, modified_by, field_name, field_value_in
 
     // For debugging purposes:
     if (END_TIME > 0 && modified_ts > END_TIME) {
-        writeToLog("l", "Skipping change after END_TIME (" + END_TIME + ")");
+        D.println("Skipping change after END_TIME (" + END_TIME + ")");
         return;
     }
 

@@ -79,39 +79,39 @@ def processRow(bug_id, modified_ts, modified_by, field_name, field_value_in, fie
 
     #  Bugzilla bug workaround - some values were truncated, introducing uncertainty / errors:
     #  https://bugzilla.mozilla.org/show_bug.cgi?id=55161
-    if TRUNC_FIELDS.indexOf(field_name) >= 0:
+    if field_name in TRUNC_FIELDS:
         uncertain=False
 
-       #  Unknown value extracted from a possibly truncated field
-       if field_value_in == "? ?" or field_value_removed == "? ?":
-          uncertain=True
-          if field_value_in == "? ?":
-             D.println("Encountered uncertain added value.  Skipping.")
-             field_value_in=""
+        #  Unknown value extracted from a possibly truncated field
+        if field_value_in == "? ?" or field_value_removed == "? ?":
+            uncertain=True
+            if field_value_in == "? ?":
+                D.println("Encountered uncertain added value.  Skipping.")
+                field_value_in=""
           
-          if field_value_removed == "? ?":
-             D.println("Encountered uncertain removed value.  Skipping.")
-             field_value_removed=""
+            if field_value_removed == "? ?":
+                D.println("Encountered uncertain removed value.  Skipping.")
+                field_value_removed=""
           
        
 
        #  Possibly truncated value extracted from a possibly truncated field
-       if field_value_in.indexOf("? ") == 0:
-          uncertain=True
-          field_value_in=field_value_in[2:]
-       
-       if field_value_removed.indexOf("? ") == 0:
-          uncertain=True
-          field_value_removed=field_value_removed[2:]
+        if field_value_in.startswith("? "):
+            uncertain=True
+            field_value_in=field_value_in[2:]
+
+        if field_value_removed.startswith("? "):
+            uncertain=True
+            field_value_removed=field_value_removed[2:]
        
 
-       if uncertain:
-          #  Process the "uncertain" flag as an activity
-          D.println("Setting this bug to be uncertain.")
-          processBugsActivitiesTableItem(modified_ts, modified_by, "uncertain", "1", "", "")
-          if field_value_in == "" and field_value_removed == "":
-             D.println("Nothing added or removed. Skipping update.")
-             return
+        if uncertain:
+            #  Process the "uncertain" flag as an activity
+            D.println("Setting this bug to be uncertain.")
+            processBugsActivitiesTableItem(modified_ts, modified_by, "uncertain", "1", "", "")
+            if field_value_in == "" and field_value_removed == "":
+                D.println("Nothing added or removed. Skipping update.")
+                return
           
        
      
@@ -132,7 +132,7 @@ def processRow(bug_id, modified_ts, modified_by, field_name, field_value_in, fie
         elif _merge_order== 9:
             processBugsActivitiesTableItem(modified_ts, modified_by, field_name, field_value, field_value_removed, attach_id)
         else:
-            D.println("e", "Unhandled merge_order: '" + _merge_order + "'")
+            D.error("Unhandled merge_order: '" + _merge_order + "'")
         
     
 
@@ -157,7 +157,7 @@ def startNewBug(bug_id, modified_ts, modified_by, merge_order) :
 
     if merge_order != 1:
         #  Problem: No entry found in the 'bugs' table.
-        D.println("e", "Current bugs table record not found for bug_id: "\
+        D.error("Current bugs table record not found for bug_id: "\
         + bug_id + " (merge order should have been 1, but was " + merge_order + ")")
   
 
@@ -173,7 +173,7 @@ def processMultiValueTableItem(field_name, field_value) :
     try :
         currBugState[field_name].push(field_value)
     except Exception, e:
-        D.println("e", "Unable to push " + field_value + " to array field "
+        D.error("Unable to push " + field_value + " to array field "
             + field_name + " on bug " + currBugID + " current value:"
             + CNV.object2JSON(currBugState[field_name]))
     
@@ -211,7 +211,7 @@ def processFlagsTableItem(modified_ts, modified_by, field_name, field_value, fie
     flag=makeFlag(field_value, modified_ts, modified_by)
     if attach_id != "":
         if not currBugAttachmentsMap[attach_id]:
-            D.println("e", "Unable to find attachment " + attach_id + " for bug_id " + currBugID)
+            D.error("Unable to find attachment " + attach_id + " for bug_id " + currBugID)
         
         currBugAttachmentsMap[attach_id].flags.push(flag)
     else:
@@ -250,7 +250,7 @@ def processBugsActivitiesTableItem(modified_ts, modified_by, field_name, field_v
     if attach_id != "":
         attachment=currBugAttachmentsMap[attach_id]
         if not attachment:
-            D.println("e", "Unable to find attachment " + attach_id + " for bug_id "\
+            D.error("Unable to find attachment " + attach_id + " for bug_id "\
                 + currBugID + ": " + CNV.object2JSON(currBugAttachmentsMap))
         else:
            if isinstance(attachment[field_name], list):
@@ -326,21 +326,21 @@ def populateIntermediateVersionObjects() :
     while (len(bugVersions) > 0 or nextVersion) :
         currVersion=nextVersion
         if len(bugVersions) > 0:
-          nextVersion=bugVersions.pop() #  Oldest version
+            nextVersion=bugVersions.pop() #  Oldest version
         else:
-          nextVersion=None
+            nextVersion=None
         
         D.println("Populating JSON for version " + currVersion._id)
 
         #  Link this version to the next one (if there is a next one)
         if nextVersion:
-          D.println("We have a nextVersion:" + nextVersion.modified_ts
-              + " (ver " + (currBugVersion + 1) + ")")
-          currBugState.expires_on=nextVersion.modified_ts
+            D.println("We have a nextVersion:" + nextVersion.modified_ts
+                + " (ver " + (currBugVersion + 1) + ")")
+            currBugState.expires_on=nextVersion.modified_ts
         else:
-          #  Otherwise, we don't know when the version expires.
-          D.println("We have no nextVersion after #" + currBugVersion)
-          currBugState.expires_on=None
+            #  Otherwise, we don't know when the version expires.
+            D.println("We have no nextVersion after #" + currBugVersion)
+            currBugState.expires_on=None
         
 
         #  Copy all attributes from the current version into currBugState
@@ -439,28 +439,29 @@ def populateIntermediateVersionObjects() :
         currBugVersion+=1
 
     
-    #  Output our wicked-sweet dupe lists:
+    # Output our wicked-sweet dupe lists
+    # (ANNOTATING INPUT ROW)
     for dupe in dupeSingles:
         D.println("Found single dupe '" + dupe + "' " + dupeSingles[dupe] + " times.")
-        newRow=Map()
-        rowIndex=inputRowSize
-        newRow[rowIndex++]=dupe
-        newRow[rowIndex++]="single"
-        newRow[rowIndex++]=dupeSingles[dupe]
-        newRow[rowIndex++]=prevBugID
-        putRow(newRow)
-    
+        newRow={
+            "dupe":dupe,
+            "type":"single",
+            "count":dupeSingles[dupe],
+            "bug_id":prevBugID
+        }
+        output.add(newRow)
+
     dupeSingles={}
 
     for dupe in dupeMultis:
         D.println("Found multi dupe '" + dupe + "' " + dupeMultis[dupe] + " times.")
-        newRow=Map()
-        rowIndex=inputRowSize
-        newRow[rowIndex++]=dupe
-        newRow[rowIndex++]="multi"
-        newRow[rowIndex++]=dupeMultis[dupe]
-        newRow[rowIndex++]=prevBugID
-        putRow(newRow)
+        newRow={
+            "dupe":dupe,
+            "type":"multi",
+            "count":dupeMultis[dupe],
+            "bug_id":prevBugID
+        }
+        output.append(newRow)
     
     dupeMultis={}
 
@@ -551,12 +552,12 @@ def processFlagChange(aTarget, aChange, aTimestamp, aModifiedBy) :
                             chosen_one=matched_req[0]
                         else:
                             D.error("Matching on requestee left us with " +( len(matched_req)  if matched_req  else  "no")+ " matches. Skipping match.")
-                     #  TODO: add "uncertain" flag?
+                            #  TODO: add "uncertain" flag?
                             chosen_one=None
                   
                
                 else:
-               #  Obvious case - matched exactly one.
+                    #  Obvious case - matched exactly one.
                     D.println("Matched added flag " + CNV.object2JSON(flag) + " to removed flag " + CNV.object2JSON(chosen_one))
             
 
@@ -627,7 +628,7 @@ def makeFlag(flag, modified_ts, modified_by) :
         "modified_by": modified_by,
         "value": flag
    }
-    matches=FLAG_PATTERN.exec(flag)
+    matches=FLAG_PATTERN.match(flag)
     if matches:
         flagParts.request_type=matches[1]
         flagParts.request_status=matches[2]

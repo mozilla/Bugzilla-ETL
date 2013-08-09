@@ -13,26 +13,15 @@ from util.elasticsearch import ElasticSearch
 far_back=datetime.utcnow()-timedelta(weeks=52)
 BATCH_SIZE=10000
 
-def to_int_list(prop):
-    if prop is None:
-        return None
-    elif isinstance(prop, MapList):
-        if len(prop)==0: return None
-        return [int(d) for d in prop if d!=""]
-    elif prop.strip()=="":
-        return None
-    else:
-        return [int(prop)]
-
 
 
 #ALL ETL HAS A TRANSFORM STEP
 def transform(data):
     data._id=str(data.bug_id)+"."+str(data.modified_ts)
 
-    data.dependson=to_int_list(data.dependson)
-    data.blocked=to_int_list(data.blocked)
-    data.dupe_by=to_int_list(data.dupe_by)
+    data.dependson=CNV.value2intlist(data.dependson)
+    data.blocked=CNV.value2intlist(data.blocked)
+    data.dupe_by=CNV.value2intlist(data.dupe_by)
     return data
 
 

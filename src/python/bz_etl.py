@@ -1,9 +1,19 @@
+from datetime import datetime
+from multiprocessing import Queue
+from string import Template
+from threading import Thread
+from util.cnv import CNV
+from util.elasticsearch import ElasticSearch
 from util.map import Map
 from util.multithread import Multithread
 from util.query import Q
+from util.startup import startup
+import parse_bug_history
+from util.debug import D
+from util.db import DB, SQL
 
 
-def etl(db, param):
+def etl(db, es, param):
     #HERE ARE ALL TEH FUNCTIONS WE WANT TO RUN, IN PARALLEL
     funcs=[
         get_bugs,
@@ -19,15 +29,24 @@ def etl(db, param):
         get_dependencies,
     ]
     #GIVE THEM ALL THE SAME PARAMETERS
-    responses=Multithread(funcs).execute([{"db":db, "param":param} for i in range(0, len(funcs))])
+    with Multithread(funcs) as multi:
+        responses=multi.execute([{"db":db, "param":param} for i in range(0, len(funcs))])
 
     #CONCAT ALL RESPONSES
     output=[]
     for r in responses:
         output.extend(r)
 
-    Q.sort(output, ["bug_id", "_merge_order"])
+    #USE SEPARATE THREAD TO SORT AND PROCESS BUG CHANGE RECORDS
+    process=parse_bug_history.setup(param, Queue())
+    def func():
+        sorted=Q.sort(output, ["bug_id", "_merge_order"])
+        for s in sorted: process(s)
+    Thread.run(func)
 
+    #process.output IS A MUTITHREADED QUEUE, SO THIS WILL BLOCK UNTIL THE 10K ARE READY
+    for i, g in Q.groupby(process.output, size=10000):
+        es.push(map(lambda(x):{"id":x._id, "json":x}, g))
 
 
 
@@ -370,3 +389,31 @@ def get_flags(db, param):
         ORDER BY
             bug_id
     """, param)
+
+
+settings=startup.read_settings()
+D.settings(settings.debug)
+db=DB(settings.bugzilla)
+es=ElasticSearch(settings.es)
+
+
+
+param=Map()
+param.BUGS_TABLE_COLUMNS=Q.select(db.query("""
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE
+        table_schema=${schema} AND
+        table_name='bugs' AND
+        column_name NOT IN ('bug_id','delta_ts','lastdiffed','creation_ts','reporter','assigned_to','qa_contact','product_id','component_id')
+""", {"schema":settings.bugzilla.schema}), "column_name")
+param.END_TIME=CNV.datetime2unixmilli(datetime.utcnow())
+param.START_TIME=0
+
+max_id=db.query("SELECT max(bug_id) bug_id FROM bugs")[0].bug_id
+for b in range(0, max_id, settings.param.INCREMENT):
+    param.BUG_IDS_PARTITION=SQL(Template("(bug_id>=${min} and bug_id<${max})").substitute({
+        "min":b,
+        "max":b+settings.param.INCREMENT
+    }))
+    etl(db, es, settings.param)
