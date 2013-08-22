@@ -5,7 +5,7 @@ from util.debug import D
 from util.query import Q
 from util.startup import startup
 from util.files import File
-from util.map import MapList
+from util.struct import StructList
 from util.multiset import multiset
 from util.elasticsearch import ElasticSearch
 
@@ -27,23 +27,23 @@ def transform(data):
 
 def fix_json(json):
     #return json.decode(encoding='UTF-8',errors='backslashreplace')
-
-    try:
-        json.decode('ascii')
-        return json
-    except UnicodeDecodeError:
-        pass
-
-    #JSON HAS SOME BAD BYTE SEQUENCES
-    output=[]
-    for i, c in enumerate(json):
-        a=CNV.char2ascii(c)
-        if a>0x80:
-            hex=CNV.int2hex(a, 2)
-            output.append("\\u00"+hex)
-        else:
-            output.append(c)
-    return "".join(output)
+    return json.decode('iso-8859-1').encode('utf8')
+#    try:
+#        json.decode('ascii')
+#        return json
+#    except UnicodeDecodeError:
+#        pass
+#
+#    #JSON HAS SOME BAD BYTE SEQUENCES
+#    output=[]
+#    for i, c in enumerate(json):
+#        a=CNV.char2ascii(c)
+#        if a>0x80:
+#            hex=CNV.int2hex(a, 2)
+#            output.append("\\u00"+hex)
+#        else:
+#            output.append(c)
+#    return "".join(output)
 
 
 def extract_from_file(source_settings, destination):

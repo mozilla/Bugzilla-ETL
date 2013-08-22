@@ -30,7 +30,7 @@ TRUNC_FIELDS=["cc", "blocked", "dependson", "keywords"]
 #
 from util.cnv import CNV
 from util.debug import D
-from util.map import Map
+from util.struct import Struct
 
 
 ##  Keep track of potential aliases (dupes)
@@ -627,12 +627,12 @@ def makeFlag(flag, modified_ts, modified_by) :
         "modified_ts": modified_ts,
         "modified_by": modified_by,
         "value": flag
-   }
+    }
     matches=FLAG_PATTERN.match(flag)
     if matches:
-        flagParts.request_type=matches[1]
-        flagParts.request_status=matches[2]
-        if matches[3] and len(matches[3]) > 2:
+        flagParts.request_type=matches.group(1)
+        flagParts.request_status=matches.group(2)
+        if matches.group(3) and len(matches[3]) > 2:
             flagParts.requestee=matches[3].substring(1, len(matches[3]) - 1)
       
    
@@ -719,6 +719,6 @@ def isMultiField(aFieldName) :
 
 def getMultiFieldValue(aFieldName, aFieldValue) :
     if isMultiField(aFieldName):
-        return [v.trim() for v in aFieldValue.split(",")]
-    return [aFieldValue]
+        return set(v.trim() for v in aFieldValue.split(","))
+    return set(aFieldValue)
 
