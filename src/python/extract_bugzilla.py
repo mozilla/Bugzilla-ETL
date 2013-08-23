@@ -252,9 +252,9 @@ def get_attachments(db, param):
             , login_name AS modified_by
             , UNIX_TIMESTAMP(CONVERT_TZ(a.creation_ts, 'US/Pacific','UTC'))*1000 AS created_ts
             , login_name AS created_by
-            , ispatch AS 'attachments.ispatch'
-            , isobsolete AS 'attachments.isobsolete'
-            , isprivate AS 'attachments.isprivate'
+            , ispatch AS 'attachment_ispatch'
+            , isobsolete AS 'attachment_isobsolete'
+            , isprivate AS 'attachment_isprivate'
             , attach_id
         FROM
             attachments a
@@ -271,7 +271,7 @@ def get_attachments(db, param):
     """, param)
     return flatten_attachments(output)
 
-attachments_fields = ["created_ts", "created_by", "attachments.ispatch", "attachments.isobsolete", "attachments.isprivate"]
+attachments_fields = ["created_ts", "created_by", "attachment_ispatch", "attachment_isobsolete", "attachment_isprivate"]
 
 def flatten_attachments(data):
     output=[]
@@ -282,7 +282,7 @@ def flatten_attachments(data):
                 modified_ts=r.modified_ts,
                 modified_by=r.modified_by,
                 field_name=a,
-                field_value=r.dict[a],  #THESE NAMES HAVE DOTS IN THEM
+                field_value=r[a],  #THESE NAMES HAVE DOTS IN THEM
                 attach_id=r.attach_id,
                 _merge_order=7
             ))
