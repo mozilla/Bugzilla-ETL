@@ -37,6 +37,7 @@ import math
 from util.cnv import CNV
 from util.debug import D
 from util.query import Q
+from util.basic import nvl
 from util.struct import Struct
 from util.files import File
 
@@ -79,12 +80,16 @@ class parse_bug_history_():
                 D.println("Skipping change after END_TIME (" + self.settings.END_TIME + ")")
                 return
 
+            if self.currBugState.bug_id!=0 and row_in._merge_order>1 and self.currBugState.created_ts is None:
+                D.error("expecting a created_ts")
+
             # If we have switched to a new bug
             if self.prevBugID < self.currBugID:
                 # Start replaying versions in ascending order to build full data on each version
                 D.println("Emitting intermediate versions for ${bug_id}", {"bug_id":self.prevBugID})
                 self.populateIntermediateVersionObjects()
                 self.startNewBug(row_in)
+
 
             # Bugzilla bug workaround - some values were truncated, introducing uncertainty / errors:
             # https://bugzilla.mozilla.org/show_bug.cgi?id=55161
@@ -144,8 +149,12 @@ class parse_bug_history_():
                     self.processBugsActivitiesTableItem(row_in)
                 else:
                     D.warning("Unhandled merge_order: '" + row_in._merge_order + "'")
+
         except Exception, e:
             D.warning("Problem processing row: ${row}", {"row":row_in}, e)
+        finally:
+            if self.currBugState.bug_id!=0 and self.currBugState.created_ts is None:
+                D.println("expecting a created_ts")
 
     @staticmethod
     def uid(bug_id, modified_ts):
@@ -204,10 +213,10 @@ class parse_bug_history_():
             self.bugVersions.append(self.currActivity)
             self.bugVersionsMap[currActivityID] = self.currActivity
             self.prevActivityID = currActivityID
-            self.currActivity.changes.append({
-                "field_name": "attachment_added",
-                "attach_id": row_in.attach_id
-            })
+            self.currActivity.changes.append(Struct(
+                field_name="attachment_added",
+                attach_id=row_in.attach_id
+            ))
 
         if not self.currBugAttachmentsMap[str(row_in.attach_id)]:
             self.currBugAttachmentsMap[str(row_in.attach_id)] ={
@@ -220,15 +229,16 @@ class parse_bug_history_():
         self.currBugAttachmentsMap[str(row_in.attach_id)].dict[row_in.field_name] = row_in.field_value
 
     def processFlagsTableItem(self, row_in):
-        flag = self.makeFlag(row_in.field_value, row_in)
+        flagStr = row_in.field_value
+        flag = self.makeFlag(flagStr, row_in)
         if row_in.attach_id is not None:
-            if not self.currBugAttachmentsMap[str(row_in.attach_id)]:
+            if self.currBugAttachmentsMap[str(row_in.attach_id)] is None:
                 D.println("Unable to find attachment ${attach_id} for bug_id ${bug_id}", {
                     "attach_id":row_in.attach_id,
                     "bug_id":self.currBugID
                 })
 
-            self.currBugAttachmentsMap[str(row_in.attach_id)].flags.append(flag)
+            self.currBugAttachmentsMap[str(row_in.attach_id)].flags.append(flagStr)
         else:
             self.currBugState.flags.append(flag)
 
@@ -243,7 +253,7 @@ class parse_bug_history_():
         currActivityID = parse_bug_history_.uid(self.currBugID, row_in.modified_ts)
         if currActivityID != self.prevActivityID:
             self.currActivity = self.bugVersionsMap[currActivityID]
-            if not self.currActivity:
+            if self.currActivity is None:
                 self.currActivity =Struct(
                     _id= currActivityID,
                     modified_ts= row_in.modified_ts,
@@ -269,7 +279,7 @@ class parse_bug_history_():
                     "currMap":self.currBugAttachmentsMap
                 })
             else:
-                if isinstance(attachment[row_in.field_name], list):
+                if isinstance(attachment[row_in.field_name], set):
                     a = attachment[row_in.field_name]
                     # Can have both added and removed values.
                     a=self.removeValues(a, multi_field_value, "added", row_in.field_name, "attachment", attachment)
@@ -281,6 +291,9 @@ class parse_bug_history_():
 
         else:
             if isinstance(self.currBugState[row_in.field_name], set):
+                # PROBLEM: WHEN GOING BACK IN HISTORY, AND THE ADDED VALUE IS NOT FOUND IN THE CURRENT
+                # STATE, IT IS STILL RECORDED (see above self.currActivity.changes.append...).  THIS MEANS
+                # WHEN GOING THROUGH THE CHANGES IN ORDER THE VALUE WILL EXIST, BUT IT SHOULD NOT
                 a = self.currBugState[row_in.field_name]
                 # Can have both added and removed values.
                 a = self.removeValues(a, multi_field_value, "added", row_in.field_name, "currBugState", self.currBugState)
@@ -308,10 +321,14 @@ class parse_bug_history_():
     def sortDescByField(a, b, aField):
         return -1 * parse_bug_history_.sortAscByField(a, b, aField)
 
+    
     def populateIntermediateVersionObjects(self):
         # Make sure the self.bugVersions are in descending order by modification time.
         # They could be mixed because of attachment activity
-        self.bugVersions=Q.sort(self.bugVersions, {"field":"modified_ts", "sort":-1})
+        self.bugVersions=Q.sort(self.bugVersions, {"field":"modified_ts", "sort":1})
+
+        if self.currBugState.bug_id!=0 and self.currBugState.created_ts is None:
+            D.error("expecting a created_ts")
 
         # Tracks the previous distinct value for field
         prevValues ={}
@@ -345,8 +362,8 @@ class parse_bug_history_():
                 mergeBugVersion = True
 
             # Link this version to the next one (if there is a next one)
-            if nextVersion:
-                D.println("We have a nextVersion: ${timestamp} (ver $(next_version})", {
+            if nextVersion is not None:
+                D.println("We have a nextVersion: ${timestamp} (ver ${next_version})", {
                     "timestamp":nextVersion.modified_ts,
                     "next_version":self.currBugVersion + 1
                 })
@@ -354,11 +371,12 @@ class parse_bug_history_():
             else:
                 # Otherwise, we don't know when the version expires.
                 D.println("We have no nextVersion after #${version}", {"version": self.currBugVersion})
-                self.currBugState.expires_on = None
+                #                                921878882000
+                self.currBugState.expires_on = 99999999999999
 
             # Copy all attributes from the current version into self.currBugState
-            for propName in currVersion:
-                self.currBugState[propName] = currVersion[propName]
+            for propName, propValue in currVersion.items():
+                self.currBugState[propName] = propValue
 
             # Now walk self.currBugState forward in time by applying the changes from currVersion
             changes = currVersion.changes
@@ -372,11 +390,11 @@ class parse_bug_history_():
                     # Handle the special change record that signals the creation of the attachment
                     if change.field_name == "attachment_added":
                         # This change only exists when the attachment has been added to the map, so no missing case needed.
-                        self.currBugState.attachments.append(self.currBugAttachmentsMap[attachID])
+                        self.currBugState.attachments.append(self.currBugAttachmentsMap[str(attachID)])
                         continue
                     else:
                         # Attachment change
-                        target = self.currBugAttachmentsMap[attachID]
+                        target = self.currBugAttachmentsMap[str(attachID)]
                         targetName = "attachment"
                         if target is None:
                             D.warning("Encountered a change to missing attachment for bug '"
@@ -409,7 +427,7 @@ class parse_bug_history_():
                 if change.field_name == "flags":
                     # Already handled by "processFlagChange" above.
                     D.println("Skipping previously processed flag change")
-                elif isinstance(target[change.field_name], list):
+                elif isinstance(target[change.field_name], set):
                     a = target[change.field_name]
                     multi_field_value = parse_bug_history_.getMultiFieldValue(change.field_name, change.field_value)
                     multi_field_value_removed = parse_bug_history_.getMultiFieldValue(change.field_name,
@@ -422,7 +440,7 @@ class parse_bug_history_():
                     target[change.field_name]=a
                 elif parse_bug_history_.isMultiField(change.field_name):
                     # First appearance of a multi-value field
-                    target[change.field_name] = [change.field_value]
+                    target[change.field_name] = set([change.field_value])
                 else:
                     # Simple field change.
                     target[change.field_name] = change.field_value
@@ -441,7 +459,7 @@ class parse_bug_history_():
 
             # Also reformat some date fields
             for dateField in ["deadline", "cf_due_date"]:
-                if self.currBugState[dateField] and self.currBugState[dateField].match(DATE_PATTERN_RELAXED):
+                if self.currBugState[dateField] is not None and DATE_PATTERN_RELAXED.match(self.currBugState[dateField]):
                     # Convert "2012/01/01 00:00:00.000" to "2012-01-01"
                     # Example: bug 643420 (deadline)
                     #          bug 726635 (cf_due_date)
@@ -449,7 +467,7 @@ class parse_bug_history_():
 
 
             for dateField in ["cf_last_resolved"]:
-                if self.currBugState[dateField] and self.currBugState[dateField].match(DATE_PATTERN_STRICT):
+                if self.currBugState[dateField] is not None and DATE_PATTERN_STRICT.match(self.currBugState[dateField]):
                     # Convert "2012/01/01 00:00:00.000" to "2012-01-01T00:00:00.000Z", then to a timestamp.
                     # Example: bug 856732 (cf_last_resolved)
                     # dateString = self.currBugState[dateField].substring(0, 10).replace("/", '-') + "T" + self.currBugState[dateField].substring(11) + "Z"
@@ -465,11 +483,10 @@ class parse_bug_history_():
                 # expired after START_TIME (the latter will update the last known version of the bug
                 # that did not have a value for "expires_on").
                 if self.currBugState.modified_ts >= self.settings.START_TIME or self.currBugState.expires_on >= self.settings.START_TIME:
-                    D.println("Bug ${bug_state.bug_id} v${bug_state.bug_version_num} (_id = ${bug_state._id}): ${bug_state}" , {
-                        "bug_state":self.currBugState
-                    })
-
                     state=scrub(self.currBugState)
+                    D.println("Bug ${bug_state.bug_id} v${bug_state.bug_version_num} (_id = ${bug_state._id}): ${bug_state}" , {
+                        "bug_state":state
+                    })
                     self.output.add(state)
                 else:
                     D.println("Not outputting ${-id} - it is before self.START_TIME (${start_time})", {
@@ -485,8 +502,8 @@ class parse_bug_history_():
 
 
     def findFlag(self, aFlagList, aFlag):
-        existingFlag = self.findByKey(aFlagList, "value", aFlag.value)
-        if not existingFlag:
+        existingFlag = self.findByKey(aFlagList, "value", aFlag.value)  # len([f for f in aFlagList if f.value==aFlag.value])>0   aFlag.value in Q.select(aFlagList, "value")
+        if existingFlag is None:
             for eFlag in aFlagList:
                 if (eFlag.request_type == aFlag.request_type
                     and eFlag.request_status == aFlag.request_status
@@ -495,9 +512,7 @@ class parse_bug_history_():
                     D.println("Using self.bzAliases to match change '" + aFlag.value + "' to '" + eFlag.value + "'")
                     existingFlag = eFlag
                     break
-
-
-
+                    
         return existingFlag
 
     def processFlagChange(self, aTarget, aChange, aTimestamp, aModifiedBy):
@@ -510,7 +525,7 @@ class parse_bug_history_():
                 continue
 
             flag = parse_bug_history_.makeFlag(flagStr, Struct(**{"modified_ts":aTimestamp, "modified_by":aModifiedBy}))
-            existingFlag = self.findFlag(aTarget["flags"], flag)
+            existingFlag = self.findFlag(aTarget.flags, flag)
 
             if existingFlag:
                 # Carry forward some previous values:
@@ -532,7 +547,7 @@ class parse_bug_history_():
                 existingFlag["duration_days"] = math.floor(duration_ms / (1000.0 * 60 * 60 * 24))
             else:
                 D.warning("Did not find a corresponding flag for removed value '"
-                    + flagStr + "' in " + CNV.object2JSON(aTarget["flags"]))
+                    + flagStr + "' in " + CNV.object2JSON(aTarget.flags))
 
 
         # See if we can align any of the added flags with previous deletions.
@@ -543,63 +558,64 @@ class parse_bug_history_():
 
             flag = self.makeFlag(flagStr, Struct(**{"modified_ts":aTimestamp, "modified_by":aModifiedBy}))
 
-            if not aTarget["flags"]:
+            if aTarget.flags is None:
                 D.println("Warning: processFlagChange called with unset 'flags'")
-                aTarget["flags"] = []
+                aTarget.flags = []
 
-            candidates = aTarget["flags"].filter(lambda(element, index, array):
+            candidates = [element for element in aTarget.flags if
                 element["value"] == ""
                     and flag["request_type"] == element["request_type"]
                     and flag["request_status"] != element["previous_status"] # Skip "r?(dre@mozilla)" -> "r?(mark@mozilla)"
-            )
+            ]
 
-            if candidates:
-                if candidates.length >= 1:
-                    chosen_one = candidates[0]
-                    if candidates.length > 1:
-                        # Multiple matches - use the best one.
-                        D.println("Matched added flag " + CNV.object2JSON(flag) + " to multiple removed flags.  Using the best of these:")
-                        for candidate in candidates:
-                            D.println("      " + CNV.object2JSON(candidate))
+            if len(candidates) > 0:
+                chosen_one = candidates[0]
+                if len(candidates) > 1:
+                    # Multiple matches - use the best one.
+                    D.println("Matched added flag " + CNV.object2JSON(flag) + " to multiple removed flags.  Using the best of these:")
+                    for candidate in candidates:
+                        D.println("      " + CNV.object2JSON(candidate))
 
-                        matched_ts = candidates.filter(lambda(element, index, array):
-                            flag["modified_ts"] == element["modified_ts"]
-                        )
-                        if matched_ts and matched_ts.length == 1:
-                            D.println("Matching on modified_ts fixed it")
-                            chosen_one = matched_ts[0]
-                        else:
-                            D.println("Matching on modified_ts left us with " + (matched_ts.length  if matched_ts  else  "no")+ " matches")
-                            # If we had no matches (or many matches), try matching on requestee.
-                            matched_req = candidates.filter(lambda(element, index, array):
-                                # Do case-insenitive comparison
-                                flag["modified_by"].toLowerCase() == element["requestee"].toLowerCase() if element["requestee"] else False
-                            )
-                            if matched_req and matched_req.length == 1:
-                                D.println("Matching on requestee fixed it")
-                                chosen_one = matched_req[0]
-                            else:
-                                D.warning("Matching on requestee left us with " +( matched_req.length if matched_req else "no")+ " matches. Skipping match.")
-                                # TODO: add "uncertain" flag?
-                                chosen_one = None
+                    matched_ts = [element for element in candidates if
+                        flag.modified_ts == element.modified_ts
+                    ]
 
-
+                    if matched_ts and len(matched_ts) == 1:
+                        D.println("Matching on modified_ts fixed it")
+                        chosen_one = matched_ts[0]
                     else:
-                        # Obvious case - matched exactly one.
-                        D.println("Matched added flag " + CNV.object2JSON(flag) + " to removed flag " + CNV.object2JSON(chosen_one))
+                        D.println("Matching on modified_ts left us with " + (len(matched_ts) if matched_ts  else  "no")+ " matches")
+                        # If we had no matches (or many matches), try matching on requestee.
+                        matched_req = [element for element in candidates if
+                            # Do case-insenitive comparison
+                            element["requestee"] is not None and
+                                flag["modified_by"].toLowerCase() == element["requestee"].toLowerCase()
+                        ]
+                        if matched_req and len(matched_req) == 1:
+                            D.println("Matching on requestee fixed it")
+                            chosen_one = matched_req[0]
+                        else:
+                            D.warning("Matching on requestee left us with " +( len(matched_req) if matched_req else "no")+ " matches. Skipping match.")
+                            # TODO: add "uncertain" flag?
+                            chosen_one = None
 
-                    if chosen_one:
-                        for f in ["value", "request_status", "requestee"]:
-                            if flag[f]:
-                                chosen_one[f] = flag[f]
 
-
-
-                    # We need to avoid later adding this flag twice, since we rolled an add into a delete.
                 else:
-                    # No matching candidate. Totally new flag.
-                    D.println("Did not match added flag " + CNV.object2JSON(flag) + " to anything: " + CNV.object2JSON(aTarget["flags"]))
-                    aTarget["flags"].append(flag)
+                    # Obvious case - matched exactly one.
+                    D.println("Matched added flag " + CNV.object2JSON(flag) + " to removed flag " + CNV.object2JSON(chosen_one))
+
+                if chosen_one:
+                    for f in ["value", "request_status", "requestee"]:
+                        if flag[f]:
+                            chosen_one[f] = flag[f]
+
+
+
+                # We need to avoid later adding this flag twice, since we rolled an add into a delete.
+            else:
+                # No matching candidate. Totally new flag.
+                D.println("Did not match added flag " + CNV.object2JSON(flag) + " to anything: " + CNV.object2JSON(aTarget.flags))
+                aTarget.flags.append(flag)
 
 
 
@@ -625,16 +641,17 @@ class parse_bug_history_():
             pv[ctField] = dest["created_ts"]
 
         pv[caField] = aChangeAway
-        duration_ms = pv[caField] - pv[ctField]
+        try:
+            duration_ms = pv[caField] - pv[ctField]
+        except Exception, e:
+            D.error("", e)
         pv[ddField] = math.floor(duration_ms / (1000.0 * 60 * 60 * 24))
 
     @staticmethod
     def findByKey(aList, aField, aValue):
         for item in aList:
             if item[aField] == aValue:
-                return item
-
-
+                return aValue
         return None
 
     @staticmethod
@@ -669,7 +686,7 @@ class parse_bug_history_():
         if len(someValues)==0: return aSet
         D.println("Adding " + valueType + " " + fieldName + " values:" + CNV.object2JSON(someValues))
         if fieldName == "flags":
-            return aSet | someValues
+            return aSet.extend(someValues)
             ## TODO: Some bugs (like 685605) actually have duplicate flags. Do we want to keep them?
             #/*
             # # Check if this flag has already been incorporated into a removed flag. If so, don't add it again.
@@ -692,20 +709,19 @@ class parse_bug_history_():
             for v in someValues:
                 len_ = len(anArray)
                 flag = self.makeFlag(v, Struct(**{"modified_ts":0, "modified_by":0}))
-                for fvalue in list(anArray):
+                for f in list(anArray):
                     # Match on complete flag (incl. status) and flag value
-                    if fvalue == v:
-                        anArray.discard(fvalue)
+                    if f.value == v:
+                        anArray.remove(f)
                         break
-                    elif flag.requestee:
+                    elif flag.requestee is not None:
                         # Match on flag type and status, then use Aliases to match
                         # TODO: Should we try exact matches all the way to the end first?
-                        f=self.makeFlag(fvalue, Struct(**{"modified_ts":0, "modified_by":0}))
                         if (f.request_type == flag.request_type
                             and f.request_status == flag.request_status
                             and self.bzAliases[flag.requestee + "=" + f.requestee]):
                             D.println("Using bzAliases to match '" + v + "' to '" + f.value + "'")
-                            anArray.discard(f)
+                            anArray.remove(f)
                             break
 
 
@@ -718,8 +734,8 @@ class parse_bug_history_():
         else:
             diff=someValues-anArray
             if len(diff)>0:
-                if fieldName=="cc":
-                    # Don't make too much noise about mismatched cc items.
+                if fieldName=="cc" or fieldName=="keywords":
+                    # Don't make too much noise about mismatched items.
                     D.println("Unable to find " + valueType  + " value " + fieldName + ":" + CNV.object2JSON(diff)
                         + " in " + arrayDesc + ": " + CNV.object2JSON(anObj))
                 else:

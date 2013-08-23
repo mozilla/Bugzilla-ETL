@@ -1,4 +1,5 @@
 from datetime import datetime
+from util.files import File
 from util.strings import expand_template
 from util.threads import Queue
 
@@ -66,11 +67,16 @@ settings=startup.read_settings()
 D.settings(settings.debug)
 settings.bugzilla.debug=True
 
+#MAKE HANDLES TO CONTAINERS
 db=DB(settings.bugzilla)
 es=ElasticSearch(settings.es)
+if settings.es.alias is None:
+    settings.es.alias=settings.es.index
+    settings.es.index=settings.es.alias+CNV.datetime2string(datetime.utcnow(), "%Y%m%d_%H%M%S")
+es=ElasticSearch.create_index(settings.es, File(settings.es.schema_file).read())
 
 
-
+#SETUP RUN PARAMETERS
 param=Struct()
 param.BUGS_TABLE_COLUMNS=db.query("""
     SELECT
@@ -89,6 +95,7 @@ param.END_TIME=CNV.datetime2unixmilli(datetime.utcnow())
 param.START_TIME=0
 param.alias_file=settings.param.alias_file
 
+#
 max_id=db.query("SELECT max(bug_id) bug_id FROM bugs")[0].bug_id
 for b in range(settings.param.start, max_id, settings.param.increment):
     param.BUG_IDS_PARTITION=SQL(expand_template("(bug_id>=${min} and bug_id<${max})", {

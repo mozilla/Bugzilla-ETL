@@ -201,7 +201,7 @@ def processAttachmentsTableItem(modified_ts, modified_by, field_name, field_valu
             "attach_id": attach_id,
             "modified_ts": modified_ts,
             "modified_by": modified_by,
-            "flags": []
+            "flags": set([])
         }
     
     currBugAttachmentsMap[attach_id][field_name]=field_value
