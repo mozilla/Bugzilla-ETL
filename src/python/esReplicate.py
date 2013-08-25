@@ -22,6 +22,7 @@ def transform(data):
     data.dependson=CNV.value2intlist(data.dependson)
     data.blocked=CNV.value2intlist(data.blocked)
     data.dupe_by=CNV.value2intlist(data.dupe_by)
+    data.dupe_of=CNV.value2intlist(data.dupe_of)
     return data
 
 

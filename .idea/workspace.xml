@@ -59,46 +59,73 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
+      <file leaf-file-name="extract_bugzilla.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/python/extract_bugzilla.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="319" column="29" selection-start="10504" selection-end="10504" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
       <file leaf-file-name="bz_etl.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/python/bz_etl.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="50" column="0" selection-start="1525" selection-end="1525" vertical-scroll-proportion="0.0">
+            <state line="50" column="17" selection-start="1473" selection-end="1473" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="parse_bug_history.py" pinned="false" current="false" current-in-tab="false">
+      <file leaf-file-name="bz_etl_settings.json" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/bz_etl_settings.json">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="11" column="31" selection-start="548" selection-end="548" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="parse_bug_history.py" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/python/parse_bug_history.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="83" column="49" selection-start="3676" selection-end="3676" vertical-scroll-proportion="0.0">
+            <state line="334" column="37" selection-start="15408" selection-end="15408" vertical-scroll-proportion="0.6">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="debug.py" pinned="false" current="true" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/lib/pyLibrary/util/debug.py">
+      <file leaf-file-name="esReplicate.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/python/esReplicate.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="81" column="39" selection-start="2610" selection-end="2610" vertical-scroll-proportion="0.55787474">
+            <state line="22" column="48" selection-start="571" selection-end="602" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="parse_bug_aliases.py" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/python/parse_bug_aliases.py">
+      <file leaf-file-name="LoadES.java" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/java/LoadES.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="573" column="129" selection-start="23012" selection-end="23017" vertical-scroll-proportion="0.0">
+            <state line="85" column="27" selection-start="3314" selection-end="3314" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="parse_bug_history.js" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/javascript/parse_bug_history.js">
+      <file leaf-file-name="cnv.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/../pyLibrary/util/cnv.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="629" column="133" selection-start="28068" selection-end="28073" vertical-scroll-proportion="0.0">
+            <state line="102" column="0" selection-start="3027" selection-end="3158" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="cnv.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/lib/pyLibrary/util/cnv.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="97" column="28" selection-start="3134" selection-end="3134" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -113,37 +140,10 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="bz_etl_settings.json" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/bz_etl_settings.json">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="9" column="18" selection-start="330" selection-end="330" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
       <file leaf-file-name="elasticsearch.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/lib/pyLibrary/util/elasticsearch.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="30" column="0" selection-start="631" selection-end="631" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="esReplicate.py" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/python/esReplicate.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="129" column="117" selection-start="3980" selection-end="4062" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="elasticsearch.py" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../pyLibrary/util/elasticsearch.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="28" column="0" selection-start="564" selection-end="938" vertical-scroll-proportion="0.0">
+            <state line="129" column="0" selection-start="3642" selection-end="3642" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -164,22 +164,22 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/lib/pyLibrary/util/db.py" />
-        <option value="$PROJECT_DIR$/lib/pyLibrary/util/query.py" />
-        <option value="$PROJECT_DIR$/../pyLibrary/util/cnv.py" />
-        <option value="$PROJECT_DIR$/lib/pyLibrary/util/strings.py" />
-        <option value="$PROJECT_DIR$/lib/pyLibrary/util/cnv.py" />
-        <option value="$PROJECT_DIR$/lib/pyLibrary/util/struct.py" />
-        <option value="$PROJECT_DIR$/data/badfile.txt" />
-        <option value="$PROJECT_DIR$/src/json/bug_version.json" />
-        <option value="$PROJECT_DIR$/src/python/extract_bugzilla.py" />
-        <option value="$PROJECT_DIR$/../pyLibrary/util/elasticsearch.py" />
-        <option value="$PROJECT_DIR$/src/python/bz_etl.py" />
-        <option value="$PROJECT_DIR$/lib/pyLibrary/util/elasticsearch.py" />
-        <option value="$PROJECT_DIR$/bz_etl_settings.json" />
         <option value="$PROJECT_DIR$/src/python/parse_bug_aliases.py" />
-        <option value="$PROJECT_DIR$/src/python/parse_bug_history.py" />
         <option value="$PROJECT_DIR$/lib/pyLibrary/util/debug.py" />
+        <option value="$PROJECT_DIR$/lib/pyLibrary/util/struct.py" />
+        <option value="$PROJECT_DIR$/lib/pyLibrary/util/maths.py" />
+        <option value="$PROJECT_DIR$/lib/pyLibrary/util/strings.py" />
+        <option value="$PROJECT_DIR$/lib/pyLibrary/util/multithread.py" />
+        <option value="$PROJECT_DIR$/src/json/bug_version.json" />
+        <option value="$PROJECT_DIR$/README.md" />
+        <option value="$PROJECT_DIR$/lib/pyLibrary/util/elasticsearch.py" />
+        <option value="$PROJECT_DIR$/src/python/extract_bugzilla.py" />
+        <option value="$PROJECT_DIR$/src/python/bz_etl.py" />
+        <option value="$PROJECT_DIR$/../pyLibrary/util/cnv.py" />
+        <option value="$PROJECT_DIR$/src/python/esReplicate.py" />
+        <option value="$PROJECT_DIR$/lib/pyLibrary/util/cnv.py" />
+        <option value="$PROJECT_DIR$/bz_etl_settings.json" />
+        <option value="$PROJECT_DIR$/src/python/parse_bug_history.py" />
       </list>
     </option>
   </component>
@@ -216,8 +216,8 @@
       <sortByType />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="Favorites" />
+      <pane id="PackagesPane" />
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -265,10 +265,6 @@
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="src" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="scripts" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -322,71 +318,13 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
-              <option name="myItemId" value="javascript" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="Bugzilla-ETL" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="Bugzilla-ETL" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="src" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
               <option name="myItemId" value="java" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="Bugzilla-ETL" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="Bugzilla-ETL" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="lib" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="pyLibrary" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="Bugzilla-ETL" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="Bugzilla-ETL" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="lib" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="pyLibrary" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="util" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
         </subPane>
       </pane>
-      <pane id="PackagesPane" />
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -642,20 +580,20 @@
     <layout>
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.48074535" sideWeight="0.9989053" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.289441" sideWeight="0.9981763" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3416149" sideWeight="0.9981763" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="12" side_tool="false" content_ui="tabs" />
       <window_info id="Script Monkey" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="true" content_ui="tabs" />
-      <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32875773" sideWeight="0.584596" order="4" side_tool="false" content_ui="tabs" />
+      <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32859486" sideWeight="0.57372403" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="JSON Formatter" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="10" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.22803487" sideWeight="0.710559" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.22803487" sideWeight="0.5192547" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Dependency Viewer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="11" side_tool="false" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.22270742" sideWeight="0.9994097" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
@@ -710,7 +648,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/src/python/esReplicate.py</url>
-          <line>55</line>
+          <line>56</line>
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/../pyLibrary/util/multithread.py</url>
@@ -754,7 +692,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
-          <line>180</line>
+          <line>198</line>
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/../pyLibrary/util/elasticsearch.py</url>
@@ -766,15 +704,15 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
-          <line>719</line>
+          <line>791</line>
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
-          <line>194</line>
+          <line>214</line>
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
-          <line>374</line>
+          <line>423</line>
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/../pyLibrary/util/debug.py</url>
@@ -786,83 +724,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
-          <line>465</line>
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
-          <line>574</line>
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
-          <line>584</line>
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
-          <line>586</line>
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
-          <line>594</line>
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
-          <line>597</line>
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
-          <line>604</line>
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
-          <line>607</line>
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
-          <line>571</line>
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
-          <line>548</line>
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
-          <line>561</line>
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
-          <line>646</line>
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
-          <line>330</line>
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/../pyLibrary/util/elasticsearch.py</url>
-          <line>30</line>
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
-          <line>506</line>
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
-          <line>522</line>
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
-          <line>531</line>
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
-          <line>156</line>
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
-          <line>527</line>
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
-          <line>505</line>
+          <line>524</line>
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
@@ -870,19 +732,115 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
-          <line>653</line>
+          <line>631</line>
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
-          <line>529</line>
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
-          <line>83</line>
+          <url>file://$PROJECT_DIR$/../pyLibrary/util/elasticsearch.py</url>
+          <line>30</line>
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/lib/pyLibrary/util/debug.py</url>
           <line>74</line>
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
+          <line>723</line>
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
+          <line>716</line>
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
+          <line>458</line>
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
+          <line>273</line>
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
+          <line>368</line>
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
+          <line>371</line>
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
+          <line>435</line>
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
+          <line>438</line>
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
+          <line>398</line>
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
+          <line>401</line>
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
+          <line>563</line>
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
+          <line>566</line>
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
+          <line>253</line>
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/lib/pyLibrary/util/multithread.py</url>
+          <line>44</line>
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/lib/pyLibrary/util/strings.py</url>
+          <line>71</line>
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/lib/pyLibrary/util/db.py</url>
+          <line>143</line>
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
+          <line>164</line>
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
+          <line>546</line>
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
+          <line>206</line>
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
+          <line>211</line>
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
+          <line>343</line>
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
+          <line>341</line>
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
+          <line>501</line>
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
+          <line>817</line>
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/src/python/parse_bug_history.py</url>
+          <line>90</line>
         </line-breakpoint>
         <line-breakpoint enabled="true" type="javascript">
           <url>file://$PROJECT_DIR$/src/javascript/parse_bug_history.js</url>
@@ -896,51 +854,79 @@
     <option name="FILTER_TARGETS" value="false" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://C:/Python27/Lib/site-packages/MySQLdb/cursors.py">
+    <entry file="file://$PROJECT_DIR$/README.md">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="340" column="0" selection-start="11048" selection-end="11048" vertical-scroll-proportion="0.0" />
+        <state line="7" column="57" selection-start="200" selection-end="200" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/lib/pyLibrary/util/strings.py">
+    <entry file="file://$PROJECT_DIR$/lib/pyLibrary/util/startup.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="12" column="26" selection-start="598" selection-end="598" vertical-scroll-proportion="0.0" />
+        <state line="50" column="0" selection-start="1992" selection-end="1992" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/python/extract_bugzilla.py">
+    <entry file="file://$PROJECT_DIR$/lib/pyLibrary/README.md">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="273" column="23" selection-start="8794" selection-end="8794" vertical-scroll-proportion="0.0" />
+        <state line="33" column="55" selection-start="976" selection-end="976" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
       </provider>
     </entry>
-    <entry file="file://C:/Python27/Lib/codecs.py">
+    <entry file="file://$PROJECT_DIR$/lib/pyLibrary/util/db.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="880" column="0" selection-start="28791" selection-end="28791" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/.IntelliJIdea10/config/plugins/python/helpers/pydev/pydevd.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="958" column="0" selection-start="41277" selection-end="41277" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/lib/pyLibrary/util/files.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="9" column="0" selection-start="135" selection-end="135" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/python/bz_etl.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="50" column="0" selection-start="1525" selection-end="1525" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/python/parse_bug_aliases.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="573" column="129" selection-start="23012" selection-end="23017" vertical-scroll-proportion="0.0">
+        <state line="135" column="30" selection-start="4200" selection-end="4200" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/javascript/parse_bug_history.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="629" column="133" selection-start="28068" selection-end="28073" vertical-scroll-proportion="0.0">
+        <state line="746" column="96" selection-start="32337" selection-end="32337" vertical-scroll-proportion="0.33333334">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/lib/pyLibrary/util/debug.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="74" column="0" selection-start="2400" selection-end="2400" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/java/LoadES.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="85" column="27" selection-start="3314" selection-end="3314" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/python/extract_bugzilla.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="319" column="29" selection-start="10504" selection-end="10504" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/python/esReplicate.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="22" column="48" selection-start="571" selection-end="602" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../pyLibrary/util/cnv.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="102" column="0" selection-start="3027" selection-end="3158" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/lib/pyLibrary/util/cnv.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="97" column="28" selection-start="3134" selection-end="3134" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
@@ -952,40 +938,30 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/bz_etl_settings.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="9" column="18" selection-start="330" selection-end="330" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/lib/pyLibrary/util/elasticsearch.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="30" column="0" selection-start="631" selection-end="631" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/python/esReplicate.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="129" column="117" selection-start="3980" selection-end="4062" vertical-scroll-proportion="0.0">
+        <state line="129" column="0" selection-start="3642" selection-end="3642" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../pyLibrary/util/elasticsearch.py">
+    <entry file="file://$PROJECT_DIR$/src/python/bz_etl.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="28" column="0" selection-start="564" selection-end="938" vertical-scroll-proportion="0.0">
+        <state line="50" column="17" selection-start="1473" selection-end="1473" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/bz_etl_settings.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="11" column="31" selection-start="548" selection-end="548" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/python/parse_bug_history.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="83" column="49" selection-start="3676" selection-end="3676" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/lib/pyLibrary/util/debug.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="81" column="39" selection-start="2610" selection-end="2610" vertical-scroll-proportion="0.55787474">
+        <state line="334" column="37" selection-start="15408" selection-end="15408" vertical-scroll-proportion="0.6">
           <folding />
         </state>
       </provider>

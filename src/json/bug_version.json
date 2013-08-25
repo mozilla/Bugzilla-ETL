@@ -56,7 +56,7 @@
                     "default_dates": {
                         "match": "*_ts",
                         "mapping": {
-                            "type": "date"
+                            "type": "long"
                         }
                     }
                 },
@@ -65,6 +65,15 @@
                         "match": "*_days",
                         "mapping": {
                             "type": "integer"
+                        }
+                    }
+                },
+                {
+                    "previous_values_strings": {
+                        "match": "previous_values.*_value",
+                        "mapping": {
+                            "type": "string",
+                            "index": "not_analyzed"
                         }
                     }
                 },
@@ -229,7 +238,7 @@
                     "type": "object"
                 },
                 "dependson": {
-                    "index_name": "depends_on",
+                    "index_name": "dependson",
                     "type": "integer"
                 },
                 "expires_on": {
