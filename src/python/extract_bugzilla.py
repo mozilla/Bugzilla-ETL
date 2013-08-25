@@ -102,6 +102,8 @@ def flatten_bugs_record(r, bugs_fields, output):
             newRow._merge_order=1
             output.append(newRow)
 
+#    if r.bug_id==1883:
+#        D.println("")
     return output
 
 
@@ -116,8 +118,8 @@ def get_dependencies(db, param):
             , CAST(null AS signed) AS modified_ts
             , CAST(null AS char(255)) AS modified_by
             , 'dependson' AS field_name
-            , CAST(dependson AS char(255)) AS field_value
-            , CAST(null AS char(255)) AS field_value_removed
+            , CAST(dependson AS SIGNED) AS field_value
+            , CAST(null AS SIGNED) AS field_value_removed
             , CAST(null AS signed) AS attach_id
             , 2 AS _merge_order
         FROM dependencies d
@@ -127,11 +129,11 @@ def get_dependencies(db, param):
             AND ${BUG_IDS_PARTITION}
             )
         UNION
-        SELECT dependson
+        SELECT dependson dependson
             , null
             , null
             , 'blocked'
-            , CAST(blocked AS char(255))
+            , CAST(blocked AS SIGNED)
             , null
             , null
             , 2
@@ -151,8 +153,8 @@ def get_duplicates(db, param):
             , CAST(null AS signed) AS modified_ts
             , CAST(null AS char(255)) AS modified_by
             , 'dupe_of' AS field_name
-            , CAST(dupe_of AS char(255)) AS field_value
-            , CAST(null AS char(255)) AS field_value_removed
+            , CAST(dupe_of AS SIGNED) AS field_value
+            , CAST(null AS SIGNED) AS field_value_removed
             , CAST(null AS signed) AS attach_id
             , 2 AS _merge_order
         FROM duplicates d
@@ -166,7 +168,7 @@ def get_duplicates(db, param):
             , null
             , null
             , 'dupe_by'
-            , CAST(dupe AS char(255))
+            , CAST(dupe AS SIGNED)
             , null
             , null
             , 2
@@ -313,7 +315,7 @@ def get_new_activities(db, param):
         SELECT a.bug_id
             , UNIX_TIMESTAMP(CONVERT_TZ(bug_when, 'US/Pacific','UTC'))*1000 AS modified_ts
             , login_name AS modified_by
-            , field.`name` AS field_name
+            , replace(field.`name`, '.', '_') AS field_name
             , CAST(CASE WHEN trim(added)='' THEN NULL ELSE trim(added) END AS CHAR CHARACTER SET utf8)   AS field_value
             , CAST(CASE WHEN trim(removed)='' THEN NULL ELSE trim(removed) END AS CHAR CHARACTER SET utf8)   AS field_value_removed
             , attach_id
@@ -341,7 +343,7 @@ def get_flags(db, param):
         SELECT bug_id
             , UNIX_TIMESTAMP(CONVERT_TZ(f.creation_date, 'US/Pacific','UTC'))*1000 AS modified_ts
             , ps.login_name AS modified_by
-            , 'flagtypes.name' AS field_name
+            , 'flagtypes_name' AS field_name
             , CONCAT(ft.`name`,status,IF(requestee_id IS NULL,'',CONCAT('(',pr.login_name,')'))) AS field_value
             , CAST(null AS char(255)) AS field_value_removed
             , attach_id
