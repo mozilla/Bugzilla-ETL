@@ -163,27 +163,27 @@
                         "modified_ts": {
                             "type": "date"
                         },
-                        "attachment_ispatch": {
+                        "attachments_ispatch": {
                             "index_name": "is_patch",
                             "type": "boolean"
                         },
-                        "attachment_isobsolete": {
+                        "attachments_isobsolete": {
                             "index_name": "is_obsolete",
                             "type": "boolean"
                         },
-                        "attachment_isprivate": {
+                        "attachments_isprivate": {
                             "index_name": "is_private",
                             "type": "boolean"
                         },
-                        "attachment_description": {
+                        "attachments_description": {
                             "enabled": false,
                             "type": "string"
                         },
-                        "attachment_mimetype": {
+                        "attachments_mimetype": {
                             "enabled": false,
                             "type": "string"
                         },
-                        "attachment_filename": {
+                        "attachments_filename": {
                             "enabled": false,
                             "type": "string"
                         },
