@@ -254,9 +254,9 @@ def get_attachments(db, param):
             , login_name AS modified_by
             , UNIX_TIMESTAMP(CONVERT_TZ(a.creation_ts, 'US/Pacific','UTC'))*1000 AS created_ts
             , login_name AS created_by
-            , ispatch AS 'attachment_ispatch'
-            , isobsolete AS 'attachment_isobsolete'
-            , isprivate AS 'attachment_isprivate'
+            , ispatch AS 'attachments_ispatch'
+            , isobsolete AS 'attachments_isobsolete'
+            , isprivate AS 'attachments_isprivate'
             , attach_id
         FROM
             attachments a
@@ -273,7 +273,7 @@ def get_attachments(db, param):
     """, param)
     return flatten_attachments(output)
 
-attachments_fields = ["created_ts", "created_by", "attachment_ispatch", "attachment_isobsolete", "attachment_isprivate"]
+attachments_fields = ["created_ts", "created_by", "attachments_ispatch", "attachments_isobsolete", "attachments_isprivate"]
 
 def flatten_attachments(data):
     output=[]
