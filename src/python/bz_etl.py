@@ -12,6 +12,8 @@ from util.query import Q
 from util.db import DB, SQL
 from extract_bugzilla import *
 
+db_cache=[]
+
 
 #MIMIC THE KETTLE GRAPHICAL PROGRAM
 def etl(db, es, param):
@@ -28,11 +30,16 @@ def etl(db, es, param):
         get_bug_groups,
         get_duplicates
     ]
+
+    # CONNECTIONS ARE EXPENSIVE, CACHE HERE
+    if len(db_cache)==0:
+        db_cache.extend([DB(db) for f in funcs])
+
+
     #GIVE THEM ALL THE SAME PARAMETERS
     output=[]
     with Multithread(funcs) as multi:
-        funcs=[functools.partial(f, {"db":DB(db)}) for f in funcs] #BIND FUNCTION TO DB INSTANCE
-        params=[{"param":param} for f in funcs]
+        params=[{"db":db_cache[i], "param":param} for i, f in enumerate(funcs)]
         responses=multi.execute(params)
 
         #CONCAT ALL RESPONSES (BLOCKS UNTIL ALL RIeTRIV)
@@ -124,20 +131,16 @@ def main(settings):
             "max":b+settings.param.increment
         }))
         etl(db, es, param)
-        break
+#        break
 
 
 
-import profile
-
-#threading.setprofile(functools.partial(profile.Profile.trace_dispatch, profile.Profile()))
-
-
-profile.run("""
+#import profile
+#profile.run("""
 settings=startup.read_settings()
 D.start(settings.debug)
 main(settings)
 D.stop()
-""")
+#""")
 
 
