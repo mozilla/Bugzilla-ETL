@@ -37,7 +37,7 @@ import math
 from util.cnv import CNV
 from util.debug import D
 from util.query import Q
-from util.struct import Struct
+from util.struct import Struct, StructList
 from util.files import File
 from util.maths import Math
 
@@ -734,8 +734,11 @@ class parse_bug_history_():
 
     @staticmethod
     def stabilize(bug):
-#        if bug.cc is not None:
-#            bug.cc=list(bug.cc).sort()
+        bug.flags=Q.sort(bug.flags, "value")
+
+        bug.attachments=Q.sort(bug.attachments, "attach_id")
+        for a in bug.attachments:
+            a.flags=Q.sort(a.flags, "value")
 
         if bug.changes is not None:
             bug.changes=Q.sort(bug.changes, "field_name")
@@ -810,11 +813,14 @@ class parse_bug_history_():
                     
             return anArray
         else:
-            diff=someValues-anArray
+            try:
+                diff=someValues-anArray
+            except Exception, e:
+                D.println("error")
             if len(diff)>0:
 #                if fieldName=="cc" or fieldName=="keywords":
                     # Don't make too much noise about mismatched items.
-                D.println("PROBLEM Unable to find " + valueType  + "value: " + arrayDesc + ".${field_name}: (All ${missing}" + " not in : ${existing})", {
+                D.println("PROBLEM Unable to find " + valueType  + " value: " + arrayDesc + ".${field_name}: (All ${missing}" + " not in : ${existing})", {
                     "field_name":fieldName,
                     "missing":CNV.object2JSON(diff),
                     "existing":CNV.object2JSON(anObj[fieldName])
@@ -865,7 +871,10 @@ def scrub(r):
 
 def _scrub(r):
     try:
-        if isinstance(r, dict):
+        if r is None or r=="":
+            return None
+        elif isinstance(r, dict):
+            if isinstance(r, Struct): r=r.dict
             output={}
             for k, v in r.items():
                 v=_scrub(v)
@@ -873,6 +882,7 @@ def _scrub(r):
             if len(output)==0: return None
             return output
         elif hasattr(r, '__iter__'):
+            if isinstance(r, StructList): r=r.list
             output=[]
             for v in r:
                 v=_scrub(v)
@@ -882,8 +892,6 @@ def _scrub(r):
                 return Q.sort(output)
             except Exception:
                 return output
-        elif r is None or r=="":
-            return None
         else:
             return r
     except Exception, e:
