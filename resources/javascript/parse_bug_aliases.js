@@ -1,32 +1,15 @@
 /* vim: set filetype=javascript ts=2 et sw=2: */
 /* Workflow:
- Create the current state object
+ Follow the same procedure as when parsing bug history, but take note of
+ cases where a change relating to a user has no direct match in the bug's
+ history.  This can indicate a case where a user's bugzilla id changed.
 
- For each row containing latest state data (fields from bugs table record, fields from other tables (i.e. attachments, dependencies)
- Update the current state object with the latest field values
-
- Walk backward through activity records from bugs_activity (and other activity type tables). For each set of activities:
- Create a new bug version object with the meta data about this activity
- Set id based on modification time
- *       Set valid_from field as modification time
- *       Set valid_to field as the modification time of the later version - 1 second
- Add modification data (who, when, what)
- For single value fields (i.e. assigned_to, status):
- Update the original state object by replacing the field value with the contents of the activities "removed" column
- For multi-value fields (i.e. blocks, CC, attachments):
- If a deletion, update the original state object by adding the value from the "removed" column to the field values array.
- If an addition, find and remove the added item from the original state object
-
- When finished with all activities, the current state object should reflect the original state of the bug when created.
- Now, build the full state of each intermediate version of the bug.
-
- For each bug version object that was created above:
- Merge the current state object into this version object
- Update fields according to the modification data
-
- When doing an incremental update (ie. with START_TIME specified), Look at any bug that has been modified since the
- cutoff time, and build all versions.  Only index versions after START_TIME in ElasticSearch.
-
+ TODO: One possible enhancement from deinspanjer (paraphrased by mreid):
+ To verify an alias, we could try the following
+ - query bugs table with newer name, "assigned_to"
+ - Match the id up to get the current name, look at the bugs history to
+ check the "assigned_to" in activities (since it's stored as text)
+ - If we get a "hit", that would guarantee that it is an alias.
  */
 
 // Used to split a flag into (type, status [,requestee])
@@ -36,14 +19,17 @@ const FLAG_PATTERN = /^(.*)([?+-])(\([^)]*\))?$/;
 
 // Used to reformat incoming dates into the expected form.
 // Example match: "2012/01/01 00:00:00.000"
-const DATE_PATTERN_STRICT = /^[0-9]{4}[\/-][0-9]{2}[\/-][0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}.[0-9]{3}/;
-// Example match: "2012-08-08 0:00"
-const DATE_PATTERN_RELAXED = /^[0-9]{4}[\/-][0-9]{2}[\/-][0-9]{2} /;
+const DATE_PATTERN = /^[0-9]{4}\/[0-9]{2}\/[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}/;
 
 // Fields that could have been truncated per bug 55161
 const TRUNC_FIELDS = ["cc", "blocked", "dependson", "keywords"];
 
-var bzAliases = null;
+// Keep track of potential aliases (dupes)
+// Singles are where we have only one possible match left over (high confidence)
+var dupeSingles = {};
+// Multis are where we have more than one possible match left over (uncertain)
+var dupeMultis = {};
+
 var currBugID;
 var prevBugID;
 var bugVersions;
@@ -59,10 +45,6 @@ var END_TIME = parseInt(getVariable("END_TIME", 0));
 
 function processRow(bug_id, modified_ts, modified_by, field_name, field_value_in, field_value_removed, attach_id, _merge_order) {
     currBugID = bug_id;
-
-    if (!bzAliases) {
-        initializeAliases();
-    }
 
     writeToLog("d", "bug_id={" + bug_id + "}, modified_ts={" + modified_ts + "}, modified_by={" + modified_by
         + "}, field_name={" + field_name + "}, field_value={" + field_value_in + "}, field_value_removed={"
@@ -343,16 +325,6 @@ function populateIntermediateVersionObjects() {
         }
         writeToLog("d", "Populating JSON for version " + currVersion._id);
 
-        // Decide whether to merge this bug activity into the current state (without emitting
-        // a separate JSON document). This addresses the case where an attachment is created
-        // at exactly the same time as the bug itself.
-        // Effectively, we combine all the changes for a given timestamp into the last one.
-        var mergeBugVersion = false;
-        if (nextVersion && currVersion._id == nextVersion._id) {
-            writeToLog("d", "Merge mode: activated " + currBugState._id);
-            mergeBugVersion = true;
-        }
-
         // Link this version to the next one (if there is a next one)
         if (nextVersion) {
             writeToLog("d", "We have a nextVersion:" + nextVersion.modified_ts
@@ -446,82 +418,52 @@ function populateIntermediateVersionObjects() {
         stabilize(currBugState);
 
         // Empty string breaks ES date parsing, remove it from bug state.
-        for each (var dateField in ["deadline", "cf_due_date", "cf_last_resolved"]) {
+        for each (var dateField in ["deadline", "cf_due_date"]) {
             // Special case to handle values that can't be parsed by ES:
             if (currBugState[dateField] == "") {
                 // Skip empty strings
                 currBugState[dateField] = undefined;
-            }
-        }
-
-        // Also reformat some date fields
-        for each (var dateField in ["deadline", "cf_due_date"]) {
-            if (currBugState[dateField] && currBugState[dateField].match(DATE_PATTERN_RELAXED)) {
+            } else if (currBugState[dateField] && currBugState[dateField].match(DATE_PATTERN)) {
                 // Convert "2012/01/01 00:00:00.000" to "2012-01-01"
                 // Example: bug 643420 (deadline)
-                //          bug 726635 (cf_due_date)
                 currBugState[dateField] = currBugState[dateField].substring(0, 10).replace(/\//g, '-');
             }
         }
 
-        for each (var dateField in ["cf_last_resolved"]) {
-            if (currBugState[dateField] && currBugState[dateField].match(DATE_PATTERN_STRICT)) {
-                // Convert "2012/01/01 00:00:00.000" to "2012-01-01T00:00:00.000Z", then to a timestamp.
-                // Example: bug 856732 (cf_last_resolved)
-                var dateString = currBugState[dateField].substring(0, 10).replace(/\//g, '-') + "T" + currBugState[dateField].substring(11) + "Z";
-                currBugState[dateField] = "" + new Date(dateString).getTime();
-            }
-        }
+        currBugState.bug_version_num = currBugVersion++;
 
-        currBugState.bug_version_num = currBugVersion;
-
-        if (!mergeBugVersion) {
-            // This is not a "merge", so output a row for this bug version.
-            currBugVersion++;
-            // Output this version if either it was modified after START_TIME, or if it
-            // expired after START_TIME (the latter will update the last known version of the bug
-            // that did not have a value for "expires_on").
-            if (currBugState.modified_ts >= START_TIME || currBugState.expires_on >= START_TIME) {
-                // Emit this version as a JSON string
-                //var bugJSON = JSON.stringify(currBugState,null,2); // DEBUGGING, expanded output
-                var bugJSON = JSON.stringify(currBugState); // condensed output
-
-                writeToLog("d", "Bug " + currBugState.bug_id + " v" + currBugState.bug_version_num + " (_id = " + currBugState._id + "): " + bugJSON);
-                var newRow = createRowCopy(outputRowSize);
-                var rowIndex = inputRowSize;
-                newRow[rowIndex++] = currBugState.bug_id;
-                newRow[rowIndex++] = currBugState._id;
-                newRow[rowIndex++] = bugJSON;
-                putRow(newRow);
-            } else {
-                writeToLog("d", "Not outputting " + currBugState._id
-                    + " - it is before START_TIME (" + START_TIME + ")");
-            }
-        } else {
-            writeToLog("d", "Merging a change with the same timestamp = " + currBugState._id + ": " + JSON.stringify(currVersion));
-        }
 
     }
-}
-
-function findFlag(aFlagList, aFlag) {
-    var existingFlag = findByKey(aFlagList, "value", aFlag.value);
-    if (!existingFlag) {
-        for each (var eFlag in aFlagList) {
-            if (eFlag.request_type == aFlag.request_type
-                && eFlag.request_status == aFlag.request_status
-                && (bzAliases[aFlag.requestee + "=" + eFlag.requestee] // Try both directions.
-                || bzAliases[eFlag.requestee + "=" + aFlag.requestee])) {
-                writeToLog("d", "Using bzAliases to match change '" + aFlag.value + "' to '" + eFlag.value + "'");
-                existingFlag = eFlag;
-                break;
-            }
-        }
+    // Output our wicked-sweet dupe lists:
+    for (var dupe in dupeSingles) {
+        writeToLog("d", "Found single dupe '" + dupe + "' " + dupeSingles[dupe] + " times.");
+        var newRow = createRowCopy(outputRowSize);
+        var rowIndex = inputRowSize;
+        newRow[rowIndex++] = dupe
+        newRow[rowIndex++] = "single"
+        newRow[rowIndex++] = dupeSingles[dupe];
+        newRow[rowIndex++] = prevBugID;
+        putRow(newRow);
     }
-    return existingFlag;
+    dupeSingles = {};
+
+    for (var dupe in dupeMultis) {
+        writeToLog("d", "Found multi dupe '" + dupe + "' " + dupeMultis[dupe] + " times.");
+        var newRow = createRowCopy(outputRowSize);
+        var rowIndex = inputRowSize;
+        newRow[rowIndex++] = dupe
+        newRow[rowIndex++] = "multi"
+        newRow[rowIndex++] = dupeMultis[dupe];
+        newRow[rowIndex++] = prevBugID;
+        putRow(newRow);
+    }
+    dupeMultis = {};
 }
 
 function processFlagChange(aTarget, aChange, aTimestamp, aModifiedBy) {
+    writeToLog("d", "Processing flag change.  Added: '" + aChange.field_value
+        + "', removed: '" + aChange.field_value_removed + "'");
+    writeToLog("d", "Target was: " + JSON.stringify(aTarget));
     var addedFlags = getMultiFieldValue("flags", aChange.field_value);
     var removedFlags = getMultiFieldValue("flags", aChange.field_value_removed);
 
@@ -531,7 +473,7 @@ function processFlagChange(aTarget, aChange, aTimestamp, aModifiedBy) {
             continue;
         }
         var flag = makeFlag(flagStr, aTimestamp, aModifiedBy);
-        var existingFlag = findFlag(aTarget["flags"], flag);
+        var existingFlag = findByKey(aTarget["flags"], "value", flagStr);
 
         if (existingFlag) {
             // Carry forward some previous values:
@@ -732,28 +674,37 @@ function removeValues(anArray, someValues, valueType, fieldName, arrayDesc, anOb
     if (fieldName == "flags") {
         for each (var v in someValues) {
             var len = anArray.length;
-            var flag = makeFlag(v, 0, 0);
             for (var i = 0; i < len; i++) {
-                // Match on complete flag (incl. status) and flag value
+                // Match on flag name (incl. status) and flag value
                 if (anArray[i].value == v) {
                     anArray.splice(i, 1);
                     break;
-                } else if (flag.requestee) {
-                    // Match on flag type and status, then use Aliases to match
-                    // TODO: Should we try exact matches all the way to the end first?
-                    if (anArray[i].request_type == flag.request_type
-                        && anArray[i].request_status == flag.request_status
-                        && bzAliases[flag.requestee + "=" + anArray[i].requestee]) {
-                        writeToLog("d", "Using bzAliases to match '" + v + "' to '" + anArray[i].value + "'");
-                        anArray.splice(i, 1);
-                        break;
-                    }
                 }
             }
 
             if (len == anArray.length) {
                 writeToLog("e", "Unable to find " + valueType + " flag " + fieldName + ":" + v
                     + " in " + arrayDesc + ": " + JSON.stringify(anObj));
+
+                var dupeTarget = dupeSingles;
+                if (anArray.length > 1) {
+                    dupeTarget = dupeMultis;
+                }
+
+                var vFlag = makeFlag(v, 0, 0);
+
+                for each (var item in anArray) {
+                    if (vFlag.request_type == item.request_type
+                        && vFlag.request_status == item.request_status) {
+                        if (dupeTarget[vFlag.requestee + "=" + item.requestee]) {
+                            dupeTarget[vFlag.requestee + "=" + item.requestee] += 1;
+                        } else {
+                            dupeTarget[vFlag.requestee + "=" + item.requestee] = 1;
+                        }
+                    } else {
+                        writeToLog("d", "Skipping potential dupe: '" + v + "' != '" + item.value + "'");
+                    }
+                }
             }
         }
     } else {
@@ -762,12 +713,7 @@ function removeValues(anArray, someValues, valueType, fieldName, arrayDesc, anOb
             if (foundAt >= 0) {
                 anArray.splice(foundAt, 1);
             } else {
-                var logLevel = "e";
-                if (fieldName == "cc") {
-                    // Don't make too much noise about mismatched cc items.
-                    logLevel = "d";
-                }
-                writeToLog(logLevel, "Unable to find " + valueType + " value " + fieldName + ":" + v
+                writeToLog("e", "Unable to find " + valueType + " value " + fieldName + ":" + v
                     + " in " + arrayDesc + ": " + JSON.stringify(anObj));
             }
         }
@@ -777,7 +723,7 @@ function removeValues(anArray, someValues, valueType, fieldName, arrayDesc, anOb
 function isMultiField(aFieldName) {
     return (aFieldName == "flags" || aFieldName == "cc" || aFieldName == "keywords"
         || aFieldName == "dependson" || aFieldName == "blocked" || aFieldName == "dupe_by"
-        || aFieldName == "dupe_of" || aFieldName == "bug_group" || aFieldName == "see_also");
+        || aFieldName == "dupe_of" || aFieldName == "bug_group");
 }
 
 function getMultiFieldValue(aFieldName, aFieldValue) {
@@ -786,18 +732,4 @@ function getMultiFieldValue(aFieldName, aFieldValue) {
     }
 
     return [aFieldValue];
-}
-
-function initializeAliases() {
-    var BZ_ALIASES = getVariable("BZ_ALIASES", 0);
-    bzAliases = {};
-    if (BZ_ALIASES) {
-        writeToLog("d", "Initializing aliases");
-        for each (var alias in BZ_ALIASES.split(/, */)) {
-            writeToLog("d", "Adding alias '" + alias + "'");
-            bzAliases[alias] = true;
-        }
-    } else {
-        writeToLog("d", "Not initializing aliases");
-    }
 }
