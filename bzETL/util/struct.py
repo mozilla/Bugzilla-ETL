@@ -65,14 +65,28 @@ class Struct(dict):
                 seq=key.split(".")
                 for k in seq[0,-1]: d=d[k]
                 d[seq[-1]]=value
+                return self
             d[key]=value
         except Exception, e:
             if key.find(".")>=0:
                 seq=key.split(".")
                 for k in seq[0,-1]: d=d[k]
                 d[seq[-1]]=value
+                return self
             d[key]=value
             raise e
+
+
+    def __delitem__(self, key):
+        d=object.__getattribute__(self, "__dict__")
+
+        if key.find(".")>=0:
+            seq=key.split(".")
+            for k in seq[0,-1]: d=d[k]
+            del d[seq[-1]]
+            return
+        del d[key]
+
 
     def keys(self):
         d=object.__getattribute__(self, "__dict__")
@@ -107,6 +121,17 @@ class StructList(list):
 
     def __str__(self):
         return self.list.__str__()
+
+    def __len__(self):
+        return self.list.__len__()
+
+    def remove(self, x):
+        self.list.remove(x)
+        return self
+
+    def extend(self, values):
+        self.list.extend(values)
+        return self
 
 
 def wrap(v):

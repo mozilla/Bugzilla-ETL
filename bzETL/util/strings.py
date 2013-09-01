@@ -9,9 +9,11 @@ import datetime
 from decimal import Decimal
 import json
 import re
+from threading import Lock
 import time
 import pystache
-from util.struct import Struct
+import sys
+from util.struct import Struct, StructList, wrap, unwrap
 
 
 def indent(value, prefix="\t"):
@@ -51,9 +53,34 @@ def find_first(value, find_arr, start=0):
     if i==len(value): return -1
     return i
 
+#TURNS OUT PYSTACHE MANGLES CHARS FOR HTML
+#def expand_template(template, values):
+#    if values is None: values={}
+#    return pystache.render(template, values)
 
+pattern=re.compile(r"(\{\{[\w_.]+\}\})")
 def expand_template(template, values):
-    return pystache.render(template, values)
+    if values is None: values={}
+    values=Struct(**values)
+
+    def replacer(found):
+        var=found.group(1)
+        try:
+            val=values[var[2:-2]]
+            val=toString(val)
+            return str(val)
+        except Exception, e:
+            try:
+                if e.message.find("is not JSON serializable"):
+                    #WORK HARDER
+                    val=json_scrub(val)
+                    val=toString(val)
+                    return val
+            except Exception:
+                raise Exception("Can not find "+var[2:-2]+" in template:\n"+indent(template))
+
+    return pattern.sub(replacer, template)
+
 
 
 
@@ -65,6 +92,10 @@ class NewJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, set):
             return list(obj)
+        elif isinstance(obj, Struct):
+            return obj.dict
+        elif isinstance(obj, StructList):
+            return obj.list
         elif isinstance(obj, Decimal):
             return float(obj)
         elif isinstance(obj, datetime.datetime):
@@ -74,31 +105,32 @@ class NewJSONEncoder(json.JSONEncoder):
 
 import ujson
 
-class json_encoder():
-    @classmethod
-    def encode(self, value):
-        return ujson.dumps(value)
+#class json_encoder():
+#    @classmethod
+#    def encode(self, value):
+#        return ujson.dumps(value)
 
 class json_decoder():
     @classmethod
     def decode(cls, value):
         return ujson.loads(value)
 
-
-#json_encoder=NewJSONEncoder()
+json_lock=Lock()
+json_encoder=NewJSONEncoder()
 #json_decoder=json._default_decoder
 
 def toString(val):
-    if isinstance(val, Struct):
-        return json_encoder.encode(val.dict)
-    elif isinstance(val, dict) or isinstance(val, list) or isinstance(val, set):
-        val=json_encoder.encode(val)
-        return val
+    with json_lock:
+        if isinstance(val, Struct):
+            return json_encoder.encode(val.dict)
+        elif isinstance(val, dict) or isinstance(val, list) or isinstance(val, set):
+            val=json_encoder.encode(val)
+            return val
     return str(val)
 
 #REMOVE VALUES THAT CAN NOT BE JSON-IZED
-def scrub(r):
-    return Struct(**_scrub(r))
+def json_scrub(r):
+    return unwrap(_scrub(r))
 
 def _scrub(r):
     if isinstance(r, dict):
@@ -106,20 +138,19 @@ def _scrub(r):
         for k, v in r.items():
             v=_scrub(v)
             output[k]=v
-        if len(output)==0: return None
         return output
     elif hasattr(r, '__iter__'):
         output=[]
         for v in r:
             v=_scrub(v)
             output.append(v)
-        if len(output)==0: return None
         return output
     elif r is None:
         return None
     else:
         try:
-            json_encoder.encode(r)
-            return r
+            with json_lock:
+                json_encoder.encode(r)
+                return r
         except Exception, e:
             return None

@@ -1,5 +1,15 @@
+################################################################################
+## This Source Code Form is subject to the terms of the Mozilla Public
+## License, v. 2.0. If a copy of the MPL was not distributed with this file,
+## You can obtain one at http://mozilla.org/MPL/2.0/.
+################################################################################
+## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
+################################################################################
+
+## REPLACES THE KETTLE FLOW CONTROL PROGRAM, AND BASH SCRIPT
+
 from datetime import datetime
-import functools
+
 from util.files import File
 from util.startup import startup
 from util.strings import expand_template
@@ -42,7 +52,7 @@ def etl(db, es, param):
         params=[{"db":db_cache[i], "param":param} for i, f in enumerate(funcs)]
         responses=multi.execute(params)
 
-        #CONCAT ALL RESPONSES (BLOCKS UNTIL ALL RIeTRIV)
+        #CONCAT ALL RESPONSES (BLOCKS UNTIL ALL RETRIEVED)
         for r in responses:
             output.extend(r)
 
@@ -71,7 +81,7 @@ def etl(db, es, param):
 #    queue=Multiprocess.Queue()
 #    with Multiprocess(queue, funcs) as multi
 #        for b in range(settings.param.start, settings.param.end, settings.param.increment):
-#            param.BUG_IDS_PARTITION=SQL(expand_template("(bug_id>=${min} and bug_id<${max})", {
+#            param.BUG_IDS_PARTITION=SQL(expand_template("(bug_id>={{min}} and bug_id<{{min}})", {
 #                "min":b,
 #                "max":b+settings.param.increment
 #            }))
@@ -81,66 +91,52 @@ def etl(db, es, param):
 #
 #
 
+
 def main(settings):
 
-    settings.bugzilla.debug=True
-
     #MAKE HANDLES TO CONTAINERS
-    db=DB(settings.bugzilla)
-#    es=ElasticSearch(settings.es)
-    if settings.es.alias is None:
-        settings.es.alias=settings.es.index
-        settings.es.index=settings.es.alias+CNV.datetime2string(datetime.utcnow(), "%Y%m%d_%H%M%S")
-    es=ElasticSearch.create_index(settings.es, File(settings.es.schema_file).read())
+    with DB(settings.bugzilla) as db:
+
+        if settings.es.alias is None:
+            settings.es.alias=settings.es.index
+            settings.es.index=settings.es.alias+CNV.datetime2string(datetime.utcnow(), "%Y%m%d_%H%M%S")
+        es=ElasticSearch.create_index(settings.es, File(settings.es.schema_file).read())
 
 
-    #SETUP RUN PARAMETERS
-    param=Struct()
-    param.BUGS_TABLE_COLUMNS=db.query("""
-        SELECT
-            column_name,
-            column_type
-        FROM
-            information_schema.columns
-        WHERE
-            table_schema=${schema} AND
-            table_name='bugs' AND
-            column_name NOT IN (
-                'bug_id',
-                'delta_ts',
-                'lastdiffed',
-                'creation_ts',
-                'reporter',
-                'assigned_to',
-                'qa_contact',
-                'product_id',
-                'component_id'
-            )
-    """, {"schema":settings.bugzilla.schema})
-    param.BUGS_TABLE_COLUMNS_SQL=SQL(",\n".join(["`"+c.column_name+"`" for c in param.BUGS_TABLE_COLUMNS]))
-    param.BUGS_TABLE_COLUMNS=Q.select(param.BUGS_TABLE_COLUMNS, "column_name")
-    param.END_TIME=CNV.datetime2unixmilli(datetime.utcnow())
-    param.START_TIME=0
-    param.alias_file=settings.param.alias_file
-
-    #
-    param.end=db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id
-    for b in range(settings.param.start, param.end, settings.param.increment):
-        param.BUG_IDS_PARTITION=SQL(expand_template("(bug_id>=${min} and bug_id<${max})", {
-            "min":b,
-            "max":b+settings.param.increment
-        }))
-        etl(db, es, param)
-#        break
+        #SETUP RUN PARAMETERS
+        param=Struct()
+        param.BUGS_TABLE_COLUMNS=get_bugs_table_columns(db, settings.bugzilla.schema)
+        param.BUGS_TABLE_COLUMNS_SQL=SQL(",\n".join(["`"+c.column_name+"`" for c in param.BUGS_TABLE_COLUMNS]))
+        param.BUGS_TABLE_COLUMNS=Q.select(param.BUGS_TABLE_COLUMNS, "column_name")
+        param.END_TIME=CNV.datetime2milli(datetime.utcnow())
+        param.START_TIME=0
+        param.alias_file=settings.param.alias_file
+        param.end=db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id
 
 
+        #WE SHOULD SPLIT THIS OUT INTO PROCESSES FOR GREATER SPEED!!
+        for b in range(settings.param.start, param.end, settings.param.increment):
+            try:
+                (min, max)=(b, b+settings.param.increment)
+                param.BUG_IDS_PARTITION=SQL("(bug_id>={{min}} and bug_id<{{max}})", {
+                    "min":min,
+                    "max":max
+                })
+                etl(db, es, param)
+            except Exception, e:
+                D.warning("Problem with etl in range [{{min}}, {{max}})", {
+                    "min":min,
+                    "max":max
+                })
 
-#import profile
-#profile.run("""
-settings=startup.read_settings()
-D.start(settings.debug)
-main(settings)
-D.stop()
-#""")
+
+if __name__=="__main__":
+    #import profile
+    #profile.run("""
+    settings=startup.read_settings()
+    D.start(settings.debug)
+    main(settings)
+    D.stop()
+    #""")
 
 

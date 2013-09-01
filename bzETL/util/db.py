@@ -129,7 +129,7 @@ class DB():
             if old_cursor is None: #ALLOW NON-TRANSACTIONAL READS
                 self.cursor=self.db.cursor()
 
-            if param is not None: sql=expand_template(sql, self.quote(param))
+            if param is not None: sql=expand_template(sql, self.quote_param(param))
             sql=outdent(sql)
             if self.debug: D.println("Execute SQL:\n"+indent(sql))
 
@@ -159,7 +159,7 @@ class DB():
             if old_cursor is None: #ALLOW NON-TRANSACTIONAL READS
                 self.cursor=self.db.cursor()
 
-            if param is not None: sql=expand_template(sql,self.quote(param))
+            if param is not None: sql=expand_template(sql,self.quote_param(param))
             sql=outdent(sql)
             if self.debug: D.println("Execute SQL:\n"+indent(sql))
 
@@ -183,7 +183,7 @@ class DB():
     def execute(self, sql, param=None):
         if self.transaction_level==0: D.error("Expecting transation to be started before issuing queries")
 
-        if param is not None: sql=expand_template(sql,self.quote(param))
+        if param is not None: sql=expand_template(sql,self.quote_param(param))
         sql=outdent(sql)
         self.backlog.append(sql)
         if len(self.backlog)>=MAX_BATCH_SIZE:
@@ -251,7 +251,7 @@ class DB():
             return "`"+value+"`"    #MY SQL QUOTE OF COLUMN NAMES
 
         keys = param.keys()
-        param = self.quote(param)
+        param = self.quote_param(param)
 
         command = "INSERT INTO "+quote(table_name)+"("+\
                   ",".join([quote(k) for k in keys])+\
@@ -272,8 +272,8 @@ class DB():
         def quote(value):
             return "`"+value+"`"    #MY SQL QUOTE OF COLUMN NAMES
 
-        where=self.quote(where)
-        new_values=self.quote(new_values)
+        where=self.quote_param(where)
+        new_values=self.quote_param(new_values)
 
         command="UPDATE "+quote(table_name)+"\n"+\
                 "SET "+\
@@ -283,25 +283,23 @@ class DB():
         self.execute(command, {})
 
 
+    def quote_param(self, param):
+        return {k:self.quote(v) for k, v in param.items()}
+
     #convert values to mysql code for the same
     #mostly delegate directly to the mysql lib, but some exceptions exist
-    def quote(self, param):
+    def quote(self, value):
         try:
-            output={}
-            for k, v in [(k, param[k]) for k in param.keys()]:
-                if isinstance(v, datetime):
-                    v=SQL("str_to_date('"+v.strftime("%Y%m%d%H%M%S")+"', '%Y%m%d%H%i%s')")
-                elif isinstance(v, list):
-                    v=SQL("("+",".join([self.db.literal(vv) for vv in v])+")")
-                elif isinstance(v, SQL):
-                    pass
-                elif isinstance(v, Struct):
-                    self.db.literal(None)
-                else:
-                    v=SQL(self.db.literal(v))
-
-                output[k]=v
-            return output
+            if isinstance(value, datetime):
+                return SQL("str_to_date('"+value.strftime("%Y%m%d%H%M%S")+"', '%Y%m%d%H%i%s')")
+            elif isinstance(value, list):
+                return SQL("("+",".join([self.db.literal(vv) for vv in value])+")")
+            elif isinstance(value, SQL):
+                return value
+            elif isinstance(value, Struct):
+                return self.db.literal(None)
+            else:
+                return SQL(self.db.literal(value))
         except Exception, e:
             D.error("problem quoting SQL", e)
 
@@ -309,10 +307,11 @@ class DB():
 
 
 #ACTUAL SQL, DO NOT QUOTE THIS STRING
-class SQL(str):
+class SQL():
 
-    def __init__(self, string=''):
-        str.__init__(self, string)
+
+    def __init__(self, template='', param=None):
+        self.value=expand_template(template, param)
 
     def __str__(self):
-        return self
+        return self.value
