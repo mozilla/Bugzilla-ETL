@@ -1,0 +1,46 @@
+{
+    "reference":{
+        "description":"pointer to es with known good results",
+		"host":"http://elasticsearch7.metrics.scl3.mozilla.com",
+		"port":"9200",
+		"index":"bugs",
+		"type":"bug_version"
+    },
+    "candidate":{
+        "description":"pointer to es with test results",
+		"host":"http://localhost",
+		"port":"9200",
+		"index":"bugs",
+		"type":"bug_version"
+    },
+    "fake_es":{
+        "filename":"./tests/resources/test_results.json"
+    },
+    "param":{
+        "bugs":[6810],
+        "_bugs":[384, 1108,1045,1046,1157,1877,1865,1869,2586,6810,9622,10575,11040, 643420, 726635],
+        "alias_file":"./resources/data/bugzilla_aliases.txt",
+        "errors":"./tests/resources/errors"
+    },
+    "bugzilla":{
+        "old.host":"localhost",
+        "host":"klahnakoski-es.corp.tor1.mozilla.com",
+		"port":3306,
+		"username":"username",
+		"password":"password",
+		"schema":"bugzilla",
+        "debug":true
+    },
+    "debug":{
+        "log":[{
+			"class": "logging.handlers.RotatingFileHandler",
+			"filename": "./tests/logs/test_etl.log",
+			"maxBytes": 10000000,
+			"backupCount": 200,
+			"encoding": "utf8"
+		},{
+            "class":"util.debug.Log_usingStream",
+            "stream":"sys.stdout"
+        }]
+    }
+}

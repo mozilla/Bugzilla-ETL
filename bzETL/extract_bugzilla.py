@@ -1,5 +1,48 @@
+################################################################################
+## This Source Code Form is subject to the terms of the Mozilla Public
+## License, v. 2.0. If a copy of the MPL was not distributed with this file,
+## You can obtain one at http://mozilla.org/MPL/2.0/.
+################################################################################
+## PYTHON VERSION OF https://github.com/mozilla-metrics/bugzilla_etl/blob/master/transformations/bugzilla_to_json.ktr
+## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
+################################################################################
+
+
 from util.debug import D
 from util.struct import Struct
+
+
+def get_bugs_table_columns(db, schema_name):
+    return db.query("""
+        SELECT
+            column_name,
+            column_type
+        FROM
+            information_schema.columns
+        WHERE
+            table_schema={{schema}} AND
+            table_name='bugs' AND
+            column_name NOT IN (
+                'bug_id',       #EXPLICIT
+                'delta_ts',     #NOT NEEDED
+                'lastdiffed',   #NOT NEEDED
+                'creation_ts',  #EXPLICIT
+                'reporter',     #EXPLICIT
+                'assigned_to',  #EXPLICIT
+                'qa_contact',   #EXPLICIT
+                'product_id',   #EXPLICIT
+                'component_id', #EXPLICIT
+                'cclist_accessible',    #NOT NEEDED
+                'reporter_accessible',  #NOT NEEDED
+                'short_desc',           #NOT ALLOWED
+                'bug_file_loc',         #NOT ALLOWED
+                'deadline',             #NOT NEEDED
+                'estimated_time'        #NOT NEEDED
+            )
+    """, {"schema":schema_name})
+
+
+
 
 def get_bugs(db, param):
     try:
@@ -13,7 +56,7 @@ def get_bugs(db, param):
                 , pq.login_name AS qa_contact
                 , prod.`name` AS product
                 , comp.`name` AS component
-                , ${BUGS_TABLE_COLUMNS_SQL}
+                , {{BUGS_TABLE_COLUMNS_SQL}}
             FROM bugs b
                 LEFT JOIN profiles pr ON b.reporter = pr.userid
                 LEFT JOIN profiles pa ON b.assigned_to = pa.userid
@@ -21,8 +64,8 @@ def get_bugs(db, param):
                 LEFT JOIN products prod ON prod.id = product_id
                 LEFT JOIN components comp ON comp.id = component_id
             WHERE
-                UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > ${START_TIME}
-                AND ${BUG_IDS_PARTITION}
+                UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > {{START_TIME}}
+                AND {{BUG_IDS_PARTITION}}
             """, param)
 
         #bugs IS LIST OF BUGS WHICH MUST BE CONVERTED TO THE DELTA RECORDS FOR ALL FIELDS
@@ -92,6 +135,8 @@ def flatten_bugs_record(r, bugs_fields, output):
 
     for field_name in bugs_fields:
         value = r[field_name]
+        if field_name=="bug_file_loc":
+            D.println(value)
         if value != "---":
             newRow=Struct()
             newRow.bug_id=r.bug_id
@@ -102,8 +147,6 @@ def flatten_bugs_record(r, bugs_fields, output):
             newRow._merge_order=1
             output.append(newRow)
 
-#    if r.bug_id==1883:
-#        D.println("")
     return output
 
 
@@ -125,8 +168,8 @@ def get_dependencies(db, param):
         FROM dependencies d
         WHERE blocked IN (
             SELECT bug_id FROM bugs WHERE
-            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > ${START_TIME}
-            AND ${BUG_IDS_PARTITION}
+            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > {{START_TIME}}
+            AND {{BUG_IDS_PARTITION}}
             )
         UNION
         SELECT dependson dependson
@@ -140,8 +183,8 @@ def get_dependencies(db, param):
         FROM dependencies d
         WHERE dependson IN (
             SELECT bug_id FROM bugs WHERE
-            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > ${START_TIME}
-            AND ${BUG_IDS_PARTITION}
+            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > {{START_TIME}}
+            AND {{BUG_IDS_PARTITION}}
             )
         ORDER BY bug_id
     """, param)
@@ -160,8 +203,8 @@ def get_duplicates(db, param):
         FROM duplicates d
         WHERE dupe IN (
             SELECT bug_id FROM bugs WHERE
-            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > ${START_TIME}
-            AND ${BUG_IDS_PARTITION}
+            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > {{START_TIME}}
+            AND {{BUG_IDS_PARTITION}}
             )
         UNION
         SELECT dupe_of
@@ -175,8 +218,8 @@ def get_duplicates(db, param):
         FROM duplicates d
         WHERE dupe_of IN (
             SELECT bug_id FROM bugs WHERE
-            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > ${START_TIME}
-            AND ${BUG_IDS_PARTITION}
+            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > {{START_TIME}}
+            AND {{BUG_IDS_PARTITION}}
             )
         ORDER BY bug_id
     """, param)
@@ -196,8 +239,8 @@ def get_bug_groups(db, param):
         JOIN groups g ON bg.group_id = g.id
         WHERE bug_id IN (
             SELECT bug_id FROM bugs WHERE
-            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > ${START_TIME}
-            AND ${BUG_IDS_PARTITION}
+            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > {{START_TIME}}
+            AND {{BUG_IDS_PARTITION}}
             )
         ORDER BY bug_id
     """, param)
@@ -218,8 +261,8 @@ def get_cc(db, param):
         JOIN profiles p ON cc.who = p.userid
         WHERE bug_id IN (
             SELECT bug_id FROM bugs WHERE
-            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > ${START_TIME}
-            AND ${BUG_IDS_PARTITION}
+            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > {{START_TIME}}
+            AND {{BUG_IDS_PARTITION}}
             )
         ORDER BY bug_id
     """, param)
@@ -240,8 +283,8 @@ def get_keywords(db, param):
         JOIN keyworddefs kd ON k.keywordid = kd.id
         WHERE bug_id IN (
             SELECT bug_id FROM bugs WHERE
-            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > ${START_TIME}
-            AND ${BUG_IDS_PARTITION}
+            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > {{START_TIME}}
+            AND {{BUG_IDS_PARTITION}}
             )
         ORDER BY bug_id
     """, param)
@@ -263,8 +306,8 @@ def get_attachments(db, param):
             JOIN profiles p ON a.submitter_id = p.userid
         WHERE bug_id IN (
             SELECT bug_id FROM bugs WHERE
-            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > ${START_TIME}
-            AND ${BUG_IDS_PARTITION}
+            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > {{START_TIME}}
+            AND {{BUG_IDS_PARTITION}}
             )
         ORDER BY
             bug_id,
@@ -304,8 +347,8 @@ def get_bug_see_also(db, param):
         FROM bug_see_also
         WHERE bug_id IN (
             SELECT bug_id FROM bugs WHERE
-            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > ${START_TIME}
-            AND ${BUG_IDS_PARTITION}
+            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > {{START_TIME}}
+            AND {{BUG_IDS_PARTITION}}
             )
         ORDER BY bug_id
     """, param)
@@ -324,8 +367,8 @@ def get_new_activities(db, param):
             sanitized_bugs_activity a
         INNER JOIN (
             SELECT bug_id FROM bugs WHERE
-            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > ${START_TIME}
-            AND ${BUG_IDS_PARTITION}
+            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > {{START_TIME}}
+            AND {{BUG_IDS_PARTITION}}
         ) b ON a.bug_id = b.bug_id
         JOIN
             fielddefs field ON a.fieldid = field.`id`
@@ -355,8 +398,8 @@ def get_flags(db, param):
         LEFT JOIN profiles pr ON f.requestee_id = pr.userid
         WHERE bug_id IN (
             SELECT bug_id FROM bugs WHERE
-            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > ${START_TIME}
-            AND ${BUG_IDS_PARTITION}
+            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > {{START_TIME}}
+            AND {{BUG_IDS_PARTITION}}
             )
         ORDER BY
             bug_id

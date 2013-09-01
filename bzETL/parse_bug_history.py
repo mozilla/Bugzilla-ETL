@@ -1,3 +1,12 @@
+################################################################################
+## This Source Code Form is subject to the terms of the Mozilla Public
+## License, v. 2.0. If a copy of the MPL was not distributed with this file,
+## You can obtain one at http://mozilla.org/MPL/2.0/.
+################################################################################
+## PYTHON VERISON OF ../resources/javascript/parse_bug_history.js
+################################################################################
+
+
 # vim: set filetype=javascript ts=2 et sw=2: */
 # Workflow:
 # Create the current state object
@@ -33,27 +42,23 @@
 # Example: "review-" -> (review, -)
 import re
 import math
+from transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS
 
 from util.cnv import CNV
 from util.debug import D
 from util.query import Q
-from util.struct import Struct, StructList
+from util.struct import Struct
 from util.files import File
 from util.maths import Math
 
 
 FLAG_PATTERN = re.compile("^(.*)([?+-])(\\([^)]*\\))?$")
 
-# Used to reformat incoming dates into the expected form.
-# Example match: "2012/01/01 00:00:00.000"
-DATE_PATTERN_STRICT = re.compile("^[0-9]{4}[\\/-][0-9]{2}[\\/-][0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}.[0-9]{3}")
-# Example match: "2012-08-08 0:00"
-DATE_PATTERN_RELAXED = re.compile("^[0-9]{4}[\\/-][0-9]{2}[\\/-][0-9]{2}")
+
 
 # Fields that could have been truncated per bug 55161
 TRUNC_FIELDS = ["cc", "blocked", "dependson", "keywords"]
-MULTI_FIELDS = ["cc", "blocked", "dependson", "keywords","dupe_by", "dupe_of", "bug_group", "see_also"]
-NUMERIC_FIELDS=[      "blocked", "dependson",            "dupe_by", "dupe_of"]
+
 
 
 class parse_bug_history_():
@@ -74,14 +79,14 @@ class parse_bug_history_():
         # row_in.bug_id, row_in.modified_ts, row_in.modified_by, row_in.field_name, row_in.field_value, row_in.field_value_removed, row_in.attach_id, row_in._merge_order):
         try:
             self.currBugID = row_in.bug_id
-#            if row_in.bug_id==1883:
-#                D.println("")
+            if row_in.bug_id==1877:
+                D.println("")
 #            if row_in.field_name=="attachments.isobsolete":
 #                D.println("error")
             if self.currBugState.cc is None:
                 D.println("PROBLEM expecting a created_ts")
 
-            if self.settings.debug: D.println("process row: ${row}", {"row":row_in})
+            if self.settings.debug: D.println("process row: {{row}}", {"row":row_in})
 
             # For debugging purposes:
             if self.settings.END_TIME > 0 and row_in.modified_ts > self.settings.END_TIME:
@@ -96,9 +101,10 @@ class parse_bug_history_():
 
             # If we have switched to a new bug
             if self.prevBugID < self.currBugID:
-                # Start replaying versions in ascending order to build full data on each version
-                D.println("Emitting intermediate versions for ${bug_id}", {"bug_id":self.prevBugID})
-                self.populateIntermediateVersionObjects()
+                if self.prevBugID>0:
+                    # Start replaying versions in ascending order to build full data on each version
+                    D.println("Emitting intermediate versions for {{bug_id}}", {"bug_id":self.prevBugID})
+                    self.populateIntermediateVersionObjects()
                 self.startNewBug(row_in)
 
 
@@ -144,8 +150,8 @@ class parse_bug_history_():
             if self.currBugID < 999999999:
                 # Treat timestamps as int values
                 field_value = int(row_in.field_value) if row_in.field_name.endswith("_ts") else row_in.field_value
-#                if self.currBugState.bug_id==1883:
-#                    D.println("")
+                if row_in.field_name=="bug_file_loc" and len(row_in.field_value)>0:
+                    D.println("")
                 # Determine where we are in the bug processing workflow
                 if row_in._merge_order==1:
                     self.processSingleValueTableItem(row_in.field_name, field_value)
@@ -161,7 +167,7 @@ class parse_bug_history_():
                     D.warning("Unhandled merge_order: '" + row_in._merge_order + "'")
 
         except Exception, e:
-            D.warning("Problem processing row: ${row}", {"row":row_in}, e)
+            D.warning("Problem processing row: {{row}}", {"row":row_in}, e)
         finally:
             for b in self.currBugState.blocked:
                 if isinstance(b, basestring):
@@ -184,16 +190,17 @@ class parse_bug_history_():
             modified_ts= row_in.modified_ts,
             modified_by= row_in.modified_by,
             reported_by= row_in.modified_by,
-            attachments= [],
-            flags=[]
+            attachments= []
         )
         #WE FORCE ADD ALL SETS, AND WE WILL scrub() THEM OUT LATER IF NOT USED
         for f in MULTI_FIELDS:
             self.currBugState[f]=set([])
+        self.currBugState.flags=[]   #FLAGS ARE MULTI_FIELDS, BUT ARE ALSO STRUCTS, SO MUST BE IN AN ARRAY
+
 
         if row_in._merge_order != 1:
             # Problem: No entry found in the 'bugs' table.
-            D.warning("Current bugs table record not found for bug_id: ${bug_id}  (merge order should have been 1, but was ${_merge_order})", row_in)
+            D.warning("Current bugs table record not found for bug_id: {{bug_id}}  (merge order should have been 1, but was {{start_time}})", row_in)
 
 
     def processSingleValueTableItem(self, field_name, field_value):
@@ -209,7 +216,7 @@ class parse_bug_history_():
 #                D.println("error")
             return None
         except Exception, e:
-            D.warning("Unable to push ${value} to array field ${field} on bug ${bug_id} current value: ${curr_value}",{
+            D.warning("Unable to push {{value}} to array field {{start_time}} on bug {{curr_value}} current value: {{curr_value}}",{
                 "value":field_value,
                 "field":field_name,
                 "bug_id":self.currBugID,
@@ -252,11 +259,12 @@ class parse_bug_history_():
         else:
             att[row_in.field_name] = row_in.field_value
 
+            
     def processFlagsTableItem(self, row_in):
-        flag = self.makeFlag(row_in.field_value, row_in)
+        flag = self.makeFlag(row_in.field_value, row_in.modified_ts, row_in.modified_by)
         if row_in.attach_id is not None:
             if self.currBugAttachmentsMap[str(row_in.attach_id)] is None:
-                D.println("PROBLEM Unable to find attachment ${attach_id} for bug_id ${bug_id}", {
+                D.println("PROBLEM Unable to find attachment {{attach_id}} for bug_id {{start_time}}", {
                     "attach_id":row_in.attach_id,
                     "bug_id":self.currBugID
                 })
@@ -268,7 +276,7 @@ class parse_bug_history_():
 
     def processBugsActivitiesTableItem(self, row_in):
         if self.currBugState.created_ts is None:
-            D.error("must has created_ts")
+            D.error("must have created_ts")
 
         if row_in.field_name == "flagtypes_name":
             row_in.field_name = "flags"
@@ -280,7 +288,7 @@ class parse_bug_history_():
         if currActivityID != self.prevActivityID:
             self.currActivity = self.bugVersionsMap[currActivityID]
             if self.currActivity is None:
-                self.currActivity =Struct(
+                self.currActivity = Struct(
                     _id= currActivityID,
                     modified_ts= row_in.modified_ts,
                     modified_by= row_in.modified_by,
@@ -300,20 +308,19 @@ class parse_bug_history_():
             attachment = self.currBugAttachmentsMap[str(row_in.attach_id)]
             if attachment is None:
                 #we are going backwards in time, no need to worry about these?  maybe delete this change for public bugs
-                D.println("PROBLEM Unable to find attachment ${attach_id} for bug_id ${bug_id}: ${attachments}", {
+                D.println("PROBLEM Unable to find attachment {{attach_id}} for bug_id {{start_time}}: {{start_time}}", {
                     "attach_id":row_in.attach_id,
                     "bug_id":self.currBugID,
                     "attachments":self.currBugAttachmentsMap
                 })
             else:
+
                 if row_in.field_name in MULTI_FIELDS:
                     a = attachment[row_in.field_name]
                     # Can have both added and removed values.
                     a=self.removeValues(a, multi_field_value, "added", row_in.field_name, "attachment", attachment)
                     a=self.addValues(a, multi_field_value_removed, "removed attachment", row_in.field_name, self.currActivity)
                     attachment[row_in.field_name]=a
-                elif row_in.field_name=="flags":
-                    self.processFlagChange(attachment, row_in, row_in.modified_ts, row_in.modified_by, reverse=True)
                 else:
                     attachment[row_in.field_name] = row_in.field_value_removed
 
@@ -322,7 +329,7 @@ class parse_bug_history_():
             if row_in.field_name in MULTI_FIELDS:
                 # PROBLEM: WHEN GOING BACK IN HISTORY, AND THE ADDED VALUE IS NOT FOUND IN THE CURRENT
                 # STATE, IT IS STILL RECORDED (see above self.currActivity.changes.append...).  THIS MEANS
-                # WHEN GOING THROUGH THE CHANGES IN ORDER THE VALUE WILL EXIST, BUT IT SHOULD NOT
+                # WHEN GOING THROUGH THE CHANGES IN IN ORDER THE VALUE WILL EXIST, BUT IT SHOULD NOT
                 a = self.currBugState[row_in.field_name]
                 # Can have both added and removed values.
                 a = self.removeValues(a, multi_field_value, "added", row_in.field_name, "currBugState", self.currBugState)
@@ -330,16 +337,9 @@ class parse_bug_history_():
                 self.currBugState[row_in.field_name]=a
                 if a is None:
                     D.println("PROBLEM error")
-            elif row_in.field_name=="flags":
-                self.processFlagChange(self.currBugState, row_in, row_in.modified_ts, row_in.modified_by, reverse=True)
-#            elif parse_bug_history_.isMultiField(row_in.field_name):
-                # field must currently be missing, otherwise it would
-                # be an instanceof Array above.  This handles multi-valued
-                # fields that are not first processed by processMultiValueTableItem().
-#                D.println("should never happen")
-#                self.currBugState[row_in.field_name].add(multi_field_value_removed)
-#                if "None" in self.currBugState[row_in.field_name]:
-#                    D.println("error")
+#            elif row_in.field_name=="flags":
+##                self.processFlagChange(self.currBugState, row_in, row_in.modified_ts, row_in.modified_by, reverse=True)
+#                pass
             else:
                 # Replace current value
                 self.currBugState[row_in.field_name] = row_in.field_value_removed
@@ -359,9 +359,9 @@ class parse_bug_history_():
 
     
     def populateIntermediateVersionObjects(self):
-        # Make sure the self.bugVersions are in ascending order by modification time.
+        # Make sure the self.bugVersions are in descending order by modification time.
         # They could be mixed because of attachment activity
-        self.bugVersions=Q.sort(self.bugVersions, {"field":"modified_ts", "sort":1})
+        self.bugVersions=Q.sort(self.bugVersions, {"field":"modified_ts", "sort":-1})
 #
 #        if self.currBugState.bug_id!=0 and self.currBugState.created_ts is None:
 #            D.println("expecting a created_ts")
@@ -373,9 +373,7 @@ class parse_bug_history_():
         prevValues ={}
         currVersion=None
         # Prime the while loop with an empty next version so our first iteration outputs the initial bug state
-        nextVersion=Struct(_id=self.currBugState._id, changes=[])
-
-        
+        nextVersion = Struct(_id=self.currBugState._id, changes=[])
 
         flagMap ={}
         # A monotonically increasing version number (useful for debugging)
@@ -410,14 +408,14 @@ class parse_bug_history_():
 
                 # Link this version to the next one (if there is a next one)
                 if nextVersion is not None:
-                    D.println("We have a nextVersion: ${timestamp} (ver ${next_version})", {
+                    D.println("We have a nextVersion: {{timestamp}} (ver {{next_version}})", {
                         "timestamp":nextVersion.modified_ts,
                         "next_version":self.currBugVersion + 1
                     })
                     self.currBugState.expires_on = nextVersion.modified_ts
                 else:
                     # Otherwise, we don't know when the version expires.
-                    D.println("We have no nextVersion after #${version}", {"version": self.currBugVersion})
+                    D.println("We have no nextVersion after #{{version}}", {"version": self.currBugVersion})
                     #                                921878882000
                     self.currBugState.expires_on = None
 
@@ -463,19 +461,20 @@ class parse_bug_history_():
 
 
 
-                    # Track the previous value
-                    if change.field_name not in MULTI_FIELDS:
+                    if change.field_name == "flags":
+#                        pass
+                        self.processFlagChange(target, change, currVersion.modified_ts, currVersion.modified_by)
+                    elif change.field_name not in MULTI_FIELDS:
+                        # Track the previous value
                         # Single-value field has changed in bug or attachment
                         # Make sure it's actually changing.  We seem to get change
-                        #  entries for attachments that show the current field value.
+                        # entries for attachments that show the current field value.
                         if target[change.field_name] != change.field_value:
                             self.setPrevious(target, change.field_name, target[change.field_name], currVersion.modified_ts)
                         else:
                             D.println("PROBLEM Skipping fake change to " + targetName + ": "
                                 + CNV.object2JSON(target) + ", change: " + CNV.object2JSON(change))
 
-                    elif change.field_name == "flags":
-                        self.processFlagChange(target, change, currVersion.modified_ts, currVersion.modified_by)
                     else:
                         D.println("Skipping previous_value for " + targetName
                             + " multi-value field " + change.field_name)
@@ -503,62 +502,35 @@ class parse_bug_history_():
                         target[change.field_name] = change.field_value
 
 
-                # Do some processing to make sure that diffing betweens runs stays as similar as possible.
-                parse_bug_history_.stabilize(self.currBugState)
-
-                # Empty string breaks ES date parsing, remove it from bug state.
-                for dateField in ["deadline", "cf_due_date", "cf_last_resolved"]:
-                    # Special case to handle values that can't be parsed by ES:
-                    if self.currBugState[dateField] == "":
-                        # Skip empty strings
-                        self.currBugState[dateField] = None
-
-
-                # Also reformat some date fields
-                for dateField in ["deadline", "cf_due_date"]:
-                    if self.currBugState[dateField] is not None and DATE_PATTERN_RELAXED.match(self.currBugState[dateField]):
-                        # Convert "2012/01/01 00:00:00.000" to "2012-01-01"
-                        # Example: bug 643420 (deadline)
-                        #          bug 726635 (cf_due_date)
-                        self.currBugState[dateField] = self.currBugState[dateField].substring(0, 10).replace("/", '-')
-
-
-                for dateField in ["cf_last_resolved"]:
-                    if self.currBugState[dateField] is not None and DATE_PATTERN_STRICT.match(self.currBugState[dateField]):
-                        # Convert "2012/01/01 00:00:00.000" to "2012-01-01T00:00:00.000Z", then to a timestamp.
-                        # Example: bug 856732 (cf_last_resolved)
-                        # dateString = self.currBugState[dateField].substring(0, 10).replace("/", '-') + "T" + self.currBugState[dateField].substring(11) + "Z"
-                        self.currBugState[dateField] = CNV.datetime2unixmilli(CNV.string2datetime(self.currBugState[dateField]+"000", "%Y/%m/%d %H%M%S%f"))
-
-
                 self.currBugState.bug_version_num = self.currBugVersion
 
-                if mergeBugVersion is not None:
+                if not mergeBugVersion:
                     # This is not a "merge", so output a row for this bug version.
                     self.currBugVersion+=1
                     # Output this version if either it was modified after START_TIME, or if it
                     # expired after START_TIME (the latter will update the last known version of the bug
                     # that did not have a value for "expires_on").
                     if self.currBugState.modified_ts >= self.settings.START_TIME or self.currBugState.expires_on >= self.settings.START_TIME:
-                        state=scrub(self.currBugState)
+                        state=normalize(self.currBugState)
                         if state.blocked is not None and len(state.blocked)==1 and "None" in state.blocked:
                             D.println("PROBLEM error")
-                        D.println("Bug ${bug_state.bug_id} v${bug_state.bug_version_num} (_id = ${bug_state._id}): ${bug_state}" , {
+                        D.println("Bug ${bug_state.bug_id} v${bug_state.bug_version_num} (_id = ${bug_state._id}): {{bug_state}}" , {
                             "bug_state":state
                         })
                         self.output.add(state)
+
                     else:
-                        D.println("PROBLEM Not outputting ${-id} - it is before self.START_TIME (${start_time})", {
+                        D.println("PROBLEM Not outputting ${-id} - it is before self.START_TIME ({{start_time}})", {
                             "_id":self.currBugState._id,
                             "start_time":self.settings.START_TIME
                         })
 
                 else:
-                    D.println("Merging a change with the same timestamp = ${bug_state._id}: ${bug_state}",{
+                    D.println("Merging a change with the same timestamp = ${bug_state._id}: {{bug_state}}",{
                         "bug_state":currVersion
                     })
             finally:
-                if self.currBugState.cc is None:
+                if self.currBugState.blocked is None:
                     D.println("expecting a created_ts")
 #                if self.currBugState.bug_id!=0 and self.currBugState.created_ts is None:
 #                    D.println("expecting a created_ts")
@@ -579,8 +551,8 @@ class parse_bug_history_():
                 aFlag.requestee is not None and
                 eFlag.requestee is not None and
                 (
-                    aFlag.requestee + "=" + eFlag.requestee in self.bzAliases or # Try both directions.
-                    eFlag.requestee + "=" + aFlag.requestee in self.bzAliases
+                    aFlag.requestee.lower() + "=" + eFlag.requestee.lower() in self.bzAliases or # Try both directions.
+                    eFlag.requestee.lower() + "=" + aFlag.requestee.lower() in self.bzAliases
                 )
             ):
                 D.println("Using bzAliases to match change '" + aFlag.value + "' to '" + eFlag.value + "'")
@@ -600,7 +572,7 @@ class parse_bug_history_():
             if flagStr == "":
                 continue
 
-            flag = parse_bug_history_.makeFlag(flagStr, Struct(**{"modified_ts":aTimestamp, "modified_by":aModifiedBy}))
+            flag = parse_bug_history_.makeFlag(flagStr, aTimestamp, aModifiedBy)
             existingFlag = self.findFlag(aTarget.flags, flag)
 
             if existingFlag is not None:
@@ -632,7 +604,7 @@ class parse_bug_history_():
             if flagStr == "":
                 continue
 
-            flag = self.makeFlag(flagStr, Struct(**{"modified_ts":aTimestamp, "modified_by":aModifiedBy}))
+            flag = self.makeFlag(flagStr, aTimestamp, aModifiedBy)
 
             if aTarget.flags is None:
                 D.println("PROBLEM  processFlagChange called with unset 'flags'")
@@ -648,7 +620,7 @@ class parse_bug_history_():
                 chosen_one = candidates[0]
                 if len(candidates) > 1:
                     # Multiple matches - use the best one.
-                    D.println("Matched added flag ${flag} to multiple removed flags.  Using the best of these:\n", {
+                    D.println("Matched added flag {{flag}} to multiple removed flags.  Using the best of these:\n", {
                         "flag":flag,
                         "candidates":candidates
                     })
@@ -660,7 +632,7 @@ class parse_bug_history_():
                         D.println("Matching on modified_ts fixed it")
                         chosen_one = matched_ts[0]
                     else:
-                        D.println("Matching on modified_ts left us with ${num} matches", {"num":len(matched_ts)})
+                        D.println("Matching on modified_ts left us with {{num}} matches", {"num":len(matched_ts)})
                         # If we had no matches (or many matches), try matching on requestee.
                         matched_req = [element for element in candidates if
                             # Do case-insenitive comparison
@@ -671,7 +643,7 @@ class parse_bug_history_():
                             D.println("Matching on requestee fixed it")
                             chosen_one = matched_req[0]
                         else:
-                            D.warning("Matching on requestee left us with ${num} matches. Skipping match.", {"num":len(matched_req)})
+                            D.warning("Matching on requestee left us with {{num}} matches. Skipping match.", {"num":len(matched_req)})
                             # TODO: add "uncertain" flag?
                             chosen_one = None
 
@@ -697,7 +669,7 @@ class parse_bug_history_():
 
 
     def setPrevious(self, dest, aFieldName, aValue, aChangeAway):
-        if not dest["previous_values"]:
+        if dest["previous_values"] is None:
             dest["previous_values"] ={}
 
         pv = dest["previous_values"]
@@ -732,23 +704,13 @@ class parse_bug_history_():
                 return item
         return None
 
-    @staticmethod
-    def stabilize(bug):
-        bug.flags=Q.sort(bug.flags, "value")
-
-        bug.attachments=Q.sort(bug.attachments, "attach_id")
-        for a in bug.attachments:
-            a.flags=Q.sort(a.flags, "value")
-
-        if bug.changes is not None:
-            bug.changes=Q.sort(bug.changes, "field_name")
 
 
     @staticmethod
-    def makeFlag(flag, row_in):
+    def makeFlag(flag, modified_ts, modified_by):
         flagParts = Struct(
-            modified_ts=row_in.modified_ts,
-            modified_by=row_in.modified_by,
+            modified_ts=modified_ts,
+            modified_by=modified_by,
             value=flag
         )
 
@@ -767,7 +729,9 @@ class parse_bug_history_():
         if len(someValues)==0: return aSet
 #        D.println("Adding " + valueType + " " + fieldName + " values:" + CNV.object2JSON(someValues))
         if fieldName == "flags":
-            return aSet.extend(someValues)
+            for v in someValues:
+                aSet.append(parse_bug_history_.makeFlag(v, anObj.modified_ts, anObj.modified_by))
+            return aSet
             ## TODO: Some bugs (like 685605) actually have duplicate flags. Do we want to keep them?
             #/*
             # # Check if this flag has already been incorporated into a removed flag. If so, don't add it again.
@@ -787,30 +751,18 @@ class parse_bug_history_():
 
     def removeValues(self, anArray, someValues, valueType, fieldName, arrayDesc, anObj):
         if fieldName == "flags":
+            removeMe=[]
             for v in someValues:
-                len_ = len(anArray)
-                flag = parse_bug_history_.makeFlag(v, Struct(**{"modified_ts":0, "modified_by":0}))
-                for f in list(anArray):
-                    # Match on complete flag (incl. status) and flag value
-                    if f.value == v:
-                        anArray.remove(f)
-                        break
-                    elif flag.requestee is not None:
-                        # Match on flag type and status, then use Aliases to match
-                        # TODO: Should we try exact matches all the way to the end first?
-                        if (f.request_type == flag.request_type
-                            and f.request_status == flag.request_status
-                            and flag.requestee + "=" + f.requestee in self.bzAliases):
-                            D.println("Using bzAliases to match '" + v + "' to '" + f.value + "'")
-                            anArray.remove(f)
-                            break
+                flag = parse_bug_history_.makeFlag(v, 0, 0)
 
-
-
-                if len_ == len(anArray):
+                found=self.findFlag(anArray, flag)
+                if found is not None:
+                    removeMe.append(CNV.object2JSON(found)) #FOR SOME REASON, REMOVAL BY OBJECT DOES NOT WORK
+                else:
                     D.warning("PROBLEM Unable to find " + valueType + " flag " + fieldName + ":" + v
                         + " in " + arrayDesc + ": " + CNV.object2JSON(anObj[fieldName]))
-                    
+
+            anArray=[a for a in anArray if CNV.object2JSON(a) not in removeMe]
             return anArray
         else:
             try:
@@ -820,7 +772,7 @@ class parse_bug_history_():
             if len(diff)>0:
 #                if fieldName=="cc" or fieldName=="keywords":
                     # Don't make too much noise about mismatched items.
-                D.println("PROBLEM Unable to find " + valueType  + " value: " + arrayDesc + ".${field_name}: (All ${missing}" + " not in : ${existing})", {
+                D.println("PROBLEM Unable to find " + valueType  + " value: " + arrayDesc + ".{{field_name}}: (All {{missing}}" + " not in : {{existing}})", {
                     "field_name":fieldName,
                     "missing":CNV.object2JSON(diff),
                     "existing":CNV.object2JSON(anObj[fieldName])
@@ -863,40 +815,6 @@ class parse_bug_history_():
                 self.bzAliases[alias] = True
         except Exception, e:
             D.error("Can not init aliases", e)
-
-            
-#REMOVE KEYS OF DEGENERATE VALUES (EMPTY STRINGS, EMPTY LISTS, AND NULLS)
-def scrub(r):
-    return Struct(**_scrub(r))
-
-def _scrub(r):
-    try:
-        if r is None or r=="":
-            return None
-        elif isinstance(r, dict):
-            if isinstance(r, Struct): r=r.dict
-            output={}
-            for k, v in r.items():
-                v=_scrub(v)
-                if v is not None: output[k]=v
-            if len(output)==0: return None
-            return output
-        elif hasattr(r, '__iter__'):
-            if isinstance(r, StructList): r=r.list
-            output=[]
-            for v in r:
-                v=_scrub(v)
-                if v is not None: output.append(v)
-            if len(output)==0: return None
-            try:
-                return Q.sort(output)
-            except Exception:
-                return output
-        else:
-            return r
-    except Exception, e:
-        D.warning("Can not scrub: ${json}", {"json":r})
-
 
 
 
