@@ -12,12 +12,12 @@ import sys
 
 import traceback
 import logging
+from util.files import File
 from util.strings import indent, expand_template
 from util import struct, threads
 from util.threads import Thread
 
 from util.struct import StructList, Struct
-from util.files import File
 
 
 #for debugging

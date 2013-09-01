@@ -2,4 +2,6 @@
 *settings*.json
 resources/logs/*
 out
-
+tests/resources/errors
+tests/logs/*
+tests

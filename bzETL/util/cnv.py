@@ -14,20 +14,24 @@ import re
 import time
 import datetime
 from util.debug import D
-from util.strings import expand_template, NewJSONEncoder, json_encoder, json_decoder
+from util.strings import expand_template, NewJSONEncoder, json_decoder, json_scrub
 from util.struct import Struct, StructList
+from util.threads import Lock
 
-
+json_lock=Lock()
+json_encoder=NewJSONEncoder()
 
 class CNV:
 
     @staticmethod
     def object2JSON(obj):
         try:
-            if isinstance(obj, Struct):
-                return json_encoder.encode(obj.dict)
-            else:
-                return json_encoder.encode(obj)
+            with json_lock:
+                if isinstance(obj, Struct):
+                    return json_encoder.encode(obj.dict)
+                else:
+                    return json_encoder.encode(json_scrub(obj))
+            
         except Exception, e:
             D.error("Can not decode {{value}}", {"value":repr(obj)}, e)
 

@@ -1,3 +1,17 @@
+################################################################################
+## This Source Code Form is subject to the terms of the Mozilla Public
+## License, v. 2.0. If a copy of the MPL was not distributed with this file,
+## You can obtain one at http://mozilla.org/MPL/2.0/.
+################################################################################
+## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
+################################################################################
+
+
+## REPLICATE SOME OTHER ES INDEX
+##
+
+
+
 from datetime import datetime, timedelta
 from util.randoms import Random
 from util.cnv import CNV
@@ -15,36 +29,10 @@ BATCH_SIZE=10000
 
 
 
-#ALL ETL HAS A TRANSFORM STEP
-def transform(data):
-    data._id=str(data.bug_id)+"."+str(data.modified_ts)
-
-    data.dependson=CNV.value2intlist(data.dependson)
-    data.blocked=CNV.value2intlist(data.blocked)
-    data.dupe_by=CNV.value2intlist(data.dupe_by)
-    data.dupe_of=CNV.value2intlist(data.dupe_of)
-    return data
-
-
 def fix_json(json):
     #return json.decode(encoding='UTF-8',errors='backslashreplace')
     return json.decode('iso-8859-1').encode('utf8')
-#    try:
-#        json.decode('ascii')
-#        return json
-#    except UnicodeDecodeError:
-#        pass
-#
-#    #JSON HAS SOME BAD BYTE SEQUENCES
-#    output=[]
-#    for i, c in enumerate(json):
-#        a=CNV.char2ascii(c)
-#        if a>0x80:
-#            hex=CNV.int2hex(a, 2)
-#            output.append("\\u00"+hex)
-#        else:
-#            output.append(c)
-#    return "".join(output)
+
 
 
 def extract_from_file(source_settings, destination):
@@ -56,7 +44,7 @@ def extract_from_file(source_settings, destination):
             except Exception, e:
                 filename=Random.hex(20)+".txt"
                 File(filename).write(d)
-                D.warning("Can not convert block ${block} (file=${filename})", {"block":g, "filename":filename}, e)
+                D.warning("Can not convert block {{block}} (file={{host}})", {"block":g, "filename":filename}, e)
 
 
 
@@ -65,7 +53,7 @@ def get_last_updated(es):
         results=es.search({
             "query":{"filtered":{
                 "query":{"match_all":{}},
-                "filter":{"range":{"modified_ts":{"gte":CNV.datetime2unixmilli(far_back)}}}
+                "filter":{"range":{"modified_ts":{"gte":CNV.datetime2milli(far_back)}}}
             }},
             "from":0,
             "size":0,
@@ -76,7 +64,7 @@ def get_last_updated(es):
         if results.facets["0"].count==0: return datetime.min;
         return CNV.unixmilli2datetime(results.facets["0"].max)
     except Exception, e:
-        D.error("Can not get_last_updated from ${host}/${index}", {"host":es.settings.host, "index":es.settings.index}, e)
+        D.error("Can not get_last_updated from {{host}}/{{index}}", {"host":es.settings.host, "index":es.settings.index}, e)
 
 
 def get_pending(es, since):
@@ -84,7 +72,7 @@ def get_pending(es, since):
     result=es.search({
         "query":{"filtered":{
             "query":{"match_all":{}},
-            "filter":{"range":{"modified_ts":{"gte":CNV.datetime2unixmilli(since)}}}
+            "filter":{"range":{"modified_ts":{"gte":CNV.datetime2milli(since)}}}
         }},
         "from":0,
         "size":0,
@@ -154,7 +142,7 @@ def main(settings):
                 "query":{"match_all":{}},
                 "filter":{"and":[
                     {"terms":{"bug_id":bugs}},
-                    {"range":{"modified_ts":{"gte":CNV.datetime2unixmilli(last_updated)}}}
+                    {"range":{"modified_ts":{"gte":CNV.datetime2milli(last_updated)}}}
                 ]}
             }},
             "from":0,
@@ -166,6 +154,7 @@ def main(settings):
 
 
 settings=startup.read_settings()
-D.settings(settings.debug)
+D.start(settings.debug)
 main(settings)
+D.stop()
 
