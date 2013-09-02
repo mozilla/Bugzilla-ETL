@@ -101,21 +101,21 @@ class NewJSONEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-import ujson
+#import ujson
 
 #class json_encoder():
 #    @classmethod
 #    def encode(self, value):
 #        return ujson.dumps(value)
 
-class json_decoder():
-    @classmethod
-    def decode(cls, value):
-        return ujson.loads(value)
+#class json_decoder():
+#    @classmethod
+#    def decode(cls, value):
+#        return ujson.loads(value)
 
 json_lock=Lock()
 json_encoder=NewJSONEncoder()
-#json_decoder=json._default_decoder
+json_decoder=json._default_decoder
 
 def toString(val):
     with json_lock:
