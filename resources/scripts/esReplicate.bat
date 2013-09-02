@@ -1,2 +1,2 @@
-SET PYTHONPATH=.\src\python;.\lib\pyLibrary
-python .\src\python\esReplicate.py --settings=replication_settings.json
+SET PYTHONPATH=.\bzETL;.\lib\pyLibrary
+python .\bzETL\esReplicate.py --settings=replication_settings.json

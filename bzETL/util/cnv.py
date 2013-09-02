@@ -26,14 +26,12 @@ class CNV:
     @staticmethod
     def object2JSON(obj):
         try:
+            obj=json_scrub(obj)
             with json_lock:
-                if isinstance(obj, Struct):
-                    return json_encoder.encode(obj.dict)
-                else:
-                    return json_encoder.encode(json_scrub(obj))
+                return json_encoder.encode(obj)
             
         except Exception, e:
-            D.error("Can not decode {{value}}", {"value":repr(obj)}, e)
+            D.error("Can not encode into JSON: {{value}}", {"value":repr(obj)}, e)
 
     @staticmethod
     def JSON2object(json_string, params=None, flexible=False):
@@ -84,7 +82,7 @@ class CNV:
         return datetime.datetime.fromtimestamp(u)
 
     @staticmethod
-    def unixmilli2datetime(u):
+    def milli2datetime(u):
         return datetime.datetime.fromtimestamp(u/1000)
 
 
@@ -148,7 +146,7 @@ class CNV:
             return None
         elif hasattr(value, '__iter__'):
             output=[int(d) for d in value if d!=""]
-            if len(output)==0: return None
+#            if len(output)==0: return None
             return output
         elif value.strip()=="":
             return None

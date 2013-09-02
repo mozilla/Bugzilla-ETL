@@ -104,8 +104,10 @@ class ElasticSearch():
             id=r["id"]
             if "json" in r:
                 json=r["json"]
-            else:
+            elif "value" in r:
                 json=CNV.object2JSON(r["value"])
+            else:
+                D.error("Expecting every record given to have \"value\" or \"json\" property")
                 
             if id is None: id=sha.new(json).hexdigest()
 
