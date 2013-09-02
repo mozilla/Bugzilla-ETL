@@ -40,7 +40,7 @@ def extract_from_file(source_settings, destination):
     with File(source_settings.filename).iter() as handle:
         for g, d in Q.groupby(handle, size=BATCH_SIZE):
             try:
-                d2=map(lambda(x): {"id":x.id, "value":transform_bugzilla.normalize(x)}, map(lambda(x): CNV.JSON2object(fix_json(x)), d))
+                d2=map(lambda(x): {"id":x.id, "value":x}, map(lambda(x): transform_bugzilla.normalize(CNV.JSON2object(fix_json(x))), d))
                 destination.add(d2)
             except Exception, e:
                 filename="Error_"+Random.hex(20)+".txt"
@@ -153,9 +153,10 @@ def main(settings):
 
         destination.add(map(lambda(x): {"id":x._source.id, "value":transform_bugzilla.normalize(x._source)}, data.hits.hits))
 
-
-settings=startup.read_settings()
-D.start(settings.debug)
-main(settings)
-D.stop()
+try:
+    settings=startup.read_settings()
+    D.start(settings.debug)
+    main(settings)
+finally:
+    D.stop()
 
