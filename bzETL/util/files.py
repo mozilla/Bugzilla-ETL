@@ -53,7 +53,7 @@ class File():
             os.makedirs(self.filename)
         except Exception, e:
             from util.debug import D
-            D.error("Could not make directory", e)
+            D.error("Could not make directory {{dir_name}}", {"dir_name":self.filename}, e)
 
 
     @property
@@ -62,4 +62,5 @@ class File():
 
     @property
     def exists(self):
+        if self.filename in ["", "."]: return True
         return os.path.exists(self.filename)

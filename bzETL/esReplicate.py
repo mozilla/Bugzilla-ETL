@@ -13,6 +13,7 @@
 
 
 from datetime import datetime, timedelta
+import transform_bugzilla
 from util.randoms import Random
 from util.cnv import CNV
 from util.debug import D
@@ -30,7 +31,7 @@ BATCH_SIZE=10000
 
 
 def fix_json(json):
-    #return json.decode(encoding='UTF-8',errors='backslashreplace')
+    json=json.replace("attachments.", "attachments_")
     return json.decode('iso-8859-1').encode('utf8')
 
 
@@ -39,10 +40,10 @@ def extract_from_file(source_settings, destination):
     with File(source_settings.filename).iter() as handle:
         for g, d in Q.groupby(handle, size=BATCH_SIZE):
             try:
-                d2=map(transform, map(lambda(x): CNV.JSON2object(fix_json(x)), d))
-                destination.load(d2, "_id")
+                d2=map(lambda(x): {"id":x.id, "value":transform_bugzilla.normalize(x)}, map(lambda(x): CNV.JSON2object(fix_json(x)), d))
+                destination.add(d2)
             except Exception, e:
-                filename=Random.hex(20)+".txt"
+                filename="Error_"+Random.hex(20)+".txt"
                 File(filename).write(d)
                 D.warning("Can not convert block {{block}} (file={{host}})", {"block":g, "filename":filename}, e)
 
@@ -62,7 +63,7 @@ def get_last_updated(es):
         })
 
         if results.facets["0"].count==0: return datetime.min;
-        return CNV.unixmilli2datetime(results.facets["0"].max)
+        return CNV.milli2datetime(results.facets["0"].max)
     except Exception, e:
         D.error("Can not get_last_updated from {{host}}/{{index}}", {"host":es.settings.host, "index":es.settings.index}, e)
 
@@ -150,7 +151,7 @@ def main(settings):
             "sort":[]
         })
 
-        destination.load(map(transform, Q.select(data.hits.hits, "_source")), "_id")
+        destination.add(map(lambda(x): {"id":x._source.id, "value":transform_bugzilla.normalize(x._source)}, data.hits.hits))
 
 
 settings=startup.read_settings()

@@ -19,4 +19,6 @@ class Random():
     def hex(length):
         return Random.string(length, string.digits + 'ABCDEF')
 
-
+    @staticmethod
+    def int(*args):
+        return random.randrange(*args)

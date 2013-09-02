@@ -69,7 +69,7 @@ def etl(db, es, param):
     #USE MAIN THREAD TO SEND TO ES
     #output_queue IS A MULTI-THREADED QUEUE, SO THIS WILL BLOCK UNTIL THE 10K ARE READY
     for i, g in Q.groupby(output_queue, size=10000):
-        es.add({"id":x._id, "value":x} for x in g)
+        es.add({"id":x.id, "value":x} for x in g)
 
     return "done"
 

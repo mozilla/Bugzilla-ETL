@@ -26,7 +26,8 @@ DATE_PATTERN_RELAXED = re.compile("^[0-9]{4}[\\/-][0-9]{2}[\\/-][0-9]{2}")
 
 #NORMALIZE BUG VERSION TO STANDARD FORM
 def normalize(bug):
-    bug._id=str(bug.bug_id)+"_"+str(bug.modified_ts)[:-3]
+    bug.id=str(bug.bug_id)+"_"+str(bug.modified_ts)[:-3]
+    bug._id=None
 
     #ENSURE STRUCTURES ARE SORTED
     # Do some processing to make sure that diffing between runs stays as similar as possible.
@@ -75,7 +76,7 @@ def normalize(bug):
                 #          bug 726635 (cf_due_date)
                 bug[dateField] = CNV.datetime2milli(CNV.string2datetime(v[0:10], "%Y-%m-%d"))
         except Exception, e:
-            D.error("problem with date conversion", e)
+            D.error("problem with converting date to milli (value={{value}})", {"value":bug[dateField]}, e)
 
 
 

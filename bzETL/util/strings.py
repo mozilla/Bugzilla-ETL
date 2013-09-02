@@ -11,9 +11,7 @@ import json
 import re
 from threading import Lock
 import time
-import pystache
-import sys
-from util.struct import Struct, StructList, wrap, unwrap
+from util.struct import Struct, StructList, unwrap
 
 
 def indent(value, prefix="\t"):

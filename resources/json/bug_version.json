@@ -94,7 +94,15 @@
                 "compress": true,
                 "enabled": true
             },
+            "_id" : {
+                "path": "id"
+            },
             "properties": {
+                "id":{
+                    "type":"string",
+                    "index":"not_analyzed",
+                    "store" : "yes"
+                },
                 "attachments": {
                     "properties": {
                         "attach_id": {
