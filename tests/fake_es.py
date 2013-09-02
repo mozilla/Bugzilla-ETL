@@ -9,22 +9,21 @@ class Fake_ES():
 
     def __init__(self, settings):
         self.filename=settings.filename
-        d=[]
         try:
-            for line in File(settings.filename).iter():
-                d.append(CNV.JSON2object(line))
+            self.data=CNV.JSON2object(File(self.filename).read())
         except IOError:
-            pass
-        self.data=d
+            self.data={}
 
     def search(self, query):
         filter=parse_filter(wrap(query).query.filtered.filter)
-        return wrap({"hits":{"hits":[{"_source":d} for d in self.data if filter(d)]}})
+        return wrap({"hits":{"hits":[{"_id":i, "_source":d} for i,d in self.data.items() if filter(d)]}})
 
 
     def add(self, records):
-        records=[CNV.object2JSON(v["value"]) for v in records]
-        File(self.filename).write("\n".join(records))
+        records={v["id"]:v["value"] for v in records}
+
+        self.data.dict.update(records)
+        File(self.filename).write(CNV.object2JSON(self.data))
         D.println("{{num}} items added", {"num":len(records)})
 
 

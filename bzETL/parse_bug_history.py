@@ -150,8 +150,8 @@ class parse_bug_history_():
             if self.currBugID < 999999999:
                 # Treat timestamps as int values
                 field_value = int(row_in.field_value) if row_in.field_name.endswith("_ts") else row_in.field_value
-                if row_in.field_name=="bug_file_loc" and len(row_in.field_value)>0:
-                    D.println("")
+                if row_in.field_name=="bug_file_loc" and (row_in.field_value is None or len(row_in.field_value)>0):
+                    D.println("bug_file_loc is empty")
                 # Determine where we are in the bug processing workflow
                 if row_in._merge_order==1:
                     self.processSingleValueTableItem(row_in.field_name, field_value)
@@ -514,7 +514,7 @@ class parse_bug_history_():
                         state=normalize(self.currBugState)
                         if state.blocked is not None and len(state.blocked)==1 and "None" in state.blocked:
                             D.println("PROBLEM error")
-                        D.println("Bug ${bug_state.bug_id} v${bug_state.bug_version_num} (_id = ${bug_state._id}): {{bug_state}}" , {
+                        D.println("Bug {{bug_state.bug_id}} v{{bug_state.bug_version_num}} (_id = {{bug_state._id}}): {{bug_state}}" , {
                             "bug_state":state
                         })
                         self.output.add(state)
@@ -526,7 +526,7 @@ class parse_bug_history_():
                         })
 
                 else:
-                    D.println("Merging a change with the same timestamp = ${bug_state._id}: {{bug_state}}",{
+                    D.println("Merging a change with the same timestamp = {{bug_state._id}}: {{bug_state}}",{
                         "bug_state":currVersion
                     })
             finally:
