@@ -6,3 +6,4 @@ tests/resources/errors
 tests/logs/*
 tests
 rests/resources/private_bugs.json
+Error*.txt
