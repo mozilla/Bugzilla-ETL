@@ -77,15 +77,6 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="extract_bugzilla.py" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/bzETL/extract_bugzilla.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="67" column="41" selection-start="2832" selection-end="2832" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
       <file leaf-file-name="bz_etl.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/bzETL/bz_etl.py">
           <provider selected="true" editor-type-id="text-editor">
@@ -113,10 +104,10 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="encoder.py" pinned="false" current="false" current-in-tab="false">
+      <file leaf-file-name="encoder.py" pinned="false" current="true" current-in-tab="true">
         <entry file="file://C:/Python27/Lib/json/encoder.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="10" column="19" selection-start="262" selection-end="262" vertical-scroll-proportion="17.68">
+            <state line="10" column="19" selection-start="262" selection-end="262" vertical-scroll-proportion="-17.38191">
               <folding />
             </state>
           </provider>
@@ -131,10 +122,19 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="test_etl.py" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="test_etl.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/tests/test_etl.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="20" column="8" selection-start="700" selection-end="700" vertical-scroll-proportion="0.36996734">
+            <state line="23" column="18" selection-start="824" selection-end="824" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="elasticsearch.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/bzETL/util/elasticsearch.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="41" column="9" selection-start="1018" selection-end="1018" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -668,7 +668,7 @@
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.47780126" sideWeight="0.9989053" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.5243129" sideWeight="0.99885714" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.5243129" sideWeight="0.99885714" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="12" side_tool="false" content_ui="tabs" />
       <window_info id="Script Monkey" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
@@ -909,16 +909,8 @@
           <line>72</line>
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/bzETL/util/elasticsearch.py</url>
-          <line>130</line>
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/bzETL/esReplicate.py</url>
           <line>49</line>
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/bzETL/util/elasticsearch.py</url>
-          <line>135</line>
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/bzETL/util/query.py</url>
@@ -953,13 +945,6 @@
     <entry file="file://$PROJECT_DIR$/bzETL/util/maths.py">
       <provider selected="true" editor-type-id="text-editor">
         <state line="9" column="0" selection-start="507" selection-end="507" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/bzETL/util/elasticsearch.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="121" column="0" selection-start="3420" selection-end="3420" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
@@ -1006,13 +991,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://C:/Python27/Lib/json/encoder.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="10" column="19" selection-start="262" selection-end="262" vertical-scroll-proportion="17.68">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/bzETL/esReplicate.py">
       <provider selected="true" editor-type-id="text-editor">
         <state line="167" column="0" selection-start="5480" selection-end="5676" vertical-scroll-proportion="0.0">
@@ -1043,7 +1021,21 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/tests/test_etl.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="20" column="8" selection-start="700" selection-end="700" vertical-scroll-proportion="0.36996734">
+        <state line="23" column="18" selection-start="824" selection-end="824" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/bzETL/util/elasticsearch.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="41" column="9" selection-start="1018" selection-end="1018" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://C:/Python27/Lib/json/encoder.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="10" column="19" selection-start="262" selection-end="262" vertical-scroll-proportion="-17.38191">
           <folding />
         </state>
       </provider>
