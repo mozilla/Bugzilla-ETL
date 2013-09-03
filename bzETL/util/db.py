@@ -46,7 +46,7 @@ class DB():
         self.cursor=None
         self.partial_rollback=False
         self.transaction_level=0
-        self.debug=settings.debug is not None or DEBUG
+        self.debug=nvl(settings.debug, DEBUG)
         self.backlog=[]     #accumulate the write commands so they are sent at once
 
 

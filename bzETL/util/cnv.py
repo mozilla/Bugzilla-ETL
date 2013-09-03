@@ -153,6 +153,16 @@ class CNV:
         else:
             return [int(value)]
 
+    @staticmethod
+    def value2number(v):
+        try:
+            #IF LOOKS LIKE AN INT, RETURN AN INT
+            return int(v)
+        except Exception:
+            try:
+                return float(v)
+            except Exception, e:
+                D.error("Not a number ({{value}})", {"value":v}, e)
 
 
 

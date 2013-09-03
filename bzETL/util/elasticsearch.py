@@ -6,7 +6,6 @@ from util.debug import D
 from util.basic import nvl
 from util.struct import Struct, StructList
 
-DEBUG=True
 
 class ElasticSearch():
 
@@ -129,7 +128,7 @@ class ElasticSearch():
                     "line":lines[i*2+1]
                 })
 
-        if DEBUG: D.println("{{num}} items added", {"num":len(lines)/2})
+        if self.debug: D.println("{{num}} items added", {"num":len(lines)/2})
 
 
     # -1 FOR NO REFRESH
@@ -156,7 +155,7 @@ class ElasticSearch():
     def post(*list, **args):
         try:
             response=requests.post(*list, **args)
-            if DEBUG: D.println(response.content[:130])
+            if self.debug: D.println(response.content[:130])
             details=CNV.JSON2object(response.content)
             if details.error is not None:
                 D.error(details.error)
@@ -168,7 +167,7 @@ class ElasticSearch():
     def get(*list, **args):
         try:
             response=requests.get(*list, **args)
-            if DEBUG: D.println(response.content[:130])
+            if self.debug: D.println(response.content[:130])
             details=CNV.JSON2object(response.content)
             if details.error is not None:
                 D.error(details.error)
@@ -180,7 +179,7 @@ class ElasticSearch():
     def put(*list, **args):
         try:
             response=requests.put(*list, **args)
-            if DEBUG: D.println(response.content)
+            if self.debug: D.println(response.content)
             return response
         except Exception, e:
             D.error("Problem with call to {{url}}", {"url":list[0]}, e)
@@ -189,7 +188,7 @@ class ElasticSearch():
     def delete(*list, **args):
         try:
             response=requests.delete(*list, **args)
-            if DEBUG: D.println(response.content)
+            if self.debug: D.println(response.content)
             return response
         except Exception, e:
             D.error("Problem with call to {{url}}", {"url":list[0]}, e)

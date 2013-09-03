@@ -5,11 +5,10 @@
 ################################################################################
 ## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 ################################################################################
-from esReplicate import fix_prod
+
 import transform_bugzilla
 from util.basic import nvl
 from util.cnv import CNV
-from util.debug import D
 from util.maths import Math
 from util.query import Q
 

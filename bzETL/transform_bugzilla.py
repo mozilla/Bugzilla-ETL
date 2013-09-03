@@ -44,12 +44,12 @@ def normalize(bug):
     # Do some processing to make sure that diffing between runs stays as similar as possible.
     bug.flags=Q.sort(bug.flags, "value")
 
-    bug.attachments=Q.sort(bug.attachments, "attach_id")
-    for a in bug.attachments:
-        a.flags=Q.sort(a.flags, "value")
+    if bug.attachments is not None:
+        bug.attachments=Q.sort(bug.attachments, "attach_id")
+        for a in bug.attachments:
+            a.flags=Q.sort(a.flags, "value")
 
-    if bug.changes is not None:
-        bug.changes=Q.sort(bug.changes, "field_name")
+    bug.changes=Q.sort(bug.changes, "field_name")
 
     #bug IS CONVERTED TO A 'CLEAN' COPY
     bug=scrub(bug)
@@ -113,11 +113,7 @@ def _scrub(r):
         if r is None or r=="":
             return None
         elif Math.is_number(r):
-            if Math.is_integer(r):
-                #IF LOOKS LIKE AN INT, STORE AS AN INT
-                return int(float(r))
-            else:
-                return float(r)
+            return CNV.value2number(r)
         elif isinstance(r, basestring):
 #            return r
             return r.lower()

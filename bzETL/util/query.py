@@ -180,10 +180,22 @@ class Q:
     # PASS A FIELD NAME, OR LIST OF FIELD NAMES, OR LIST OF STRUCTS WITH {"field":field_name, "sort":direction}
     @staticmethod
     def sort(data, fieldnames=None):
+        if data is None: return None
+        
         if fieldnames is None:
             return sorted(data)
 
-        if not isinstance(fieldnames, list): fieldnames=[fieldnames]
+        if not isinstance(fieldnames, list):
+            #SPECIAL CASE, ONLY ONE FIELD TO SORT BY
+            if isinstance(fieldnames, basestring):
+                def comparer(left, right):
+                    return cmp(left[fieldnames], right[fieldnames])
+                return sorted(data, cmp=comparer)
+            else:
+                #EXPECTING {"field":f, "sort":i} FORMAT
+                def comparer(left, right):
+                   return fieldnames["sort"]*cmp(left[fieldnames["field"]], right[fieldnames["field"]])
+                return sorted(data, cmp=comparer)
 
         formal=[]
         for f in fieldnames:
@@ -191,14 +203,21 @@ class Q:
                 f={"field":f, "sort":1}
             formal.append(f)
 
-        code="def comparer(left, right):\n"
-        first=True
-        for col in formal:
-            if not first: code+="    if result!=0: return result\n"
-            first=False
-            code+="    result="+str(col["sort"])+" * cmp(left["+CNV.string2quote(col["field"])+"], right["+CNV.string2quote(col["field"])+"])\n"
-        code+="    return result"
-        exec(code)
+        #DEFINITLY NOT FAST IN PYPY
+#        code="def comparer(left, right):\n"
+#        first=True
+#        for col in formal:
+#            if not first: code+="    if result!=0: return result\n"
+#            first=False
+#            code+="    result="+str(col["sort"])+" * cmp(left["+CNV.string2quote(col["field"])+"], right["+CNV.string2quote(col["field"])+"])\n"
+#        code+="    return result"
+#        exec(code)
+
+        def comparer(left, right):
+            for f in formal:
+                result=f["sort"]*cmp(left[f.field], right[f.field])
+                if result!=0: return result
+            return 0
 
         return sorted(data, cmp=comparer)
 
