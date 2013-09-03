@@ -6,7 +6,7 @@
 ## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 ################################################################################
 
-from util.debug import D
+from .debug import D
 
 class multiset():
 

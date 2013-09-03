@@ -7,9 +7,9 @@
 ################################################################################
 
 import threading
-from util.basic import nvl
-from util.debug import D
-from util.threads import Queue, Thread
+from .basic import nvl
+from .debug import D
+from .threads import Queue, Thread
 
 
 DEBUG=True
