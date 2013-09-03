@@ -27,8 +27,8 @@
         "old.host":"localhost",
         "host":"klahnakoski-es.corp.tor1.mozilla.com",
 		"port":3306,
-		"username":"username",
-		"password":"password",
+		"username":"root",
+		"password":"manager",
 		"schema":"bugzilla",
         "debug":true
     },

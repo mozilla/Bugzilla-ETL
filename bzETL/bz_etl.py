@@ -137,10 +137,14 @@ def main(settings):
 if __name__=="__main__":
     #import profile
     #profile.run("""
-    settings=startup.read_settings()
-    D.start(settings.debug)
-    main(settings)
-    D.stop()
+    try:
+        settings=startup.read_settings()
+        D.start(settings.debug)
+        main(settings)
+    except Exception, e:
+        D.error("Problems exist", e)
+    finally:
+        D.stop()
     #""")
 
 

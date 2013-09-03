@@ -135,7 +135,7 @@ def json_scrub(r):
     return _scrub(r)
 
 def _scrub(r):
-    if r is None or type(r).__name__=="long" or type(r).__name__ in ["str", "bool", "int", "basestring", "float", "boolean"]:
+    if r is None:# or type(r).__name__=="long" or type(r).__name__ in ["str", "bool", "int", "basestring", "float", "boolean"]:
         return r
     elif isinstance(r, dict):
         output={}
@@ -149,7 +149,6 @@ def _scrub(r):
             v=_scrub(v)
             output.append(v)
         return output
-
     else:
         try:
             with json_lock:
