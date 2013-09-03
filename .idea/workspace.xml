@@ -62,7 +62,7 @@
       <file leaf-file-name="strings.py" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/bzETL/util/strings.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="104" column="0" selection-start="3052" selection-end="3052" vertical-scroll-proportion="-0.14872365">
+            <state line="136" column="23" selection-start="3848" selection-end="3848" vertical-scroll-proportion="0.45504993">
               <folding />
             </state>
           </provider>
@@ -178,8 +178,8 @@
         <option value="$PROJECT_DIR$/bz_etl_settings.json" />
         <option value="$PROJECT_DIR$/requirements.txt" />
         <option value="$PROJECT_DIR$/test_settings.json" />
-        <option value="$PROJECT_DIR$/bzETL/util/strings.py" />
         <option value="$PROJECT_DIR$/bzETL/esReplicate.py" />
+        <option value="$PROJECT_DIR$/bzETL/util/strings.py" />
       </list>
     </option>
   </component>
@@ -989,7 +989,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/bzETL/util/strings.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="104" column="0" selection-start="3052" selection-end="3052" vertical-scroll-proportion="-0.14872365">
+        <state line="136" column="23" selection-start="3848" selection-end="3848" vertical-scroll-proportion="0.45504993">
           <folding />
         </state>
       </provider>
