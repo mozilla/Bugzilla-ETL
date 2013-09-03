@@ -9,14 +9,15 @@
 
 #DUE TO MY POOR MEMORY, THIS IS A LIST OF ALL CONVERSION ROUTINES
 import StringIO
+import datetime
 import json
 import re
 import time
-import datetime
-from util.debug import D
-from util.strings import expand_template, NewJSONEncoder, json_decoder, json_scrub
-from util.struct import Struct, StructList
-from util.threads import Lock
+
+from .debug import D
+from .strings import expand_template, NewJSONEncoder, json_decoder, json_scrub
+from .struct import Struct, StructList
+from .threads import Lock
 
 json_lock=Lock()
 json_encoder=NewJSONEncoder()

@@ -1,5 +1,6 @@
 import time
-from util.debug import D
+
+from .debug import D
 
 class Timer:
 

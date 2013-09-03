@@ -9,18 +9,18 @@
 ## REPLACES THE KETTLE FLOW CONTROL PROGRAM, AND BASH SCRIPT
 
 from datetime import datetime
-from esReplicate import get_last_updated
 
-from util.files import File
-from util.startup import startup
-from util.threads import Queue, Thread
-from util.cnv import CNV
-from util.elasticsearch import ElasticSearch
-from util.multithread import Multithread
-from parse_bug_history import parse_bug_history_
-from util.query import Q
-from util.db import DB, SQL
-from extract_bugzilla import *
+from .esReplicate import get_last_updated
+from .extract_bugzilla import *
+from .parse_bug_history import parse_bug_history_
+from .util.files import File
+from .util.startup import startup
+from .util.threads import Queue, Thread
+from .util.cnv import CNV
+from .util.elasticsearch import ElasticSearch
+from .util.multithread import Multithread
+from .util.query import Q
+from .util.db import DB, SQL
 
 db_cache=[]
 
@@ -134,7 +134,7 @@ def main(settings):
                 }, e)
 
 
-if __name__=="__main__":
+def cli():
     #import profile
     #profile.run("""
     try:
@@ -148,3 +148,5 @@ if __name__=="__main__":
     #""")
 
 
+if __name__=="__main__":
+    cli()

@@ -7,12 +7,13 @@
 ################################################################################
 
 import sys
-from util.cnv import CNV
-from util.debug import D
-from util.basic import nvl
-from util.strings import indent, expand_template
-from util.struct import Struct, StructList
-from util.multiset import multiset
+
+from .cnv import CNV
+from .debug import D
+from .basic import nvl
+from .strings import indent, expand_template
+from .struct import Struct, StructList
+from .multiset import multiset
 
 class Q:
 
