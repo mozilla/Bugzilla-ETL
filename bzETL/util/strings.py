@@ -100,6 +100,8 @@ class NewJSONEncoder(json.JSONEncoder):
             return int(time.mktime(obj.timetuple())*1000)
         return json.JSONEncoder.default(self, obj)
 
+#OH HUM, cPython with uJSON, OR pypy WITH BUILTIN JSON?
+#http://liangnuren.wordpress.com/2012/08/13/python-json-performance/
 
 #import ujson
 

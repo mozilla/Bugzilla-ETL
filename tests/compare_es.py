@@ -5,6 +5,7 @@
 ################################################################################
 ## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 ################################################################################
+from esReplicate import fix_prod
 import transform_bugzilla
 from util.basic import nvl
 from util.cnv import CNV
@@ -84,8 +85,8 @@ def old2new(bug):
     except Exception, e:
         pass
 
-    #WE ARE RENAMING THE ATTACHMENTS FIELDS TO CAUSE LESS PROBLEMS IN ES QUERIES
-    bug=CNV.JSON2object(CNV.object2JSON(bug).replace("attachments.", "attachments_"))
+
+    bug=transform_bugzilla.rename_attachments(bug)
 
     bug=transform_bugzilla.scrub(bug)
     return bug
