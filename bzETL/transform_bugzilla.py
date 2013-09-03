@@ -24,6 +24,17 @@ DATE_PATTERN_STRICT_SHORT = re.compile("^[0-9]{4}[\\/-][0-9]{2}[\\/-][0-9]{2} [0
 DATE_PATTERN_RELAXED = re.compile("^[0-9]{4}[\\/-][0-9]{2}[\\/-][0-9]{2}")
 
 
+#WE ARE RENAMING THE ATTACHMENTS FIELDS TO CAUSE LESS PROBLEMS IN ES QUERIES
+def rename_attachments(bug_version):
+    if bug_version.attachments is None: return bug_version
+    bug_version.attachments=[
+        {k.replace("attachments.", "attachments_"):v for k, v in a.items()}
+        for a in bug_version.attachments
+    ]
+    return bug_version
+
+
+
 #NORMALIZE BUG VERSION TO STANDARD FORM
 def normalize(bug):
     bug.id=str(bug.bug_id)+"_"+str(bug.modified_ts)[:-3]

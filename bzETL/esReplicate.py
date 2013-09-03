@@ -36,6 +36,9 @@ def fix_json(json):
 
 
 
+
+
+
 def extract_from_file(source_settings, destination):
     with File(source_settings.filename).iter() as handle:
         for g, d in Q.groupby(handle, size=BATCH_SIZE):
@@ -151,12 +154,18 @@ def main(settings):
             "sort":[]
         })
 
-        destination.add(map(lambda(x): {"id":x._source.id, "value":transform_bugzilla.normalize(x._source)}, data.hits.hits))
+        destination.add(map(lambda(x): {"id":x._source.id, "value":transform_bugzilla.normalize(transform_bugzilla.fix_prod(x._source))}, data.hits.hits))
 
+
+
+import profile
+profile.run("""
 try:
     settings=startup.read_settings()
     D.start(settings.debug)
     main(settings)
 finally:
     D.stop()
+""")
+
 
