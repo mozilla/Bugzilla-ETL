@@ -34,45 +34,4 @@ You will also require:
 
 
 The JSON file of settings must be provided as an
-argument in the command line (see [example command line script](https://github.com/klahnakoski/Bugzilla-ETL/blob/master/resources/scripts/bz_etl.bat))
-
-Here is my ```settings.json``` file:
-
-    {
-		"param":{
-			"start":0,
-			"increment":1000,
-			"alias_file":"./resources/data/bugzilla_aliases.txt"
-		},
-		"bugzilla":{
-			"old.host":"localhost",
-			"host":"klahnakoski-es.corp.tor1.mozilla.com",
-			"port":3306,
-			"username":"root",
-			"password":"password",
-			"schema":"bugzilla",
-			"debug":false
-		},
-		"es":{
-			"host":"http://localhost",
-			"port":"9200",
-			"index":"bugs",
-			"type":"bug_version",
-			"schema_file":"./resources/json/bug_version.json"
-		},
-		"debug":{
-        	"log":[{
-    			"class": "logging.handlers.RotatingFileHandler",
-    			"filename": "./resources/logs/replication.log",
-    			"maxBytes": 10000000,
-    			"backupCount": 200,
-    			"encoding": "utf8"
-    		},{
-                "class":"util.debug.Log_usingStream",
-                "stream":"sys.stdout"
-            }]
-		}
-
-
-	}))
-
+argument in the command line (see [example command line script](https://github.com/klahnakoski/Bugzilla-ETL/blob/master/resources/scripts/bz_etl.bat)). Examples of settings files can be found in [./resources/settings](resources/settings)

@@ -35,7 +35,8 @@ class worker_thread(threading.Thread):
     def run(self):
         while self.keep_running:
             params=self.in_queue.pop()
-            if params==Thread.STOP: break
+            if params==Thread.STOP:
+                break
             try:
                 if not self.keep_running: break
                 result=self.function(**params)
@@ -45,7 +46,9 @@ class worker_thread(threading.Thread):
                 D.warning("Can not execute with params={{params}}", {"params": params}, e)
                 if self.keep_running and self.out_queue is not None:
                     self.out_queue.add(e)
-        if DEBUG: D.println("{{thread}} DONE", {"thread":self.name})
+        self.keep_running=False
+        if DEBUG:
+            D.println("{{thread}} DONE", {"thread":self.name})
 
 
     def stop(self):
