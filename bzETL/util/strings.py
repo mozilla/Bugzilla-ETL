@@ -11,6 +11,8 @@ import json
 import re
 from threading import Lock
 import time
+
+from util.maths import Math
 from util.struct import Struct, StructList, unwrap
 
 
@@ -102,6 +104,7 @@ class NewJSONEncoder(json.JSONEncoder):
 
 #OH HUM, cPython with uJSON, OR pypy WITH BUILTIN JSON?
 #http://liangnuren.wordpress.com/2012/08/13/python-json-performance/
+
 #import ujson
 
 #class json_encoder():
@@ -129,10 +132,12 @@ def toString(val):
 
 #REMOVE VALUES THAT CAN NOT BE JSON-IZED
 def json_scrub(r):
-    return unwrap(_scrub(r))
+    return _scrub(r)
 
 def _scrub(r):
-    if isinstance(r, dict):
+    if r is None or type(r).__name__=="long" or type(r).__name__ in ["str", "int", "basestring", "float", "boolean"]:
+        return r
+    elif isinstance(r, dict):
         output={}
         for k, v in r.items():
             v=_scrub(v)
@@ -144,8 +149,7 @@ def _scrub(r):
             v=_scrub(v)
             output.append(v)
         return output
-    elif r is None:
-        return None
+
     else:
         try:
             with json_lock:
