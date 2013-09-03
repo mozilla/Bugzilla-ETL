@@ -59,17 +59,49 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="esReplicate.py" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/bzETL/esReplicate.py">
+      <file leaf-file-name="bz_etl.py" pinned="false" current="true" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/bzETL/bz_etl.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="167" column="0" selection-start="5480" selection-end="5676" vertical-scroll-proportion="0.0">
+            <state line="94" column="19" selection-start="2957" selection-end="2957" vertical-scroll-proportion="0.53645265">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="transform_bugzilla.py" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/bzETL/transform_bugzilla.py">
+      <file leaf-file-name="multithread.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/bzETL/util/multithread.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="50" column="0" selection-start="1904" selection-end="1904" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+<<<<<<< HEAD
+      <file leaf-file-name="bz_etl.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/bzETL/bz_etl.py">
+=======
+      <file leaf-file-name="debug.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/bzETL/util/debug.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="42" column="36" selection-start="1285" selection-end="1285" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="encoder.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://C:/Python27/Lib/json/encoder.py">
+>>>>>>> 20130903
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="10" column="19" selection-start="262" selection-end="262" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="threads.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/bzETL/util/threads.py">
           <provider selected="true" editor-type-id="text-editor">
             <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
               <folding />
@@ -77,46 +109,26 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="bz_etl.py" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/bzETL/bz_etl.py">
+      <file leaf-file-name="bz_etl.bat" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/resources/scripts/bz_etl.bat">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="140" column="40" selection-start="4806" selection-end="4806" vertical-scroll-proportion="0.0">
+            <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="compare_es.py" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/tests/util/compare_es.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="75" column="45" selection-start="2398" selection-end="2398" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="strings.py" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/bzETL/util/strings.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="154" column="32" selection-start="4417" selection-end="4417" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
+<<<<<<< HEAD
       <file leaf-file-name="encoder.py" pinned="false" current="true" current-in-tab="true">
         <entry file="file://C:/Python27/Lib/json/encoder.py">
           <provider selected="true" editor-type-id="text-editor">
             <state line="10" column="19" selection-start="262" selection-end="262" vertical-scroll-proportion="-17.38191">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
+=======
       <file leaf-file-name="test_settings.json" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/test_settings.json">
           <provider selected="true" editor-type-id="text-editor">
             <state line="30" column="29" selection-start="952" selection-end="952" vertical-scroll-proportion="0.0">
+>>>>>>> 20130903
               <folding />
             </state>
           </provider>
@@ -131,9 +143,24 @@
           </provider>
         </entry>
       </file>
+<<<<<<< HEAD
+      <file leaf-file-name="test_etl.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/tests/test_etl.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="23" column="18" selection-start="824" selection-end="824" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
       <file leaf-file-name="elasticsearch.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/bzETL/util/elasticsearch.py">
           <provider selected="true" editor-type-id="text-editor">
+=======
+      <file leaf-file-name="elasticsearch.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/bzETL/util/elasticsearch.py">
+          <provider selected="true" editor-type-id="text-editor">
+>>>>>>> 20130903
             <state line="41" column="9" selection-start="1018" selection-end="1018" vertical-scroll-proportion="0.0">
               <folding />
             </state>
@@ -164,7 +191,6 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/fileload_settings.json" />
         <option value="$PROJECT_DIR$/bz_etl_settings_example.json" />
         <option value="$PROJECT_DIR$/requirements.txt" />
         <option value="$PROJECT_DIR$/bzETL/transform_bugzilla.py" />
@@ -180,6 +206,7 @@
         <option value="$PROJECT_DIR$/bzETL/esReplicate.py" />
         <option value="$PROJECT_DIR$/bzETL/bz_etl.py" />
         <option value="$PROJECT_DIR$/tests/compare_es.py" />
+        <option value="$PROJECT_DIR$/bzETL/util/multithread.py" />
       </list>
     </option>
   </component>
@@ -216,8 +243,6 @@
       <sortByType />
     </navigator>
     <panes>
-      <pane id="Scope" />
-      <pane id="Favorites" />
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -389,6 +414,8 @@
         </subPane>
       </pane>
       <pane id="PackagesPane" />
+      <pane id="Scope" />
+      <pane id="Favorites" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -666,20 +693,24 @@
     <layout>
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.47780126" sideWeight="0.9989053" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+<<<<<<< HEAD
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.5243129" sideWeight="0.99885714" order="3" side_tool="false" content_ui="tabs" />
+=======
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.40486258" sideWeight="0.99885714" order="3" side_tool="false" content_ui="tabs" />
+>>>>>>> 20130903
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="12" side_tool="false" content_ui="tabs" />
       <window_info id="Script Monkey" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="true" content_ui="tabs" />
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32820514" sideWeight="0.47568712" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="JSON Formatter" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32831" sideWeight="0.5" order="10" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.23361823" sideWeight="0.47568712" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.23361823" sideWeight="0.5951374" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Dependency Viewer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="11" side_tool="false" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.47780126" sideWeight="0.9989053" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
@@ -916,6 +947,10 @@
           <url>file://$PROJECT_DIR$/bzETL/util/query.py</url>
           <line>224</line>
         </line-breakpoint>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/bzETL/util/multithread.py</url>
+          <line>50</line>
+        </line-breakpoint>
         <line-breakpoint enabled="true" type="javascript">
           <url>file://$PROJECT_DIR$/src/javascript/parse_bug_history.js</url>
           <line>488</line>
@@ -928,34 +963,6 @@
     <option name="FILTER_TARGETS" value="false" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/resources/scripts/bz_etl.bat">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/bz_etl_settings.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="5" column="20" selection-start="132" selection-end="143" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/bzETL/util/maths.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="9" column="0" selection-start="507" selection-end="507" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/bzETL/util/debug.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="74" column="0" selection-start="2400" selection-end="2400" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/bzETL/parse_bug_history.py">
       <provider selected="true" editor-type-id="text-editor">
         <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
@@ -970,6 +977,16 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/bzETL/esReplicate.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="167" column="0" selection-start="5480" selection-end="5676" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+<<<<<<< HEAD
+    <entry file="file://$PROJECT_DIR$/bzETL/util/debug.py">
+=======
     <entry file="file://$PROJECT_DIR$/bzETL/transform_bugzilla.py">
       <provider selected="true" editor-type-id="text-editor">
         <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
@@ -977,9 +994,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/bzETL/util/query.py">
+    <entry file="file://$PROJECT_DIR$/tests/util/compare_es.py">
+>>>>>>> 20130903
       <provider selected="true" editor-type-id="text-editor">
-        <state line="224" column="9" selection-start="7279" selection-end="7279" vertical-scroll-proportion="0.0">
+        <state line="75" column="45" selection-start="2398" selection-end="2398" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
@@ -991,28 +1009,46 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/bzETL/util/multithread.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="50" column="0" selection-start="1904" selection-end="1904" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/bzETL/util/debug.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="42" column="36" selection-start="1285" selection-end="1285" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://C:/Python27/Lib/json/encoder.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="10" column="19" selection-start="262" selection-end="262" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/bzETL/util/threads.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+<<<<<<< HEAD
     <entry file="file://$PROJECT_DIR$/bzETL/esReplicate.py">
+=======
+    <entry file="file://$PROJECT_DIR$/resources/scripts/bz_etl.bat">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="167" column="0" selection-start="5480" selection-end="5676" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/tests/util/compare_es.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="75" column="45" selection-start="2398" selection-end="2398" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/bzETL/bz_etl.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="140" column="40" selection-start="4806" selection-end="4806" vertical-scroll-proportion="0.0">
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/test_settings.json">
+>>>>>>> 20130903
       <provider selected="true" editor-type-id="text-editor">
         <state line="30" column="29" selection-start="952" selection-end="952" vertical-scroll-proportion="0.0">
           <folding />
@@ -1033,9 +1069,34 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/bzETL/util/query.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="224" column="9" selection-start="7279" selection-end="7279" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/bzETL/bz_etl.py">
+      <provider selected="true" editor-type-id="text-editor">
+<<<<<<< HEAD
+        <state line="23" column="18" selection-start="824" selection-end="824" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/bzETL/util/elasticsearch.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="41" column="9" selection-start="1018" selection-end="1018" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://C:/Python27/Lib/json/encoder.py">
       <provider selected="true" editor-type-id="text-editor">
         <state line="10" column="19" selection-start="262" selection-end="262" vertical-scroll-proportion="-17.38191">
+=======
+        <state line="94" column="19" selection-start="2957" selection-end="2957" vertical-scroll-proportion="0.53645265">
+>>>>>>> 20130903
           <folding />
         </state>
       </provider>

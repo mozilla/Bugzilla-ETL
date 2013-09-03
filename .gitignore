@@ -4,6 +4,5 @@ resources/logs/*
 out
 tests/resources/errors
 tests/logs/*
-tests
-rests/resources/private_bugs.json
+tests/resources/private_bugs.json
 Error*.txt
