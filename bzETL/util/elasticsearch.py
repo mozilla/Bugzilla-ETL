@@ -7,6 +7,9 @@ from util.basic import nvl
 from util.struct import Struct, StructList
 
 
+DEBUG=False
+
+
 class ElasticSearch():
 
 
@@ -19,6 +22,8 @@ class ElasticSearch():
 
         self.metadata=None
         if settings.port is None: settings.port=9200
+        self.debug=nvl(settings.debug, DEBUG)
+        globals()["DEBUG"]=DEBUG or self.debug
         
         self.settings=settings
         self.path=settings.host+":"+str(settings.port)+"/"+settings.index+"/"+settings.type
@@ -155,7 +160,7 @@ class ElasticSearch():
     def post(*list, **args):
         try:
             response=requests.post(*list, **args)
-            if self.debug: D.println(response.content[:130])
+            if DEBUG: D.println(response.content[:130])
             details=CNV.JSON2object(response.content)
             if details.error is not None:
                 D.error(details.error)
@@ -167,7 +172,7 @@ class ElasticSearch():
     def get(*list, **args):
         try:
             response=requests.get(*list, **args)
-            if self.debug: D.println(response.content[:130])
+            if DEBUG: D.println(response.content[:130])
             details=CNV.JSON2object(response.content)
             if details.error is not None:
                 D.error(details.error)
@@ -179,7 +184,7 @@ class ElasticSearch():
     def put(*list, **args):
         try:
             response=requests.put(*list, **args)
-            if self.debug: D.println(response.content)
+            if DEBUG: D.println(response.content)
             return response
         except Exception, e:
             D.error("Problem with call to {{url}}", {"url":list[0]}, e)
@@ -188,7 +193,7 @@ class ElasticSearch():
     def delete(*list, **args):
         try:
             response=requests.delete(*list, **args)
-            if self.debug: D.println(response.content)
+            if DEBUG: D.println(response.content)
             return response
         except Exception, e:
             D.error("Problem with call to {{url}}", {"url":list[0]}, e)

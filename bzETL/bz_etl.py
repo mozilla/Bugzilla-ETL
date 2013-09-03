@@ -9,10 +9,10 @@
 ## REPLACES THE KETTLE FLOW CONTROL PROGRAM, AND BASH SCRIPT
 
 from datetime import datetime
+from esReplicate import get_last_updated
 
 from util.files import File
 from util.startup import startup
-from util.strings import expand_template
 from util.threads import Queue, Thread
 from util.cnv import CNV
 from util.elasticsearch import ElasticSearch
@@ -97,11 +97,15 @@ def main(settings):
     #MAKE HANDLES TO CONTAINERS
     with DB(settings.bugzilla) as db:
 
-        if settings.es.alias is None:
-            settings.es.alias=settings.es.index
-            settings.es.index=settings.es.alias+CNV.datetime2string(datetime.utcnow(), "%Y%m%d_%H%M%S")
-        es=ElasticSearch.create_index(settings.es, File(settings.es.schema_file).read())
-
+        if settings.param.incremental:
+            es=ElasticSearch(settings.es)
+            start_time=CNV.datetime2milli(get_last_updated(es))
+        else:
+            if settings.es.alias is None:
+                settings.es.alias=settings.es.index
+                settings.es.index=settings.es.alias+CNV.datetime2string(datetime.utcnow(), "%Y%m%d_%H%M%S")
+            es=ElasticSearch.create_index(settings.es, File(settings.es.schema_file).read())
+            start_time=0
 
         #SETUP RUN PARAMETERS
         param=Struct()
@@ -109,15 +113,15 @@ def main(settings):
         param.BUGS_TABLE_COLUMNS_SQL=SQL(",\n".join(["`"+c.column_name+"`" for c in param.BUGS_TABLE_COLUMNS]))
         param.BUGS_TABLE_COLUMNS=Q.select(param.BUGS_TABLE_COLUMNS, "column_name")
         param.END_TIME=CNV.datetime2milli(datetime.utcnow())
-        param.START_TIME=0
+        param.START_TIME=start_time
         param.alias_file=settings.param.alias_file
         param.end=db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id
 
 
         #WE SHOULD SPLIT THIS OUT INTO PROCESSES FOR GREATER SPEED!!
         for b in range(settings.param.start, param.end, settings.param.increment):
+            (min, max)=(b, b+settings.param.increment)
             try:
-                (min, max)=(b, b+settings.param.increment)
                 param.BUG_IDS_PARTITION=SQL("(bug_id>={{min}} and bug_id<{{max}})", {
                     "min":min,
                     "max":max
@@ -127,7 +131,7 @@ def main(settings):
                 D.warning("Problem with etl in range [{{min}}, {{max}})", {
                     "min":min,
                     "max":max
-                })
+                }, e)
 
 
 if __name__=="__main__":

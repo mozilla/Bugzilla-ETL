@@ -160,6 +160,7 @@ def main(settings):
                 data.hits.hits
             )
         )
+        destination.add(d2)
 
 
 #import profile
