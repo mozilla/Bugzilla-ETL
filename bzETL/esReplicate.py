@@ -163,16 +163,16 @@ def main(settings):
         destination.add(d2)
 
 if __name__=="__main__":
-    import profile
-    profile.run("""
-try:
-    settings=startup.read_settings()
-    D.start(settings.debug)
-    main(settings)
-except Exception, e:
-    D.error("Problems exist", e)
-finally:
-    D.stop()
-    """)
+#    import profile
+#    profile.run("""
+    try:
+        settings=startup.read_settings()
+        D.start(settings.debug)
+        main(settings)
+    except Exception, e:
+        D.error("Problems exist", e)
+    finally:
+        D.stop()
+#    """)
 
 

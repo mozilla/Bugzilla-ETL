@@ -216,7 +216,7 @@ class Q:
 
             def comparer(left, right):
                 for f in formal:
-                    result=f["sort"]*cmp(left[f.field], right[f.field])
+                    result=f["sort"]*cmp(left[f["field"]], right[f["field"]])
                     if result!=0: return result
                 return 0
 
