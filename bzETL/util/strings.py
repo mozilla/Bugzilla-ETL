@@ -102,7 +102,6 @@ class NewJSONEncoder(json.JSONEncoder):
 
 #OH HUM, cPython with uJSON, OR pypy WITH BUILTIN JSON?
 #http://liangnuren.wordpress.com/2012/08/13/python-json-performance/
-
 #import ujson
 
 #class json_encoder():
