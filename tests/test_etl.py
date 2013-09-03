@@ -15,27 +15,28 @@
 # PULL ALL BUGS OUT OF FAKE DATABASE
 
 # COMPARE TO EXPECTED IN FAKE ES
-from datetime import datetime
 import json
-from bz_etl import etl
-import compare_es
-from extract_bugzilla import get_bugs_table_columns
-from compare_es import get_all_bug_versions
-from fake_es import Fake_ES
-import transform_bugzilla
-from util.cnv import CNV
-from util.db import DB, SQL
-from util.debug import D
-from util.elasticsearch import ElasticSearch
-from util.files import File
-from util.maths import Math
-from util.query import Q
-from util.randoms import Random
-from util.startup import startup
-from util.strings import json_scrub
-from util.struct import Struct
-from util.timer import Timer
+from datetime import datetime
 
+from bzETL import transform_bugzilla
+from bzETL.bz_etl import etl
+from bzETL.extract_bugzilla import get_bugs_table_columns
+from bzETL.util.cnv import CNV
+from bzETL.util.db import DB, SQL
+from bzETL.util.debug import D
+from bzETL.util.elasticsearch import ElasticSearch
+from bzETL.util.files import File
+from bzETL.util.maths import Math
+from bzETL.util.query import Q
+from bzETL.util.randoms import Random
+from bzETL.util.startup import startup
+from bzETL.util.strings import json_scrub
+from bzETL.util.struct import Struct
+from bzETL.util.timer import Timer
+
+from .util import compare_es
+from .util.compare_es import get_all_bug_versions
+from .util.fake_es import Fake_ES
 
 def main(settings):
 

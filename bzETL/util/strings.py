@@ -6,14 +6,14 @@
 ## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 ################################################################################
 import datetime
-from decimal import Decimal
 import json
 import re
-from threading import Lock
 import time
+from decimal import Decimal
+from threading import Lock
 
-from util.maths import Math
-from util.struct import Struct, StructList, unwrap
+from .maths import Math
+from .struct import Struct, StructList, unwrap
 
 
 def indent(value, prefix="\t"):
