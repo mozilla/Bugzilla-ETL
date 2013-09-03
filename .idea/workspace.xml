@@ -59,15 +59,6 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="debug.py" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/bzETL/util/debug.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="74" column="0" selection-start="2400" selection-end="2400" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
       <file leaf-file-name="elasticsearch.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/bzETL/util/elasticsearch.py">
           <provider selected="true" editor-type-id="text-editor">
@@ -86,10 +77,19 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="bz_etl.py" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="bz_etl.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/bzETL/bz_etl.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="118" column="0" selection-start="4070" selection-end="4070" vertical-scroll-proportion="0.07565012">
+            <state line="118" column="0" selection-start="4070" selection-end="4070" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="strings.py" pinned="false" current="true" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/bzETL/util/strings.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="133" column="14" selection-start="3871" selection-end="3871" vertical-scroll-proportion="0.91962177">
               <folding />
             </state>
           </provider>
@@ -169,7 +169,6 @@
         <option value="$PROJECT_DIR$/bz_etl_settings_example.json" />
         <option value="$PROJECT_DIR$/requirements.txt" />
         <option value="$PROJECT_DIR$/test_settings.json" />
-        <option value="$PROJECT_DIR$/bzETL/util/strings.py" />
         <option value="$PROJECT_DIR$/tests/compare_es.py" />
         <option value="$PROJECT_DIR$/bzETL/util/query.py" />
         <option value="$PROJECT_DIR$/bzETL/transform_bugzilla.py" />
@@ -180,6 +179,7 @@
         <option value="$PROJECT_DIR$/bzETL/esReplicate.py" />
         <option value="$PROJECT_DIR$/bz_etl_settings.json" />
         <option value="$PROJECT_DIR$/bzETL/bz_etl.py" />
+        <option value="$PROJECT_DIR$/bzETL/util/strings.py" />
       </list>
     </option>
   </component>
@@ -922,13 +922,6 @@
     <option name="FILTER_TARGETS" value="false" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/bzETL/util/maths.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="41" column="14" selection-start="1260" selection-end="1260" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/tests/compare_es.py">
       <provider selected="true" editor-type-id="text-editor">
         <state line="85" column="0" selection-start="2911" selection-end="2911" vertical-scroll-proportion="0.0">
@@ -1029,7 +1022,14 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/bzETL/bz_etl.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="118" column="0" selection-start="4070" selection-end="4070" vertical-scroll-proportion="0.07565012">
+        <state line="118" column="0" selection-start="4070" selection-end="4070" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/bzETL/util/strings.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="133" column="14" selection-start="3871" selection-end="3871" vertical-scroll-proportion="0.91962177">
           <folding />
         </state>
       </provider>
