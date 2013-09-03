@@ -20,7 +20,6 @@ from util.debug import D
 from util.query import Q
 from util.startup import startup
 from util.files import File
-from util.struct import StructList
 from util.multiset import multiset
 from util.elasticsearch import ElasticSearch
 
@@ -154,18 +153,25 @@ def main(settings):
             "sort":[]
         })
 
-        destination.add(map(lambda(x): {"id":x._source.id, "value":transform_bugzilla.normalize(transform_bugzilla.fix_prod(x._source))}, data.hits.hits))
+        d2=map(
+            lambda(x): {"id":x.id, "value":x},
+            map(
+                lambda(x): transform_bugzilla.normalize(transform_bugzilla.rename_attachments(x)),
+                data.hits.hits
+            )
+        )
 
 
-
-import profile
-profile.run("""
+#import profile
+#profile.run("""
 try:
     settings=startup.read_settings()
     D.start(settings.debug)
     main(settings)
+except Exception, e:
+    D.error("Problems exist", e)
 finally:
     D.stop()
-""")
+#""")
 
 
