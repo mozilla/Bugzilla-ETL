@@ -1,6 +1,0 @@
-pymysql
-requests
-
-
-
-

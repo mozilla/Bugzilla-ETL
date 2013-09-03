@@ -7,9 +7,10 @@
 ################################################################################
 
 from math import sqrt
-from util.basic import nvl
-from util.debug import D
-from util.struct import Struct
+
+from .basic import nvl
+from .debug import D
+from .struct import Struct
 
 DEBUG=True
 EPSILON=0.000001

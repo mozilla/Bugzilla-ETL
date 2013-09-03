@@ -1,7 +1,7 @@
-from util.cnv import CNV
-from util.debug import D
-from util.files import File
-from util.struct import Struct, wrap
+from bzETL.util.cnv import CNV
+from bzETL.util.debug import D
+from bzETL.util.files import File
+from bzETL.util.struct import Struct, wrap
 
 
 class Fake_ES():

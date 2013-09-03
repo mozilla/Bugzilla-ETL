@@ -1,6 +1,6 @@
 import os
 
-from setuptools import setup, find_packages
+from setuptools import setup
 
 
 root = os.path.abspath(os.path.dirname(__file__))
@@ -16,7 +16,13 @@ setup(
     author_email='kyle@lahnakoski.com',
     url='https://github.com/klahnakoski/Bugzilla-ETL',
     license='MPL 2.0',
-    packages=find_packages(),
+    packages=['bzETL'],
+    install_requires=['pymysql', 'requests'],
     include_package_data=True,
-    zip_safe=False
+    zip_safe=False,
+    entry_points="""
+    # -*- Entry points: -*-
+    [console_scripts]
+    bzetl = bzETL.bz_etl:cli
+    """,
 )
