@@ -7,17 +7,17 @@
 ################################################################################
 from _functools import partial
 
-from datetime import datetime
 import sys
-
 import traceback
 import logging
-from util.files import File
-from util.strings import indent, expand_template
-from util import struct, threads
-from util.threads import Thread
 
-from util.struct import StructList, Struct
+from datetime import datetime
+
+from . import struct, threads
+from .files import File
+from .strings import indent, expand_template
+from .struct import StructList, Struct
+from .threads import Thread
 
 
 #for debugging
@@ -83,7 +83,7 @@ class D(object):
         
         #PART 2 OF 2 SETUP OF THREADED LOGGING
         #WE NOW CAN LOAD THE threads MODULE
-        from util.multithread import worker_thread
+        from .multithread import worker_thread
         from threads import Queue
         logging_thread.queue=Queue()
         logging_thread.thread=worker_thread("log thread", logging_thread.queue, None, partial(Log_usingMulti.println, logging_multi))

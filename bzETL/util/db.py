@@ -9,15 +9,16 @@
 
 from datetime import datetime
 from pymysql import connect
-from util.strings import expand_template
-from util.basic import nvl
-from util.cnv import CNV
-from util.debug import D
-from util.struct import Struct
-from util.query import Q
-from util.strings import indent
-from util.strings import outdent
-from util.files import File
+
+from .basic import nvl
+from .cnv import CNV
+from .debug import D
+from .files import File
+from .query import Q
+from .strings import expand_template
+from .strings import indent
+from .strings import outdent
+from .struct import Struct
 
 
 

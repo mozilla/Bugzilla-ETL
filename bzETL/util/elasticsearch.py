@@ -1,10 +1,11 @@
 import sha
 import requests
 import time
-from util.cnv import CNV
-from util.debug import D
-from util.basic import nvl
-from util.struct import Struct, StructList
+
+from .basic import nvl
+from .cnv import CNV
+from .debug import D
+from .struct import Struct, StructList
 
 
 DEBUG=False
