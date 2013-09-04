@@ -6,16 +6,16 @@
 ## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 ################################################################################
 
-import transform_bugzilla
-from util.basic import nvl
-from util.cnv import CNV
-from util.maths import Math
-from util.query import Q
+from bzETL import transform_bugzilla
+from bzETL.util.basic import nvl
+from bzETL.util.cnv import CNV
+from bzETL.util.maths import Math
+from bzETL.util.query import Q
 
 
 
 #PULL ALL BUG DOCS FROM ONE ES
-from util.timer import Timer
+from bzETL.util.timer import Timer
 
 def get_all_bug_versions(es, bug_id, max_time):
 

@@ -1,6 +1,7 @@
 import argparse
-from util.cnv import CNV
-from util.files import File
+
+from .cnv import CNV
+from .files import File
 
 class startup():
 

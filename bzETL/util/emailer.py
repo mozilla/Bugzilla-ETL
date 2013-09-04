@@ -6,13 +6,13 @@
 ## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 ################################################################################
 
-
+import smtplib
+import sys
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-import smtplib
-import sys
-from util.basic import nvl
+
+from .basic import nvl
 
 
 class Emailer:
