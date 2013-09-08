@@ -1,8 +1,10 @@
 *.pyc
+*.log
 *settings.json
 resources/logs/*
 out
 tests/resources/errors
+tests/resources/logs
 tests/logs/*
 tests/resources/private_bugs.json
 Error*.txt

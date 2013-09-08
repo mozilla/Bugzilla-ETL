@@ -9,16 +9,17 @@
 
 from datetime import datetime
 from pymysql import connect
-
+from . import struct
+from .maths import Math
+from .strings import expand_template
 from .basic import nvl
 from .cnv import CNV
 from .debug import D
-from .files import File
+from .struct import Struct
 from .query import Q
-from .strings import expand_template
 from .strings import indent
 from .strings import outdent
-from .struct import Struct
+from .files import File
 
 
 
@@ -26,19 +27,30 @@ DEBUG = False
 MAX_BATCH_SIZE=100
 
 class DB():
+    """
 
-    def __init__(self, settings):
+    """
+
+    def __init__(self, settings, schema=None):
+        """OVERRIDE THE settings.schema WITH THE schema PARAMETER"""
         if isinstance(settings, DB):
             settings=settings.settings
 
-        self.settings=settings
+        self.settings=settings.copy()
+        self.settings.schema=nvl(schema, self.settings.schema)
+
+        self.debug=nvl(self.settings.debug, DEBUG)
+        self._open()
+
+    def _open(self):
+        """ DO NOT USE THIS UNLESS YOU close() FIRST"""
         try:
             self.db=connect(
-                host=settings.host,
-                port=settings.port,
-                user=nvl(settings.username, settings.user),
-                passwd=nvl(settings.password, settings.passwd),
-                db=nvl(settings.schema, settings.db),
+                host=self.settings.host,
+                port=self.settings.port,
+                user=nvl(self.settings.username, self.settings.user),
+                passwd=nvl(self.settings.password, self.settings.passwd),
+                db=nvl(self.settings.schema, self.settings.schema, self.settings.db),
                 charset="utf8",
                 use_unicode=True
             )
@@ -47,7 +59,6 @@ class DB():
         self.cursor=None
         self.partial_rollback=False
         self.transaction_level=0
-        self.debug=nvl(settings.debug, DEBUG)
         self.backlog=[]     #accumulate the write commands so they are sent at once
 
 
@@ -56,11 +67,21 @@ class DB():
         return self
 
     def __exit__(self, type, value, traceback):
+        if isinstance(value, BaseException):
+            try:
+                if self.cursor: self.cursor.close()
+                self.cursor=None
+                self.rollback()
+            except Exception, e:
+                D.warning("can not rollback()", e)
+            finally:
+                self.close()
+            return
+
         try:
             self.commit()
         except Exception, e:
-            self.rollback()
-            D.error("Problems while connected to db", e)
+            D.warning("can not commit()", e)
         finally:
             self.close()
 
@@ -69,24 +90,35 @@ class DB():
         if self.transaction_level==0: self.cursor=self.db.cursor()
         self.transaction_level+=1
 
+
     def close(self):
         if self.transaction_level>0:
             D.error("expecting commit() or rollback() before close")
         self.cursor=None  #NOT NEEDED
-        self.db.close()
+        try:
+            self.db.close()
+        except Exception, e:
+            D.warning("can not close()", e)
 
     def commit(self):
         try:
-            self.execute_backlog()
+            self._execute_backlog()
         except Exception, e:
-            D.error("Unexpected error", e)
+            try:
+                self.rollback()
+            except Exception:
+                pass
+            D.error("Error while processing backlog", e)
             
         if self.transaction_level==0:
             D.error("No transaction has begun")
         elif self.transaction_level==1:
             if self.partial_rollback:
-                D.warning("Commit after nested rollback is not allowed")
-                self.db.rollback()
+                try:
+                    self.rollback()
+                except Exception:
+                    pass
+                D.error("Commit after nested rollback is not allowed")
             else:
                 if self.cursor: self.cursor.close()
                 self.cursor=None
@@ -95,25 +127,35 @@ class DB():
         self.transaction_level-=1
 
     def flush(self):
-        self.commit()
-        self.begin()
+        try:
+            self.commit()
+        except Exception, e:
+            D.error("Can not flush", e)
+
+        try:
+            self.begin()
+        except Exception, e:
+            D.error("Can not flush", e)
+
 
     def rollback(self):
         self.backlog=[]     #YAY! FREE!
         if self.transaction_level==0:
             D.error("No transaction has begun")
         elif self.transaction_level==1:
+            self.transaction_level-=1
             if self.cursor: self.cursor.close()
             self.cursor=None
             self.db.rollback()
         else:
+            self.transaction_level-=1
             self.partial_rollback=True
             D.warning("Can not perform partial rollback!")
-        self.transaction_level-=1
+
 
 
     def call(self, proc_name, params):
-        self.execute_backlog()
+        self._execute_backlog()
         try:
             self.cursor.callproc(proc_name, params)
             self.cursor.close()
@@ -124,7 +166,7 @@ class DB():
 
 
     def query(self, sql, param=None):
-        self.execute_backlog()
+        self._execute_backlog()
         try:
             old_cursor=self.cursor
             if old_cursor is None: #ALLOW NON-TRANSACTIONAL READS
@@ -132,12 +174,13 @@ class DB():
 
             if param is not None: sql=expand_template(sql, self.quote_param(param))
             sql=outdent(sql)
-            if self.debug: D.println("Execute SQL:\n"+indent(sql))
+            if self.debug: D.println("Execute SQL:\n{{sql}}", {"sql":indent(sql)})
 
             self.cursor.execute(sql)
 
-            columns = tuple( [d[0].decode('utf8') for d in self.cursor.description] )
-            result=CNV.table2list(columns, self.cursor)
+            columns = [utf8_to_unicode(d[0]) for d in nvl(self.cursor.description, [])]
+            fixed=[[utf8_to_unicode(c) for c in row] for row in self.cursor]
+            result=CNV.table2list(columns, fixed)
 
             if old_cursor is None:   #CLEANUP AFTER NON-TRANSACTIONAL READS
                 self.cursor.close()
@@ -154,7 +197,7 @@ class DB():
 
         num=0
 
-        self.execute_backlog()
+        self._execute_backlog()
         try:
             old_cursor=self.cursor
             if old_cursor is None: #ALLOW NON-TRANSACTIONAL READS
@@ -162,14 +205,14 @@ class DB():
 
             if param is not None: sql=expand_template(sql,self.quote_param(param))
             sql=outdent(sql)
-            if self.debug: D.println("Execute SQL:\n"+indent(sql))
+            if self.debug: D.println("Execute SQL:\n{{sql}}", {"sql":indent(sql)})
 
             self.cursor.execute(sql)
 
-            columns = tuple( [d[0].decode('utf8') for d in self.cursor.description] )
+            columns = tuple( [utf8_to_unicode(d[0]) for d in self.cursor.description] )
             for r in self.cursor:
                 num+=1
-                execute(Struct(**dict(zip(columns, r))))
+                execute(struct.wrap(dict(zip(columns, [utf8_to_unicode(c) for c in r]))))
 
             if old_cursor is None:   #CLEANUP AFTER NON-TRANSACTIONAL READS
                 self.cursor.close()
@@ -188,7 +231,7 @@ class DB():
         sql=outdent(sql)
         self.backlog.append(sql)
         if len(self.backlog)>=MAX_BATCH_SIZE:
-            self.execute_backlog()
+            self._execute_backlog()
 
         
     def execute_file(self, filename, param=None):
@@ -197,6 +240,8 @@ class DB():
 
     @staticmethod
     def execute_sql(settings, sql, param=None):
+        """EXECUTE MANY LINES OF SQL (FROM SQLDUMP FILE, MAYBE?"""
+
         # MySQLdb provides no way to execute an entire SQL file in bulk, so we
         # have to shell out to the commandline client.
         if param is not None: sql=expand_template(sql,param)
@@ -229,84 +274,124 @@ class DB():
         DB.execute_sql(settings, sql, param)
 
 
-    def execute_backlog(self):
+    def _execute_backlog(self):
         if len(self.backlog)==0: return
 
-        for i, g in Q.groupby(self.backlog, size=MAX_BATCH_SIZE):
-            sql=";\n".join(g)
-            try:
-                if self.debug: D.println("Execute block of SQL:\n"+indent(sql))
-                self.cursor.execute(sql)
-                self.cursor.close()
-                self.cursor = self.db.cursor()
-            except Exception, e:
-                D.error("Problem executing SQL:\n{{sql}}", {"sql":indent(sql.strip())}, e, offset=1)
+        (backlog, self.backlog)=(self.backlog, [])
+        if self.db.__module__.startswith("pymysql"):
+            #BUG IN PYMYSQL: CAN NOT HANDLE MULTIPLE STATEMENTS
+            for b in backlog:
+                self.cursor.execute(b)
 
-        self.backlog=[]
+            self.cursor.close()
+            self.cursor = self.db.cursor()
+        else:
+            for i, g in Q.groupby(backlog, size=MAX_BATCH_SIZE):
+                sql=";\n".join(g)
+                try:
+                    if self.debug: D.println("Execute block of SQL:\n"+indent(sql))
+                    self.cursor.execute(sql)
+                    self.cursor.close()
+                    self.cursor = self.db.cursor()
+                except Exception, e:
+                    D.error("Problem executing SQL:\n{{sql}}", {"sql":indent(sql.strip())}, e, offset=1)
+
 
 
 
     ## Insert dictionary of values into table
-    def insert (self, table_name, param):
-        def quote(value):
-            return "`"+value+"`"    #MY SQL QUOTE OF COLUMN NAMES
+    def insert (self, table_name, record):
+        keys = record.keys()
 
-        keys = param.keys()
-        param = self.quote_param(param)
+        try:
+            command = "INSERT INTO "+self.quote_column(table_name)+"("+\
+                      ",".join([self.quote_column(k) for k in keys])+\
+                      ") VALUES ("+\
+                      ",".join([self.quote_value(record[k]) for k in keys])+\
+                      ")"
 
-        command = "INSERT INTO "+quote(table_name)+"("+\
-                  ",".join([quote(k) for k in keys])+\
-                  ") VALUES ("+\
-                  ",".join([param[k] for k in keys])+\
-                  ")"
+            self.execute(command)
+        except Exception, e:
+            D.error("problem with record: {{record}}", {"record":record}, e)
 
-        self.execute(command)
+    # candidate_key IS LIST OF COLUMNS THAT CAN BE USED AS UID (USUALLY PRIMARY KEY)
+    # ONLY INSERT IF THE candidate_key DOES NOT EXIST YET
+    def insert_new(self, table_name, candidate_key, new_record):
+        if not isinstance(candidate_key, list): candidate_key=[candidate_key]
+
+        condition=" AND\n".join([self.quote_column(k)+"="+self.quote_value(new_record[k]) if new_record[k] is not None else self.quote_column(k)+" IS NULL"  for k in candidate_key])
+        command="INSERT INTO "+self.quote_column(table_name)+" ("+\
+                ",".join([self.quote_column(k) for k in new_record.keys()])+\
+                ")\n"+\
+                "SELECT a.* FROM (SELECT "+",".join([self.quote_value(v)+" "+self.quote_column(k) for k,v in new_record.items()])+" FROM DUAL) a\n"+\
+                "LEFT JOIN "+\
+                "(SELECT 'dummy' exist FROM "+self.quote_column(table_name)+" WHERE "+condition+" LIMIT 1) b ON 1=1 WHERE exist IS NULL"
+        self.execute(command, {})
 
 
-    def insert_list(self, table_name, list):
+    # ONLY INSERT IF THE candidate_key DOES NOT EXIST YET
+    def insert_newlist(self, table_name, candidate_key, new_records):
+        for r in new_records:
+            self.insert_new(table_name, candidate_key, r)
+
+
+    def insert_list(self, table_name, records):
         #PROBABLY CAN BE BETTER DONE WITH executeMany()
-        for l in list:
-            self.insert(table_name, l)
+        for r in records:
+            self.insert(table_name, r)
 
 
     def update(self, table_name, where, new_values):
-        def quote(value):
-            return "`"+value+"`"    #MY SQL QUOTE OF COLUMN NAMES
 
         where=self.quote_param(where)
         new_values=self.quote_param(new_values)
 
-        command="UPDATE "+quote(table_name)+"\n"+\
+        command="UPDATE "+self.quote_column(table_name)+"\n"+\
                 "SET "+\
-                ",\n".join([quote(k)+"="+v for k,v in new_values.items()])+"\n"+\
+                ",\n".join([self.quote_column(k)+"="+v for k,v in new_values.items()])+"\n"+\
                 "WHERE "+\
-                " AND\n".join([quote(k)+"="+v for k,v in where.items()])
+                " AND\n".join([self.quote_column(k)+"="+v for k,v in where.items()])
         self.execute(command, {})
 
 
     def quote_param(self, param):
-        return {k:self.quote(v) for k, v in param.items()}
+        return {k:self.quote_value(v) for k, v in param.items()}
 
     #convert values to mysql code for the same
     #mostly delegate directly to the mysql lib, but some exceptions exist
-    def quote(self, value):
+    def quote_value(self, value):
         try:
             if isinstance(value, datetime):
-                return SQL("str_to_date('"+value.strftime("%Y%m%d%H%M%S")+"', '%Y%m%d%H%i%s')")
+                return "str_to_date('"+value.strftime("%Y%m%d%H%M%S")+"', '%Y%m%d%H%i%s')"
             elif isinstance(value, list):
-                return SQL("("+",".join([self.db.literal(vv) for vv in value])+")")
+                return "("+",".join([self.db.literal(vv) for vv in value])+")"
             elif isinstance(value, SQL):
-                return value
+                return value.value
             elif isinstance(value, Struct):
                 return self.db.literal(None)
+            elif Math.is_number(value):
+                return unicode(value)
             else:
-                return SQL(self.db.literal(value))
+                return self.db.literal(value)
         except Exception, e:
             D.error("problem quoting SQL", e)
 
 
+    def quote_column(self, column_name):
+        return "`"+column_name.replace(".", "`.`")+"`"    #MY SQL QUOTE OF COLUMN NAMES
 
 
+
+def utf8_to_unicode(v):
+    try:
+        if isinstance(v, str):
+            return v.decode("utf8")
+        else:
+            return v
+    except Exception, e:
+        D.error("not expected", e)
+
+        
 #ACTUAL SQL, DO NOT QUOTE THIS STRING
 class SQL():
 

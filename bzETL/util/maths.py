@@ -6,8 +6,8 @@
 ## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 ################################################################################
 import math
-
-
+from .debug import D
+from .strings import find_first
 
 class Math():
 
@@ -55,10 +55,10 @@ class Math():
 
         return round(value, decimal)
 
-    #RETURN A VALUE CLOSE TO value, BUT WITH SHORTER len(str(value))<len(str(value)):
+    #RETURN A VALUE CLOSE TO value, BUT WITH SHORTER len(unicode(value))<len(unicode(value)):
     @staticmethod
-    def approx_str(value):
-        v=str(value)
+    def approx_unicode(value):
+        v=unicode(value)
         d=v.find(".")
         if d==-1: return value
 

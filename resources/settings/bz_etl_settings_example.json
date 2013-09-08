@@ -2,7 +2,8 @@
     "param":{
         "start":0,
         "increment":1000,
-        "alias_file":"./resources/data/bugzilla_aliases.txt"
+        "alias_file":"./resources/data/bugzilla_aliases.txt",
+        "incremental":false
     },
     "bugzilla":{
         "old.host":"localhost",
@@ -28,7 +29,7 @@
 			"backupCount": 200,
 			"encoding": "utf8"
 		},{
-            "class":"util.debug.Log_usingStream",
+            "class":"bzETL.util.debug.Log_usingStream",
             "stream":"sys.stdout"
         }]
 

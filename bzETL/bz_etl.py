@@ -9,10 +9,14 @@
 ## REPLACES THE KETTLE FLOW CONTROL PROGRAM, AND BASH SCRIPT
 
 from datetime import datetime
+from bzETL.extract_bugzilla import get_bugs_table_columns
 
 from .esReplicate import get_last_updated
-from .extract_bugzilla import *
+from .extract_bugzilla import get_bugs, get_dependencies,get_flags,get_new_activities,get_bug_see_also,get_attachments,get_keywords,get_cc,get_bug_groups,get_duplicates
 from .parse_bug_history import parse_bug_history_
+from .util import struct
+from .util.debug import D
+from .util.struct import Struct
 from .util.files import File
 from .util.startup import startup
 from .util.threads import Queue, Thread
@@ -57,13 +61,13 @@ def etl(db, es, param):
             output.extend(r)
 
     output_queue=Queue()
-    sorted=Q.sort(output, ["bug_id", "_merge_order", {"field":"modified_ts", "sort":-1}])
+    sorted=Q.sort(output, ["bug_id", "_merge_order", {"field":"modified_ts", "sort":-1}, "modified_by"])
 
     #USE SEPARATE THREAD TO SORT AND PROCESS BUG CHANGE RECORDS
     process=parse_bug_history_(param, output_queue)
     for s in sorted:
         process.processRow(s)
-    process.processRow(Struct(bug_id=999999999, _merge_order=1))
+    process.processRow(struct.wrap({"bug_id":999999999, "_merge_order":1}))
     output_queue.add(Thread.STOP)
 
     #USE MAIN THREAD TO SEND TO ES

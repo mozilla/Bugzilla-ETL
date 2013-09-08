@@ -8,8 +8,8 @@
 ################################################################################
 
 
-from util.debug import D
-from util.struct import Struct
+from .util.debug import D
+from .util.struct import Struct
 
 
 def get_bugs_table_columns(db, schema_name):
@@ -37,7 +37,8 @@ def get_bugs_table_columns(db, schema_name):
                 'short_desc',           #NOT ALLOWED
                 'bug_file_loc',         #NOT ALLOWED
                 'deadline',             #NOT NEEDED
-                'estimated_time'        #NOT NEEDED
+                'estimated_time'       #NOT NEEDED
+
             )
     """, {"schema":schema_name})
 
@@ -49,13 +50,13 @@ def get_bugs(db, param):
         bugs=db.query("""
             SELECT bug_id
                 , UNIX_TIMESTAMP(CONVERT_TZ(b.creation_ts, 'US/Pacific','UTC'))*1000 AS modified_ts
-                , pr.login_name AS modified_by
+                , lower(pr.login_name) AS modified_by
                 , UNIX_TIMESTAMP(CONVERT_TZ(b.creation_ts, 'US/Pacific','UTC'))*1000 AS created_ts
-                , pr.login_name AS created_by
-                , pa.login_name AS assigned_to
-                , pq.login_name AS qa_contact
-                , prod.`name` AS product
-                , comp.`name` AS component
+                , lower(pr.login_name) AS created_by
+                , lower(pa.login_name) AS assigned_to
+                , lower(pq.login_name) AS qa_contact
+                , lower(prod.`name`) AS product
+                , lower(comp.`name`) AS component
                 , {{BUGS_TABLE_COLUMNS_SQL}}
             FROM bugs b
                 LEFT JOIN profiles pr ON b.reporter = pr.userid
@@ -84,7 +85,7 @@ def flatten_bugs_record(r, bugs_fields, output):
     newRow.modified_ts=r.modified_ts
     newRow.modified_by=r.modified_by
     newRow.field_name="created_ts"
-    newRow.field_value=r.created_ts
+    newRow.new_value=r.created_ts
     newRow._merge_order=1
     output.append(newRow)
 
@@ -93,7 +94,7 @@ def flatten_bugs_record(r, bugs_fields, output):
     newRow.modified_ts=r.modified_ts
     newRow.modified_by=r.modified_by
     newRow.field_name="created_by"
-    newRow.field_value=r.created_by
+    newRow.new_value=r.created_by
     newRow._merge_order=1
     output.append(newRow)
 
@@ -102,7 +103,7 @@ def flatten_bugs_record(r, bugs_fields, output):
     newRow.modified_ts=r.modified_ts
     newRow.modified_by=r.modified_by
     newRow.field_name="assigned_to"
-    newRow.field_value=r.assigned_to
+    newRow.new_value=r.assigned_to
     newRow._merge_order=1
     output.append(newRow)
 
@@ -111,7 +112,7 @@ def flatten_bugs_record(r, bugs_fields, output):
     newRow.modified_ts=r.modified_ts
     newRow.modified_by=r.modified_by
     newRow.field_name="qa_contact"
-    newRow.field_value=r.qa_contact
+    newRow.new_value=r.qa_contact
     newRow._merge_order=1
     output.append(newRow)
 
@@ -120,7 +121,7 @@ def flatten_bugs_record(r, bugs_fields, output):
     newRow.modified_ts=r.modified_ts
     newRow.modified_by=r.modified_by
     newRow.field_name="product"
-    newRow.field_value=r.product
+    newRow.new_value=r.product
     newRow._merge_order=1
     output.append(newRow)
 
@@ -129,7 +130,7 @@ def flatten_bugs_record(r, bugs_fields, output):
     newRow.modified_ts=r.modified_ts
     newRow.modified_by=r.modified_by
     newRow.field_name="component"
-    newRow.field_value=r.component
+    newRow.new_value=r.component
     newRow._merge_order=1
     output.append(newRow)
 
@@ -143,7 +144,7 @@ def flatten_bugs_record(r, bugs_fields, output):
             newRow.modified_ts=r.modified_ts
             newRow.modified_by=r.modified_by
             newRow.field_name=field_name
-            newRow.field_value=value
+            newRow.new_value=value
             newRow._merge_order=1
             output.append(newRow)
 
@@ -161,8 +162,8 @@ def get_dependencies(db, param):
             , CAST(null AS signed) AS modified_ts
             , CAST(null AS char(255)) AS modified_by
             , 'dependson' AS field_name
-            , CAST(dependson AS SIGNED) AS field_value
-            , CAST(null AS SIGNED) AS field_value_removed
+            , CAST(dependson AS SIGNED) AS new_value
+            , CAST(null AS SIGNED) AS old_value
             , CAST(null AS signed) AS attach_id
             , 2 AS _merge_order
         FROM dependencies d
@@ -196,8 +197,8 @@ def get_duplicates(db, param):
             , CAST(null AS signed) AS modified_ts
             , CAST(null AS char(255)) AS modified_by
             , 'dupe_of' AS field_name
-            , CAST(dupe_of AS SIGNED) AS field_value
-            , CAST(null AS SIGNED) AS field_value_removed
+            , CAST(dupe_of AS SIGNED) AS new_value
+            , CAST(null AS SIGNED) AS old_value
             , CAST(null AS signed) AS attach_id
             , 2 AS _merge_order
         FROM duplicates d
@@ -231,8 +232,8 @@ def get_bug_groups(db, param):
             , CAST(null AS signed) AS modified_ts
             , CAST(null AS char(255)) AS modified_by
             , 'bug_group' AS field_name
-            , CAST(g.`name` AS char(255)) AS field_value
-            , CAST(null AS char(255)) AS field_value_removed
+            , lower(CAST(g.`name` AS char(255))) AS new_value
+            , CAST(null AS char(255)) AS old_value
             , CAST(null AS signed) AS attach_id
             , 2 AS _merge_order
         FROM bug_group_map bg
@@ -253,8 +254,8 @@ def get_cc(db, param):
             , CAST(null AS signed) AS modified_ts
             , CAST(null AS char(255)) AS modified_by
             , 'cc' AS field_name
-            , CAST(p.login_name AS char(255)) AS field_value
-            , CAST(null AS char(255)) AS field_value_removed
+            , lower(CAST(p.login_name AS char(255))) AS new_value
+            , CAST(null AS char(255)) AS old_value
             , CAST(null AS signed) AS attach_id
             , 2 AS _merge_order
         FROM cc
@@ -275,8 +276,8 @@ def get_keywords(db, param):
             , NULL AS modified_ts
             , NULL AS modified_by
             , 'keywords' AS field_name
-            , kd.name AS field_value
-            , NULL AS field_value_removed
+            , lower(kd.name) AS new_value
+            , NULL AS old_value
             , NULL AS attach_id
             , 2 AS _merge_order
         FROM keywords k
@@ -294,7 +295,7 @@ def get_attachments(db, param):
     output=db.query("""
         SELECT bug_id
             , UNIX_TIMESTAMP(CONVERT_TZ(a.creation_ts, 'US/Pacific','UTC'))*1000 AS modified_ts
-            , login_name AS modified_by
+            , lower(login_name) AS modified_by
             , UNIX_TIMESTAMP(CONVERT_TZ(a.creation_ts, 'US/Pacific','UTC'))*1000 AS created_ts
             , login_name AS created_by
             , ispatch AS 'attachments_ispatch'
@@ -327,7 +328,7 @@ def flatten_attachments(data):
                 modified_ts=r.modified_ts,
                 modified_by=r.modified_by,
                 field_name=a,
-                field_value=r[a],  #THESE NAMES HAVE DOTS IN THEM
+                new_value=r[a],  #THESE NAMES HAVE DOTS IN THEM
                 attach_id=r.attach_id,
                 _merge_order=7
             ))
@@ -340,8 +341,8 @@ def get_bug_see_also(db, param):
             , CAST(null AS signed) AS modified_ts
             , CAST(null AS char(255)) AS modified_by
             , 'see_also' AS field_name
-            , CAST(`value` AS char(255)) AS field_value
-            , CAST(null AS char(255)) AS field_value_removed
+            , CAST(`value` AS char(255)) AS new_value
+            , CAST(null AS char(255)) AS old_value
             , CAST(null AS signed) AS attach_id
             , 2 AS _merge_order
         FROM bug_see_also
@@ -357,10 +358,10 @@ def get_new_activities(db, param):
     return db.query("""
         SELECT a.bug_id
             , UNIX_TIMESTAMP(CONVERT_TZ(bug_when, 'US/Pacific','UTC'))*1000 AS modified_ts
-            , login_name AS modified_by
+            , lower(login_name) AS modified_by
             , replace(field.`name`, '.', '_') AS field_name
-            , CAST(CASE WHEN trim(added)='' THEN NULL ELSE trim(added) END AS CHAR CHARACTER SET utf8)   AS field_value
-            , CAST(CASE WHEN trim(removed)='' THEN NULL ELSE trim(removed) END AS CHAR CHARACTER SET utf8)   AS field_value_removed
+            , lower(CAST(CASE WHEN trim(added)='' THEN NULL ELSE trim(added) END AS CHAR CHARACTER SET utf8))   AS new_value
+            , lower(CAST(CASE WHEN trim(removed)='' THEN NULL ELSE trim(removed) END AS CHAR CHARACTER SET utf8))   AS old_value
             , attach_id
             , 9 AS _merge_order
         FROM
@@ -387,8 +388,8 @@ def get_flags(db, param):
             , UNIX_TIMESTAMP(CONVERT_TZ(f.creation_date, 'US/Pacific','UTC'))*1000 AS modified_ts
             , ps.login_name AS modified_by
             , 'flagtypes_name' AS field_name
-            , CONCAT(ft.`name`,status,IF(requestee_id IS NULL,'',CONCAT('(',pr.login_name,')'))) AS field_value
-            , CAST(null AS char(255)) AS field_value_removed
+            , CONCAT(ft.`name`,status,IF(requestee_id IS NULL,'',CONCAT('(',pr.login_name,')'))) AS new_value
+            , CAST(null AS char(255)) AS old_value
             , attach_id
             , 8 AS _merge_order
         FROM

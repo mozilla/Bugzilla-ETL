@@ -14,14 +14,14 @@
 
 from datetime import datetime, timedelta
 import transform_bugzilla
-from util.randoms import Random
-from util.cnv import CNV
-from util.debug import D
-from util.query import Q
-from util.startup import startup
-from util.files import File
-from util.multiset import multiset
-from util.elasticsearch import ElasticSearch
+from .util.randoms import Random
+from .util.cnv import CNV
+from .util.debug import D
+from .util.query import Q
+from .util.startup import startup
+from .util.files import File
+from .util.multiset import multiset
+from .util.elasticsearch import ElasticSearch
 
 
 far_back=datetime.utcnow()-timedelta(weeks=52)

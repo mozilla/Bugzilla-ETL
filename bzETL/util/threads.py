@@ -1,3 +1,13 @@
+################################################################################
+## This Source Code Form is subject to the terms of the Mozilla Public
+## License, v. 2.0. If a copy of the MPL was not distributed with this file,
+## You can obtain one at http://mozilla.org/MPL/2.0/.
+################################################################################
+## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
+################################################################################
+
+
+
 import thread
 import threading
 
@@ -40,7 +50,7 @@ class Queue():
             except StopIteration:
                 pass
             except Exception, e:
-                from util.debug import D
+                from .debug import D
                 D.warning("Tell me about what happends here", e)
 
     def add(self, value):

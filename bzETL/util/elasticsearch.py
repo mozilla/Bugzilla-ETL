@@ -1,12 +1,11 @@
 import sha
+
 import requests
 import time
-
-from .basic import nvl
 from .cnv import CNV
 from .debug import D
+from .basic import nvl
 from .struct import Struct, StructList
-
 
 DEBUG=False
 
@@ -27,7 +26,7 @@ class ElasticSearch():
         globals()["DEBUG"]=DEBUG or self.debug
         
         self.settings=settings
-        self.path=settings.host+":"+str(settings.port)+"/"+settings.index+"/"+settings.type
+        self.path=settings.host+":"+unicode(settings.port)+"/"+settings.index+"/"+settings.type
 
 
 
@@ -37,7 +36,7 @@ class ElasticSearch():
             schema=CNV.JSON2object(schema)
 
         ElasticSearch.post(
-            settings.host+":"+str(settings.port)+"/"+settings.index,
+            settings.host+":"+unicode(settings.port)+"/"+settings.index,
             data=CNV.object2JSON(schema),
             headers={"Content-Type":"application/json"}
         )
@@ -54,7 +53,7 @@ class ElasticSearch():
         index=nvl(index, settings.index)
 
         ElasticSearch.delete(
-            settings.host+":"+str(settings.port)+"/"+index,
+            settings.host+":"+unicode(settings.port)+"/"+index,
         )
 
     #RETURN LIST OF {"alias":a, "index":i} PAIRS
@@ -74,7 +73,7 @@ class ElasticSearch():
     
     def get_metadata(self):
         if self.metadata is None:
-            response=self.get(self.settings.host+":"+str(self.settings.port)+"/_cluster/state")
+            response=self.get(self.settings.host+":"+unicode(self.settings.port)+"/_cluster/state")
             self.metadata=response.metadata
         return self.metadata
 
@@ -92,7 +91,7 @@ class ElasticSearch():
 
     def add_alias(self, alias):
         requests.post(
-            self.settings.host+":"+str(self.settings.port)+"/_aliases",
+            self.settings.host+":"+unicode(self.settings.port)+"/_aliases",
             CNV.object2JSON({
                 "actions":[
                     {"add":{"index":self.settings.index, "alias":alias}}
@@ -137,13 +136,14 @@ class ElasticSearch():
         if self.debug: D.println("{{num}} items added", {"num":len(lines)/2})
 
 
+
     # -1 FOR NO REFRESH
     def set_refresh_interval(self, seconds):
         if seconds<=0: interval="-1"
-        else: interval=str(seconds)+"s"
+        else: interval=unicode(seconds)+"s"
 
         ElasticSearch.put(
-             self.settings.host+":"+str(self.settings.port)+"/"+self.settings.index+"/_settings",
+             self.settings.host+":"+unicode(self.settings.port)+"/"+self.settings.index+"/_settings",
              data="{\"index.refresh_interval\":\""+interval+"\"}"
         )
 

@@ -1,3 +1,13 @@
+################################################################################
+## This Source Code Form is subject to the terms of the Mozilla Public
+## License, v. 2.0. If a copy of the MPL was not distributed with this file,
+## You can obtain one at http://mozilla.org/MPL/2.0/.
+################################################################################
+## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
+################################################################################
+
+
+
 import codecs
 import os
 import shutil
@@ -45,14 +55,14 @@ class File():
         except Exception, e:
             if e.strerror=="The system cannot find the path specified":
                 return
-            from util.debug import D
+            from .debug import D
             D.warning("Could not remove file", e)
 
     def create(self):
         try:
             os.makedirs(self.filename)
         except Exception, e:
-            from util.debug import D
+            from .debug import D
             D.error("Could not make directory {{dir_name}}", {"dir_name":self.filename}, e)
 
 
