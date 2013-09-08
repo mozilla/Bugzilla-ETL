@@ -1,10 +1,11 @@
 from datetime import datetime
 import re
-from util.cnv import CNV
-from util.debug import D
-from util.maths import Math
-from util.query import Q
-from util.struct import Struct, StructList
+from bzETL.util import struct
+from .util.cnv import CNV
+from .util.debug import D
+from .util.maths import Math
+from .util.query import Q
+from .util.struct import Struct, StructList
 
 
 MULTI_FIELDS = ["cc", "blocked", "dependson", "dupe_by", "dupe_of", "flags", "keywords", "bug_group", "see_also"]
@@ -27,17 +28,14 @@ DATE_PATTERN_RELAXED = re.compile("^[0-9]{4}[\\/-][0-9]{2}[\\/-][0-9]{2}")
 #WE ARE RENAMING THE ATTACHMENTS FIELDS TO CAUSE LESS PROBLEMS IN ES QUERIES
 def rename_attachments(bug_version):
     if bug_version.attachments is None: return bug_version
-    bug_version.attachments=[
-        {k.replace("attachments.", "attachments_"):v for k, v in a.items()}
-        for a in bug_version.attachments
-    ]
+    bug_version.attachments=CNV.JSON2object(CNV.object2JSON(bug_version.attachments).replace("attachments.", "attachments_"))
     return bug_version
 
 
 
 #NORMALIZE BUG VERSION TO STANDARD FORM
 def normalize(bug):
-    bug.id=str(bug.bug_id)+"_"+str(bug.modified_ts)[:-3]
+    bug.id=unicode(bug.bug_id)+"_"+unicode(bug.modified_ts)[:-3]
     bug._id=None
 
     #ENSURE STRUCTURES ARE SORTED
@@ -49,7 +47,7 @@ def normalize(bug):
         for a in bug.attachments:
             a.flags=Q.sort(a.flags, "value")
 
-    bug.changes=Q.sort(bug.changes, "field_name")
+    bug.changes=Q.sort(bug.changes, ["attach_id", "field_name"])
 
     #bug IS CONVERTED TO A 'CLEAN' COPY
     bug=scrub(bug)
@@ -103,7 +101,7 @@ def normalize(bug):
 #CONVERT STRINGS OF NUMBERS TO NUMBERS
 #RETURNS **COPY**, DOES NOT CHANGE ORIGINAL
 def scrub(r):
-    return Struct(**_scrub(r))
+    return struct.wrap(_scrub(r))
 
 def _scrub(r):
 #    if r=="1.0":

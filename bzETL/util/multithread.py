@@ -46,6 +46,7 @@ class worker_thread(threading.Thread):
                 D.warning("Can not execute with params={{params}}", {"params": params}, e)
                 if self.keep_running and self.out_queue is not None:
                     self.out_queue.add(e)
+
         self.keep_running=False
         if DEBUG:
             D.println("{{thread}} DONE", {"thread":self.name})
@@ -73,7 +74,7 @@ class Multithread():
         #MAKE THREADS
         self.threads=[]
         for t, f in enumerate(functions):
-            thread=worker_thread("worker "+str(t), self.inbound, self.outbound, f)
+            thread=worker_thread("worker "+unicode(t), self.inbound, self.outbound, f)
             self.threads.append(thread)
 
 
@@ -113,8 +114,7 @@ class Multithread():
     #RETURN A GENERATOR THAT HAS len(parameters) RESULTS (ANY ORDER)
     def execute(self, parameters):
         #FILL QUEUE WITH WORK
-        for param in parameters:
-            self.inbound.add(param)
+        self.inbound.extend(parameters)
 
         num=len(parameters)
         def output():

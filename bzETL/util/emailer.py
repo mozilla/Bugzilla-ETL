@@ -6,12 +6,12 @@
 ## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 ################################################################################
 
-import smtplib
-import sys
+
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-
+import smtplib
+import sys
 from .basic import nvl
 
 

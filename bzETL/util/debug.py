@@ -5,27 +5,39 @@
 ################################################################################
 ## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 ################################################################################
-from _functools import partial
 
-import sys
+from _functools import partial
+from datetime import datetime
 import traceback
 import logging
+import sys
 
-from datetime import datetime
-
-from . import struct, threads
+import struct, threads
 from .files import File
 from .strings import indent, expand_template
-from .struct import StructList, Struct
 from .threads import Thread
+from .struct import StructList
 
 
-#for debugging
+
+
+
+ERROR="ERROR"
+WARNING="WARNING"
+NOTE="NOTE"
+
+
 logging_thread=None
 Logging_multi=None
 
-class D(object):
 
+
+
+
+class D(object):
+    """
+    FOR STRUCTURED LOGGING AND EXCEPTION CHAINING
+    """
 
     @classmethod
     def add_log(cls, log):
@@ -49,12 +61,13 @@ class D(object):
             cause=params
             params=None
 
-        if not isinstance(cause, Except):
-            cause=Except(str(cause), trace=format_trace(traceback.extract_tb(sys.exc_info()[2]), 0))
+        if cause is not None and not isinstance(cause, Except):
+            cause=Except(WARNING, unicode(cause), trace=format_trace(traceback.extract_tb(sys.exc_info()[2]), 0))
 
-        e = Except(template, params, cause, format_trace(traceback.extract_stack(), 1))
-        D.println(str(e))
+        e = Except(WARNING, template, params, cause, format_trace(traceback.extract_stack(), 1))
+        D.println(unicode(e))
 
+        
     #raise an exception with a trace for the cause too
     @staticmethod
     def error(
@@ -67,11 +80,11 @@ class D(object):
             cause=params
             params=None
 
-        if not isinstance(cause, Except):
-            cause=Except(str(cause), trace=format_trace(traceback.extract_tb(sys.exc_info()[2]), offset))
+        if cause is not None and not isinstance(cause, Except):
+            cause=Except(ERROR, unicode(cause), trace=format_trace(traceback.extract_tb(sys.exc_info()[2]), offset))
 
         trace=format_trace(traceback.extract_stack(), 1+offset)
-        e=Except(template, params, cause, trace)
+        e=Except(ERROR, template, params, cause, trace)
         raise e
 
 
@@ -79,11 +92,11 @@ class D(object):
     @classmethod
     def start(cls, settings=None):
         if settings is None:
-            settings=Struct(**{"log":{"stream":sys.stdout}})
+            settings=struct.wrap({"log":{"stream":sys.stdout}})
         
         #PART 2 OF 2 SETUP OF THREADED LOGGING
         #WE NOW CAN LOAD THE threads MODULE
-        from .multithread import worker_thread
+        from multithread import worker_thread
         from threads import Queue
         logging_thread.queue=Queue()
         logging_thread.thread=worker_thread("log thread", logging_thread.queue, None, partial(Log_usingMulti.println, logging_multi))
@@ -127,8 +140,9 @@ def format_trace(tbs, trim=0):
 
 
 class Except(Exception):
-    def __init__(self, template=None, params=None, cause=None, trace=None):
+    def __init__(self, type=ERROR, template=None, params=None, cause=None, trace=None):
         super(Exception, self).__init__(self)
+        self.type=type
         self.template=template
         self.params=params
         self.cause=cause
@@ -136,7 +150,7 @@ class Except(Exception):
 
     @property
     def message(self):
-        return str(self)
+        return unicode(self)
 
     def __str__(self):
         output=self.template
@@ -152,16 +166,15 @@ class Except(Exception):
 
 
 
-
-
 class Log():
     @classmethod
     def new_instance(cls, settings):
         settings=struct.wrap(settings)
         if settings["class"] is not None:
-            if settings["class"].startswith("util."):
+            if not settings["class"].startswith("logging.handlers."):
                 return make_log_from_settings(settings)
-            return Log_usingLogger(settings)
+            else:
+                return Log_usingLogger(settings)
         if settings.file is not None: return Log_usingFile(file)
         if settings.filename is not None: return Log_usingFile(settings.filename)
         if settings.stream is not None: return Log_usingStream(settings.stream)

@@ -7,7 +7,6 @@
 ################################################################################
 
 from math import sqrt
-
 from .basic import nvl
 from .debug import D
 from .struct import Struct
@@ -135,7 +134,7 @@ class Z_moment():
     @property
     def dict(self):
     #RETURN HASH OF SUMS
-        return dict([("s"+str(i), m) for i, m in enumerate(self.S)])
+        return dict([("s"+unicode(i), m) for i, m in enumerate(self.S)])
 
 
     @staticmethod

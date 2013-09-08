@@ -52,44 +52,34 @@
       </breakpoint>
     </breakpoint_any>
     <breakpoint_rules />
-    <ui_properties />
+    <ui_properties>
+      <property name="line_breakpoints_groupByMethods" value="false" />
+      <property name="line_breakpoints_viewId" value="TABLE" />
+      <property name="exception_breakpoints_flattenPackages" value="true" />
+      <property name="method_breakpoints_flattenPackages" value="true" />
+      <property name="field_breakpoints_flattenPackages" value="true" />
+      <property name="exception_breakpoints_groupByMethods" value="false" />
+      <property name="line_breakpoints_groupByClasses" value="true" />
+      <property name="method_breakpoints_viewId" value="TABLE" />
+      <property name="field_breakpoints_groupByMethods" value="false" />
+      <property name="line_breakpoints_flattenPackages" value="true" />
+      <property name="field_breakpoints_groupByClasses" value="true" />
+      <property name="method_breakpoints_groupByClasses" value="true" />
+      <property name="exception_breakpoints_viewId" value="TABLE" />
+      <property name="exception_breakpoints_groupByClasses" value="true" />
+      <property name="field_breakpoints_viewId" value="TABLE" />
+      <property name="method_breakpoints_groupByMethods" value="false" />
+    </ui_properties>
   </component>
   <component name="FavoritesManager">
     <favorites_list name="Bugzilla-ETL" />
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="compare_es.py" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/tests/util/compare_es.py">
+      <file leaf-file-name="transform_bugzilla.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/bzETL/transform_bugzilla.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="18" column="0" selection-start="730" selection-end="730" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="fake_es.py" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/tests/util/fake_es.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="4" column="0" selection-start="139" selection-end="139" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="basic.py" pinned="false" current="true" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/bzETL/util/basic.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="multithread.py" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/bzETL/util/multithread.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="50" column="0" selection-start="1892" selection-end="1892" vertical-scroll-proportion="0.0">
+            <state line="49" column="63" selection-start="1798" selection-end="1798" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -98,14 +88,50 @@
       <file leaf-file-name="debug.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/bzETL/util/debug.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="42" column="36" selection-start="1266" selection-end="1266" vertical-scroll-proportion="0.0">
+            <state line="85" column="63" selection-start="2508" selection-end="2508" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="threads.py" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/bzETL/util/threads.py">
+      <file leaf-file-name="pydevd.py" pinned="false" current="true" current-in-tab="true">
+        <entry file="file://$USER_HOME$/.IntelliJIdea10/config/plugins/python/helpers/pydev/pydevd.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="1202" column="0" selection-start="49887" selection-end="49887" vertical-scroll-proportion="0.33333334">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="compare_es.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/tests/util/compare_es.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="95" column="35" selection-start="3090" selection-end="3090" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="parse_bug_history.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/bzETL/parse_bug_history.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="803" column="34" selection-start="37541" selection-end="37541" vertical-scroll-proportion="-1.34">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="test_settings.json" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/test_settings.json">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="9" column="17" selection-start="246" selection-end="246" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="bz_etl_settings_example.json" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/resources/settings/bz_etl_settings_example.json">
           <provider selected="true" editor-type-id="text-editor">
             <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
               <folding />
@@ -122,28 +148,19 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="test_settings.json" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/test_settings.json">
+      <file leaf-file-name="struct.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/bzETL/util/struct.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="30" column="29" selection-start="952" selection-end="952" vertical-scroll-proportion="0.0">
+            <state line="39" column="0" selection-start="1444" selection-end="1444" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="test_etl.py" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/tests/test_etl.py">
+      <file leaf-file-name="extract_bugzilla.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/bzETL/extract_bugzilla.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="23" column="18" selection-start="812" selection-end="812" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="query.py" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/bzETL/util/query.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="224" column="9" selection-start="7227" selection-end="7227" vertical-scroll-proportion="0.0">
+            <state line="258" column="47" selection-start="8544" selection-end="8544" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -164,22 +181,22 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/bzETL/transform_bugzilla.py" />
+        <option value="$PROJECT_DIR$/../datazilla-alerts/tests/resources/python/prod_to_objectstore.py" />
         <option value="$PROJECT_DIR$/bzETL/util/cnv.py" />
         <option value="$PROJECT_DIR$/bzETL/util/db.py" />
         <option value="$PROJECT_DIR$/bzETL/util/elasticsearch.py" />
-        <option value="$PROJECT_DIR$/replication_settings.json" />
-        <option value="$PROJECT_DIR$/bz_etl_settings.json" />
-        <option value="$PROJECT_DIR$/bzETL/util/maths.py" />
-        <option value="$PROJECT_DIR$/bzETL/util/query.py" />
-        <option value="$PROJECT_DIR$/bzETL/util/strings.py" />
-        <option value="$PROJECT_DIR$/test_settings.json" />
-        <option value="$PROJECT_DIR$/bzETL/esReplicate.py" />
-        <option value="$PROJECT_DIR$/bzETL/bz_etl.py" />
-        <option value="$PROJECT_DIR$/tests/compare_es.py" />
         <option value="$PROJECT_DIR$/bzETL/util/multithread.py" />
-        <option value="$PROJECT_DIR$/tests/util/fake_es.py" />
+        <option value="$PROJECT_DIR$/bzETL/util/stats.py" />
+        <option value="$PROJECT_DIR$/bzETL/util/strings.py" />
+        <option value="$PROJECT_DIR$/tests/test_etl.py" />
+        <option value="$PROJECT_DIR$/bzETL/util/debug.py" />
+        <option value="$PROJECT_DIR$/bzETL/util/struct.py" />
+        <option value="$PROJECT_DIR$/bzETL/util/maths.py" />
         <option value="$PROJECT_DIR$/tests/util/compare_es.py" />
+        <option value="$PROJECT_DIR$/bzETL/transform_bugzilla.py" />
+        <option value="$PROJECT_DIR$/bzETL/util/query.py" />
+        <option value="$PROJECT_DIR$/test_settings.json" />
+        <option value="$PROJECT_DIR$/bzETL/parse_bug_history.py" />
       </list>
     </option>
   </component>
@@ -216,8 +233,8 @@
       <sortByType />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="PackagesPane" />
+      <pane id="Favorites" />
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -282,7 +299,7 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
-              <option name="myItemId" value="sql" />
+              <option name="myItemId" value="resources" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -303,54 +320,8 @@
               <option name="myItemId" value="resources" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="Bugzilla-ETL" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="Bugzilla-ETL" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="resources" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="Bugzilla-ETL" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="Bugzilla-ETL" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="resources" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="scripts" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="Bugzilla-ETL" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="Bugzilla-ETL" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="resources" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="json" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -388,7 +359,7 @@
           </PATH>
         </subPane>
       </pane>
-      <pane id="Favorites" />
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -399,14 +370,14 @@
     <property name="recentsLimit" value="5" />
     <property name="MemberChooser.sorted" value="false" />
     <property name="options.lastSelected" value="preferences.sourceCode.General" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../Datazilla2ElasticSearch/src/python" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../datazilla-alerts/tests/resources/python" />
     <property name="project.structure.side.proportion" value="0.2" />
     <property name="MemberChooser.copyJavadoc" value="false" />
     <property name="GoToClass.toSaveIncludeLibraries" value="false" />
     <property name="MemberChooser.showClasses" value="true" />
     <property name="GoToClass.includeLibraries" value="false" />
-    <property name="options.splitter.details.proportions" value="0.2" />
     <property name="options.searchVisible" value="true" />
+    <property name="options.splitter.details.proportions" value="0.2" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
@@ -416,8 +387,11 @@
       <recent name="C:\Users\klahnakoski\git\Bugzilla-ETL\src\python" />
       <recent name="C:\Users\klahnakoski\git\Bugzilla-ETL\src\javascript" />
     </key>
+    <key name="MoveClassesOrPackagesDialog.RECENTS_KEY">
+      <recent name="resources" />
+    </key>
   </component>
-  <component name="RunManager" selected="Python.bz_etl">
+  <component name="RunManager" selected="Python.test_etl">
     <configuration default="true" type="PythonUnitTestConfigurationType" factoryName="Python's unittest">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -440,18 +414,6 @@
         <option name="Maven.BeforeRunTask" enabled="false" />
       </method>
     </configuration>
-    <configuration default="true" type="Remote" factoryName="Remote">
-      <option name="USE_SOCKET_TRANSPORT" value="true" />
-      <option name="SERVER_MODE" value="false" />
-      <option name="SHMEM_ADDRESS" value="javadebug" />
-      <option name="HOST" value="localhost" />
-      <option name="PORT" value="5005" />
-      <method>
-        <option name="AntTarget" enabled="false" />
-        <option name="BuildArtifacts" enabled="false" />
-        <option name="Maven.BeforeRunTask" enabled="false" />
-      </method>
-    </configuration>
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -468,6 +430,18 @@
         <option name="AntTarget" enabled="false" />
         <option name="BuildArtifacts" enabled="false" />
         <option name="Make" enabled="true" />
+        <option name="Maven.BeforeRunTask" enabled="false" />
+      </method>
+    </configuration>
+    <configuration default="true" type="Remote" factoryName="Remote">
+      <option name="USE_SOCKET_TRANSPORT" value="true" />
+      <option name="SERVER_MODE" value="false" />
+      <option name="SHMEM_ADDRESS" value="javadebug" />
+      <option name="HOST" value="localhost" />
+      <option name="PORT" value="5005" />
+      <method>
+        <option name="AntTarget" enabled="false" />
+        <option name="BuildArtifacts" enabled="false" />
         <option name="Maven.BeforeRunTask" enabled="false" />
       </method>
     </configuration>
@@ -627,7 +601,9 @@
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/tests/test_etl.py" />
       <option name="PARAMETERS" value="--settings=test_settings.json" />
       <RunnerSettings RunnerId="PyDebugRunner" />
+      <RunnerSettings RunnerId="Run" />
       <ConfigurationWrapper RunnerId="PyDebugRunner" />
+      <ConfigurationWrapper RunnerId="Run" />
       <method />
     </configuration>
     <list size="4">
@@ -661,26 +637,26 @@
     <myIsUseDefaultProxy>false</myIsUseDefaultProxy>
   </component>
   <component name="ToolWindowManager">
-    <frame x="54" y="-8" width="1554" height="916" extended-state="6" />
-    <editor active="true" />
+    <frame x="1963" y="13" width="1856" height="1049" extended-state="0" />
+    <editor active="false" />
     <layout>
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.2228145" sideWeight="0.9988783" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.40486258" sideWeight="0.99885714" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.42110875" sideWeight="0.99885714" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="12" side_tool="false" content_ui="tabs" />
       <window_info id="Script Monkey" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32953104" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="true" content_ui="tabs" />
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32820514" sideWeight="0.47568712" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="JSON Formatter" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32831" sideWeight="0.5" order="10" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.2334004" sideWeight="0.5951374" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.1912995" sideWeight="0.5788913" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Dependency Viewer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="11" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32942432" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.47780126" sideWeight="0.9989053" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
@@ -898,27 +874,23 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/bzETL/util/struct.py</url>
-          <line>70</line>
+          <line>79</line>
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/bzETL/util/struct.py</url>
-          <line>128</line>
+          <line>148</line>
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/bzETL/util/db.py</url>
-          <line>72</line>
+          <line>101</line>
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/bzETL/esReplicate.py</url>
           <line>49</line>
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/bzETL/util/query.py</url>
-          <line>224</line>
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/bzETL/util/multithread.py</url>
-          <line>50</line>
+          <url>file://$PROJECT_DIR$/bzETL/parse_bug_history.py</url>
+          <line>267</line>
         </line-breakpoint>
         <line-breakpoint enabled="true" type="javascript">
           <url>file://$PROJECT_DIR$/src/javascript/parse_bug_history.js</url>
@@ -932,102 +904,114 @@
     <option name="FILTER_TARGETS" value="false" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/bzETL/util/strings.py">
+    <entry file="file://$PROJECT_DIR$/bzETL/util/stats.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="154" column="32" selection-start="4417" selection-end="4417" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://C:/Python27/Lib/json/encoder.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="10" column="19" selection-start="262" selection-end="262" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/bzETL/util/elasticsearch.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="41" column="9" selection-start="1018" selection-end="1018" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/bzETL/bz_etl.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="94" column="19" selection-start="2968" selection-end="2968" vertical-scroll-proportion="0.0">
+        <state line="136" column="26" selection-start="4142" selection-end="4142" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/bzETL/util/multithread.py">
+    <entry file="file://$PROJECT_DIR$/bzETL/util/randoms.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="50" column="0" selection-start="1892" selection-end="1892" vertical-scroll-proportion="0.0">
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/bzETL/util/debug.py">
+    <entry file="file://$PROJECT_DIR$/bzETL/util/timer.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="42" column="36" selection-start="1266" selection-end="1266" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://C:/Python27/Lib/json/encoder.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="10" column="19" selection-start="262" selection-end="262" vertical-scroll-proportion="0.0">
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/bzETL/util/threads.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/resources/scripts/bz_etl.bat">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/test_settings.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="30" column="29" selection-start="952" selection-end="952" vertical-scroll-proportion="0.0" />
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/tests/test_etl.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="23" column="18" selection-start="812" selection-end="812" vertical-scroll-proportion="0.0">
+        <state line="57" column="0" selection-start="2428" selection-end="2428" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/bzETL/util/elasticsearch.py">
+    <entry file="file://$PROJECT_DIR$/bzETL/util/struct.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="41" column="9" selection-start="947" selection-end="947" vertical-scroll-proportion="0.0">
+        <state line="39" column="0" selection-start="1444" selection-end="1444" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/bzETL/util/query.py">
+    <entry file="file://$PROJECT_DIR$/resources/settings/bz_etl_settings_example.json">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="224" column="9" selection-start="7227" selection-end="7227" vertical-scroll-proportion="0.0">
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/resources/scripts/bz_etl.bat">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/tests/util/compare_es.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="18" column="0" selection-start="730" selection-end="730" vertical-scroll-proportion="0.0">
+        <state line="95" column="35" selection-start="3090" selection-end="3090" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/tests/util/fake_es.py">
+    <entry file="file://$PROJECT_DIR$/test_settings.json">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="4" column="0" selection-start="139" selection-end="139" vertical-scroll-proportion="0.0">
+        <state line="9" column="17" selection-start="246" selection-end="246" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/bzETL/util/basic.py">
+    <entry file="file://$PROJECT_DIR$/bzETL/util/query.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
+        <state line="190" column="36" selection-start="5731" selection-end="5731" vertical-scroll-proportion="0.39922482">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/bzETL/transform_bugzilla.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="49" column="63" selection-start="1798" selection-end="1798" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/bzETL/parse_bug_history.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="803" column="34" selection-start="37541" selection-end="37541" vertical-scroll-proportion="-1.34">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/bzETL/extract_bugzilla.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="258" column="47" selection-start="8544" selection-end="8544" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/bzETL/util/debug.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="85" column="63" selection-start="2508" selection-end="2508" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/.IntelliJIdea10/config/plugins/python/helpers/pydev/pydevd.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="1202" column="0" selection-start="49887" selection-end="49887" vertical-scroll-proportion="0.33333334">
           <folding />
         </state>
       </provider>

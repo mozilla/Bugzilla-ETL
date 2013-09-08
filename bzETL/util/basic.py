@@ -6,6 +6,8 @@
 ## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 ################################################################################
 
+
+
 def nvl(*args):
     #pick the first none-null value
     for a in args:

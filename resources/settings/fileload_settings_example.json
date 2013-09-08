@@ -18,7 +18,7 @@
 			"backupCount": 200,
 			"encoding": "utf8"
 		},{
-            "class":"util.debug.Log_usingStream",
+            "class":"bzETL.util.debug.Log_usingStream",
             "stream":"sys.stdout"
         }]
 	}

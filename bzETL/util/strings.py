@@ -6,18 +6,32 @@
 ## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 ################################################################################
 import datetime
+from decimal import Decimal
 import json
 import re
-import time
-from decimal import Decimal
 from threading import Lock
+import time
+import struct
 
-from .maths import Math
-from .struct import Struct, StructList, unwrap
+from .struct import Struct, StructList
+
+import sys
+reload(sys)
+sys.setdefaultencoding("utf-8")
 
 
-def indent(value, prefix="\t"):
-    return prefix+("\n"+prefix).join(value.rstrip().splitlines())
+
+def indent(value, prefix=u"\t", indent=None):
+    if indent is not None:
+        prefix=prefix*indent
+        
+    try:
+        content=value.rstrip()
+        suffix=value[len(content):]
+        lines=content.splitlines()
+        return prefix+(u"\n"+prefix).join(lines)+suffix
+    except Exception, e:
+        raise Exception(u"Problem with indent of value ("+e.message+u")\n"+unicode(value))
 
 
 def outdent(value):
@@ -26,7 +40,7 @@ def outdent(value):
     for l in lines:
         trim=len(l.lstrip())
         if trim>0: num=min(num, len(l)-len(l.lstrip()))
-    return "\n".join([l[num:] for l in lines])
+    return u"\n".join([l[num:] for l in lines])
 
 def between(value, prefix, suffix):
     s = value.find(prefix)
@@ -34,14 +48,15 @@ def between(value, prefix, suffix):
     s+=len(prefix)
 
     e=value.find(suffix, s)
-    if e==-1: raise Exception("can not find '"+suffix+"'")
+    if e==-1:
+        return None
 
     s=value.rfind(prefix, 0, e)+len(prefix) #WE KNOW THIS EXISTS, BUT THERE MAY BE A RIGHT-MORE ONE
     return value[s:e]
 
 
 def right(value, len):
-    if len<=0: return ""
+    if len<=0: return u""
     return value[-len:]
 
 def find_first(value, find_arr, start=0):
@@ -58,29 +73,28 @@ def find_first(value, find_arr, start=0):
 #    if values is None: values={}
 #    return pystache.render(template, values)
 
-pattern=re.compile(r"(\{\{[\w_.]+\}\})")
+pattern=re.compile(r"(\{\{[\w_\.]+\}\})")
 def expand_template(template, values):
     if values is None: values={}
-    values=Struct(**values)
+    values=struct.wrap(values)
 
     def replacer(found):
         var=found.group(1)
         try:
             val=values[var[2:-2]]
             val=toString(val)
-            return str(val)
+            return val
         except Exception, e:
             try:
-                if e.message.find("is not JSON serializable"):
+                if e.message.find(u"is not JSON serializable"):
                     #WORK HARDER
                     val=json_scrub(val)
                     val=toString(val)
                     return val
             except Exception:
-                raise Exception("Can not find "+var[2:-2]+" in template:\n"+indent(template))
+                raise Exception(u"Can not find "+var[2:-2]+u" in template:\n"+indent(template))
 
     return pattern.sub(replacer, template)
-
 
 
 
@@ -128,7 +142,7 @@ def toString(val):
         elif isinstance(val, dict) or isinstance(val, list) or isinstance(val, set):
             val=json_encoder.encode(val)
             return val
-    return str(val)
+    return unicode(val)
 
 #REMOVE VALUES THAT CAN NOT BE JSON-IZED
 def json_scrub(r):

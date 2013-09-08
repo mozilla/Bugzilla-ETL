@@ -7,14 +7,14 @@
 ################################################################################
 
 import sys
-
-from .cnv import CNV
 from .debug import D
 from .basic import nvl
+import struct
 from .strings import indent, expand_template
-from .struct import Struct, StructList
+from .struct import StructList, Struct
 from .multiset import multiset
 
+# A COLLECTION OF DATABASE OPERATORS (RELATIONAL ALGEBRA OPERATORS)
 class Q:
 
     def __init__(self, query):
@@ -34,8 +34,8 @@ class Q:
         try:
             def keys2string(x):
                 #REACH INTO dict TO GET PROPERTY VALUE
-                return "|".join([str(object.__getattribute__(x, "__dict__")[k]) for k in keys])
-            def get_keys(d): return dict([(k, str(d[k])) for k in keys])
+                return "|".join([unicode(x[k]) for k in keys])
+            def get_keys(d): return struct.wrap({k:d[k] for k in keys})
 
             agg={}
             for d in data:
@@ -43,7 +43,7 @@ class Q:
                 if key in agg:
                     pair=agg[key]
                 else:
-                    pair=(get_keys(d), list())
+                    pair=(get_keys(d), StructList())
                     agg[key]=pair
                 pair[1].append(d)
 
@@ -73,21 +73,23 @@ class Q:
 
     @staticmethod
     def unique_index(data, keys=None):
-    #return dict that uses keys to index data
-    #ONLY ONE VALUE ALLLOWED PER UNIQUE KEY
+        """
+        RETURN dict THAT USES KEYS TO INDEX DATA
+        ONLY ONE VALUE ALLOWED PER UNIQUE KEY
+        """
         if not isinstance(keys, list): keys=[keys]
         o=Index(keys)
 
         for d in data:
             try:
-                o[d]=d
+                o.add(d)
             except Exception, e:
                 D.error("index {{index}} is not unique {{key}} maps to both {{value1}} and {{value2}}", {
                     "index":keys,
                     "key":Q.select([d], keys)[0],
                     "value1":o[d],
                     "value2":d
-                })
+                }, e)
         return o
 
 
@@ -103,7 +105,7 @@ class Q:
 
 
     @staticmethod
-    def get_columns(self, data):
+    def get_columns(data):
         output={}
         for d in data:
             for k, v in d.items():
@@ -118,25 +120,29 @@ class Q:
 
         return [{"name":n} for n in output]
 
-    # STACK ALL CUBE DATA TO A SINGLE COLUMN, WITH ONE COLUMN PER DIMENSION
-    #>>> s
-    #      a   b
-    # one  1   2
-    # two  3   4
-    #
-    #>>> Q.stack(s)
-    # one a    1
-    # one b    2
-    # two a    3
-    # two b    4
 
-    # STACK LIST OF HASHES, OR 'MERGE' SEPARATE CUBES
-    # data - expected to be a list of hashes
-    # name - give a name to the new column
-    # value_column - Name given to the new, single value column
-    # columns - explicitly list the value columns (USE SELECT INSTEAD)
     @staticmethod
     def stack(data, name=None, value_column=None, columns=None):
+        """
+        STACK ALL CUBE DATA TO A SINGLE COLUMN, WITH ONE COLUMN PER DIMENSION
+        >>> s
+              a   b
+         one  1   2
+         two  3   4
+
+        >>> Q.stack(s)
+         one a    1
+         one b    2
+         two a    3
+         two b    4
+
+        STACK LIST OF HASHES, OR 'MERGE' SEPARATE CUBES
+        data - expected to be a list of hashes
+        name - give a name to the new column
+        value_column - Name given to the new, single value column
+        columns - explicitly list the value columns (USE SELECT INSTEAD)
+        """
+
         assert value_column is not None
         if isinstance(data, Cube): D.error("Do not know how to deal with cubes yet")
 
@@ -154,11 +160,11 @@ class Q:
             for c in columns:
                 v=r[c]
                 parts.add(c)
-                output.append({name:c, value:v})
+                output.append({"name":c, "value":v})
 
 
 
-        edge=Struct(**{"domain":{"type":"set", "partitions":parts}})
+        edge=struct.wrap({"domain":{"type":"set", "partitions":parts}})
 
 
     #UNSTACKING CUBES WILL BE SIMPLER BECAUSE THE keys ARE IMPLIED (edges-column)
@@ -191,12 +197,12 @@ class Q:
                 #SPECIAL CASE, ONLY ONE FIELD TO SORT BY
                 if isinstance(fieldnames, basestring):
                     def comparer(left, right):
-                        return cmp(left[fieldnames], right[fieldnames])
+                        return cmp(nvl(left, Struct())[fieldnames], nvl(right, Struct())[fieldnames])
                     return sorted(data, cmp=comparer)
                 else:
                     #EXPECTING {"field":f, "sort":i} FORMAT
                     def comparer(left, right):
-                       return fieldnames["sort"]*cmp(left[fieldnames["field"]], right[fieldnames["field"]])
+                        return fieldnames["sort"]*cmp(nvl(left, Struct())[fieldnames["field"]],  nvl(right, Struct())[fieldnames["field"]])
                     return sorted(data, cmp=comparer)
 
             formal=[]
@@ -211,11 +217,13 @@ class Q:
     #        for col in formal:
     #            if not first: code+="    if result!=0: return result\n"
     #            first=False
-    #            code+="    result="+str(col["sort"])+" * cmp(left["+CNV.string2quote(col["field"])+"], right["+CNV.string2quote(col["field"])+"])\n"
+    #            code+="    result="+unicode(col["sort"])+" * cmp(left["+CNV.string2quote(col["field"])+"], right["+CNV.string2quote(col["field"])+"])\n"
     #        code+="    return result"
     #        exec(code)
 
             def comparer(left, right):
+                left=nvl(left, Struct())
+                right=nvl(right, Struct())
                 for f in formal:
                     result=f["sort"]*cmp(left[f["field"]], right[f["field"]])
                     if result!=0: return result
@@ -337,42 +345,56 @@ class Domain():
 class Index(object):
 
     def __init__(self, keys):
-        self._data = Struct()
+        self._data = {}
         self._keys=keys
 
         #THIS ONLY DEPENDS ON THE len(keys), SO WE COULD SHARED lookup
         #BETWEEN ALL n-key INDEXES.  FOR NOW, JUST MAKE lookup()
-        code="def lookup(d0):"
+        code="def lookup(d0):\n"
         for i, k in enumerate(self._keys):
             code=code+indent(expand_template(
                 "for k{{next}}, d{{next}} in d{{curr}}.items():\n",{
                     "next":i+1,
                     "curr":1
-                }), i+1)
+                }), prefix="    ", indent=i+1)
         i=len(self._keys)
         code=code+indent(expand_template(
-            "yield d{{curr}}", {"curr":i}), i+1)
+            "yield d{{curr}}", {"curr":i}), prefix="    ", indent=i+1)
         exec(code)
         self.lookup=lookup
 
 
     def __getitem__(self, key):
-        if not isinstance(key, dict): key={(self._keys[0], key)}
-        d=self._data
-        for k in self._keys:
-            v=key[k]
-            if v is None:
-                D.error("can not handle when {{key}} is None", {"key":k})
-            d=d[v]
-            if d is None: return None
+        try:
+            if not isinstance(key, dict):
+                #WE WILL BE FORGIVING IF THE KEY IS NOT IN A LIST
+                if len(self._keys)>1:
+                    D.error("Must be given an array of keys")
+                key={self._keys[0]: key}
 
-        if len(key)!=len(self._keys):
-            #NOT A COMPLETE INDEXING, SO RETURN THE PARTIAL INDEX
-            output=Index(self._keys[-len(key):])
-            output._data=d
-            return output
+            d=self._data
+            for k in self._keys:
+                v=key[k]
+                if v is None:
+                    D.error("can not handle when {{key}} is None", {"key":k})
+                if v not in d:
+                    return None
+                d=d[v]
 
-        return d
+            if len(key)!=len(self._keys):
+                #NOT A COMPLETE INDEXING, SO RETURN THE PARTIAL INDEX
+                output=Index(self._keys[-len(key):])
+                output._data=d
+                return output
+
+                return struct.wrap(d)
+        except Exception, e:
+            D.error("something went wrong", e)
+    
+    def __setitem__(self, key, value):
+        D.error("Not implemented")
+
+
 
 
     def add(self, val):
@@ -382,13 +404,12 @@ class Index(object):
             v=val[k]
             if v is None:
                 D.error("can not handle when {{key}} is None", {"key":k})
-            e=d[v]
-            if e is None:
-                e=Struct()
+            if v not in d:
+                e={}
                 d[v]=e
-            d=e
+            d=d[v]
         v=val[self._keys[-1]]
-        if d[v] is not None:
+        if v in d:
             D.error("key already filled")
         d[v]=val
 

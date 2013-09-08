@@ -6,19 +6,9 @@
 ## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 ################################################################################
 
-# MAKE FAKE DATABASE
-
-# FILL WITH KNOW BUGS
-
-# MAKE FAKE ES
-
-# PULL ALL BUGS OUT OF FAKE DATABASE
-
-# COMPARE TO EXPECTED IN FAKE ES
 import json
 from datetime import datetime
 
-from bzETL import transform_bugzilla
 from bzETL.bz_etl import etl
 from bzETL.extract_bugzilla import get_bugs_table_columns
 from bzETL.util.cnv import CNV
@@ -26,7 +16,6 @@ from bzETL.util.db import DB, SQL
 from bzETL.util.debug import D
 from bzETL.util.elasticsearch import ElasticSearch
 from bzETL.util.files import File
-from bzETL.util.maths import Math
 from bzETL.util.query import Q
 from bzETL.util.randoms import Random
 from bzETL.util.startup import startup
@@ -34,9 +23,9 @@ from bzETL.util.strings import json_scrub
 from bzETL.util.struct import Struct
 from bzETL.util.timer import Timer
 
-from .util import compare_es
-from .util.compare_es import get_all_bug_versions
-from .util.fake_es import Fake_ES
+from util import compare_es
+from util.compare_es import get_all_bug_versions
+from util.fake_es import Fake_ES
 
 def main(settings):
 
@@ -59,17 +48,24 @@ def main(settings):
         param.END_TIME=CNV.datetime2milli(datetime.utcnow())
         param.START_TIME=0
         param.alias_file=settings.param.alias_file
-        param.BUG_IDS_PARTITION=SQL("bug_id in {{bugs}}", {"bugs":db.quote(settings.param.bugs)})
+        param.BUG_IDS_PARTITION=SQL("bug_id in {{bugs}}", {"bugs":db.quote_value(settings.param.bugs)})
 
         etl(db, candidate, param)
 
         #COMPARE ALL BUGS
-        compare_both(candidate, reference, settings, settings.param.bugs)
+        problems=compare_both(candidate, reference, settings, settings.param.bugs)
+        if problems:
+            D.error("DIFFERENCES FOUND")
 
+            
 
-
-#PICK SOME BUGS BY RANDOM
 def random_sample_of_bugs(settings):
+    """
+    I USE THIS TO FIND BUGS THAT CAUSE MY CODE PROBLEMS.  OF COURSE, IT ONLY WORKS
+    WHEN I HAVE A REFERENCE TO COMPARE TO
+    """
+
+
     NUM_TO_TEST=100
     MAX_BUG_ID=900000
 
@@ -98,7 +94,7 @@ def random_sample_of_bugs(settings):
             param.END_TIME=CNV.datetime2milli(datetime.utcnow())
             param.START_TIME=0
             param.alias_file=settings.param.alias_file
-            param.BUG_IDS_PARTITION=SQL("bug_id in {{bugs}}", {"bugs":db.quote(some_bugs)})
+            param.BUG_IDS_PARTITION=SQL("bug_id in {{bugs}}", {"bugs":db.quote_value(some_bugs)})
 
             try:
                 etl(db, candidate, param)
@@ -111,45 +107,56 @@ def random_sample_of_bugs(settings):
                 else:
                     pass
             except Exception, e:
-                D.warning("Total faiure during compare of bugs {{bugs}}", {"bugs":some_bugs}, e)
+                D.warning("Total failure during compare of bugs {{bugs}}", {"bugs":some_bugs}, e)
 
 
 #COMPARE ALL BUGS
 def compare_both(candidate, reference, settings, some_bugs):
     File(settings.param.errors).delete()
-    for bug_id in some_bugs:
-        versions = Q.sort(
-            get_all_bug_versions(candidate, bug_id, datetime.utcnow()),
-            "modified_ts")
-        # WE CAN NOT EXPECT candidate TO BE UP TO DATE BECAUSE IT IS USING AN OLD IMAGE
-        if len(versions)==0:
-            max_time=datetime.utcnow()
-        else:
-            max_time = CNV.milli2datetime(versions[-1].modified_ts)
-            
-        ref_versions = Q.sort(map(compare_es.old2new, get_all_bug_versions(reference, bug_id, max_time)), "modified_ts")
 
-        can = json.dumps(json_scrub(versions), indent=4, sort_keys=True, separators=(',', ': '))
-        ref = json.dumps(json_scrub(ref_versions), indent=4, sort_keys=True, separators=(',', ': '))
-        found_errors=False
-        if can != ref:
+    found_errors=False
+    for bug_id in some_bugs:
+        try:
+            versions = Q.sort(
+                get_all_bug_versions(candidate, bug_id, datetime.utcnow()),
+                "modified_ts")
+            # WE CAN NOT EXPECT candidate TO BE UP TO DATE BECAUSE IT IS USING AN OLD IMAGE
+            if len(versions)==0:
+                max_time = CNV.milli2datetime(settings.bugzilla.expires_on)
+            else:
+                max_time = CNV.milli2datetime(versions[-1].modified_ts)
+
+            ref_versions = \
+                Q.sort(
+                    map(
+                        lambda x: compare_es.old2new(x, settings.bugzilla.expires_on),
+                        get_all_bug_versions(reference, bug_id, max_time)
+                    ),
+                    "modified_ts"
+                )
+
+            can = json.dumps(json_scrub(versions), indent=4, sort_keys=True, separators=(',', ': '))
+            ref = json.dumps(json_scrub(ref_versions), indent=4, sort_keys=True, separators=(',', ': '))
+            if can != ref:
+                found_errors=True
+                File(settings.param.errors + "/try/" + unicode(bug_id) + ".txt").write(can)
+                File(settings.param.errors + "/exp/" + unicode(bug_id) + ".txt").write(ref)
+        except Exception, e:
             found_errors=True
-            File(settings.param.errors + "/try/" + str(bug_id) + ".txt").write(can)
-            File(settings.param.errors + "/exp/" + str(bug_id) + ".txt").write(ref)
+            D.warning("Problem ETL'ing bug {{bug_id}}", {"bug_id":bug_id})
 
     return found_errors
+
+
 
 def test_etl():
     try:
         settings=startup.read_settings()
         D.start(settings.debug)
-
 #        random_sample_of_bugs(settings)
         main(settings)
     finally:
         D.stop()
 
-
-
-
 test_etl()
+
