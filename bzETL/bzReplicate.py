@@ -13,6 +13,7 @@
 
 
 from datetime import datetime, timedelta
+from bzETL.util.timer import Timer
 import transform_bugzilla
 from bzETL.util.randoms import Random
 from bzETL.util.cnv import CNV
@@ -117,28 +118,31 @@ def get_or_create_index(destination_settings, source):
 def replicate(source, destination, pending, last_updated):
     # MAIN ETL LOOP
     for g, bugs in Q.groupby(pending, max_size=BATCH_SIZE):
-        data = source.search({
-            "query": {"filtered": {
-                "query": {"match_all": {}},
-                "filter": {"and": [
-                    {"terms": {"bug_id": bugs}},
-                    {"range": {"modified_ts": {"gte": CNV.datetime2milli(last_updated)}}}
-                ]}
-            }},
-            "from": 0,
-            "size": 200000,
-            "sort": []
-        })
 
-        d2 = map(
-            lambda(x): {"id": x.id, "value": x},
-            map(
-                lambda(x): transform_bugzilla.normalize(
-                    transform_bugzilla.rename_attachments(x._source)),
-                data.hits.hits
+        with Timer("Replicate {{num_versions}} bug versions...", {"num_versions":len(bugs)}):
+            data = source.search({
+                "query": {"filtered": {
+                    "query": {"match_all": {}},
+                    "filter": {"and": [
+                        {"terms": {"bug_id": bugs}},
+                        {"range": {"modified_ts": {"gte": CNV.datetime2milli(last_updated)}}}
+                    ]}
+                }},
+                "from": 0,
+                "size": 200000,
+                "sort": []
+            })
+
+            d2 = map(
+                lambda(x): {"id": x.id, "value": x},
+                map(
+                    lambda(x): transform_bugzilla.normalize(
+                        transform_bugzilla.rename_attachments(x._source)),
+                    data.hits.hits
+                )
             )
-        )
-        destination.add(d2)
+            destination.add(d2)
+
 
 
 
