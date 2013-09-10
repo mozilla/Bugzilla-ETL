@@ -83,9 +83,11 @@ def get_pending(es, since):
         "facets":{"default":{"terms":{"field":"bug_id","size":200000}}}
     })
 
-    if len(result.facets.default.terms)>=200000: D.error("Can not handle more than 200K bugs changed")
+    if len(result.facets.default.terms)>=200000:
+        D.error("Can not handle more than 200K bugs changed")
 
     pending_bugs=multiset(result.facets.default.terms, key_field="term", count_field="count")
+    D.println("Source has {{num}} bug versions for updating", {"num":len(pending_bugs)})
     return pending_bugs
 
 
@@ -137,7 +139,6 @@ def main(settings):
     last_updated=get_last_updated(destination)-timedelta(days=7)
     pending=get_pending(source, last_updated)
 
-    # pending IS IN {"bug_id":b, "count":c} FORM
     # MAIN ETL LOOP
     for g, bugs in Q.groupby(pending, max_size=BATCH_SIZE):
         data=source.search({
