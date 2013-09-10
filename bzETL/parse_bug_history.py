@@ -45,12 +45,12 @@ import math
 from bzETL.util import struct
 from transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS
 
-from .util.cnv import CNV
-from .util.debug import D
-from .util.query import Q
-from .util.struct import Struct
-from .util.files import File
-from .util.maths import Math
+from bzETL.util.cnv import CNV
+from bzETL.util.debug import D
+from bzETL.util.query import Q
+from bzETL.util.struct import Struct
+from bzETL.util.files import File
+from bzETL.util.maths import Math
 
 
 FLAG_PATTERN = re.compile("^(.*)([?+-])(\\([^)]*\\))?$")

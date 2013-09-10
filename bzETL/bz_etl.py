@@ -11,20 +11,20 @@
 from datetime import datetime
 from bzETL.extract_bugzilla import get_bugs_table_columns
 
-from .esReplicate import get_last_updated
+from .bzReplicate import get_last_updated
 from .extract_bugzilla import get_bugs, get_dependencies,get_flags,get_new_activities,get_bug_see_also,get_attachments,get_keywords,get_cc,get_bug_groups,get_duplicates
 from .parse_bug_history import parse_bug_history_
-from .util import struct
-from .util.debug import D
-from .util.struct import Struct
-from .util.files import File
-from .util.startup import startup
-from .util.threads import Queue, Thread
-from .util.cnv import CNV
-from .util.elasticsearch import ElasticSearch
-from .util.multithread import Multithread
-from .util.query import Q
-from .util.db import DB, SQL
+from bzETL.util import struct
+from bzETL.util.debug import D
+from bzETL.util.struct import Struct
+from bzETL.util.files import File
+from bzETL.util.startup import startup
+from bzETL.util.threads import Queue, Thread
+from bzETL.util.cnv import CNV
+from bzETL.util.elasticsearch import ElasticSearch
+from bzETL.util.multithread import Multithread
+from bzETL.util.query import Q
+from bzETL.util.db import DB, SQL
 
 db_cache=[]
 
@@ -138,7 +138,7 @@ def main(settings):
                 }, e)
 
 
-def cli():
+def start():
     #import profile
     #profile.run("""
     try:
@@ -153,4 +153,4 @@ def cli():
 
 
 if __name__=="__main__":
-    cli()
+    start()

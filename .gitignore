@@ -8,3 +8,5 @@ tests/resources/logs
 tests/logs/*
 tests/resources/private_bugs.json
 Error*.txt
+bzETL/util/.svn/*
+bzETL/util/.svn
