@@ -69,6 +69,8 @@ def normalize(bug):
         try:
             if isinstance(v, datetime):
                 bug[dateField] = CNV.datetime2milli(v)
+            elif isinstance(v, long) and len(unicode(v))==13:
+                bug[dateField]=v
             elif DATE_PATTERN_STRICT.match(v):
                 # Convert to "2012/01/01 00:00:00.000"
                 # Example: bug 856732 (cf_last_resolved)
