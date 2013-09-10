@@ -3,7 +3,7 @@ import sha
 import requests
 import time
 from .cnv import CNV
-from .debug import D
+from .logs import Log
 from .basic import nvl
 from .struct import Struct, StructList
 
@@ -111,7 +111,7 @@ class ElasticSearch():
             elif "value" in r:
                 json=CNV.object2JSON(r["value"])
             else:
-                D.error("Expecting every record given to have \"value\" or \"json\" property")
+                Log.error("Expecting every record given to have \"value\" or \"json\" property")
                 
             if id is None: id=sha.new(json).hexdigest()
 
@@ -128,12 +128,12 @@ class ElasticSearch():
 
         for i, item in enumerate(items):
             if not item.index.ok:
-                D.error("{{error}} while loading line:\n{{line}}", {
+                Log.error("{{error}} while loading line:\n{{line}}", {
                     "error":item.index.error,
                     "line":lines[i*2+1]
                 })
 
-        if self.debug: D.println("{{num}} items added", {"num":len(lines)/2})
+        if self.debug: Log.note("{{num}} items added", {"num":len(lines)/2})
 
 
 
@@ -153,7 +153,7 @@ class ElasticSearch():
         try:
             return ElasticSearch.post(self.path+"/_search", data=CNV.object2JSON(query))
         except Exception, e:
-            D.error("Problem with search", e)
+            Log.error("Problem with search", e)
 
     
         
@@ -161,42 +161,42 @@ class ElasticSearch():
     def post(*list, **args):
         try:
             response=requests.post(*list, **args)
-            if DEBUG: D.println(response.content[:130])
+            if DEBUG: Log.note(response.content[:130])
             details=CNV.JSON2object(response.content)
             if details.error is not None:
-                D.error(details.error)
+                Log.error(details.error)
             return details
         except Exception, e:
-            D.error("Problem with call to {{url}}", {"url":list[0]}, e)
+            Log.error("Problem with call to {{url}}", {"url":list[0]}, e)
 
     @staticmethod
     def get(*list, **args):
         try:
             response=requests.get(*list, **args)
-            if DEBUG: D.println(response.content[:130])
+            if DEBUG: Log.note(response.content[:130])
             details=CNV.JSON2object(response.content)
             if details.error is not None:
-                D.error(details.error)
+                Log.error(details.error)
             return details
         except Exception, e:
-            D.error("Problem with call to {{url}}", {"url":list[0]}, e)
+            Log.error("Problem with call to {{url}}", {"url":list[0]}, e)
 
     @staticmethod
     def put(*list, **args):
         try:
             response=requests.put(*list, **args)
-            if DEBUG: D.println(response.content)
+            if DEBUG: Log.note(response.content)
             return response
         except Exception, e:
-            D.error("Problem with call to {{url}}", {"url":list[0]}, e)
+            Log.error("Problem with call to {{url}}", {"url":list[0]}, e)
 
     @staticmethod
     def delete(*list, **args):
         try:
             response=requests.delete(*list, **args)
-            if DEBUG: D.println(response.content)
+            if DEBUG: Log.note(response.content)
             return response
         except Exception, e:
-            D.error("Problem with call to {{url}}", {"url":list[0]}, e)
+            Log.error("Problem with call to {{url}}", {"url":list[0]}, e)
 
 

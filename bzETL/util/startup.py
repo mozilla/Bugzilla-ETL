@@ -10,7 +10,7 @@
 
 import argparse
 from .cnv import CNV
-from .debug import D
+from .logs import Log
 from .files import File
 
 class startup():
@@ -60,6 +60,6 @@ class startup():
 
         settings_file=File(filename)
         if not settings_file.exists:
-            D.error("Can not file settings file {{filename}}", {"filename":filename})
+            Log.error("Can not file settings file {{filename}}", {"filename":filename})
         json=settings_file.read()
         return CNV.JSON2object(json, flexible=True)

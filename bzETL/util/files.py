@@ -55,15 +55,15 @@ class File():
         except Exception, e:
             if e.strerror=="The system cannot find the path specified":
                 return
-            from .debug import D
-            D.warning("Could not remove file", e)
+            from .logs import Log
+            Log.warning("Could not remove file", e)
 
     def create(self):
         try:
             os.makedirs(self.filename)
         except Exception, e:
-            from .debug import D
-            D.error("Could not make directory {{dir_name}}", {"dir_name":self.filename}, e)
+            from .logs import Log
+            Log.error("Could not make directory {{dir_name}}", {"dir_name":self.filename}, e)
 
 
     @property

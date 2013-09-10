@@ -8,15 +8,13 @@
 
 
 from datetime import datetime
-from decimal import Decimal
 from pymysql import connect
 from . import struct
 from .maths import Math
 from .strings import expand_template
 from .basic import nvl
 from .cnv import CNV
-from .debug import D
-from .struct import Struct
+from .logs import Log
 from .query import Q
 from .strings import indent
 from .strings import outdent
@@ -56,7 +54,7 @@ class DB():
                 use_unicode=True
             )
         except Exception, e:
-            D.error("Failure to connect", e)
+            Log.error("Failure to connect", e)
         self.cursor=None
         self.partial_rollback=False
         self.transaction_level=0
@@ -74,7 +72,7 @@ class DB():
                 self.cursor=None
                 self.rollback()
             except Exception, e:
-                D.warning("can not rollback()", e)
+                Log.warning("can not rollback()", e)
             finally:
                 self.close()
             return
@@ -82,7 +80,7 @@ class DB():
         try:
             self.commit()
         except Exception, e:
-            D.warning("can not commit()", e)
+            Log.warning("can not commit()", e)
         finally:
             self.close()
 
@@ -94,12 +92,12 @@ class DB():
 
     def close(self):
         if self.transaction_level>0:
-            D.error("expecting commit() or rollback() before close")
+            Log.error("expecting commit() or rollback() before close")
         self.cursor=None  #NOT NEEDED
         try:
             self.db.close()
         except Exception, e:
-            D.warning("can not close()", e)
+            Log.warning("can not close()", e)
 
     def commit(self):
         try:
@@ -109,17 +107,17 @@ class DB():
                 self.rollback()
             except Exception:
                 pass
-            D.error("Error while processing backlog", e)
+            Log.error("Error while processing backlog", e)
             
         if self.transaction_level==0:
-            D.error("No transaction has begun")
+            Log.error("No transaction has begun")
         elif self.transaction_level==1:
             if self.partial_rollback:
                 try:
                     self.rollback()
                 except Exception:
                     pass
-                D.error("Commit after nested rollback is not allowed")
+                Log.error("Commit after nested rollback is not allowed")
             else:
                 if self.cursor: self.cursor.close()
                 self.cursor=None
@@ -131,18 +129,18 @@ class DB():
         try:
             self.commit()
         except Exception, e:
-            D.error("Can not flush", e)
+            Log.error("Can not flush", e)
 
         try:
             self.begin()
         except Exception, e:
-            D.error("Can not flush", e)
+            Log.error("Can not flush", e)
 
 
     def rollback(self):
         self.backlog=[]     #YAY! FREE!
         if self.transaction_level==0:
-            D.error("No transaction has begun")
+            Log.error("No transaction has begun")
         elif self.transaction_level==1:
             self.transaction_level-=1
             if self.cursor: self.cursor.close()
@@ -151,7 +149,7 @@ class DB():
         else:
             self.transaction_level-=1
             self.partial_rollback=True
-            D.warning("Can not perform partial rollback!")
+            Log.warning("Can not perform partial rollback!")
 
 
 
@@ -162,7 +160,7 @@ class DB():
             self.cursor.close()
             self.cursor=self.db.cursor()
         except Exception, e:
-            D.error("Problem calling procedure "+proc_name, e)
+            Log.error("Problem calling procedure "+proc_name, e)
 
 
 
@@ -175,7 +173,7 @@ class DB():
 
             if param is not None: sql=expand_template(sql, self.quote_param(param))
             sql=outdent(sql)
-            if self.debug: D.println("Execute SQL:\n{{sql}}", {"sql":indent(sql)})
+            if self.debug: Log.note("Execute SQL:\n{{sql}}", {"sql":indent(sql)})
 
             self.cursor.execute(sql)
 
@@ -189,7 +187,7 @@ class DB():
 
             return result
         except Exception, e:
-            D.error("Problem executing SQL:\n"+indent(sql.strip()), e, offset=1)
+            Log.error("Problem executing SQL:\n"+indent(sql.strip()), e, offset=1)
 
             
     # EXECUTE GIVEN METHOD FOR ALL ROWS RETURNED
@@ -206,7 +204,7 @@ class DB():
 
             if param is not None: sql=expand_template(sql,self.quote_param(param))
             sql=outdent(sql)
-            if self.debug: D.println("Execute SQL:\n{{sql}}", {"sql":indent(sql)})
+            if self.debug: Log.note("Execute SQL:\n{{sql}}", {"sql":indent(sql)})
 
             self.cursor.execute(sql)
 
@@ -220,13 +218,13 @@ class DB():
                 self.cursor=None
 
         except Exception, e:
-            D.error("Problem executing SQL:\n"+indent(sql.strip()), e, offset=1)
+            Log.error("Problem executing SQL:\n"+indent(sql.strip()), e, offset=1)
 
         return num
 
     
     def execute(self, sql, param=None):
-        if self.transaction_level==0: D.error("Expecting transation to be started before issuing queries")
+        if self.transaction_level==0: Log.error("Expecting transation to be started before issuing queries")
 
         if param is not None: sql=expand_template(sql,self.quote_param(param))
         sql=outdent(sql)
@@ -264,7 +262,7 @@ class DB():
         (output, _) = proc.communicate(sql)
 
         if proc.returncode:
-            D.error("Unable to execute sql: return code {{return_code}}, {{output}}:\n {{sql}}\n",
+            Log.error("Unable to execute sql: return code {{return_code}}, {{output}}:\n {{sql}}\n",
                     {"sql":indent(sql), "return_code":proc.returncode, "output":output})
 
     @staticmethod
@@ -285,19 +283,19 @@ class DB():
                 try:
                     self.cursor.execute(b)
                 except Exception, e:
-                    D.error("Can not execute sql:\n{{sql}}", {"sql":b}, e)
+                    Log.error("Can not execute sql:\n{{sql}}", {"sql":b}, e)
             self.cursor.close()
             self.cursor = self.db.cursor()
         else:
             for i, g in Q.groupby(backlog, size=MAX_BATCH_SIZE):
                 sql=";\n".join(g)
                 try:
-                    if self.debug: D.println("Execute block of SQL:\n"+indent(sql))
+                    if self.debug: Log.note("Execute block of SQL:\n"+indent(sql))
                     self.cursor.execute(sql)
                     self.cursor.close()
                     self.cursor = self.db.cursor()
                 except Exception, e:
-                    D.error("Problem executing SQL:\n{{sql}}", {"sql":indent(sql.strip())}, e, offset=1)
+                    Log.error("Problem executing SQL:\n{{sql}}", {"sql":indent(sql.strip())}, e, offset=1)
 
 
 
@@ -315,7 +313,7 @@ class DB():
 
             self.execute(command)
         except Exception, e:
-            D.error("problem with record: {{record}}", {"record":record}, e)
+            Log.error("problem with record: {{record}}", {"record":record}, e)
 
     # candidate_key IS LIST OF COLUMNS THAT CAN BE USED AS UID (USUALLY PRIMARY KEY)
     # ONLY INSERT IF THE candidate_key DOES NOT EXIST YET
@@ -379,7 +377,7 @@ class DB():
             else:
                 return self.db.literal(value)
         except Exception, e:
-            D.error("problem quoting SQL", e)
+            Log.error("problem quoting SQL", e)
 
 
     def quote_column(self, column_name):
@@ -394,7 +392,7 @@ def utf8_to_unicode(v):
         else:
             return v
     except Exception, e:
-        D.error("not expected", e)
+        Log.error("not expected", e)
 
         
 #ACTUAL SQL, DO NOT QUOTE THIS STRING

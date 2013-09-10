@@ -2,7 +2,7 @@ from datetime import datetime
 import re
 from bzETL.util import struct
 from bzETL.util.cnv import CNV
-from bzETL.util.debug import D
+from bzETL.util.logs import Log
 from bzETL.util.maths import Math
 from bzETL.util.query import Q
 from bzETL.util.struct import Struct, StructList
@@ -87,7 +87,7 @@ def normalize(bug):
                 #          bug 726635 (cf_due_date)
                 bug[dateField] = CNV.datetime2milli(CNV.string2datetime(v[0:10], "%Y-%m-%d"))
         except Exception, e:
-            D.error("problem with converting date to milli (value={{value}})", {"value":bug[dateField]}, e)
+            Log.error("problem with converting date to milli (value={{value}})", {"value":bug[dateField]}, e)
 
 
 
@@ -107,7 +107,7 @@ def scrub(r):
 
 def _scrub(r):
 #    if r=="1.0":
-#        D.println("")
+#        Log.note("")
 
     try:
         if r is None or r=="":
@@ -139,6 +139,6 @@ def _scrub(r):
         else:
             return r
     except Exception, e:
-        D.warning("Can not scrub: {{json}}", {"json":r})
+        Log.warning("Can not scrub: {{json}}", {"json":r})
 
 

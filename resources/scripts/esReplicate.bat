@@ -1,2 +1,2 @@
-SET PYTHONPATH=.\bzETL;.\lib\pyLibrary
-python .\bzETL\bzReplicate.py --settings=replication_settings.json
+SET PYTHONPATH=.
+CALL pypy bzETL\bzReplicate.py --settings=replication_settings.json

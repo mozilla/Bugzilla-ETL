@@ -15,7 +15,7 @@ from .bzReplicate import get_last_updated
 from .extract_bugzilla import get_bugs, get_dependencies,get_flags,get_new_activities,get_bug_see_also,get_attachments,get_keywords,get_cc,get_bug_groups,get_duplicates
 from .parse_bug_history import parse_bug_history_
 from bzETL.util import struct
-from bzETL.util.debug import D
+from bzETL.util.logs import Log
 from bzETL.util.struct import Struct
 from bzETL.util.files import File
 from bzETL.util.startup import startup
@@ -132,7 +132,7 @@ def main(settings):
                 })
                 etl(db, es, param)
             except Exception, e:
-                D.warning("Problem with etl in range [{{min}}, {{max}})", {
+                Log.warning("Problem with etl in range [{{min}}, {{max}})", {
                     "min":min,
                     "max":max
                 }, e)
@@ -143,12 +143,12 @@ def start():
     #profile.run("""
     try:
         settings=startup.read_settings()
-        D.start(settings.debug)
+        Log.start(settings.debug)
         main(settings)
     except Exception, e:
-        D.error("Problems exist", e)
+        Log.error("Problems exist", e)
     finally:
-        D.stop()
+        Log.stop()
     #""")
 
 

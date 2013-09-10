@@ -50,8 +50,8 @@ class Queue():
             except StopIteration:
                 pass
             except Exception, e:
-                from .debug import D
-                D.warning("Tell me about what happends here", e)
+                from .logs import Log
+                Log.warning("Tell me about what happends here", e)
 
     def add(self, value):
         with self.lock:

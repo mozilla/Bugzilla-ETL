@@ -7,12 +7,13 @@
 ################################################################################
 
 import sys
-from .debug import D
+from .logs import Log
 from .basic import nvl
 import struct
 from .strings import indent, expand_template
 from .struct import StructList, Struct
 from .multiset import multiset
+
 
 # A COLLECTION OF DATABASE OPERATORS (RELATIONAL ALGEBRA OPERATORS)
 class Q:
@@ -49,7 +50,7 @@ class Q:
 
             return agg.values()
         except Exception, e:
-            D.error("Problem grouping", e)
+            Log.error("Problem grouping", e)
 
 
     @staticmethod
@@ -84,7 +85,7 @@ class Q:
             try:
                 o.add(d)
             except Exception, e:
-                D.error("index {{index}} is not unique {{key}} maps to both {{value1}} and {{value2}}", {
+                Log.error("index {{index}} is not unique {{key}} maps to both {{value1}} and {{value2}}", {
                     "index":keys,
                     "key":Q.select([d], keys)[0],
                     "value1":o[d],
@@ -97,7 +98,7 @@ class Q:
     @staticmethod
     def select(data, field_name):
     #return list with values from field_name
-        if isinstance(data, Cube): D.error("Do not know how to deal with cubes yet")
+        if isinstance(data, Cube): Log.error("Do not know how to deal with cubes yet")
         if isinstance(field_name, basestring):
             return [d[field_name] for d in data]
 
@@ -144,7 +145,7 @@ class Q:
         """
 
         assert value_column is not None
-        if isinstance(data, Cube): D.error("Do not know how to deal with cubes yet")
+        if isinstance(data, Cube): Log.error("Do not know how to deal with cubes yet")
 
         if columns is None:
             columns=data.get_columns()
@@ -173,7 +174,7 @@ class Q:
         assert keys is not None
         assert column is not None
         assert value is not None
-        if isinstance(data, Cube): D.error("Do not know how to deal with cubes yet")
+        if isinstance(data, Cube): Log.error("Do not know how to deal with cubes yet")
 
         output=[]
         for key, values in Q.groupby(data, keys):
@@ -231,7 +232,7 @@ class Q:
 
             return sorted(data, cmp=comparer)
         except Exception, e:
-            D.error("Problem sorting", e)
+            Log.error("Problem sorting", e)
 
 
 def groupby_size(data, size):
@@ -274,7 +275,7 @@ def groupby_multiset(data, min_size, max_size):
             g = [k]
 
         if total >= max_size:
-            D.error("({{min}}, {{max}}) range is too strict given step of {{increment}}", {
+            Log.error("({{min}}, {{max}}) range is too strict given step of {{increment}}", {
                 "min": min_size, "max": max_size, "increment":c
             })
 
@@ -296,7 +297,7 @@ def groupby_min_max_size(data, min_size=0, max_size=None,):
 
 class Cube():
     def __init__(self, data=None, edges=None, name=None):
-        if isinstance(data, Cube): D.error("do not know how to handle cubes yet")
+        if isinstance(data, Cube): Log.error("do not know how to handle cubes yet")
 
         columns=Q.get_columns(data)
 
@@ -369,14 +370,14 @@ class Index(object):
             if not isinstance(key, dict):
                 #WE WILL BE FORGIVING IF THE KEY IS NOT IN A LIST
                 if len(self._keys)>1:
-                    D.error("Must be given an array of keys")
+                    Log.error("Must be given an array of keys")
                 key={self._keys[0]: key}
 
             d=self._data
             for k in self._keys:
                 v=key[k]
                 if v is None:
-                    D.error("can not handle when {{key}} is None", {"key":k})
+                    Log.error("can not handle when {{key}} is None", {"key":k})
                 if v not in d:
                     return None
                 d=d[v]
@@ -389,10 +390,10 @@ class Index(object):
 
                 return struct.wrap(d)
         except Exception, e:
-            D.error("something went wrong", e)
+            Log.error("something went wrong", e)
     
     def __setitem__(self, key, value):
-        D.error("Not implemented")
+        Log.error("Not implemented")
 
 
 
@@ -403,14 +404,14 @@ class Index(object):
         for k in self._keys[0:-1]:
             v=val[k]
             if v is None:
-                D.error("can not handle when {{key}} is None", {"key":k})
+                Log.error("can not handle when {{key}} is None", {"key":k})
             if v not in d:
                 e={}
                 d[v]=e
             d=d[v]
         v=val[self._keys[-1]]
         if v in d:
-            D.error("key already filled")
+            Log.error("key already filled")
         d[v]=val
 
 

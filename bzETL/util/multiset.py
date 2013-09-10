@@ -5,10 +5,8 @@
 ################################################################################
 ## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 ################################################################################
-from operator import add
-from util.query import Q
 
-from .debug import D
+from .logs import Log
 
 class multiset():
 
@@ -37,7 +35,7 @@ class multiset():
 
     def remove(self, value):
         if value not in self.dic:
-            D.error("{{value}} is not in multiset", {"value":value})
+            Log.error("{{value}} is not in multiset", {"value":value})
 
         count=self.dic[value]
         count-=1
@@ -47,7 +45,7 @@ class multiset():
             self.dic[value]=count
 
     def __len__(self):
-        return Q.add([c for k,c in self.dic.items()])
+        return sum(self.dic.values())
 
 
     def count(self, value):
