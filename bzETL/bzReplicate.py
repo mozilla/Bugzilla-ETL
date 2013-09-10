@@ -114,6 +114,31 @@ def get_or_create_index(destination_settings, source):
     return ElasticSearch(destination_settings)
 
 
+def replicate(source, destination, pending, last_updated):
+    # MAIN ETL LOOP
+    for g, bugs in Q.groupby(pending, max_size=BATCH_SIZE):
+        data = source.search({
+            "query": {"filtered": {
+                "query": {"match_all": {}},
+                "filter": {"and": [
+                    {"terms": {"bug_id": bugs}},
+                    {"range": {"modified_ts": {"gte": CNV.datetime2milli(last_updated)}}}
+                ]}
+            }},
+            "from": 0,
+            "size": 200000,
+            "sort": []
+        })
+
+        d2 = map(
+            lambda(x): {"id": x.id, "value": x},
+            map(
+                lambda(x): transform_bugzilla.normalize(
+                    transform_bugzilla.rename_attachments(x._source)),
+                data.hits.hits
+            )
+        )
+        destination.add(d2)
 
 
 
@@ -139,29 +164,8 @@ def main(settings):
     last_updated=get_last_updated(destination)-timedelta(days=7)
     pending=get_pending(source, last_updated)
 
-    # MAIN ETL LOOP
-    for g, bugs in Q.groupby(pending, max_size=BATCH_SIZE):
-        data=source.search({
-            "query":{"filtered":{
-                "query":{"match_all":{}},
-                "filter":{"and":[
-                    {"terms":{"bug_id":bugs}},
-                    {"range":{"modified_ts":{"gte":CNV.datetime2milli(last_updated)}}}
-                ]}
-            }},
-            "from":0,
-            "size":200000,
-            "sort":[]
-        })
+    replicate(source, destination, pending, last_updated)
 
-        d2=map(
-            lambda(x): {"id":x.id, "value":x},
-            map(
-                lambda(x): transform_bugzilla.normalize(transform_bugzilla.rename_attachments(x)),
-                data.hits.hits
-            )
-        )
-        destination.add(d2)
 
 def start():
     try:
