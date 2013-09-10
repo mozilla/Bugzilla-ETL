@@ -8,7 +8,7 @@
 
 from math import sqrt
 from .basic import nvl
-from .debug import D
+from .logs import Log
 from .struct import Struct
 
 DEBUG=True
@@ -31,10 +31,10 @@ def stats2z_moment(stats):
     m=Z_moment(stats.count, mz1, mz2, mz3, mz4)
     if DEBUG:
         v = z_moment2stats(m, unbiased=False)
-        if not closeEnough(v.count, stats.count): D.error("convertion error")
-        if not closeEnough(v.mean, stats.mean): D.error("convertion error")
+        if not closeEnough(v.count, stats.count): Log.error("convertion error")
+        if not closeEnough(v.mean, stats.mean): Log.error("convertion error")
         if not closeEnough(v.variance, stats.variance):
-            D.error("convertion error")
+            Log.error("convertion error")
 
     return m
 

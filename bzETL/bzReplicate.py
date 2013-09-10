@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 import transform_bugzilla
 from bzETL.util.randoms import Random
 from bzETL.util.cnv import CNV
-from bzETL.util.debug import D
+from bzETL.util.logs import Log
 from bzETL.util.query import Q
 from bzETL.util.startup import startup
 from bzETL.util.files import File
@@ -47,7 +47,7 @@ def extract_from_file(source_settings, destination):
             except Exception, e:
                 filename="Error_"+Random.hex(20)+".txt"
                 File(filename).write(d)
-                D.warning("Can not convert block {{block}} (file={{host}})", {"block":g, "filename":filename}, e)
+                Log.warning("Can not convert block {{block}} (file={{host}})", {"block":g, "filename":filename}, e)
 
 
 
@@ -67,7 +67,7 @@ def get_last_updated(es):
         if results.facets["0"].count==0: return datetime.min;
         return CNV.milli2datetime(results.facets["0"].max)
     except Exception, e:
-        D.error("Can not get_last_updated from {{host}}/{{index}}", {"host":es.settings.host, "index":es.settings.index}, e)
+        Log.error("Can not get_last_updated from {{host}}/{{index}}", {"host":es.settings.host, "index":es.settings.index}, e)
 
 
 def get_pending(es, since):
@@ -84,10 +84,10 @@ def get_pending(es, since):
     })
 
     if len(result.facets.default.terms)>=200000:
-        D.error("Can not handle more than 200K bugs changed")
+        Log.error("Can not handle more than 200K bugs changed")
 
     pending_bugs=multiset(result.facets.default.terms, key_field="term", count_field="count")
-    D.println("Source has {{num}} bug versions for updating", {"num":len(pending_bugs)})
+    Log.note("Source has {{num}} bug versions for updating", {"num":len(pending_bugs)})
     return pending_bugs
 
 
@@ -106,7 +106,7 @@ def get_or_create_index(destination_settings, source):
         assert schema.mappings is not None
         ElasticSearch.create_index(settings, schema)
     elif len(indexes)>1:
-        D.error("do not know how to replicate to more than one index")
+        Log.error("do not know how to replicate to more than one index")
     elif indexes[0].alias is not None:
         destination_settings.alias=destination_settings.index
         destination_settings.index=indexes[0].index
@@ -166,12 +166,12 @@ def main(settings):
 def start():
     try:
         settings=startup.read_settings()
-        D.start(settings.debug)
+        Log.start(settings.debug)
         main(settings)
     except Exception, e:
-        D.error("Problems exist", e)
+        Log.error("Problems exist", e)
     finally:
-        D.stop()
+        Log.stop()
 
 
 if __name__=="__main__":

@@ -13,7 +13,7 @@ import datetime
 import re
 import time
 
-from .debug import D
+from .logs import Log
 import struct
 from .strings import expand_template, NewJSONEncoder, json_decoder, json_scrub
 from .struct import StructList
@@ -33,7 +33,7 @@ class CNV:
                 return json_encoder.encode(obj)
             
         except Exception, e:
-            D.error("Can not encode into JSON: {{value}}", {"value":repr(obj)}, e)
+            Log.error("Can not encode into JSON: {{value}}", {"value":repr(obj)}, e)
 
     @staticmethod
     def JSON2object(json_string, params=None, flexible=False):
@@ -49,7 +49,7 @@ class CNV:
             if isinstance(obj, list): return StructList(obj)
             return struct.wrap(obj)
         except Exception, e:
-            D.error("Can not decode JSON:\n\t"+json_string, e)
+            Log.error("Can not decode JSON:\n\t"+json_string, e)
 
 
     @staticmethod
@@ -58,7 +58,7 @@ class CNV:
         try:
             return datetime.datetime.strptime(value, format)
         except Exception, e:
-            D.error("Can not format {{value}} with {{format}}", {"value":value, "format":format}, e)
+            Log.error("Can not format {{value}} with {{format}}", {"value":value, "format":format}, e)
 
 
     @staticmethod
@@ -66,7 +66,7 @@ class CNV:
         try:
             return value.strftime(format)
         except Exception, e:
-            D.error("Can not format {{value}} with {{format}}", {"value":value, "format":format}, e)
+            Log.error("Can not format {{value}} with {{format}}", {"value":value, "format":format}, e)
 
 
 
@@ -172,7 +172,7 @@ class CNV:
             try:
                 return float(v)
             except Exception, e:
-                D.error("Not a number ({{value}})", {"value":v}, e)
+                Log.error("Not a number ({{value}})", {"value":v}, e)
 
 
 

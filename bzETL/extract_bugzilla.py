@@ -8,7 +8,7 @@
 ################################################################################
 
 
-from bzETL.util.debug import D
+from bzETL.util.logs import Log
 from bzETL.util.struct import Struct
 
 
@@ -76,7 +76,7 @@ def get_bugs(db, param):
 
         return output
     except Exception, e:
-        D.error("can not get basic bug data", e)
+        Log.error("can not get basic bug data", e)
 
 
 def flatten_bugs_record(r, bugs_fields, output):
@@ -137,7 +137,7 @@ def flatten_bugs_record(r, bugs_fields, output):
     for field_name in bugs_fields:
         value = r[field_name]
         if field_name=="bug_file_loc":
-            D.println(value)
+            Log.note(value)
         if value != "---":
             newRow=Struct()
             newRow.bug_id=r.bug_id

@@ -16,8 +16,6 @@ import struct, threads
 from .files import File
 from .strings import indent, expand_template
 from .threads import Thread
-from .struct import StructList
-
 
 
 
@@ -32,20 +30,37 @@ logging_multi=None
 
 
 
-
-
-class D(object):
+class Log():
     """
     FOR STRUCTURED LOGGING AND EXCEPTION CHAINING
     """
+
+    @classmethod
+    def new_instance(cls, settings):
+        settings=struct.wrap(settings)
+        if settings["class"] is not None:
+            if not settings["class"].startswith("logging.handlers."):
+                return make_log_from_settings(settings)
+            else:
+                return Log_usingLogger(settings)
+        if settings.file is not None: return Log_usingFile(file)
+        if settings.filename is not None: return Log_usingFile(settings.filename)
+        if settings.stream is not None: return Log_usingStream(settings.stream)
 
     @classmethod
     def add_log(cls, log):
         logging_multi.add_log(log)
 
 
+
+
+
     @staticmethod
     def println(template, params=None):
+        Log.note(template, params)
+
+    @staticmethod
+    def note(template, params=None):
         template="{{log_timestamp}} - "+template
         if params is None: params={}
 
@@ -65,7 +80,7 @@ class D(object):
             cause=Except(WARNING, unicode(cause), trace=format_trace(traceback.extract_tb(sys.exc_info()[2]), 0))
 
         e = Except(WARNING, template, params, cause, format_trace(traceback.extract_stack(), 1))
-        D.println(unicode(e))
+        Log.note(unicode(e))
 
         
     #raise an exception with a trace for the cause too
@@ -100,13 +115,11 @@ class D(object):
 
         if not isinstance(settings.log, list): settings.log=[settings.log]
         for log in settings.log:
-            D.add_log(Log.new_instance(log))
+            Log.add_log(Log.new_instance(log))
 
     @classmethod
     def stop(cls):
         main_log.stop()
-
-D.info=D.println
 
 
 def format_trace(tbs, trim=0):
@@ -155,21 +168,6 @@ class Except(Exception):
             output+="\ncaused by\n\t"+self.cause.__str__()
 
         return output+"\n"
-
-
-
-class Log():
-    @classmethod
-    def new_instance(cls, settings):
-        settings=struct.wrap(settings)
-        if settings["class"] is not None:
-            if not settings["class"].startswith("logging.handlers."):
-                return make_log_from_settings(settings)
-            else:
-                return Log_usingLogger(settings)
-        if settings.file is not None: return Log_usingFile(file)
-        if settings.filename is not None: return Log_usingFile(settings.filename)
-        if settings.stream is not None: return Log_usingStream(settings.stream)
 
 
 
@@ -252,7 +250,7 @@ class Log_usingThread():
             self.queue.add({"template":template, "params":params})
             return self
         except Exception, e:
-            sys.stdout.write("IF YOU SEE THIS, IT IS LIKELY YOU FORGOT TO RUN D.start() FIRST")
+            sys.stdout.write("IF YOU SEE THIS, IT IS LIKELY YOU FORGOT TO RUN Log.start() FIRST")
             raise e  #OH NO!
 
     def stop(self):

@@ -6,7 +6,7 @@
 ## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 ################################################################################
 import time
-from .debug import D
+from .logs import Log
 
 
 ## USAGE:
@@ -29,7 +29,7 @@ class Timer:
     def __exit__(self, type, value, traceback):
         self.end = time.clock()
         self.interval = self.end - self.start
-        D.println("{{description}} took {{duration}} sec", {
+        Log.note("{{description}} took {{duration}} sec", {
             "description":self.description,
             "duration":round(self.interval, 3)
         })

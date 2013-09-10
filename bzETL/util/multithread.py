@@ -8,7 +8,7 @@
 
 import threading
 from .basic import nvl
-from .debug import D
+from .logs import Log
 from .threads import Queue, Thread
 
 
@@ -29,7 +29,7 @@ class worker_thread(threading.Thread):
     #REQUIRED TO DETECT KEYBOARD, AND OTHER, INTERRUPTS
     def join(self, timeout=None):
         while self.isAlive():
-            D.println("Waiting on thread {{thread}}", {"thread":self.name})
+            Log.note("Waiting on thread {{thread}}", {"thread":self.name})
             threading.Thread.join(self, nvl(timeout, 0.5))
 
     def run(self):
@@ -43,13 +43,13 @@ class worker_thread(threading.Thread):
                 if self.keep_running and self.out_queue is not None:
                     self.out_queue.add(result)
             except Exception, e:
-                D.warning("Can not execute with params={{params}}", {"params": params}, e)
+                Log.warning("Can not execute with params={{params}}", {"params": params}, e)
                 if self.keep_running and self.out_queue is not None:
                     self.out_queue.add(e)
 
         self.keep_running=False
         if DEBUG:
-            D.println("{{thread}} DONE", {"thread":self.name})
+            Log.note("{{thread}} DONE", {"thread":self.name})
 
 
     def stop(self):
@@ -87,7 +87,7 @@ class Multithread():
         try:
             self.inbound.close() #SEND STOPS TO WAKE UP THE WORKERS WAITING ON inbound.pop()
         except Exception, e:
-            D.warning("Problem adding to inbound", e)
+            Log.warning("Problem adding to inbound", e)
 
         self.join()
 
@@ -99,9 +99,9 @@ class Multithread():
             for t in self.threads:
                 t.join()
         except (KeyboardInterrupt, SystemExit):
-            D.println("Shutdow Started, please be patient")
+            Log.note("Shutdow Started, please be patient")
         except Exception, e:
-            D.error("Unusual shutdown!", e)
+            Log.error("Unusual shutdown!", e)
         finally:
             for t in self.threads:
                 t.keep_running=False

@@ -13,7 +13,7 @@ from bzETL.bz_etl import etl
 from bzETL.extract_bugzilla import get_bugs_table_columns
 from bzETL.util.cnv import CNV
 from bzETL.util.db import DB, SQL
-from bzETL.util.debug import D
+from bzETL.util.logs import Log
 from bzETL.util.elasticsearch import ElasticSearch
 from bzETL.util.files import File
 from bzETL.util.query import Q
@@ -55,7 +55,7 @@ def main(settings):
         #COMPARE ALL BUGS
         problems=compare_both(candidate, reference, settings, settings.param.bugs)
         if problems:
-            D.error("DIFFERENCES FOUND")
+            Log.error("DIFFERENCES FOUND")
 
             
 
@@ -102,12 +102,12 @@ def random_sample_of_bugs(settings):
                 #COMPARE ALL BUGS
                 found_errors=compare_both(candidate, reference, settings, some_bugs)
                 if found_errors:
-                    D.println("Errors found")
+                    Log.note("Errors found")
                     break
                 else:
                     pass
             except Exception, e:
-                D.warning("Total failure during compare of bugs {{bugs}}", {"bugs":some_bugs}, e)
+                Log.warning("Total failure during compare of bugs {{bugs}}", {"bugs":some_bugs}, e)
 
 
 #COMPARE ALL BUGS
@@ -143,7 +143,7 @@ def compare_both(candidate, reference, settings, some_bugs):
                 File(settings.param.errors + "/exp/" + unicode(bug_id) + ".txt").write(ref)
         except Exception, e:
             found_errors=True
-            D.warning("Problem ETL'ing bug {{bug_id}}", {"bug_id":bug_id})
+            Log.warning("Problem ETL'ing bug {{bug_id}}", {"bug_id":bug_id})
 
     return found_errors
 
@@ -152,11 +152,11 @@ def compare_both(candidate, reference, settings, some_bugs):
 def test_etl():
     try:
         settings=startup.read_settings()
-        D.start(settings.debug)
+        Log.start(settings.debug)
 #        random_sample_of_bugs(settings)
         main(settings)
     finally:
-        D.stop()
+        Log.stop()
 
 test_etl()
 

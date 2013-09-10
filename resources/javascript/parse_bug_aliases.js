@@ -487,7 +487,7 @@ function processFlagChange(aTarget, aChange, aTimestamp, aModifiedBy) {
             existingFlag["modified_ts"] = aTimestamp;
             existingFlag["previous_status"] = flag["request_status"];
             existingFlag["previous_value"] = flagStr;
-            existingFlag["request_status"] = "D";
+            existingFlag["request_status"] = "Log.error";
             existingFlag["value"] = "";
             // request_type stays the same.
             // requestee stays the same.

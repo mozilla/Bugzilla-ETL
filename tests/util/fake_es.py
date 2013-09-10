@@ -1,5 +1,5 @@
 from bzETL.util.cnv import CNV
-from bzETL.util.debug import D
+from bzETL.util.logs import Log
 from bzETL.util.files import File
 from bzETL.util.struct import Struct, wrap
 
@@ -24,7 +24,7 @@ class Fake_ES():
 
         self.data.dict.update(records)
         File(self.filename).write(CNV.object2JSON(self.data))
-        D.println("{{num}} items added", {"num":len(records)})
+        Log.note("{{num}} items added", {"num":len(records)})
 
 
 
@@ -39,7 +39,7 @@ def parse_filter(filter):
         parts=[_range(field, type, v) for type, v in limits.items()]
         return _and(parts)
     else:
-        D.error("{{type}} filter not supported by fake_es yet", {"type":type})
+        Log.error("{{type}} filter not supported by fake_es yet", {"type":type})
 
 
 def _and(args):
@@ -63,5 +63,5 @@ def _range(field, type, value):
         def output(data):
             return data[field]<=value
     else:
-        D.error("Range type {{type}} not supported yet", {"type":type})
+        Log.error("Range type {{type}} not supported yet", {"type":type})
     return output
