@@ -28,7 +28,7 @@ NOTE="NOTE"
 
 
 main_log=None
-logging_multi=None
+Logging_multi=None
 
 
 

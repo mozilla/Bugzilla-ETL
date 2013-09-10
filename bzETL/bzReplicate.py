@@ -14,14 +14,14 @@
 
 from datetime import datetime, timedelta
 import transform_bugzilla
-from .util.randoms import Random
-from .util.cnv import CNV
-from .util.debug import D
-from .util.query import Q
-from .util.startup import startup
-from .util.files import File
-from .util.multiset import multiset
-from .util.elasticsearch import ElasticSearch
+from bzETL.util.randoms import Random
+from bzETL.util.cnv import CNV
+from bzETL.util.debug import D
+from bzETL.util.query import Q
+from bzETL.util.startup import startup
+from bzETL.util.files import File
+from bzETL.util.multiset import multiset
+from bzETL.util.elasticsearch import ElasticSearch
 
 
 far_back=datetime.utcnow()-timedelta(weeks=52)
@@ -162,9 +162,7 @@ def main(settings):
         )
         destination.add(d2)
 
-if __name__=="__main__":
-#    import profile
-#    profile.run("""
+def start():
     try:
         settings=startup.read_settings()
         D.start(settings.debug)
@@ -173,6 +171,7 @@ if __name__=="__main__":
         D.error("Problems exist", e)
     finally:
         D.stop()
-#    """)
 
 
+if __name__=="__main__":
+    start()

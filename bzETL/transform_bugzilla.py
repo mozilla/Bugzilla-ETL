@@ -1,11 +1,11 @@
 from datetime import datetime
 import re
 from bzETL.util import struct
-from .util.cnv import CNV
-from .util.debug import D
-from .util.maths import Math
-from .util.query import Q
-from .util.struct import Struct, StructList
+from bzETL.util.cnv import CNV
+from bzETL.util.debug import D
+from bzETL.util.maths import Math
+from bzETL.util.query import Q
+from bzETL.util.struct import Struct, StructList
 
 
 MULTI_FIELDS = ["cc", "blocked", "dependson", "dupe_by", "dupe_of", "flags", "keywords", "bug_group", "see_also"]

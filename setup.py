@@ -9,7 +9,7 @@ path = lambda *p: os.path.join(root, *p)
 
 setup(
     name='bzETL',
-    version=0.1,
+    version=0.2,
     description='Mozilla Bugzilla Bug Version ETL',
     long_description=open(path('README.md')).read(),
     author='Kyle Lahnakoski',
@@ -20,9 +20,11 @@ setup(
     install_requires=['pymysql', 'requests'],
     include_package_data=True,
     zip_safe=False,
-    entry_points="""
-    # -*- Entry points: -*-
-    [console_scripts]
-    bzetl = bzETL.bz_etl:cli
-    """,
+    entry_points={
+        "console_scripts":[
+            "bzetl = bzETL.bz_etl:start",
+            "bzreplicate = bz.ETL.bzReplicate:start"
+        ]
+    }
+
 )

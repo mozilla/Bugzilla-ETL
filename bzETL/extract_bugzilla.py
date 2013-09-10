@@ -8,8 +8,8 @@
 ################################################################################
 
 
-from .util.debug import D
-from .util.struct import Struct
+from bzETL.util.debug import D
+from bzETL.util.struct import Struct
 
 
 def get_bugs_table_columns(db, schema_name):
