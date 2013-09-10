@@ -1,0 +1,2 @@
+pymysql
+requests==1.2.3
