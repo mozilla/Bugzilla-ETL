@@ -9,7 +9,7 @@
 ## REPLACES THE KETTLE FLOW CONTROL PROGRAM, AND BASH SCRIPT
 
 from datetime import datetime
-from bzETL.extract_bugzilla import get_bugs_table_columns
+from bzETL.extract_bugzilla import get_bugs_table_columns, get_private_bugs, get_private_attachments, get_recent_private_attachments
 
 from .bzReplicate import get_last_updated
 from .extract_bugzilla import get_bugs, get_dependencies,get_flags,get_new_activities,get_bug_see_also,get_attachments,get_keywords,get_cc,get_bug_groups,get_duplicates
@@ -27,6 +27,7 @@ from bzETL.util.query import Q
 from bzETL.util.db import DB, SQL
 
 db_cache=[]
+
 
 
 #MIMIC THE KETTLE GRAPHICAL PROGRAM
@@ -122,13 +123,47 @@ def main(settings):
         param.end=db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id
 
 
+        ########################################################################
+        ## ES TAKES TIME TO DELETE RECORDS, DO DELETE FIRST WITH HOPE THE
+        ## INDEX GETS A REWRITE DURING ADD OF NEW RECORDS
+        ########################################################################
+
+        #REMOVE PRIVATE BUGS
+        private_bugs=get_private_bugs(db, param)
+        es.delete_record({"terms":{"bug_id":private_bugs}})
+
+        #REMOVE **RECENT** PRIVATE ATTACHMENTS
+        private_attachments=get_recent_private_attachments(db, param)
+        bugs_to_refresh=set([a.bug_id for a in private_attachments])
+        es.delete_record({"terms":{"bug_id":bugs_to_refresh}})
+        
+        #REBUILD BUGS THAT GOT REMOVED
+        refresh_param=Struct(**param)
+        refresh_param.BUG_IDS_PARTITION=SQL("bug_id in {{bugs_to_refresh}}", {
+            "bugs_to_refresh":bugs_to_refresh-private_bugs #BUT NOT PRIVATE BUGS
+        })
+        refresh_param.START_TIME=0
+
+        try:
+            etl(db, es, refresh_param)
+        except Exception, e:
+            Log.warning("Problem with etl using paremeters {{parameters}}", {
+                "parameters":refresh_param
+            }, e)
+
+
+        ########################################################################
+        ## MAIN ETL LOOP
+        ########################################################################
+
         #WE SHOULD SPLIT THIS OUT INTO PROCESSES FOR GREATER SPEED!!
         for b in range(settings.param.start, param.end, settings.param.increment):
             (min, max)=(b, b+settings.param.increment)
             try:
-                param.BUG_IDS_PARTITION=SQL("(bug_id>={{min}} and bug_id<{{max}})", {
+                param.BUG_IDS_PARTITION=SQL("(bug_id>={{min}} and bug_id<{{max}}) and bug_id not in {{private_bugs}}", {
                     "min":min,
-                    "max":max
+                    "max":max,
+                    "private_bugs":private_bugs
                 })
                 etl(db, es, param)
             except Exception, e:
