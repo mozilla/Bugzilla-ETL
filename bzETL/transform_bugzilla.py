@@ -8,6 +8,8 @@ from bzETL.util.query import Q
 from bzETL.util.struct import Struct, StructList
 
 
+USE_ATTACHMENTS_DOT = True
+
 MULTI_FIELDS = ["cc", "blocked", "dependson", "dupe_by", "dupe_of", "flags", "keywords", "bug_group", "see_also"]
 NUMERIC_FIELDS=[      "blocked", "dependson", "dupe_by", "dupe_of",
     "votes",
@@ -28,7 +30,8 @@ DATE_PATTERN_RELAXED = re.compile("^[0-9]{4}[\\/-][0-9]{2}[\\/-][0-9]{2}")
 #WE ARE RENAMING THE ATTACHMENTS FIELDS TO CAUSE LESS PROBLEMS IN ES QUERIES
 def rename_attachments(bug_version):
     if bug_version.attachments is None: return bug_version
-    bug_version.attachments=CNV.JSON2object(CNV.object2JSON(bug_version.attachments).replace("attachments.", "attachments_"))
+    if not USE_ATTACHMENTS_DOT:
+        bug_version.attachments=CNV.JSON2object(CNV.object2JSON(bug_version.attachments).replace("attachments.", "attachments_"))
     return bug_version
 
 
@@ -43,6 +46,9 @@ def normalize(bug):
     bug.flags=Q.sort(bug.flags, "value")
 
     if bug.attachments is not None:
+        if USE_ATTACHMENTS_DOT:
+            bug.attachments=CNV.JSON2object(CNV.object2JSON(bug.attachments).replace("attachments.", "attachments_"))
+
         bug.attachments=Q.sort(bug.attachments, "attach_id")
         for a in bug.attachments:
             a.flags=Q.sort(a.flags, "value")

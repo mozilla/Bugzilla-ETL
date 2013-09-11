@@ -14,7 +14,7 @@
 	"debug":{
         "log":[{
 			"class": "logging.handlers.RotatingFileHandler",
-			"filename": "./tests/logs/replication.log",
+			"filename": "./resources/logs/replication.log",
 			"maxBytes": 10000000,
 			"backupCount": 200,
 			"encoding": "utf8"
