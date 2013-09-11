@@ -44,6 +44,34 @@ def get_bugs_table_columns(db, schema_name):
 
 
 
+def get_private_bugs(db, param):
+    if param.allow_private_bugs:
+        return []
+    
+    try:
+        private_bugs=db.query("SELECT DISTINCT bug_id FROM bug_group_map")
+        return set(private_bugs)
+    except Exception, e:
+        Log.error("problem getting private bugs", e)
+
+
+def get_recent_private_attachments(db, param):
+    if param.allow_private_bugs:
+        return []
+
+    try:
+        return db.query("""
+        SELECT
+            a.attach_id,
+            a.bug_id
+        FROM
+            bugs_activity a
+        WHERE
+            UNIX_TIMESTAMP(CONVERT_TZ(bug_when, 'US/Pacific','UTC'))*1000 >= {{START_TIME}}
+        """, param)
+    except Exception, e:
+        Log.error("problem getting recent private attachments", e)
+
 
 def get_bugs(db, param):
     try:
@@ -292,6 +320,11 @@ def get_keywords(db, param):
 
 
 def get_attachments(db, param):
+    if param.allow_private_bugs:
+        param.attachments_filter="1=1"  #ALWAYS TRUE, ALLOWS ALL ATTACHMENTS
+    else:
+        param.attachments_filter="isprivate=0"
+
     output=db.query("""
         SELECT bug_id
             , UNIX_TIMESTAMP(CONVERT_TZ(a.creation_ts, 'US/Pacific','UTC'))*1000 AS modified_ts
@@ -305,11 +338,12 @@ def get_attachments(db, param):
         FROM
             attachments a
             JOIN profiles p ON a.submitter_id = p.userid
-        WHERE bug_id IN (
+        WHERE
+            bug_id IN (
             SELECT bug_id FROM bugs WHERE
             UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > {{START_TIME}}
             AND {{BUG_IDS_PARTITION}}
-            )
+            ) AND {{attachments_filter}}
         ORDER BY
             bug_id,
             attach_id,
@@ -317,7 +351,9 @@ def get_attachments(db, param):
     """, param)
     return flatten_attachments(output)
 
+
 attachments_fields = ["created_ts", "created_by", "attachments_ispatch", "attachments_isobsolete", "attachments_isprivate"]
+
 
 def flatten_attachments(data):
     output=[]
@@ -375,6 +411,8 @@ def get_new_activities(db, param):
             fielddefs field ON a.fieldid = field.`id`
         JOIN
             profiles p ON a.who = p.userid
+        WHERE
+            UNIX_TIMESTAMP(CONVERT_TZ(bug_when, 'US/Pacific','UTC'))*1000 >= {{START_TIME}}
         ORDER BY
             bug_id,
             bug_when DESC,

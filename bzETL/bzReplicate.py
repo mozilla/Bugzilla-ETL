@@ -38,7 +38,6 @@ def fix_json(json):
 
 
 
-
 def extract_from_file(source_settings, destination):
     with File(source_settings.filename).iter() as handle:
         for g, d in Q.groupby(handle, size=BATCH_SIZE):
@@ -116,9 +115,10 @@ def get_or_create_index(destination_settings, source):
 
 
 def replicate(source, destination, pending, last_updated):
-    # MAIN ETL LOOP
+    """
+    COPY source RECORDS TO detination
+    """
     for g, bugs in Q.groupby(pending, max_size=BATCH_SIZE):
-
         with Timer("Replicate {{num_bugs}} bugs...", {"num_bugs":len(bugs)}):
             data = source.search({
                 "query": {"filtered": {

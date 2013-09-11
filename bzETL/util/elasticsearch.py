@@ -99,6 +99,19 @@ class ElasticSearch():
             })
         )
 
+    def delete_record(self, query):
+        if isinstance(query, dict):
+            ElasticSearch.delete(
+                self.path+"/_query",
+                data=CNV.object2JSON(query)
+            )
+        else:
+            ElasticSearch.delete(
+                self.path+"/"+query
+            )
+
+
+
     # RECORDS MUST HAVE id AND json AS A STRING OR
     # HAVE id AND value AS AN OBJECT
     def add(self, records):
