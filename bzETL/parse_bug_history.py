@@ -33,8 +33,8 @@
 # Merge the current state object into this version object
 # Update fields according to the modification data
 #
-# When doing an incremental update (ie. with START_TIME specified), Look at any bug that has been modified since the
-# cutoff time, and build all versions.  Only index versions after START_TIME in ElasticSearch.
+# When doing an incremental update (ie. with start_time specified), Look at any bug that has been modified since the
+# cutoff time, and build all versions.  Only index versions after start_time in ElasticSearch.
 
 
 # Used to split a flag into (type, status [,requestee])
@@ -85,8 +85,8 @@ class parse_bug_history_():
             if self.settings.debug: Log.note("process row: {{row}}", {"row":row_in})
 
             # For debugging purposes:
-            if self.settings.END_TIME > 0 and row_in.modified_ts > self.settings.END_TIME:
-                Log.note("Skipping change after END_TIME (" + self.settings.END_TIME + ")")
+            if self.settings.end_time > 0 and row_in.modified_ts > self.settings.end_time:
+                Log.note("Skipping change after end_time={{end_time}}", {"end_time":self.settings.end_time})
                 return
 
             # If we have switched to a new bug
@@ -503,10 +503,10 @@ class parse_bug_history_():
                 if not mergeBugVersion:
                     # This is not a "merge", so output a row for this bug version.
                     self.currBugVersion+=1
-                    # Output this version if either it was modified after START_TIME, or if it
-                    # expired after START_TIME (the latter will update the last known version of the bug
+                    # Output this version if either it was modified after start_time, or if it
+                    # expired after start_time (the latter will update the last known version of the bug
                     # that did not have a value for "expires_on").
-                    if self.currBugState.modified_ts >= self.settings.START_TIME or self.currBugState.expires_on >= self.settings.START_TIME:
+                    if self.currBugState.modified_ts >= self.settings.start_time or self.currBugState.expires_on >= self.settings.start_time:
                         state=normalize(self.currBugState)
                         if state.blocked is not None and len(state.blocked)==1 and "None" in state.blocked:
                             Log.note("PROBLEM error")
@@ -516,9 +516,9 @@ class parse_bug_history_():
                         self.output.add(state)
 
                     else:
-                        Log.note("PROBLEM Not outputting ${-id} - it is before self.START_TIME ({{start_time}})", {
+                        Log.note("PROBLEM Not outputting ${-id} - it is before self.start_time ({{start_time}})", {
                             "_id":self.currBugState._id,
-                            "start_time":self.settings.START_TIME
+                            "start_time":self.settings.start_time
                         })
 
                 else:

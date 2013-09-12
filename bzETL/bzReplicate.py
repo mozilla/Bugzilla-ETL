@@ -42,7 +42,13 @@ def extract_from_file(source_settings, destination):
     with File(source_settings.filename).iter() as handle:
         for g, d in Q.groupby(handle, size=BATCH_SIZE):
             try:
-                d2=map(lambda(x): {"id":x.id, "value":x}, map(lambda(x): transform_bugzilla.normalize(CNV.JSON2object(fix_json(x))), d))
+                d2 = map(
+                    lambda(x): {"id":x.id, "value":x},
+                    map(
+                        lambda(x): transform_bugzilla.normalize(CNV.JSON2object(fix_json(x))),
+                        d
+                    )
+                )
                 destination.add(d2)
             except Exception, e:
                 filename="Error_"+Random.hex(20)+".txt"
@@ -91,25 +97,24 @@ def get_pending(es, since):
     return pending_bugs
 
 
-
 # USE THE source TO GET THE INDEX SCHEMA
 def get_or_create_index(destination_settings, source):
     #CHECK IF INDEX, OR ALIAS, EXISTS
-    es=ElasticSearch(destination_settings)
-    aliases=es.get_aliases()
+    es = ElasticSearch(destination_settings)
+    aliases = es.get_aliases()
 
-    indexes=[a for a in aliases if a.alias==destination_settings.index]
-    if len(indexes)==0:
+    indexes = [a for a in aliases if a.alias == destination_settings.index]
+    if len(indexes) == 0:
         #CREATE INDEX
-        schema=source.get_schema()
+        schema = source.get_schema()
         assert schema.settings is not None
         assert schema.mappings is not None
         ElasticSearch.create_index(settings, schema)
-    elif len(indexes)>1:
+    elif len(indexes) > 1:
         Log.error("do not know how to replicate to more than one index")
     elif indexes[0].alias is not None:
-        destination_settings.alias=destination_settings.index
-        destination_settings.index=indexes[0].index
+        destination_settings.alias = destination_settings.index
+        destination_settings.index = indexes[0].index
 
     return ElasticSearch(destination_settings)
 
@@ -144,21 +149,23 @@ def replicate(source, destination, pending, last_updated):
             destination.add(d2)
 
 
-
-
 def main(settings):
     #USE A FILE
     if settings.source.filename is not None:
-        settings.destination.alias=settings.destination.index
-        settings.destination.index=settings.destination.alias+CNV.datetime2string(datetime.utcnow(), "%Y%m%d_%H%M%S")
-        schema=CNV.JSON2object(File(settings.source.schema_filename).read())
+        settings.destination.alias = settings.destination.index
+        settings.destination.index = settings.destination.alias + \
+            CNV.datetime2string(datetime.utcnow(), "%Y%m%d_%H%M%S")
+        schema = CNV.JSON2object(File(settings.source.schema_filename).read())
+        if transform_bugzilla.USE_ATTACHMENTS_DOT:
+            schema = CNV.JSON2object(CNV.object2JSON(schema).replace("attachments_", "attachments."))
 
-        dest=ElasticSearch.create_index(settings.destination, schema)
+        dest = ElasticSearch.create_index(settings.destination, schema)
         dest.set_refresh_interval(-1)
         extract_from_file(settings.source, dest)
         dest.set_refresh_interval(1)
 
-        dest.delete_all_but(settings.destination.alias, settings.destination.index)
+        dest.delete_all_but(settings.destination.alias,
+                            settings.destination.index)
         dest.add_alias(settings.destination.alias)
         return
 

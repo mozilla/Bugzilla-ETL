@@ -1,4 +1,4 @@
--- REMOVE UNEEDED RECORDS FROM DATABASE TO MAKE DATABASE FOR TESTING
+# REMOVE UNEEDED RECORDS FROM DATABASE TO MAKE DATABASE FOR TESTING
 
 
 
@@ -7,77 +7,72 @@ use bugzilla;
 DELETE FROM
 	longdescs
 WHERE
-	bug_id not in (384, 1108,1045,1046,1157,1877,1865,1869,2586,6810,9622,10575,11040)
+	bug_id not in {{bug_list}}
 ;
 
-DELETE FROM
-	bugs_fulltext
-WHERE
-	bug_id not in (384, 1108,1045,1046,1157,1877,1865,1869,2586,6810,9622,10575,11040)
-;
+DELETE FROM	bugs_fulltext;
 
 
 DELETE FROM
 	bugs_activity
 WHERE
-	bug_id not in (384, 1108,1045,1046,1157,1877,1865,1869,2586,6810,9622,10575,11040)
+	bug_id not in {{bug_list}}
 ;
 
 
 DELETE FROM
 	attachments
 WHERE
-	bug_id not in (384, 1108,1045,1046,1157,1877,1865,1869,2586,6810,9622,10575,11040)
+	bug_id not in {{bug_list}}
 ;
 
 DELETE FROM
 	cc
 WHERE
-	bug_id not in (384, 1108,1045,1046,1157,1877,1865,1869,2586,6810,9622,10575,11040)
+	bug_id not in {{bug_list}}
 ;
 
 DELETE FROM
 	flags
 WHERE
-	bug_id not in (384, 1108,1045,1046,1157,1877,1865,1869,2586,6810,9622,10575,11040)
+	bug_id not in {{bug_list}}
 ;
 
 DELETE FROM
 	duplicates
 WHERE
-	dupe not in (384, 1108,1045,1046,1157,1877,1865,1869,2586,6810,9622,10575,11040)
+	dupe not in {{bug_list}}
 	AND
-	dupe_of not in (384, 1108,1045,1046,1157,1877,1865,1869,2586,6810,9622,10575,11040)
+	dupe_of not in {{bug_list}}
 
 DELETE FROM
 	dependencies
 WHERE
-	blocked not in (384, 1108,1045,1046,1157,1877,1865,1869,2586,6810,9622,10575,11040)
+	blocked not in {{bug_list}}
 	AND
-	dependson not in (384, 1108,1045,1046,1157,1877,1865,1869,2586,6810,9622,10575,11040)
+	dependson not in {{bug_list}}
 
 
 DELETE FROM
 	keywords
 WHERE
-	bug_id not in (384, 1108,1045,1046,1157,1877,1865,1869,2586,6810,9622,10575,11040)
+	bug_id not in {{bug_list}}
 ;
 
 DELETE FROM
 	bug_see_also
 WHERE
-	bug_id not in (384, 1108,1045,1046,1157,1877,1865,1869,2586,6810,9622,10575,11040)
+	bug_id not in {{bug_list}}
 ;
 
 DELETE FROM
 	bugs
 WHERE
-	bug_id not in (384, 1108,1045,1046,1157,1877,1865,1869,2586,6810,9622,10575,11040)
+	bug_id not in {{bug_list}}
 ;
 
 TRUNCATE series_data;
 TRUNCATE email_setting;
--- TRUNCATE profiles;
 TRUACATE bug_compare;
 TRUNCATE attach_data;
 TRUNCATE votes;

@@ -40,8 +40,8 @@ var prevActivityID;
 var currActivity;
 var inputRowSize = getInputRowMeta().size();
 var outputRowSize = getOutputRowMeta().size();
-var START_TIME = parseInt(getVariable("START_TIME", 0));
-var END_TIME = parseInt(getVariable("END_TIME", 0));
+var start_time = parseInt(getVariable("start_time", 0));
+var end_time = parseInt(getVariable("end_time", 0));
 
 function processRow(bug_id, modified_ts, modified_by, field_name, field_value_in, field_value_removed, attach_id, _merge_order) {
     currBugID = bug_id;
@@ -51,8 +51,8 @@ function processRow(bug_id, modified_ts, modified_by, field_name, field_value_in
         + field_value_removed + "}, attach_id={" + attach_id + "}, _merge_order={" + _merge_order + "}");
 
     // For debugging purposes:
-    if (END_TIME > 0 && modified_ts > END_TIME) {
-        writeToLog("l", "Skipping change after END_TIME (" + END_TIME + ")");
+    if (end_time > 0 && modified_ts > end_time) {
+        writeToLog("l", "Skipping change after end_time (" + end_time + ")");
         return;
     }
 
