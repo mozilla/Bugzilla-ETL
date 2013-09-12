@@ -25,6 +25,8 @@ class Struct(dict):
     2b) missing keys is important when dealing with JSON, which is often almost anything
     3) also, which I hardly use, is storing JSON paths in a variable, so :   a["b.c"]==a.b.c
 
+    MORE ON MISSING VALUES: http://www.numpy.org/NA-overview.html
+
     """
 
     

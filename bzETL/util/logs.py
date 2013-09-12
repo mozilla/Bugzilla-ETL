@@ -103,7 +103,7 @@ class Log():
         raise e
 
 
-    #RUN ME FIRST TO WARM UP THE LOGGING
+    #RUN ME FIRST TO SETUP THE THREADED LOGGING
     @classmethod
     def start(cls, settings=None):
         ##http://victorlin.me/2012/08/good-logging-practice-in-python/
@@ -116,6 +116,7 @@ class Log():
         if not isinstance(settings.log, list): settings.log=[settings.log]
         for log in settings.log:
             Log.add_log(Log.new_instance(log))
+
 
     @classmethod
     def stop(cls):
@@ -177,7 +178,11 @@ class Log_usingFile():
 
     def __init__(self, file):
         assert file is not None
-        self.file_name=file
+        self.file=File(file)
+        if self.file.exists:
+            self.file.backup()
+            self.file.delete()
+
         self.file_lock=threads.Lock()
 
 

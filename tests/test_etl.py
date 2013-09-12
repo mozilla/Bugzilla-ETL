@@ -42,13 +42,13 @@ def main(settings):
 
         #SETUP RUN PARAMETERS
         param=Struct()
-        param.BUGS_TABLE_COLUMNS=get_bugs_table_columns(db, settings.bugzilla.schema)
-        param.BUGS_TABLE_COLUMNS_SQL=SQL(",\n".join(["`"+c.column_name+"`" for c in param.BUGS_TABLE_COLUMNS]))
-        param.BUGS_TABLE_COLUMNS=Q.select(param.BUGS_TABLE_COLUMNS, "column_name")
-        param.END_TIME=CNV.datetime2milli(datetime.utcnow())
-        param.START_TIME=0
+        param.bugs_columns=get_bugs_table_columns(db, settings.bugzilla.schema)
+        param.bugs_columns_SQL=SQL(",\n".join(["`"+c.column_name+"`" for c in param.bugs_columns]))
+        param.bugs_columns=Q.select(param.bugs_columns, "column_name")
+        param.end_time=CNV.datetime2milli(datetime.utcnow())
+        param.start_time=0
         param.alias_file=settings.param.alias_file
-        param.BUG_IDS_PARTITION=SQL("bug_id in {{bugs}}", {"bugs":db.quote_value(settings.param.bugs)})
+        param.bug_list=settings.param.bugs
 
         etl(db, candidate, param)
 
@@ -88,13 +88,13 @@ def random_sample_of_bugs(settings):
 
             #SETUP RUN PARAMETERS
             param=Struct()
-            param.BUGS_TABLE_COLUMNS=get_bugs_table_columns(db, settings.bugzilla.schema)
-            param.BUGS_TABLE_COLUMNS_SQL=SQL(",\n".join(["`"+c.column_name+"`" for c in param.BUGS_TABLE_COLUMNS]))
-            param.BUGS_TABLE_COLUMNS=Q.select(param.BUGS_TABLE_COLUMNS, "column_name")
-            param.END_TIME=CNV.datetime2milli(datetime.utcnow())
-            param.START_TIME=0
+            param.bugs_columns=get_bugs_table_columns(db, settings.bugzilla.schema)
+            param.bugs_columns_SQL=SQL(",\n".join(["`"+c.column_name+"`" for c in param.bugs_columns]))
+            param.bugs_columns=Q.select(param.bugs_columns, "column_name")
+            param.end_time=CNV.datetime2milli(datetime.utcnow())
+            param.start_time=0
             param.alias_file=settings.param.alias_file
-            param.BUG_IDS_PARTITION=SQL("bug_id in {{bugs}}", {"bugs":db.quote_value(some_bugs)})
+#            param.bugs_filter=SQL("bug_id in {{bugs}}", {"bugs":db.quote_value(some_bugs)})
 
             try:
                 etl(db, candidate, param)

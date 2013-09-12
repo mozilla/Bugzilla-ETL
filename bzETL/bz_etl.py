@@ -9,9 +9,8 @@
 ## REPLACES THE KETTLE FLOW CONTROL PROGRAM, AND BASH SCRIPT
 
 from datetime import datetime
-from bzETL.extract_bugzilla import get_bugs_table_columns, get_private_bugs, get_private_attachments, get_recent_private_attachments
+from bzETL.extract_bugzilla import get_bugs_table_columns, get_private_bugs, get_recent_private_attachments, get_recent_private_comments
 
-from .bzReplicate import get_last_updated
 from .extract_bugzilla import get_bugs, get_dependencies,get_flags,get_new_activities,get_bug_see_also,get_attachments,get_keywords,get_cc,get_bug_groups,get_duplicates
 from .parse_bug_history import parse_bug_history_
 from bzETL.util import struct
@@ -50,7 +49,6 @@ def etl(db, es, param):
     if len(db_cache)==0:
         db_cache.extend([DB(db) for f in funcs])
 
-
     #GIVE THEM ALL THE SAME PARAMETERS
     output=[]
     with Multithread(funcs) as multi:
@@ -80,76 +78,80 @@ def etl(db, es, param):
 
 
 
-#def test(settings):
-#    funcs=[etl for i in range(8)]  #USE ALL 8 PROCESSORS
-#
-#    queue=Multiprocess.Queue()
-#    with Multiprocess(queue, funcs) as multi
-#        for b in range(settings.param.start, settings.param.end, settings.param.increment):
-#            param.BUG_IDS_PARTITION=SQL(expand_template("(bug_id>={{min}} and bug_id<{{min}})", {
-#                "min":b,
-#                "max":b+settings.param.increment
-#            }))
-#            multi.execute(param)
-#
-#    multi.join()
-#
-#
-
 
 def main(settings):
+
+    current_run_time=CNV.datetime2milli(datetime.utcnow())
+
+
 
     #MAKE HANDLES TO CONTAINERS
     with DB(settings.bugzilla) as db:
 
         if settings.param.incremental:
+            last_run_time=long(File(settings.param.last_run_time).read())
             es=ElasticSearch(settings.es)
-            start_time=CNV.datetime2milli(get_last_updated(es))
+            es_comments=ElasticSearch(settings.es_comments)
         else:
+            last_run_time=0
+
             if settings.es.alias is None:
                 settings.es.alias=settings.es.index
                 settings.es.index=settings.es.alias+CNV.datetime2string(datetime.utcnow(), "%Y%m%d_%H%M%S")
             es=ElasticSearch.create_index(settings.es, File(settings.es.schema_file).read())
-            start_time=0
+
+            if settings.es_comments.alias is None:
+                settings.es_comments.alias=settings.es_comments.index
+                settings.es_comments.index=settings.es_comments.alias+CNV.datetime2string(datetime.utcnow(), "%Y%m%d_%H%M%S")
+            es_comments=ElasticSearch.create_index(settings.es_comments, File(settings.es_comments.schema_file).read())
+
+
+
 
         #SETUP RUN PARAMETERS
         param=Struct()
-        param.BUGS_TABLE_COLUMNS=get_bugs_table_columns(db, settings.bugzilla.schema)
-        param.BUGS_TABLE_COLUMNS_SQL=SQL(",\n".join(["`"+c.column_name+"`" for c in param.BUGS_TABLE_COLUMNS]))
-        param.BUGS_TABLE_COLUMNS=Q.select(param.BUGS_TABLE_COLUMNS, "column_name")
-        param.END_TIME=CNV.datetime2milli(datetime.utcnow())
-        param.START_TIME=start_time
+        param.bugs_columns=get_bugs_table_columns(db, settings.bugzilla.schema)
+        param.bugs_columns_SQL=SQL(",\n".join(["`"+c.column_name+"`" for c in param.bugs_columns]))
+        param.bugs_columns=Q.select(param.bugs_columns, "column_name")
+        param.end_time=CNV.datetime2milli(datetime.utcnow())
+        param.start_time=last_run_time
         param.alias_file=settings.param.alias_file
         param.end=db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id
 
-
-        ########################################################################
-        ## ES TAKES TIME TO DELETE RECORDS, DO DELETE FIRST WITH HOPE THE
-        ## INDEX GETS A REWRITE DURING ADD OF NEW RECORDS
-        ########################################################################
-
-        #REMOVE PRIVATE BUGS
         private_bugs=get_private_bugs(db, param)
-        es.delete_record({"terms":{"bug_id":private_bugs}})
 
-        #REMOVE **RECENT** PRIVATE ATTACHMENTS
-        private_attachments=get_recent_private_attachments(db, param)
-        bugs_to_refresh=set([a.bug_id for a in private_attachments])
-        es.delete_record({"terms":{"bug_id":bugs_to_refresh}})
-        
-        #REBUILD BUGS THAT GOT REMOVED
-        refresh_param=Struct(**param)
-        refresh_param.BUG_IDS_PARTITION=SQL("bug_id in {{bugs_to_refresh}}", {
-            "bugs_to_refresh":bugs_to_refresh-private_bugs #BUT NOT PRIVATE BUGS
-        })
-        refresh_param.START_TIME=0
 
-        try:
-            etl(db, es, refresh_param)
-        except Exception, e:
-            Log.warning("Problem with etl using paremeters {{parameters}}", {
-                "parameters":refresh_param
-            }, e)
+
+        if settings.param.incremental:
+            ########################################################################
+            ## ES TAKES TIME TO DELETE RECORDS, DO DELETE FIRST WITH HOPE THE
+            ## INDEX GETS A REWRITE DURING ADD OF NEW RECORDS
+            ########################################################################
+
+            #REMOVE PRIVATE BUGS
+            es.delete_record({"terms":{"bug_id":private_bugs}})
+
+            #REMOVE **RECENT** PRIVATE ATTACHMENTS
+            private_attachments=get_recent_private_attachments(db, param)
+            bugs_to_refresh=set([a.bug_id for a in private_attachments])
+            es.delete_record({"terms":{"bug_id":bugs_to_refresh}})
+
+            #REBUILD BUGS THAT GOT REMOVED
+            refresh_param=Struct(**param)
+            refresh_param.bug_list=bugs_to_refresh-private_bugs #BUT NOT PRIVATE BUGS
+            refresh_param.start_time=0
+
+            try:
+                etl(db, es, refresh_param)
+            except Exception, e:
+                Log.warning("Problem with etl using paremeters {{parameters}}", {
+                    "parameters":refresh_param
+                }, e)
+
+            #REMOVE PRIVATE COMMENTS
+            private_comments=get_recent_private_comments(db, param)
+            es_comments.delete_record({"terms":{"comment_id", private_comments}})
+
 
 
         ########################################################################
@@ -160,17 +162,31 @@ def main(settings):
         for b in range(settings.param.start, param.end, settings.param.increment):
             (min, max)=(b, b+settings.param.increment)
             try:
-                param.BUG_IDS_PARTITION=SQL("(bug_id>={{min}} and bug_id<{{max}}) and bug_id not in {{private_bugs}}", {
-                    "min":min,
-                    "max":max,
-                    "private_bugs":private_bugs
+                param.bug_list=db.query("""
+                    SELECT
+                        bug_id
+                    FROM
+                        bugs
+                    WHERE
+                        delta_ts >= FROM_UNIXTIME(CONVERT_TZ({{start_time}}/1000, 'UTC', 'US/Pacific')) AND
+                        {{min}} <= bug_id AND bug_id < {{max}}) AND
+                        bug_id not in {{private_bugs}}
+                    """, {
+                        "min":min,
+                        "max":max,
+                        "private_bugs":private_bugs,
+                        "start_time":param.start_time
                 })
+
                 etl(db, es, param)
             except Exception, e:
                 Log.warning("Problem with etl in range [{{min}}, {{max}})", {
                     "min":min,
                     "max":max
                 }, e)
+
+
+    File(settings.last_run_time).write(unicode(CNV.datetime2milli(current_run_time)))
 
 
 def start():

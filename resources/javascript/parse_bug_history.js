@@ -24,8 +24,8 @@
  Merge the current state object into this version object
  Update fields according to the modification data
 
- When doing an incremental update (ie. with START_TIME specified), Look at any bug that has been modified since the
- cutoff time, and build all versions.  Only index versions after START_TIME in ElasticSearch.
+ When doing an incremental update (ie. with start_time specified), Look at any bug that has been modified since the
+ cutoff time, and build all versions.  Only index versions after start_time in ElasticSearch.
 
  */
 
@@ -54,8 +54,8 @@ var prevActivityID;
 var currActivity;
 var inputRowSize = getInputRowMeta().size();
 var outputRowSize = getOutputRowMeta().size();
-var START_TIME = parseInt(getVariable("START_TIME", 0));
-var END_TIME = parseInt(getVariable("END_TIME", 0));
+var start_time = parseInt(getVariable("start_time", 0));
+var end_time = parseInt(getVariable("end_time", 0));
 
 function processRow(bug_id, modified_ts, modified_by, field_name, field_value_in, field_value_removed, attach_id, _merge_order) {
     currBugID = bug_id;
@@ -69,8 +69,8 @@ function processRow(bug_id, modified_ts, modified_by, field_name, field_value_in
         + field_value_removed + "}, attach_id={" + attach_id + "}, _merge_order={" + _merge_order + "}");
 
     // For debugging purposes:
-    if (END_TIME > 0 && modified_ts > END_TIME) {
-        writeToLog("l", "Skipping change after END_TIME (" + END_TIME + ")");
+    if (end_time > 0 && modified_ts > end_time) {
+        writeToLog("l", "Skipping change after end_time (" + end_time + ")");
         return;
     }
 
@@ -478,10 +478,10 @@ function populateIntermediateVersionObjects() {
         if (!mergeBugVersion) {
             // This is not a "merge", so output a row for this bug version.
             currBugVersion++;
-            // Output this version if either it was modified after START_TIME, or if it
-            // expired after START_TIME (the latter will update the last known version of the bug
+            // Output this version if either it was modified after start_time, or if it
+            // expired after start_time (the latter will update the last known version of the bug
             // that did not have a value for "expires_on").
-            if (currBugState.modified_ts >= START_TIME || currBugState.expires_on >= START_TIME) {
+            if (currBugState.modified_ts >= start_time || currBugState.expires_on >= start_time) {
                 // Emit this version as a JSON string
                 //var bugJSON = JSON.stringify(currBugState,null,2); // DEBUGGING, expanded output
                 var bugJSON = JSON.stringify(currBugState); // condensed output
@@ -495,7 +495,7 @@ function populateIntermediateVersionObjects() {
                 putRow(newRow);
             } else {
                 writeToLog("d", "Not outputting " + currBugState._id
-                    + " - it is before START_TIME (" + START_TIME + ")");
+                    + " - it is before start_time (" + start_time + ")");
             }
         } else {
             writeToLog("d", "Merging a change with the same timestamp = " + currBugState._id + ": " + JSON.stringify(currVersion));

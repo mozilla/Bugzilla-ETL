@@ -6,10 +6,21 @@
 ## PYTHON VERSION OF https://github.com/mozilla-metrics/bugzilla_etl/blob/master/transformations/bugzilla_to_json.ktr
 ## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 ################################################################################
-
+from bzETL.util.db import SQL
 
 from bzETL.util.logs import Log
 from bzETL.util.struct import Struct
+
+
+SCREENED_FIELDDEFS=[
+    24, #short_desc
+    42, #longdesc
+    45, #attachments.description
+    56, #alias
+    64, #attachments.filename
+    74, #content
+    83, #attach_data.thedata
+]
 
 
 def get_bugs_table_columns(db, schema_name):
@@ -44,6 +55,7 @@ def get_bugs_table_columns(db, schema_name):
 
 
 
+
 def get_private_bugs(db, param):
     if param.allow_private_bugs:
         return []
@@ -67,10 +79,33 @@ def get_recent_private_attachments(db, param):
         FROM
             bugs_activity a
         WHERE
-            UNIX_TIMESTAMP(CONVERT_TZ(bug_when, 'US/Pacific','UTC'))*1000 >= {{START_TIME}}
+            bug_when >= FROM_UNIXTIME(CONVERT_TZ({{start_time}}, 'UTC', 'US/Pacific')) AND
+            isprivate=1
         """, param)
     except Exception, e:
         Log.error("problem getting recent private attachments", e)
+
+
+def get_recent_private_comments(db, param):
+    if param.allow_private_bugs:
+        return []
+
+    try:
+        comments=db.query("""
+            SELECT
+                c.comment_id
+            FROM
+                longdesc c
+            WHERE
+                bug_when >= FROM_UNIXTIME(CONVERT_TZ({{start_time}}, 'UTC', 'US/Pacific')) AND
+                isprivate=1
+            """, param)
+
+        return comments
+    except Exception, e:
+        Log.error("problem getting recent private attachments", e)
+
+
 
 
 def get_bugs(db, param):
@@ -85,7 +120,7 @@ def get_bugs(db, param):
                 , lower(pq.login_name) AS qa_contact
                 , lower(prod.`name`) AS product
                 , lower(comp.`name`) AS component
-                , {{BUGS_TABLE_COLUMNS_SQL}}
+                , {{bugs_columns_SQL}}
             FROM bugs b
                 LEFT JOIN profiles pr ON b.reporter = pr.userid
                 LEFT JOIN profiles pa ON b.assigned_to = pa.userid
@@ -93,14 +128,13 @@ def get_bugs(db, param):
                 LEFT JOIN products prod ON prod.id = product_id
                 LEFT JOIN components comp ON comp.id = component_id
             WHERE
-                UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > {{START_TIME}}
-                AND {{BUG_IDS_PARTITION}}
+                bug_id IN {{bug_list}}
             """, param)
 
         #bugs IS LIST OF BUGS WHICH MUST BE CONVERTED TO THE DELTA RECORDS FOR ALL FIELDS
         output=[]
         for r in bugs:
-            flatten_bugs_record(r, param.BUGS_TABLE_COLUMNS, output)
+            flatten_bugs_record(r, param.bugs_columns, output)
 
         return output
     except Exception, e:
@@ -195,11 +229,8 @@ def get_dependencies(db, param):
             , CAST(null AS signed) AS attach_id
             , 2 AS _merge_order
         FROM dependencies d
-        WHERE blocked IN (
-            SELECT bug_id FROM bugs WHERE
-            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > {{START_TIME}}
-            AND {{BUG_IDS_PARTITION}}
-            )
+        WHERE
+            blocked IN {{bug_list}}
         UNION
         SELECT dependson dependson
             , null
@@ -210,11 +241,7 @@ def get_dependencies(db, param):
             , null
             , 2
         FROM dependencies d
-        WHERE dependson IN (
-            SELECT bug_id FROM bugs WHERE
-            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > {{START_TIME}}
-            AND {{BUG_IDS_PARTITION}}
-            )
+        WHERE dependson IN {{bug_list}}
         ORDER BY bug_id
     """, param)
 
@@ -230,11 +257,7 @@ def get_duplicates(db, param):
             , CAST(null AS signed) AS attach_id
             , 2 AS _merge_order
         FROM duplicates d
-        WHERE dupe IN (
-            SELECT bug_id FROM bugs WHERE
-            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > {{START_TIME}}
-            AND {{BUG_IDS_PARTITION}}
-            )
+        WHERE dupe IN {{bug_list}}
         UNION
         SELECT dupe_of
             , null
@@ -245,11 +268,7 @@ def get_duplicates(db, param):
             , null
             , 2
         FROM duplicates d
-        WHERE dupe_of IN (
-            SELECT bug_id FROM bugs WHERE
-            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > {{START_TIME}}
-            AND {{BUG_IDS_PARTITION}}
-            )
+        WHERE dupe_of IN {{bug_list}}
         ORDER BY bug_id
     """, param)
 
@@ -266,12 +285,7 @@ def get_bug_groups(db, param):
             , 2 AS _merge_order
         FROM bug_group_map bg
         JOIN groups g ON bg.group_id = g.id
-        WHERE bug_id IN (
-            SELECT bug_id FROM bugs WHERE
-            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > {{START_TIME}}
-            AND {{BUG_IDS_PARTITION}}
-            )
-        ORDER BY bug_id
+        WHERE bug_id IN {{bug_list}}
     """, param)
 
 
@@ -288,12 +302,7 @@ def get_cc(db, param):
             , 2 AS _merge_order
         FROM cc
         JOIN profiles p ON cc.who = p.userid
-        WHERE bug_id IN (
-            SELECT bug_id FROM bugs WHERE
-            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > {{START_TIME}}
-            AND {{BUG_IDS_PARTITION}}
-            )
-        ORDER BY bug_id
+        WHERE bug_id IN {{bug_list}}
     """, param)
 
 
@@ -310,11 +319,7 @@ def get_keywords(db, param):
             , 2 AS _merge_order
         FROM keywords k
         JOIN keyworddefs kd ON k.keywordid = kd.id
-        WHERE bug_id IN (
-            SELECT bug_id FROM bugs WHERE
-            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > {{START_TIME}}
-            AND {{BUG_IDS_PARTITION}}
-            )
+        WHERE bug_id IN {{bug_list}}
         ORDER BY bug_id
     """, param)
 
@@ -339,11 +344,8 @@ def get_attachments(db, param):
             attachments a
             JOIN profiles p ON a.submitter_id = p.userid
         WHERE
-            bug_id IN (
-            SELECT bug_id FROM bugs WHERE
-            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > {{START_TIME}}
-            AND {{BUG_IDS_PARTITION}}
-            ) AND {{attachments_filter}}
+            bug_id IN {{bug_list}} AND
+            {{attachments_filter}}
         ORDER BY
             bug_id,
             attach_id,
@@ -382,15 +384,19 @@ def get_bug_see_also(db, param):
             , CAST(null AS signed) AS attach_id
             , 2 AS _merge_order
         FROM bug_see_also
-        WHERE bug_id IN (
-            SELECT bug_id FROM bugs WHERE
-            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > {{START_TIME}}
-            AND {{BUG_IDS_PARTITION}}
-            )
+        WHERE bug_id IN {{bug_list}}
         ORDER BY bug_id
     """, param)
 
+
+
 def get_new_activities(db, param):
+    if param.allow_private_bugs:
+        param.field_filter="1=1"
+    else:
+        param.field_filter=SQL("field.id NOT IN {{field_list}}", {"field_list":SCREENED_FIELDDEFS})
+
+
     return db.query("""
         SELECT a.bug_id
             , UNIX_TIMESTAMP(CONVERT_TZ(bug_when, 'US/Pacific','UTC'))*1000 AS modified_ts
@@ -402,17 +408,14 @@ def get_new_activities(db, param):
             , 9 AS _merge_order
         FROM
             sanitized_bugs_activity a
-        INNER JOIN (
-            SELECT bug_id FROM bugs WHERE
-            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > {{START_TIME}}
-            AND {{BUG_IDS_PARTITION}}
-        ) b ON a.bug_id = b.bug_id
         JOIN
             fielddefs field ON a.fieldid = field.`id`
         JOIN
             profiles p ON a.who = p.userid
         WHERE
-            UNIX_TIMESTAMP(CONVERT_TZ(bug_when, 'US/Pacific','UTC'))*1000 >= {{START_TIME}}
+            a.bug_id IN {{bug_list}}
+            UNIX_TIMESTAMP(CONVERT_TZ(bug_when, 'US/Pacific','UTC'))*1000 >= {{start_time}} AND
+            {{field_filter}}
         ORDER BY
             bug_id,
             bug_when DESC,
@@ -435,12 +438,39 @@ def get_flags(db, param):
         JOIN `flagtypes` ft ON f.type_id = ft.id
         JOIN profiles ps ON f.setter_id = ps.userid
         LEFT JOIN profiles pr ON f.requestee_id = pr.userid
-        WHERE bug_id IN (
-            SELECT bug_id FROM bugs WHERE
-            UNIX_TIMESTAMP(CONVERT_TZ(delta_ts, 'US/Pacific','UTC'))*1000 > {{START_TIME}}
-            AND {{BUG_IDS_PARTITION}}
-            )
+        WHERE bug_id IN {{bug_list}}
         ORDER BY
             bug_id
     """, param)
-  
+
+
+def get_comments(db, param):
+    if param.allow_private_bugs:
+        param.comments_filter="1=1"  #ALWAYS TRUE, ALLOWS ALL ATTACHMENTS
+    else:
+        param.comments_filter="isprivate=0"
+
+
+    try:
+        comments=db.query("""
+            SELECT
+                c.comment_id,
+                c.bug_id,
+                p.login_name modified_by,
+                UNIX_TIMESTAMP(CONVERT_TZ(bug_when, 'US/Pacific','UTC'))*1000 AS modified_ts,
+                c.thetext comment,
+                c.isprivate
+            FROM
+                longdesc c
+            LEFT JOIN
+                profiles p ON b.who = p.userid
+            WHERE
+                bug_id IN {{bug_list}} AND
+                bug_when >= FROM_UNIXTIME(CONVERT_TZ({{start_time}}, 'UTC', 'US/Pacific')) AND
+                {{comments_filter}}
+            """, param)
+
+        return comments
+    except Exception, e:
+        Log.error("can not get comment data", e)
+

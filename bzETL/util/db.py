@@ -8,6 +8,7 @@
 
 
 from datetime import datetime
+import subprocess
 from pymysql import connect
 from . import struct
 from .maths import Math
@@ -241,10 +242,12 @@ class DB():
     def execute_sql(settings, sql, param=None):
         """EXECUTE MANY LINES OF SQL (FROM SQLDUMP FILE, MAYBE?"""
 
-        # MySQLdb provides no way to execute an entire SQL file in bulk, so we
-        # have to shell out to the commandline client.
-        if param is not None: sql=expand_template(sql,param)
+        if param is not None:
+            with DB(settings) as temp:
+                sql=expand_template(sql, temp.quote_param(param))
         
+        # MWe have no way to execute an entire SQL file in bulk, so we
+        # have to shell out to the commandline client.
         args = [
             "mysql",
             "-h{0}".format(settings.host),

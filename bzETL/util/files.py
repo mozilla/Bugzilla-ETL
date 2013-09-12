@@ -9,6 +9,7 @@
 
 
 import codecs
+from datetime import datetime
 import os
 import shutil
 
@@ -16,6 +17,7 @@ import shutil
 class File():
 
     def __init__(self, filename):
+        #USE UNIX STANDARD
         self.filename=filename
 
 
@@ -58,6 +60,12 @@ class File():
             from .logs import Log
             Log.warning("Could not remove file", e)
 
+    def backup(self):
+        names=self.filename.split(os.pathsep)[-1].split(".")
+        if len(names)==1:
+            backup=File(self.filename+".backup "+datetime.utcnow().strftime("%Y%m%d %H%i%s"))
+
+
     def create(self):
         try:
             os.makedirs(self.filename)
@@ -68,7 +76,7 @@ class File():
 
     @property
     def parent(self):
-        return File("/".join(self.filename.split("/")[:-1]))
+        return File(os.pathsep.join(self.filename.split(os.pathsep)[:-1]))
 
     @property
     def exists(self):
