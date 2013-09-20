@@ -24,6 +24,7 @@ SCREENED_FIELDDEFS=[
 
 
 def get_bugs_table_columns(db, schema_name):
+
     return db.query("""
         SELECT
             column_name,
@@ -109,18 +110,33 @@ def get_recent_private_comments(db, param):
 
 
 def get_bugs(db, param):
+    if param.allow_private_bugs:
+        param.sensitive_columns="""
+            '<screened>' short_desc,
+            '<screened>' bug_file_loc
+        """
+    else:
+        param.sensitive_columns="""
+            short_desc,
+            bug_file_loc
+        """
+
+
+
     try:
         bugs=db.query("""
-            SELECT bug_id
-                , UNIX_TIMESTAMP(CONVERT_TZ(b.creation_ts, 'US/Pacific','UTC'))*1000 AS modified_ts
-                , lower(pr.login_name) AS modified_by
-                , UNIX_TIMESTAMP(CONVERT_TZ(b.creation_ts, 'US/Pacific','UTC'))*1000 AS created_ts
-                , lower(pr.login_name) AS created_by
-                , lower(pa.login_name) AS assigned_to
-                , lower(pq.login_name) AS qa_contact
-                , lower(prod.`name`) AS product
-                , lower(comp.`name`) AS component
-                , {{bugs_columns_SQL}}
+            SELECT
+                bug_id,
+                UNIX_TIMESTAMP(CONVERT_TZ(b.creation_ts, 'US/Pacific','UTC'))*1000 AS modified_ts,
+                lower(pr.login_name) AS modified_by,
+                UNIX_TIMESTAMP(CONVERT_TZ(b.creation_ts, 'US/Pacific','UTC'))*1000 AS created_ts,
+                lower(pr.login_name) AS created_by,
+                lower(pa.login_name) AS assigned_to,
+                lower(pq.login_name) AS qa_contact,
+                lower(prod.`name`) AS product,
+                lower(comp.`name`) AS component,
+                {{sensitive_columns}},
+                {{bugs_columns_SQL}}
             FROM bugs b
                 LEFT JOIN profiles pr ON b.reporter = pr.userid
                 LEFT JOIN profiles pa ON b.assigned_to = pa.userid
@@ -326,9 +342,9 @@ def get_keywords(db, param):
 
 def get_attachments(db, param):
     if param.allow_private_bugs:
-        param.attachments_filter="1=1"  #ALWAYS TRUE, ALLOWS ALL ATTACHMENTS
+        param.attachments_filter=SQL("1=1")  #ALWAYS TRUE, ALLOWS ALL ATTACHMENTS
     else:
-        param.attachments_filter="isprivate=0"
+        param.attachments_filter=SQL("isprivate=0")
 
     output=db.query("""
         SELECT bug_id
@@ -392,30 +408,41 @@ def get_bug_see_also(db, param):
 
 def get_new_activities(db, param):
     if param.allow_private_bugs:
-        param.field_filter="1=1"
+        param.screened_fields=SCREENED_FIELDDEFS
     else:
-        param.field_filter=SQL("field.id NOT IN {{field_list}}", {"field_list":SCREENED_FIELDDEFS})
-
+        param.screened_fields=[-1]
 
     return db.query("""
-        SELECT a.bug_id
-            , UNIX_TIMESTAMP(CONVERT_TZ(bug_when, 'US/Pacific','UTC'))*1000 AS modified_ts
-            , lower(login_name) AS modified_by
-            , replace(field.`name`, '.', '_') AS field_name
-            , lower(CAST(CASE WHEN trim(added)='' THEN NULL ELSE trim(added) END AS CHAR CHARACTER SET utf8))   AS new_value
-            , lower(CAST(CASE WHEN trim(removed)='' THEN NULL ELSE trim(removed) END AS CHAR CHARACTER SET utf8))   AS old_value
-            , attach_id
-            , 9 AS _merge_order
+        SELECT
+            a.bug_id,
+            UNIX_TIMESTAMP(CONVERT_TZ(bug_when, 'US/Pacific','UTC'))*1000 AS modified_ts,
+            lower(login_name) AS modified_by,
+            replace(field.`name`, '.', '_') AS field_name,
+            lower(CAST(
+                CASE
+                WHEN a.fieldid IN {{screened_fields}} THEN '<screened>'
+                WHEN trim(added)='' THEN NULL
+                ELSE trim(added)
+                END AS CHAR CHARACTER SET utf8
+            )) AS new_value,
+            lower(CAST(
+                CASE
+                WHEN a.fieldid IN {{screened_fields}} THEN '<screened>'
+                WHEN trim(removed)='' THEN NULL
+                ELSE trim(removed)
+                END AS CHAR CHARACTER SET utf8
+            )) AS old_value,
+            attach_id,
+            9 AS _merge_order
         FROM
-            sanitized_bugs_activity a
-        JOIN
-            fielddefs field ON a.fieldid = field.`id`
+            bugs_activity a
         JOIN
             profiles p ON a.who = p.userid
+        JOIN
+            fielddefs field ON a.fieldid = field.`id`
         WHERE
-            a.bug_id IN {{bug_list}}
-            UNIX_TIMESTAMP(CONVERT_TZ(bug_when, 'US/Pacific','UTC'))*1000 >= {{start_time}} AND
-            {{field_filter}}
+            a.bug_id IN {{bug_list}} AND
+            UNIX_TIMESTAMP(CONVERT_TZ(bug_when, 'US/Pacific','UTC'))*1000 >= {{start_time}}
         ORDER BY
             bug_id,
             bug_when DESC,
@@ -446,9 +473,9 @@ def get_flags(db, param):
 
 def get_comments(db, param):
     if param.allow_private_bugs:
-        param.comments_filter="1=1"  #ALWAYS TRUE, ALLOWS ALL ATTACHMENTS
+        param.comments_filter=SQL("1=1")  #ALWAYS TRUE, ALLOWS ALL ATTACHMENTS
     else:
-        param.comments_filter="isprivate=0"
+        param.comments_filter=SQL("isprivate=0")
 
 
     try:

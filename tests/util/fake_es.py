@@ -12,7 +12,7 @@ class Fake_ES():
         try:
             self.data=CNV.JSON2object(File(self.filename).read())
         except IOError:
-            self.data={}
+            self.data=Struct()
 
     def search(self, query):
         filter=parse_filter(wrap(query).query.filtered.filter)

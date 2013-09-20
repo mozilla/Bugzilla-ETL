@@ -109,7 +109,6 @@ def old2new(bug, max_date):
         bug.votes=3
 
 
-
     try:
         bug.cf_last_resolved=CNV.datetime2milli(CNV.string2datetime(bug.cf_last_resolved, "%Y-%m-%d %H:%M:%S"))
     except Exception, e:
@@ -119,6 +118,18 @@ def old2new(bug, max_date):
     bug=transform_bugzilla.rename_attachments(bug)
     for c in nvl(bug.changes, []):
         c.field_name=c.field_name.replace("attachments.", "attachments_")
+        if c.attach_id=='':
+            c.attach_id=None
+        else:
+            c.attach_id=CNV.value2int(c.attach_id)
 
-    bug=transform_bugzilla.scrub(bug)
+    if bug.attachments is not None:
+        bug.attachments=Q.sort(bug.attachments, "attach_id")
+        for a in bug.attachments:
+            a.attach_id=CNV.value2int(a.attach_id)
+            for k,v in list(a.items()):
+                if k.endswith("isobsolete") or k.endswith("ispatch") or k.endswith("isprivate"):
+                    a.dict[k]=CNV.value2int(a.dict[k])  # .dict REQUIRED TO  HANDLE DOT (.) IN k
+
+    bug=transform_bugzilla.scrub(transform_bugzilla.normalize(bug))
     return bug

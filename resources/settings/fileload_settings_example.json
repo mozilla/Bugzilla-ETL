@@ -1,5 +1,5 @@
 {
-    "errors":"./resources/data",
+	"errors":"./resources/data",
 	"source":{
 		"filename":"C:/Users/klahnakoski/git/ES Extract/data/bug_versions.txt",
 		"schema_filename":"./resources/json/bug_version.json"
@@ -9,19 +9,19 @@
 		"port":9200,
 		"index":"bugs",
 		"type":"bug_version",
-        "debug":true
+		"debug":true
 	},
 	"debug":{
-        "log":[{
+		"log":[{
 			"class": "logging.handlers.RotatingFileHandler",
 			"filename": "./tests/resources/logs/fileload.log",
 			"maxBytes": 10000000,
 			"backupCount": 200,
 			"encoding": "utf8"
 		},{
-            "class":"bzETL.util.logs.Log_usingStream",
-            "stream":"sys.stdout"
-        }]
+			"class":"bzETL.util.logs.Log_usingStream",
+			"stream":"sys.stdout"
+		}]
 	}
 
 

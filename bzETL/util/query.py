@@ -138,7 +138,7 @@ class Q:
          two b    4
 
         STACK LIST OF HASHES, OR 'MERGE' SEPARATE CUBES
-        data - expected to be a list of hashes
+        data - expected to be a list of dicts
         name - give a name to the new column
         value_column - Name given to the new, single value column
         columns - explicitly list the value columns (USE SELECT INSTEAD)
@@ -230,9 +230,67 @@ class Q:
                     if result!=0: return result
                 return 0
 
-            return sorted(data, cmp=comparer)
+            output=sorted(data, cmp=comparer)
+            return output
         except Exception, e:
-            Log.error("Problem sorting", e)
+            Log.error("Problem sorting\n{{data}}", {"data":data}, e)
+
+
+
+    def filter(data, where):
+        """
+        where  - a function that accepts (record, rownum, rows) and return s boolean
+        """
+        return [d for i, d in enumerate(data) if where(d, rownum=i, rows=data)]
+            
+
+
+    @staticmethod
+    def window(data, name, value, edges=None, sort=None, aggregate=None, _range=None):
+        """
+        MAYBE WE CAN DO THIS WITH NUMPY??
+        data - list of records
+        name - column to assign window function result
+        edges - columns to gourp by
+        sort - columns to sort by
+        value - function that takes a record and returns a value (for aggregation)
+        aggregate - WindowFunction to apply
+        range - of form {"min":-10, "max":0} to specify the size and relative position of window
+        """
+        if aggregate is None and sort is None and edges is None:
+            #SIMPLE CALCULATED VALUE
+            for i, r in enumerate(data):
+                r[name]=value(r, rownum=1, rows=data)
+            return
+
+        for i, r in data:
+            r["__temp__"]=value(r, rownum=1, rows=data)
+
+        for keys, values in Q.groupby(data, edges):
+            if len(values)==0: continue     #CAN DO NOTHING WITH THIS ONE SAMPLE
+
+            sequence=Q.sort(values, sort)
+            head=nvl(_range.max, _range.stop)
+            tail=nvl(_range.min, _range.start)
+
+            #PRELOAD total
+            total=aggregate()
+            for i in range(range.max):
+                total+=sequence[i].__temp__
+
+            #WINDOW FUNCTION APPLICATION
+            for i, r in enumerate(sequence):
+                r[name]=total.end()
+                total.add(sequence[i+head].__temp__)
+                total.sub(sequence[i+tail].__temp__)
+
+        for r in data:
+            r["__temp__"]=None  #CLEANUP
+
+
+
+
+
 
 
 def groupby_size(data, size):
@@ -341,61 +399,57 @@ class Domain():
         pass
 
 
-
 # SIMPLE TUPLE-OF-STRINGS LOOKUP TO LIST
 class Index(object):
-
     def __init__(self, keys):
         self._data = {}
-        self._keys=keys
+        self._keys = keys
 
         #THIS ONLY DEPENDS ON THE len(keys), SO WE COULD SHARED lookup
         #BETWEEN ALL n-key INDEXES.  FOR NOW, JUST MAKE lookup()
-        code="def lookup(d0):\n"
+        code = "def lookup(d0):\n"
         for i, k in enumerate(self._keys):
-            code=code+indent(expand_template(
-                "for k{{next}}, d{{next}} in d{{curr}}.items():\n",{
-                    "next":i+1,
-                    "curr":1
-                }), prefix="    ", indent=i+1)
-        i=len(self._keys)
-        code=code+indent(expand_template(
-            "yield d{{curr}}", {"curr":i}), prefix="    ", indent=i+1)
-        exec(code)
-        self.lookup=lookup
+            code = code + indent(expand_template(
+                "for k{{next}}, d{{next}} in d{{curr}}.items():\n", {
+                    "next": i + 1,
+                    "curr": 1
+                }), prefix="    ", indent=i + 1)
+        i = len(self._keys)
+        code = code + indent(expand_template(
+            "yield d{{curr}}", {"curr": i}), prefix="    ", indent=i + 1)
+        exec code
+        self.lookup = lookup
 
 
     def __getitem__(self, key):
         try:
             if not isinstance(key, dict):
                 #WE WILL BE FORGIVING IF THE KEY IS NOT IN A LIST
-                if len(self._keys)>1:
+                if len(self._keys) > 1:
                     Log.error("Must be given an array of keys")
-                key={self._keys[0]: key}
+                key = {self._keys[0]: key}
 
-            d=self._data
+            d = self._data
             for k in self._keys:
-                v=key[k]
+                v = key[k]
                 if v is None:
-                    Log.error("can not handle when {{key}} is None", {"key":k})
+                    Log.error("can not handle when {{key}} is None", {"key": k})
                 if v not in d:
                     return None
-                d=d[v]
+                d = d[v]
 
-            if len(key)!=len(self._keys):
+            if len(key) != len(self._keys):
                 #NOT A COMPLETE INDEXING, SO RETURN THE PARTIAL INDEX
-                output=Index(self._keys[-len(key):])
-                output._data=d
+                output = Index(self._keys[-len(key):])
+                output._data = d
                 return output
 
                 return struct.wrap(d)
         except Exception, e:
             Log.error("something went wrong", e)
-    
+
     def __setitem__(self, key, value):
         Log.error("Not implemented")
-
-
 
 
     def add(self, val):
@@ -445,5 +499,7 @@ class Index(object):
 
     def intersect(self, other):
         return self.__and__(other)
+
+
 
 

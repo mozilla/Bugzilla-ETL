@@ -1,5 +1,5 @@
 
-from bzETL import bzReplicate
+from bzETL import replicate
 from bzETL.util.startup import startup
 from bzETL.util.cnv import CNV
 from bzETL.util.elasticsearch import ElasticSearch
@@ -12,9 +12,9 @@ def test_replication():
         Log.start(settings.debug)
 
         source=ElasticSearch(settings.source)
-        destination=bzReplicate.get_or_create_index(settings["destination"], source)
+        destination=replicate.get_or_create_index(settings["destination"], source)
 
-        bzReplicate.replicate(source, destination, [537285], CNV.string2datetime("19900101", "%Y%m%d"))
+        replicate.replicate(source, destination, [537285], CNV.string2datetime("19900101", "%Y%m%d"))
     finally:
         Log.stop()
 

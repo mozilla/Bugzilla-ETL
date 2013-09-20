@@ -12,7 +12,7 @@ from .logs import Log
 from .threads import Queue, Thread
 
 
-DEBUG=True
+DEBUG = True
 
 class worker_thread(threading.Thread):
 
@@ -41,11 +41,11 @@ class worker_thread(threading.Thread):
                 if not self.keep_running: break
                 result=self.function(**params)
                 if self.keep_running and self.out_queue is not None:
-                    self.out_queue.add(result)
+                    self.out_queue.add({"response":result})
             except Exception, e:
                 Log.warning("Can not execute with params={{params}}", {"params": params}, e)
                 if self.keep_running and self.out_queue is not None:
-                    self.out_queue.add(e)
+                    self.out_queue.add({"exception":e})
 
         self.keep_running=False
         if DEBUG:
@@ -85,7 +85,7 @@ class Multithread():
     #WAIT FOR ALL QUEUED WORK TO BE DONE BEFORE RETURNING
     def __exit__(self, a, b, c):
         try:
-            self.inbound.close() #SEND STOPS TO WAKE UP THE WORKERS WAITING ON inbound.pop()
+            self.inbound.close() # SEND STOPS TO WAKE UP THE WORKERS WAITING ON inbound.pop()
         except Exception, e:
             Log.warning("Problem adding to inbound", e)
 
@@ -120,7 +120,10 @@ class Multithread():
         def output():
             for i in xrange(num):
                 result=self.outbound.pop()
-                yield result
+                if "exception" in result:
+                    raise result["exception"]
+                else:
+                    yield result["response"]
         return output()
 
     #EXTERNAL COMMAND THAT RETURNS IMMEDIATELY

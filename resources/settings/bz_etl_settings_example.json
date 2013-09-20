@@ -1,25 +1,25 @@
 {
-    "param":{
-        "start":0,
-        "increment":1000,
-        "alias_file":"./resources/data/bugzilla_aliases.txt",
-        "incremental":false
-    },
-    "bugzilla":{
-        "old.host":"localhost",
-        "host":"klahnakoski-es.corp.tor1.mozilla.com",
+	"param":{
+		"start":0,
+		"increment":1000,
+		"alias_file":"./resources/data/bugzilla_aliases.txt",
+		"incremental":false
+	},
+	"bugzilla":{
+		"old.host":"localhost",
+		"host":"klahnakoski-es.corp.tor1.mozilla.com",
 		"port":3306,
 		"username":"username",
 		"password":"password",
 		"schema":"bugzilla",
-        "debug":false
+		"debug":false
 	},
 	"es":{
 		"host":"http://localhost",
 		"port":"9200",
 		"index":"bugs",
 		"type":"bug_version",
-        "schema_file":"./resources/json/bug_version.json"
+		"schema_file":"./resources/json/bug_version.json"
 	},
 	"debug":{
 		"log":[{
@@ -29,9 +29,9 @@
 			"backupCount": 200,
 			"encoding": "utf8"
 		},{
-            "class":"bzETL.util.logs.Log_usingStream",
-            "stream":"sys.stdout"
-        }]
+			"class":"bzETL.util.logs.Log_usingStream",
+			"stream":"sys.stdout"
+		}]
 
 	}
 

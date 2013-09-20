@@ -6,7 +6,7 @@
 ## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 ################################################################################
 import time
-from bzETL.util.strings import expand_template
+from .strings import expand_template
 from .logs import Log
 
 

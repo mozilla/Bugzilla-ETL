@@ -41,7 +41,9 @@ class Struct(dict):
         d=object.__getattribute__(self, "__dict__")
 
         if key.find(".")>=0:
-            for n in key.split("."):
+            key=key.replace("\\.", "\a")
+            seq=[k.replace("\a", ".") for k in key.split(".")]
+            for n in seq:
                 d=d[n]
             return wrap(d)
 
@@ -49,7 +51,20 @@ class Struct(dict):
         return wrap(d[key])
 
     def __setitem__(self, key, value):
-        return Struct.__setattr__(self, key, value)
+        try:
+            d=object.__getattribute__(self, "__dict__")
+            value=unwrap(value)
+            if key.find(".")==-1:
+                d[key]=value
+                return self
+
+            key=key.replace("\\.", "\a")
+            seq=[k.replace("\a", ".") for k in key.split(".")]
+            for k in seq[:-1]: d=d[k]
+            d[seq[-1]]=value
+            return self
+        except Exception, e:
+            raise e
 
     def __getattribute__(self, key):
         d=object.__getattribute__(self, "__dict__")
@@ -63,29 +78,15 @@ class Struct(dict):
         if key=="dict":
             return d
         if key=="copy":
-            return functools.partial(object.__getattribute__(Struct, "copy"), self)
+            o = wrap({k: v for k, v in d.items()})
+            def output():
+                return o
+            return output
 
 
 
     def __setattr__(self, key, value):
-        try:
-            d=object.__getattribute__(self, "__dict__")
-            value=unwrap(value)
-            
-            if key.find(".")>=0:
-                seq=key.split(".")
-                for k in seq[0,-1]: d=d[k]
-                d[seq[-1]]=value
-                return self
-            d[key]=value
-        except Exception, e:
-            if key.find(".")>=0:
-                seq=key.split(".")
-                for k in seq[0,-1]: d=d[k]
-                d[seq[-1]]=value
-                return self
-            d[key]=value
-            raise e
+        dict.__setattr__(self, unicode(key), value)
 
 
     def __delitem__(self, key):
@@ -103,9 +104,7 @@ class Struct(dict):
         d=object.__getattribute__(self, "__dict__")
         return d.keys()
 
-    def copy(self):
-        d=object.__getattribute__(self, "__dict__")
-        return wrap(copy.deepcopy(d))
+
 
 
 

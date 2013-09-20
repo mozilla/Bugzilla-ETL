@@ -5,7 +5,6 @@ from bzETL.util.cnv import CNV
 from bzETL.util.logs import Log
 from bzETL.util.maths import Math
 from bzETL.util.query import Q
-from bzETL.util.basic import nvl
 from bzETL.util.struct import Struct, StructList
 
 
@@ -16,7 +15,8 @@ NUMERIC_FIELDS=[      "blocked", "dependson", "dupe_by", "dupe_of",
     "votes",
     "estimated_time",
     "remaining_time",
-    "everconfirmed"
+    "everconfirmed",
+    "uncertain"
 
 ]
 
@@ -39,6 +39,7 @@ def rename_attachments(bug_version):
 
 #NORMALIZE BUG VERSION TO STANDARD FORM
 def normalize(bug):
+    bug=bug.copy()
     bug.id = unicode(bug.bug_id) + "_" + unicode(bug.modified_ts)[:-3]
     bug._id = None
 
@@ -48,28 +49,39 @@ def normalize(bug):
 
     if bug.attachments is not None:
         if USE_ATTACHMENTS_DOT:
-            bug.attachments = CNV.JSON2object(
-                CNV.object2JSON(bug.attachments).replace("attachments_", "attachments.")
-            )
-
+            bug.attachments=CNV.JSON2object(CNV.object2JSON(bug.attachments).replace("attachments_", "attachments."))
         bug.attachments = Q.sort(bug.attachments, "attach_id")
         for a in bug.attachments:
-            a.flags = Q.sort(a.flags, "value")
+            for k,v in a.items():
+                if \
+                    k.endswith("isobsolete") or \
+                    k.endswith("ispatch") or \
+                    k.endswith("isprivate")\
+                :
+                    a[k.replace(".", "\.")]=CNV.value2int(v)
 
-    bug.changes = Q.sort(bug.changes, ["attach_id", "field_name"])
+            a.flags = Q.sort(a.flags, ["modified_ts", "value"])
+
+    if bug.changes is not None:
+        if USE_ATTACHMENTS_DOT:
+            bug.changes=CNV.JSON2object(CNV.object2JSON(bug.changes).replace("attachments_", "attachments."))
+        bug.changes = Q.sort(bug.changes, ["attach_id", "field_name"])
 
     #bug IS CONVERTED TO A 'CLEAN' COPY
     bug = scrub(bug)
-    bug.attachments = nvl(bug.attachments, [])    # ATTACHMENTS MUST EXIST
+    # bug.attachments = nvl(bug.attachments, [])    # ATTACHMENTS MUST EXIST
+
 
     for f in NUMERIC_FIELDS:
         v = bug[f]
-        if v is None: continue
-
-        if f in MULTI_FIELDS:
+        if v is None:
+            continue
+        elif f in MULTI_FIELDS:
             bug[f] = CNV.value2intlist(v)
-        elif v == 0:
+        elif CNV.value2number(v) == 0:
             del bug[f]
+        else:
+            bug[f]=CNV.value2number(v)
 
     # Also reformat some date fields
     for dateField in ["deadline", "cf_due_date", "cf_last_resolved"]:
@@ -78,8 +90,10 @@ def normalize(bug):
         try:
             if isinstance(v, datetime):
                 bug[dateField] = CNV.datetime2milli(v)
-            elif isinstance(v, long) and len(unicode(v))==13:
+            elif isinstance(v, long) and len(unicode(v)) in [12, 13]:
                 bug[dateField] = v
+            elif not isinstance(v, basestring):
+                Log.error("situation not handled")
             elif DATE_PATTERN_STRICT.match(v):
                 # Convert to "2012/01/01 00:00:00.000"
                 # Example: bug 856732 (cf_last_resolved)
@@ -116,6 +130,8 @@ def _scrub(r):
         if r is None:
             return None
         elif isinstance(r, basestring):
+            if r == "":
+                return None
             return r.lower()
         elif Math.is_number(r):
             return CNV.value2number(r)
@@ -138,8 +154,8 @@ def _scrub(r):
                 v = _scrub(v)
                 if v is not None:
                     output.append(v)
-            # if len(output) == 0:
-            #     return None
+            if len(output) == 0:
+                return None
             try:
                 return Q.sort(output)
             except Exception:

@@ -60,6 +60,7 @@ FLAG_PATTERN = re.compile("^(.*)([?+-])(\\([^)]*\\))?$")
 # Fields that could have been truncated per bug 55161
 TRUNC_FIELDS = ["cc", "blocked", "dependson", "keywords"]
 
+STOP_BUG = 999999999
 
 
 class parse_bug_history_():
@@ -95,7 +96,13 @@ class parse_bug_history_():
                     # Start replaying versions in ascending order to build full data on each version
                     Log.note("Emitting intermediate versions for {{bug_id}}", {"bug_id":self.prevBugID})
                     self.populateIntermediateVersionObjects()
+                if row_in.bug_id == STOP_BUG:
+                    return
                 self.startNewBug(row_in)
+
+            if row_in.modified_ts==927307531000:
+                Log.println("")
+
 
             # Bugzilla bug workaround - some values were truncated, introducing uncertainty / errors:
             # https://bugzilla.mozilla.org/show_bug.cgi?id=55161
@@ -136,24 +143,24 @@ class parse_bug_history_():
                     if row_in.new_value is None and row_in.old_value is None:
                         Log.note("Nothing added or removed. Skipping update.")
                         return
-            if self.currBugID < 999999999:
-                # Treat timestamps as int values
-                new_value = int(row_in.new_value) if row_in.field_name.endswith("_ts") else row_in.new_value
-                if row_in.field_name=="bug_file_loc" and (row_in.new_value is None or len(row_in.new_value)>0):
-                    Log.note("bug_file_loc is empty")
-                # Determine where we are in the bug processing workflow
-                if row_in._merge_order==1:
-                    self.processSingleValueTableItem(row_in.field_name, new_value)
-                elif row_in._merge_order==2:
-                    self.processMultiValueTableItem(row_in.field_name, new_value)
-                elif row_in._merge_order==7:
-                    self.processAttachmentsTableItem(row_in)
-                elif row_in._merge_order==8:
-                    self.processFlagsTableItem(row_in)
-                elif row_in._merge_order==9:
-                    self.processBugsActivitiesTableItem(row_in)
-                else:
-                    Log.warning("Unhandled merge_order: '" + row_in._merge_order + "'")
+
+            # Treat timestamps as int values
+            new_value = CNV.value2int(row_in.new_value) if row_in.field_name.endswith("_ts") else row_in.new_value
+            if row_in.field_name=="bug_file_loc" and (row_in.new_value is None or len(row_in.new_value)>0):
+                Log.note("bug_file_loc is empty")
+            # Determine where we are in the bug processing workflow
+            if row_in._merge_order==1:
+                self.processSingleValueTableItem(row_in.field_name, new_value)
+            elif row_in._merge_order==2:
+                self.processMultiValueTableItem(row_in.field_name, new_value)
+            elif row_in._merge_order==7:
+                self.processAttachmentsTableItem(row_in)
+            elif row_in._merge_order==8:
+                self.processFlagsTableItem(row_in)
+            elif row_in._merge_order==9:
+                self.processBugsActivitiesTableItem(row_in)
+            else:
+                Log.warning("Unhandled merge_order: '" + row_in._merge_order + "'")
 
         except Exception, e:
             Log.warning("Problem processing row: {{row}}", {"row":row_in}, e)
@@ -165,6 +172,9 @@ class parse_bug_history_():
 
     @staticmethod
     def uid(bug_id, modified_ts):
+        if modified_ts is None:
+            Log.error("modified_ts can not be None")
+
         return unicode(bug_id) + "_" + unicode(modified_ts)[0:-3]
 
     def startNewBug(self, row_in):
@@ -370,7 +380,7 @@ class parse_bug_history_():
 
         flagMap ={}
         # A monotonically increasing version number (useful for debugging)
-        self.currBugVersion = 1
+        self.bug_version_num = 1
 
         # continue if there are more bug versions, or there is one final nextVersion
         while len(self.bugVersions) > 0 or nextVersion is not None:
@@ -380,6 +390,9 @@ class parse_bug_history_():
                     nextVersion = self.bugVersions.pop() # Oldest version
                 else:
                     nextVersion = None
+
+                # if nextVersion.modified_ts==933875761000:
+                #     Log.println("")
 
                 Log.note("Populating JSON for version {{id}}", {"id":currVersion._id})
                 # Decide whether to merge this bug activity into the current state (without emitting
@@ -395,12 +408,12 @@ class parse_bug_history_():
                 if nextVersion is not None:
                     Log.note("We have a nextVersion: {{timestamp}} (ver {{next_version}})", {
                         "timestamp":nextVersion.modified_ts,
-                        "next_version":self.currBugVersion + 1
+                        "next_version":self.bug_version_num + 1
                     })
                     self.currBugState.expires_on = nextVersion.modified_ts
                 else:
                     # Otherwise, we don't know when the version expires.
-                    Log.note("We have no nextVersion after #{{version}}", {"version": self.currBugVersion})
+                    Log.note("We have no nextVersion after #{{version}}", {"version": self.bug_version_num})
 
                     self.currBugState.expires_on = None
 
@@ -441,15 +454,20 @@ class parse_bug_history_():
 
                         # Handle the special change record that signals the creation of the attachment
                         if change.field_name == "attachment_added":
-                            if attach_id==349397:
-                                Log.note("")
+
+
                             # This change only exists when the attachment has been added to the map, so no missing case needed.
                             att=self.currBugAttachmentsMap[unicode(attach_id)]
                             self.currBugState.attachments.append(att)
                             continue
                         else:
+
+                            # if currVersion.modified_ts is not None and currVersion.modified_ts==1227294880000:
+                            #     Log.note("")
+
                             # Attachment change
                             target = self.currBugAttachmentsMap[unicode(attach_id)]
+                            # target.tada="test"+unicode(currVersion.modified_ts)
                             targetName = "attachment"
                             if target is None:
                                 Log.warning("Encountered a change to missing attachment for bug '"
@@ -460,7 +478,8 @@ class parse_bug_history_():
                                 targetName = "currBugState"
 
 
-
+                    # if currVersion.modified_ts==1227294880000:
+                    #     target.tada2="test"
                     if change.field_name == "flags":
                         self.processFlagChange(target, change, currVersion.modified_ts, currVersion.modified_by)
                     elif change.field_name not in MULTI_FIELDS:
@@ -498,11 +517,11 @@ class parse_bug_history_():
                         target[change.field_name] = change.new_value
 
 
-                self.currBugState.bug_version_num = self.currBugVersion
+                self.currBugState.bug_version_num = self.bug_version_num
 
                 if not mergeBugVersion:
                     # This is not a "merge", so output a row for this bug version.
-                    self.currBugVersion+=1
+                    self.bug_version_num+=1
                     # Output this version if either it was modified after start_time, or if it
                     # expired after start_time (the latter will update the last known version of the bug
                     # that did not have a value for "expires_on").
@@ -516,7 +535,7 @@ class parse_bug_history_():
                         self.output.add(state)
 
                     else:
-                        Log.note("PROBLEM Not outputting ${-id} - it is before self.start_time ({{start_time}})", {
+                        Log.note("PROBLEM Not outputting {{_id}} - it is before self.start_time ({{start_time}})", {
                             "_id":self.currBugState._id,
                             "start_time":self.settings.start_time
                         })
@@ -551,6 +570,9 @@ class parse_bug_history_():
 
             
     def processFlagChange(self, target, change, modified_ts, modified_by, reverse=False):
+        # if modified_ts==1227294880000:
+        #     target.tada2="test"
+
         addedFlags = parse_bug_history_.getMultiFieldValue("flags", change.new_value)
         removedFlags = parse_bug_history_.getMultiFieldValue("flags", change.old_value)
 
@@ -563,22 +585,22 @@ class parse_bug_history_():
             if flagStr == "":
                 continue
 
-            flag = parse_bug_history_.makeFlag(flagStr, modified_ts, modified_by)
-            existingFlag = self.findFlag(target.flags, flag)
+            removed_flag = parse_bug_history_.makeFlag(flagStr, modified_ts, modified_by)
+            existingFlag = self.findFlag(target.flags, removed_flag)
 
             if existingFlag is not None:
                 # Carry forward some previous values:
                 existingFlag["previous_modified_ts"] = existingFlag["modified_ts"]
+                existingFlag["modified_ts"] = modified_ts
                 if existingFlag["modified_by"] != modified_by:
                     existingFlag["previous_modified_by"] = existingFlag["modified_by"]
                     existingFlag["modified_by"] = modified_by
 
                 # Add changed stuff:
-                existingFlag["modified_ts"] = modified_ts
-                existingFlag["previous_status"] = flag["request_status"]
+                existingFlag["previous_status"] = removed_flag["request_status"]
+                existingFlag["request_status"] = "d"
                 existingFlag["previous_value"] = flagStr
-                existingFlag["request_status"] = "Log.error"
-                existingFlag["value"] = ""
+                existingFlag["value"] = None
                 # request_type stays the same.
                 # requestee stays the same.
 
@@ -596,16 +618,16 @@ class parse_bug_history_():
             if flagStr == "":
                 continue
 
-            flag = self.makeFlag(flagStr, modified_ts, modified_by)
+            added_flag = self.makeFlag(flagStr, modified_ts, modified_by)
 
             if target.flags is None:
                 Log.note("PROBLEM  processFlagChange called with unset 'flags'")
                 target.flags = []
 
             candidates = [element for element in target.flags if
-                element["value"] == ""
-                    and flag["request_type"] == element["request_type"]
-                    and flag["request_status"] != element["previous_status"] # Skip "r?(dre@mozilla)" -> "r?(mark@mozilla)"
+                element["value"] is None
+                    and added_flag["request_type"] == element["request_type"]
+                    and added_flag["request_status"] != element["previous_status"] # Skip "r?(dre@mozilla)" -> "r?(mark@mozilla)"
             ]
 
             if len(candidates) > 0:
@@ -613,11 +635,11 @@ class parse_bug_history_():
                 if len(candidates) > 1:
                     # Multiple matches - use the best one.
                     Log.note("Matched added flag {{flag}} to multiple removed flags.  Using the best of these:\n", {
-                        "flag":flag,
+                        "flag":added_flag,
                         "candidates":candidates
                     })
                     matched_ts = [element for element in candidates if
-                        flag.modified_ts == element.modified_ts
+                        added_flag.modified_ts == element.modified_ts
                     ]
 
                     if len(matched_ts) == 1:
@@ -629,7 +651,7 @@ class parse_bug_history_():
                         matched_req = [element for element in candidates if
                             # Do case-insenitive comparison
                             element["requestee"] is not None and
-                                flag["modified_by"].lower() == element["requestee"].lower()
+                                added_flag["modified_by"].lower() == element["requestee"].lower()
                         ]
                         if len(matched_req) == 1:
                             Log.note("Matching on requestee fixed it")
@@ -642,20 +664,20 @@ class parse_bug_history_():
 
                 else:
                     # Obvious case - matched exactly one.
-                    Log.note("Matched added flag " + CNV.object2JSON(flag) + " to removed flag " + CNV.object2JSON(chosen_one))
+                    Log.note("Matched added flag " + CNV.object2JSON(added_flag) + " to removed flag " + CNV.object2JSON(chosen_one))
 
                 if chosen_one is not None:
                     for f in ["value", "request_status", "requestee"]:
-                        if flag[f] is not None:
-                            chosen_one[f] = flag[f]
+                        if added_flag[f] is not None:
+                            chosen_one[f] = added_flag[f]
 
 
 
                 # We need to avoid later adding this flag twice, since we rolled an add into a delete.
             else:
                 # No matching candidate. Totally new flag.
-                Log.note("PROBLEM Did not match added flag " + CNV.object2JSON(flag) + " to anything: " + CNV.object2JSON(target.flags))
-                target.flags.append(flag)
+                Log.note("PROBLEM Did not match added flag " + CNV.object2JSON(added_flag) + " to anything: " + CNV.object2JSON(target.flags))
+                target.flags.append(added_flag)
 
 
 
