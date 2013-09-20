@@ -372,7 +372,10 @@ class DB():
             elif isinstance(value, list):
                 return "("+",".join([self.db.literal(vv) for vv in value])+")"
             elif isinstance(value, SQL):
-                return value.value
+                if value.param is None:
+                    return value.template
+                param = self.quote_param(value.param)
+                return expand_template(value.template, param)
             elif isinstance(value, dict):
                 return self.db.literal(None)
             elif Math.is_number(value):
@@ -384,8 +387,34 @@ class DB():
 
 
     def quote_column(self, column_name):
-        return "`"+column_name.replace(".", "`.`")+"`"    #MY SQL QUOTE OF COLUMN NAMES
+        if isinstance(column_name, basestring):
+            return "`"+column_name.replace(".", "`.`")+"`"    #MY SQL QUOTE OF COLUMN NAMES
+        elif isinstance(column_name, list):
+            return ",".join(column_name)
+        else:
+            #ASSUME {"name":name, "value":value} FORM
+            return column_name.value+" AS "+self.quote_column(column_name.name)
+        
 
+    def esfilter2sqlwhere(self, esfilter):
+        return SQL(self._filter2where(esfilter))
+
+    def _filter2where(self, esfilter):
+        if esfilter["and"] is not None:
+            return "("+" AND ".join([self._filter2where(a) for a in esfilter["and"]])+")"
+        elif esfilter["or"] is not None:
+            return "("+" OR ".join([self._filter2where(a) for a in esfilter["or"]])+")"
+        elif esfilter.term is not None:
+            return "("+" AND ".join([self.quote_column(col)+"="+self.quote_value(val) for col, val in esfilter.term.items()])+")"
+        elif esfilter.script is not None:
+            return "("+esfilter.script+")"
+        elif esfilter.exists is not None:
+            if isinstance(esfilter.exists, basestring):
+                return "("+self.quote_column(esfilter.exists)+" IS NOT NULL)"
+            else:
+                return "("+self.quote_column(esfilter.exists.field)+" IS NOT NULL)"
+        else:
+            Log.error("Can not convert esfilter to SQL: {{esfilter}}", {"esfilter":esfilter})
 
 
 def utf8_to_unicode(v):
@@ -403,7 +432,8 @@ class SQL():
 
 
     def __init__(self, template='', param=None):
-        self.value=expand_template(template, param)
+        self.template=template
+        self.param=param
 
     def __str__(self):
-        return self.value
+        Log.error("do not do this")

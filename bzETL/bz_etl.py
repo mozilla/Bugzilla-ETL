@@ -9,9 +9,10 @@
 ## REPLACES THE KETTLE FLOW CONTROL PROGRAM, AND BASH SCRIPT
 
 from datetime import datetime
+from bzETL import parse_bug_history
 from bzETL.extract_bugzilla import get_bugs_table_columns, get_private_bugs, get_recent_private_attachments, get_recent_private_comments
 
-from .extract_bugzilla import get_bugs, get_dependencies,get_flags,get_new_activities,get_bug_see_also,get_attachments,get_keywords,get_cc,get_bug_groups,get_duplicates
+from .extract_bugzilla import get_bugs, get_dependencies, get_flags, get_new_activities, get_bug_see_also, get_attachments, get_keywords, get_cc, get_bug_groups, get_duplicates
 from .parse_bug_history import parse_bug_history_
 from bzETL.util import struct
 from bzETL.util.logs import Log
@@ -25,73 +26,72 @@ from bzETL.util.multithread import Multithread
 from bzETL.util.query import Q
 from bzETL.util.db import DB, SQL
 
-db_cache=[]
+db_cache = []
 
+#HERE ARE ALL THE FUNCTIONS WE WANT TO RUN, IN PARALLEL
+get_stuff_from_bugzilla = [
+    get_bugs,
+    get_dependencies,
+    get_flags,
+    get_new_activities,
+    get_bug_see_also,
+    get_attachments,
+    get_keywords,
+    get_cc,
+    get_bug_groups,
+    get_duplicates
+]
 
 
 #MIMIC THE KETTLE GRAPHICAL PROGRAM
 def etl(db, es, param):
-    #HERE ARE ALL THE FUNCTIONS WE WANT TO RUN, IN PARALLEL
-    funcs=[
-        get_bugs,
-        get_dependencies,
-        get_flags,
-        get_new_activities,
-        get_bug_see_also,
-        get_attachments,
-        get_keywords,
-        get_cc,
-        get_bug_groups,
-        get_duplicates
-    ]
 
     # CONNECTIONS ARE EXPENSIVE, CACHE HERE
-    if len(db_cache)==0:
-        db_cache.extend([DB(db) for f in funcs])
+    if len(db_cache) == 0:
+        db_cache.extend([DB(db) for f in get_stuff_from_bugzilla])
 
     #GIVE THEM ALL THE SAME PARAMETERS
-    output=[]
-    with Multithread(funcs) as multi:
-        params=[{"db":db_cache[i], "param":param} for i, f in enumerate(funcs)]
-        responses=multi.execute(params)
+    output = []
+    with Multithread(get_stuff_from_bugzilla) as multi:
+        params = [
+            {"db": db_cache[i], "param": param}
+            for i, f in enumerate(get_stuff_from_bugzilla)
+        ]
+        responses = multi.execute(params)
 
         #CONCAT ALL RESPONSES (BLOCKS UNTIL ALL RETRIEVED)
         for r in responses:
             output.extend(r)
 
-    output_queue=Queue()
-    sorted=Q.sort(output, ["bug_id", "_merge_order", {"field":"modified_ts", "sort":-1}, "modified_by"])
+    output_queue = Queue()
+    sorted = Q.sort(output, ["bug_id", "_merge_order", {"field":"modified_ts", "sort":-1}, "modified_by"])
 
-    #USE SEPARATE THREAD TO SORT AND PROCESS BUG CHANGE RECORDS
-    process=parse_bug_history_(param, output_queue)
+    #TODO: USE SEPARATE THREAD TO SORT AND PROCESS BUG CHANGE RECORDS
+    process = parse_bug_history_(param, output_queue)
     for s in sorted:
         process.processRow(s)
-    process.processRow(struct.wrap({"bug_id":999999999, "_merge_order":1}))
+    process.processRow(struct.wrap({"bug_id": parse_bug_history.STOP_BUG, "_merge_order": 1}))
     output_queue.add(Thread.STOP)
 
     #USE MAIN THREAD TO SEND TO ES
     #output_queue IS A MULTI-THREADED QUEUE, SO THIS WILL BLOCK UNTIL THE 10K ARE READY
     for i, g in Q.groupby(output_queue, size=10000):
-        es.add({"id":x.id, "value":x} for x in g)
+        es.add({"id": x.id, "value": x} for x in g)
 
     return "done"
-
-
 
 
 def main(settings):
 
     current_run_time=CNV.datetime2milli(datetime.utcnow())
 
-
-
     #MAKE HANDLES TO CONTAINERS
     with DB(settings.bugzilla) as db:
 
         if settings.param.incremental:
-            last_run_time=long(File(settings.param.last_run_time).read())
-            es=ElasticSearch(settings.es)
-            es_comments=ElasticSearch(settings.es_comments)
+            last_run_time = long(File(settings.param.last_run_time).read())
+            es = ElasticSearch(settings.es)
+            es_comments = ElasticSearch(settings.es_comments)
         else:
             last_run_time=0
 
@@ -109,49 +109,50 @@ def main(settings):
 
 
         #SETUP RUN PARAMETERS
-        param=Struct()
-        param.bugs_columns=get_bugs_table_columns(db, settings.bugzilla.schema)
-        param.bugs_columns_SQL=SQL(",\n".join(["`"+c.column_name+"`" for c in param.bugs_columns]))
-        param.bugs_columns=Q.select(param.bugs_columns, "column_name")
-        param.end_time=CNV.datetime2milli(datetime.utcnow())
-        param.start_time=last_run_time
-        param.alias_file=settings.param.alias_file
-        param.end=db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id
+        param = Struct()
+        param.bugs_columns = get_bugs_table_columns(db,
+                                                    settings.bugzilla.schema)
+        param.bugs_columns_SQL = SQL(",\n".join([
+            "`" + c.column_name + "`"
+            for c in param.bugs_columns
+        ]))
+        param.bugs_columns = Q.select(param.bugs_columns, "column_name")
+        param.end_time = CNV.datetime2milli(datetime.utcnow())
+        param.start_time = last_run_time
+        param.alias_file = settings.param.alias_file
+        param.end = db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id
 
-        private_bugs=get_private_bugs(db, param)
-
-
+        private_bugs = get_private_bugs(db, param)
 
         if settings.param.incremental:
-            ########################################################################
+            ####################################################################
             ## ES TAKES TIME TO DELETE RECORDS, DO DELETE FIRST WITH HOPE THE
             ## INDEX GETS A REWRITE DURING ADD OF NEW RECORDS
-            ########################################################################
+            ####################################################################
 
             #REMOVE PRIVATE BUGS
-            es.delete_record({"terms":{"bug_id":private_bugs}})
+            es.delete_record({"terms": {"bug_id": private_bugs}})
 
             #REMOVE **RECENT** PRIVATE ATTACHMENTS
-            private_attachments=get_recent_private_attachments(db, param)
-            bugs_to_refresh=set([a.bug_id for a in private_attachments])
-            es.delete_record({"terms":{"bug_id":bugs_to_refresh}})
+            private_attachments = get_recent_private_attachments(db, param)
+            bugs_to_refresh = set([a.bug_id for a in private_attachments])
+            es.delete_record({"terms": {"bug_id": bugs_to_refresh}})
 
             #REBUILD BUGS THAT GOT REMOVED
-            refresh_param=Struct(**param)
-            refresh_param.bug_list=bugs_to_refresh-private_bugs #BUT NOT PRIVATE BUGS
-            refresh_param.start_time=0
+            refresh_param = Struct(**param)
+            refresh_param.bug_list = bugs_to_refresh - private_bugs # BUT NOT PRIVATE BUGS
+            refresh_param.start_time = 0
 
             try:
                 etl(db, es, refresh_param)
             except Exception, e:
-                Log.warning("Problem with etl using paremeters {{parameters}}", {
-                    "parameters":refresh_param
+                Log.warning("Problem with etl using parameters {{parameters}}", {
+                    "parameters": refresh_param
                 }, e)
 
             #REMOVE PRIVATE COMMENTS
             private_comments=get_recent_private_comments(db, param)
-            es_comments.delete_record({"terms":{"comment_id", private_comments}})
-
+            es_comments.delete_record({"terms": {"comment_id", private_comments}})
 
 
         ########################################################################
@@ -185,8 +186,8 @@ def main(settings):
                     "max":max
                 }, e)
 
-
     File(settings.last_run_time).write(unicode(CNV.datetime2milli(current_run_time)))
+
 
 
 def start():

@@ -146,20 +146,23 @@ class ElasticSearch():
                     "line":lines[i*2+1]
                 })
 
-        if self.debug: Log.note("{{num}} items added", {"num":len(lines)/2})
+        if self.debug:
+            Log.note("{{num}} items added", {"num":len(lines)/2})
 
 
 
     # -1 FOR NO REFRESH
     def set_refresh_interval(self, seconds):
-        if seconds<=0: interval="-1"
-        else: interval=unicode(seconds)+"s"
+        if seconds <= 0:
+            interval = "-1"
+        else:
+            interval = unicode(seconds) + "s"
 
         ElasticSearch.put(
-             self.settings.host+":"+unicode(self.settings.port)+"/"+self.settings.index+"/_settings",
-             data="{\"index.refresh_interval\":\""+interval+"\"}"
+            self.settings.host + ":" + unicode(
+                self.settings.port) + "/" + self.settings.index + "/_settings",
+            data="{\"index.refresh_interval\":\"" + interval + "\"}"
         )
-
 
 
     def search(self, query):

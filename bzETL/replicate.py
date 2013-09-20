@@ -7,15 +7,10 @@
 ################################################################################
 
 
-## REPLICATE SOME OTHER ES INDEX
-##
-
-
-
 from datetime import datetime, timedelta
+from bzETL.util.maths import Math
 from bzETL.util.timer import Timer
 import transform_bugzilla
-from bzETL.util.randoms import Random
 from bzETL.util.cnv import CNV
 from bzETL.util.logs import Log
 from bzETL.util.query import Q
@@ -25,17 +20,13 @@ from bzETL.util.multiset import multiset
 from bzETL.util.elasticsearch import ElasticSearch
 
 
-far_back=datetime.utcnow()-timedelta(weeks=52)
-BATCH_SIZE=10000
-
+far_back = datetime.utcnow() - timedelta(weeks=52)
+BATCH_SIZE = 10000
 
 
 def fix_json(json):
-    json=json.replace("attachments.", "attachments_")
+    json = json.replace("attachments.", "attachments_")
     return json.decode('iso-8859-1').encode('utf8')
-
-
-
 
 
 def extract_from_file(source_settings, destination):
@@ -43,7 +34,7 @@ def extract_from_file(source_settings, destination):
         for g, d in Q.groupby(handle, size=BATCH_SIZE):
             try:
                 d2 = map(
-                    lambda(x): {"id":x.id, "value":x},
+                    lambda (x): {"id": x.id, "value": x},
                     map(
                         lambda(x): transform_bugzilla.normalize(CNV.JSON2object(fix_json(x))),
                         d
@@ -51,49 +42,63 @@ def extract_from_file(source_settings, destination):
                 )
                 destination.add(d2)
             except Exception, e:
-                filename="Error_"+Random.hex(20)+".txt"
+                filename = "Error_" + unicode(g) + ".txt"
                 File(filename).write(d)
-                Log.warning("Can not convert block {{block}} (file={{host}})", {"block":g, "filename":filename}, e)
-
+                Log.warning("Can not convert block {{block}} (file={{host}})", {
+                    "block": g,
+                    "filename": filename
+                }, e)
 
 
 def get_last_updated(es):
     try:
-        results=es.search({
-            "query":{"filtered":{
-                "query":{"match_all":{}},
-                "filter":{"range":{"modified_ts":{"gte":CNV.datetime2milli(far_back)}}}
+        results = es.search({
+            "query": {"filtered": {
+                "query": {"match_all": {}},
+                "filter": {
+                    "range": {
+                    "modified_ts": {"gte": CNV.datetime2milli(far_back)}}}
             }},
-            "from":0,
-            "size":0,
-            "sort":[],
-            "facets":{"0":{"statistical":{"field":"modified_ts"}}}
+            "from": 0,
+            "size": 0,
+            "sort": [],
+            "facets": {"0": {"statistical": {"field": "modified_ts"}}}
         })
 
-        if results.facets["0"].count==0: return datetime.min;
+        if results.facets["0"].count == 0:
+            return datetime.min
         return CNV.milli2datetime(results.facets["0"].max)
     except Exception, e:
-        Log.error("Can not get_last_updated from {{host}}/{{index}}", {"host":es.settings.host, "index":es.settings.index}, e)
+        Log.error("Can not get_last_updated from {{host}}/{{index}}",{
+            "host": es.settings.host,
+            "index": es.settings.index
+        }, e)
 
 
 def get_pending(es, since):
-
-    result=es.search({
-        "query":{"filtered":{
-            "query":{"match_all":{}},
-            "filter":{"range":{"modified_ts":{"gte":CNV.datetime2milli(since)}}}
+    result = es.search({
+        "query": {"filtered": {
+            "query": {"match_all": {}},
+            "filter": {
+            "range": {"modified_ts": {"gte": CNV.datetime2milli(since)}}}
         }},
-        "from":0,
-        "size":0,
-        "sort":[],
-        "facets":{"default":{"terms":{"field":"bug_id","size":200000}}}
+        "from": 0,
+        "size": 0,
+        "sort": [],
+        "facets": {"default": {"terms": {"field": "bug_id", "size": 200000}}}
     })
 
-    if len(result.facets.default.terms)>=200000:
+    if len(result.facets.default.terms) >= 200000:
         Log.error("Can not handle more than 200K bugs changed")
 
-    pending_bugs=multiset(result.facets.default.terms, key_field="term", count_field="count")
-    Log.note("Source has {{num}} bug versions for updating", {"num":len(pending_bugs)})
+    pending_bugs = multiset(
+        result.facets.default.terms,
+        key_field="term",
+        count_field="count"
+    )
+    Log.note("Source has {{num}} bug versions for updating", {
+        "num": len(pending_bugs)
+    })
     return pending_bugs
 
 
@@ -109,7 +114,7 @@ def get_or_create_index(destination_settings, source):
         schema = source.get_schema()
         assert schema.settings is not None
         assert schema.mappings is not None
-        ElasticSearch.create_index(settings, schema)
+        ElasticSearch.create_index(destination_settings, schema)
     elif len(indexes) > 1:
         Log.error("do not know how to replicate to more than one index")
     elif indexes[0].alias is not None:
@@ -121,16 +126,18 @@ def get_or_create_index(destination_settings, source):
 
 def replicate(source, destination, pending, last_updated):
     """
-    COPY source RECORDS TO detination
+    COPY source RECORDS TO destination
     """
     for g, bugs in Q.groupby(pending, max_size=BATCH_SIZE):
-        with Timer("Replicate {{num_bugs}} bugs...", {"num_bugs":len(bugs)}):
+        with Timer("Replicate {{num_bugs}} bugs...", {"num_bugs": len(bugs)}):
             data = source.search({
                 "query": {"filtered": {
                     "query": {"match_all": {}},
                     "filter": {"and": [
                         {"terms": {"bug_id": bugs}},
-                        {"range": {"modified_ts": {"gte": CNV.datetime2milli(last_updated)}}}
+                        {"range": {"modified_ts":
+                            {"gte": CNV.datetime2milli(last_updated)}
+                        }}
                     ]}
                 }},
                 "from": 0,
@@ -172,10 +179,21 @@ def main(settings):
     # SYNCH WITH source ES INDEX
     source=ElasticSearch(settings.source)
     destination=get_or_create_index(settings["destination"], source)
-    last_updated=get_last_updated(destination)-timedelta(days=7)
-    pending=get_pending(source, last_updated)
 
+    # GET LAST UPDATED
+    time_file = File(settings.param.last_replication_time)
+    from_file = None
+    if time_file.exists:
+        from_file = CNV.milli2datetime(CNV.value2int(time_file.read()))
+    from_es = get_last_updated(destination)
+    last_updated = Math.min(from_file, from_es)
+    current_time = datetime.utcnow()
+
+    pending = get_pending(source, last_updated)
     replicate(source, destination, pending, last_updated)
+
+    # RECORD LAST UPDATED
+    time_file.write(unicode(CNV.datetime2milli(current_time)))
 
 
 def start():

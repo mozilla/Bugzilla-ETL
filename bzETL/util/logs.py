@@ -30,7 +30,7 @@ logging_multi=None
 
 
 
-class Log():
+class Log(object):
     """
     FOR STRUCTURED LOGGING AND EXCEPTION CHAINING
     """
@@ -67,7 +67,7 @@ class Log():
         #NICE TO GATHER MANY MORE ITEMS FOR LOGGING (LIKE STACK TRACES AND LINE NUMBERS)
         params["log_timestamp"]=datetime.utcnow().strftime("%H:%M:%S")
 
-        main_log.println(template, params)
+        main_log.write(template, params)
 
 
     @staticmethod
@@ -123,6 +123,11 @@ class Log():
         main_log.stop()
 
 
+
+    def write(self):
+        Log.error("not implemented")
+
+
 def format_trace(tbs, trim=0):
     tbs.reverse()
     list = []
@@ -174,7 +179,7 @@ class Except(Exception):
 
 
 
-class Log_usingFile():
+class Log_usingFile(Log):
 
     def __init__(self, file):
         assert file is not None
@@ -186,19 +191,19 @@ class Log_usingFile():
         self.file_lock=threads.Lock()
 
 
-    def println(self, template, params):
+    def write(self, template, params):
         with self.file_lock:
             File(self.filename).append(expand_template(template, params))
 
 
 
 #WRAP PYTHON CLASSIC logger OBJECTS
-class Log_usingLogger():
+class Log_usingLogger(Log):
     def __init__(self, settings):
         self.logger=logging.Logger("unique name", level=logging.INFO)
         self.logger.addHandler(make_log_from_settings(settings))
 
-    def println(self, template, params):
+    def write(self, template, params):
         # http://docs.python.org/2/library/logging.html#logging.LogRecord
         self.logger.info(expand_template(template, params))
 
@@ -220,7 +225,7 @@ def make_log_from_settings(settings):
 
 
 
-class Log_usingStream():
+class Log_usingStream(Log):
 
     #stream CAN BE AN OBJCET WITH write() METHOD, OR A STRING
     #WHICH WILL eval() TO ONE
@@ -231,7 +236,7 @@ class Log_usingStream():
         self.stream=stream
 
 
-    def println(self, template, params):
+    def write(self, template, params):
         try:
             self.stream.write(expand_template(template, params)+"\n")
         except Exception, e:
@@ -241,16 +246,16 @@ class Log_usingStream():
         pass
 
 
-class Log_usingThread():
+class Log_usingThread(Log):
     def __init__(self, logger):
         #DELAYED LOAD FOR THREADS MODULE
         from multithread import worker_thread
         from threads import Queue
 
         self.queue=Queue()
-        self.thread=worker_thread("log thread", self.queue, None, partial(Log_usingMulti.println, logger))
+        self.thread=worker_thread("log thread", self.queue, None, partial(Log_usingMulti.write, logger))
 
-    def println(self, template, params):
+    def write(self, template, params):
         try:
             self.queue.add({"template":template, "params":params})
             return self
@@ -272,15 +277,15 @@ class Log_usingThread():
 
 
 
-class Log_usingMulti():
+class Log_usingMulti(Log):
     def __init__(self):
         self.many=[]
 
-    def println(self, template, params):
+    def write(self, template, params):
         for m in self.many:
             try:
-                m.println(template, params)
-            except Exception, e:
+                m.write(template, params)
+            except Exception:
                 pass
         return self
 

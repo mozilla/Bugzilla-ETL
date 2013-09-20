@@ -18,7 +18,7 @@ class File():
 
     def __init__(self, filename):
         #USE UNIX STANDARD
-        self.filename=filename
+        self.filename = "/".join(filename.split(os.pathsep))
 
 
     def read(self, encoding="utf-8"):
@@ -52,7 +52,10 @@ class File():
 
     def delete(self):
         try:
-            shutil.rmtree(self.filename)
+            if os.path.isdir(self.filename):
+                shutil.rmtree(self.filename)
+            elif os.path.isfile(self.filename):
+                os.remove(self.filename)
             return self
         except Exception, e:
             if e.strerror=="The system cannot find the path specified":
@@ -61,7 +64,7 @@ class File():
             Log.warning("Could not remove file", e)
 
     def backup(self):
-        names=self.filename.split(os.pathsep)[-1].split(".")
+        names=self.filename.split("/")[-1].split(".")
         if len(names)==1:
             backup=File(self.filename+".backup "+datetime.utcnow().strftime("%Y%m%d %H%i%s"))
 
@@ -76,7 +79,7 @@ class File():
 
     @property
     def parent(self):
-        return File(os.pathsep.join(self.filename.split(os.pathsep)[:-1]))
+        return File("/".join(self.filename.split("/")[:-1]))
 
     @property
     def exists(self):

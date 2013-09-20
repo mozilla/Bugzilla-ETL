@@ -36,6 +36,7 @@ def main(settings):
 #            settings.candidate.alias=settings.candidate.index
 #            settings.candidate.index=settings.candidate.alias+CNV.datetime2string(datetime.utcnow(), "%Y%m%d_%H%M%S")
 #        candidate=ElasticSearch.create_index(settings.candidate, File(settings.candidate.schema_file).read())
+        File(settings.fake_es.filename).delete()
         candidate=Fake_ES(settings.fake_es)
 
         reference=ElasticSearch(settings.reference)
@@ -49,6 +50,7 @@ def main(settings):
         param.start_time=0
         param.alias_file=settings.param.alias_file
         param.bug_list=settings.param.bugs
+        param.allow_private_bugs=settings.param.allow_private_bugs
 
         etl(db, candidate, param)
 
@@ -140,10 +142,10 @@ def compare_both(candidate, reference, settings, some_bugs):
             if can != ref:
                 found_errors=True
                 File(settings.param.errors + "/try/" + unicode(bug_id) + ".txt").write(can)
-                File(settings.param.errors + "/exp/" + unicode(bug_id) + ".txt").write(ref)
+                File(settings.param.errors + "/ref/" + unicode(bug_id) + ".txt").write(ref)
         except Exception, e:
             found_errors=True
-            Log.warning("Problem ETL'ing bug {{bug_id}}", {"bug_id":bug_id})
+            Log.warning("Problem ETL'ing bug {{bug_id}}", {"bug_id":bug_id}, e)
 
     return found_errors
 

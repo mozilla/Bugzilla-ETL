@@ -12,16 +12,16 @@
 		"type":"bug_version"
 	},
 	"debug":{
-        "log":[{
+		"log":[{
 			"class": "logging.handlers.RotatingFileHandler",
 			"filename": "./resources/logs/replication.log",
 			"maxBytes": 10000000,
 			"backupCount": 200,
 			"encoding": "utf8"
 		},{
-            "class":"bzETL.util.logs.Log_usingStream",
-            "stream":"sys.stdout"
-        }]
+			"class":"bzETL.util.logs.Log_usingStream",
+			"stream":"sys.stdout"
+		}]
 	}
 
 
