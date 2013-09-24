@@ -1,2 +1,2 @@
 SET PYTHONPATH=.
-py.test tests
+pypy .\tests\test_etl.py --settings=test_settings.json
