@@ -18,7 +18,7 @@ class File():
 
     def __init__(self, filename):
         #USE UNIX STANDARD
-        self.filename = "/".join(filename.split(os.pathsep))
+        self.filename = "/".join(filename.split(os.sep))
 
 
     def read(self, encoding="utf-8"):

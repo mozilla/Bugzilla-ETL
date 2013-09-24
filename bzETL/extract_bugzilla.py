@@ -80,7 +80,7 @@ def get_recent_private_attachments(db, param):
         FROM
             bugs_activity a
         WHERE
-            bug_when >= FROM_UNIXTIME(CONVERT_TZ({{start_time}}, 'UTC', 'US/Pacific')) AND
+            bug_when >= CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific') AND
             isprivate=1
         """, param)
     except Exception, e:
@@ -98,7 +98,7 @@ def get_recent_private_comments(db, param):
             FROM
                 longdesc c
             WHERE
-                bug_when >= FROM_UNIXTIME(CONVERT_TZ({{start_time}}, 'UTC', 'US/Pacific')) AND
+                bug_when >= CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific') AND
                 isprivate=1
             """, param)
 
@@ -111,15 +111,15 @@ def get_recent_private_comments(db, param):
 
 def get_bugs(db, param):
     if param.allow_private_bugs:
-        param.sensitive_columns="""
+        param.sensitive_columns=SQL("""
             '<screened>' short_desc,
             '<screened>' bug_file_loc
-        """
+        """)
     else:
-        param.sensitive_columns="""
+        param.sensitive_columns=SQL("""
             short_desc,
             bug_file_loc
-        """
+        """)
 
 
 
@@ -408,9 +408,9 @@ def get_bug_see_also(db, param):
 
 def get_new_activities(db, param):
     if param.allow_private_bugs:
-        param.screened_fields=SCREENED_FIELDDEFS
+        param.screened_fields=SQL(SCREENED_FIELDDEFS)
     else:
-        param.screened_fields=[-1]
+        param.screened_fields=SQL([-1])
 
     return db.query("""
         SELECT
@@ -442,7 +442,7 @@ def get_new_activities(db, param):
             fielddefs field ON a.fieldid = field.`id`
         WHERE
             a.bug_id IN {{bug_list}} AND
-            UNIX_TIMESTAMP(CONVERT_TZ(bug_when, 'US/Pacific','UTC'))*1000 >= {{start_time}}
+            bug_when >= CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific')
         ORDER BY
             bug_id,
             bug_when DESC,
@@ -473,10 +473,9 @@ def get_flags(db, param):
 
 def get_comments(db, param):
     if param.allow_private_bugs:
-        param.comments_filter=SQL("1=1")  #ALWAYS TRUE, ALLOWS ALL ATTACHMENTS
-    else:
-        param.comments_filter=SQL("isprivate=0")
+        return []
 
+    param.comments_filter=SQL("isprivate=0")
 
     try:
         comments=db.query("""
@@ -490,10 +489,10 @@ def get_comments(db, param):
             FROM
                 longdesc c
             LEFT JOIN
-                profiles p ON b.who = p.userid
+                profiles p ON c.who = p.userid
             WHERE
                 bug_id IN {{bug_list}} AND
-                bug_when >= FROM_UNIXTIME(CONVERT_TZ({{start_time}}, 'UTC', 'US/Pacific')) AND
+                bug_when >= CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific') AND
                 {{comments_filter}}
             """, param)
 

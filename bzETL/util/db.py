@@ -51,11 +51,11 @@ class DB():
                 user=nvl(self.settings.username, self.settings.user),
                 passwd=nvl(self.settings.password, self.settings.passwd),
                 db=nvl(self.settings.schema, self.settings.schema, self.settings.db),
-                charset="utf8",
+                charset=u"utf8",
                 use_unicode=True
             )
         except Exception, e:
-            Log.error("Failure to connect", e)
+            Log.error(u"Failure to connect", e)
         self.cursor=None
         self.partial_rollback=False
         self.transaction_level=0
@@ -73,7 +73,7 @@ class DB():
                 self.cursor=None
                 self.rollback()
             except Exception, e:
-                Log.warning("can not rollback()", e)
+                Log.warning(u"can not rollback()", e)
             finally:
                 self.close()
             return
@@ -81,7 +81,7 @@ class DB():
         try:
             self.commit()
         except Exception, e:
-            Log.warning("can not commit()", e)
+            Log.warning(u"can not commit()", e)
         finally:
             self.close()
 
@@ -93,12 +93,12 @@ class DB():
 
     def close(self):
         if self.transaction_level>0:
-            Log.error("expecting commit() or rollback() before close")
+            Log.error(u"expecting commit() or rollback() before close")
         self.cursor=None  #NOT NEEDED
         try:
             self.db.close()
         except Exception, e:
-            Log.warning("can not close()", e)
+            Log.warning(u"can not close()", e)
 
     def commit(self):
         try:
@@ -108,17 +108,17 @@ class DB():
                 self.rollback()
             except Exception:
                 pass
-            Log.error("Error while processing backlog", e)
+            Log.error(u"Error while processing backlog", e)
             
         if self.transaction_level==0:
-            Log.error("No transaction has begun")
+            Log.error(u"No transaction has begun")
         elif self.transaction_level==1:
             if self.partial_rollback:
                 try:
                     self.rollback()
                 except Exception:
                     pass
-                Log.error("Commit after nested rollback is not allowed")
+                Log.error(u"Commit after nested rollback is not allowed")
             else:
                 if self.cursor: self.cursor.close()
                 self.cursor=None
@@ -130,18 +130,18 @@ class DB():
         try:
             self.commit()
         except Exception, e:
-            Log.error("Can not flush", e)
+            Log.error(u"Can not flush", e)
 
         try:
             self.begin()
         except Exception, e:
-            Log.error("Can not flush", e)
+            Log.error(u"Can not flush", e)
 
 
     def rollback(self):
         self.backlog=[]     #YAY! FREE!
         if self.transaction_level==0:
-            Log.error("No transaction has begun")
+            Log.error(u"No transaction has begun")
         elif self.transaction_level==1:
             self.transaction_level-=1
             if self.cursor: self.cursor.close()
@@ -150,7 +150,7 @@ class DB():
         else:
             self.transaction_level-=1
             self.partial_rollback=True
-            Log.warning("Can not perform partial rollback!")
+            Log.warning(u"Can not perform partial rollback!")
 
 
 
@@ -161,7 +161,7 @@ class DB():
             self.cursor.close()
             self.cursor=self.db.cursor()
         except Exception, e:
-            Log.error("Problem calling procedure "+proc_name, e)
+            Log.error(u"Problem calling procedure "+proc_name, e)
 
 
 
@@ -174,7 +174,7 @@ class DB():
 
             if param is not None: sql=expand_template(sql, self.quote_param(param))
             sql=outdent(sql)
-            if self.debug: Log.note("Execute SQL:\n{{sql}}", {"sql":indent(sql)})
+            if self.debug: Log.note(u"Execute SQL:\n{{sql}}", {u"sql":indent(sql)})
 
             self.cursor.execute(sql)
 
@@ -188,7 +188,7 @@ class DB():
 
             return result
         except Exception, e:
-            Log.error("Problem executing SQL:\n"+indent(sql.strip()), e, offset=1)
+            Log.error(u"Problem executing SQL:\n"+indent(sql.strip()), e, offset=1)
 
             
     # EXECUTE GIVEN METHOD FOR ALL ROWS RETURNED
@@ -205,7 +205,7 @@ class DB():
 
             if param is not None: sql=expand_template(sql,self.quote_param(param))
             sql=outdent(sql)
-            if self.debug: Log.note("Execute SQL:\n{{sql}}", {"sql":indent(sql)})
+            if self.debug: Log.note(u"Execute SQL:\n{{sql}}", {u"sql":indent(sql)})
 
             self.cursor.execute(sql)
 
@@ -219,15 +219,15 @@ class DB():
                 self.cursor=None
 
         except Exception, e:
-            Log.error("Problem executing SQL:\n"+indent(sql.strip()), e, offset=1)
+            Log.error(u"Problem executing SQL:\n"+indent(sql.strip()), e, offset=1)
 
         return num
 
     
     def execute(self, sql, param=None):
-        if self.transaction_level==0: Log.error("Expecting transation to be started before issuing queries")
+        if self.transaction_level==0: Log.error(u"Expecting transaction to be started before issuing queries")
 
-        if param is not None: sql=expand_template(sql,self.quote_param(param))
+        if param is not None: sql=expand_template(sql, self.quote_param(param))
         sql=outdent(sql)
         self.backlog.append(sql)
         if len(self.backlog)>=MAX_BATCH_SIZE:
@@ -249,11 +249,11 @@ class DB():
         # MWe have no way to execute an entire SQL file in bulk, so we
         # have to shell out to the commandline client.
         args = [
-            "mysql",
-            "-h{0}".format(settings.host),
-            "-u{0}".format(settings.username),
-            "-p{0}".format(settings.password),
-            "{0}".format(settings.schema)
+            u"mysql",
+            u"-h{0}".format(settings.host),
+            u"-u{0}".format(settings.username),
+            u"-p{0}".format(settings.password),
+            u"{0}".format(settings.schema)
         ]
 
         proc = subprocess.Popen(
@@ -265,8 +265,13 @@ class DB():
         (output, _) = proc.communicate(sql)
 
         if proc.returncode:
-            Log.error("Unable to execute sql: return code {{return_code}}, {{output}}:\n {{sql}}\n",
-                    {"sql":indent(sql), "return_code":proc.returncode, "output":output})
+            if len(sql)>10000:
+                sql=u"<"+unicode(len(sql))+u" bytes of sql>"
+            Log.error(u"Unable to execute sql: return code {{return_code}}, {{output}}:\n {{sql}}\n", {
+                u"sql":indent(sql),
+                u"return_code":proc.returncode,
+                u"output":output
+            })
 
     @staticmethod
     def execute_file(settings, filename, param=None):
@@ -280,56 +285,56 @@ class DB():
         if len(self.backlog)==0: return
 
         (backlog, self.backlog)=(self.backlog, [])
-        if self.db.__module__.startswith("pymysql"):
+        if self.db.__module__.startswith(u"pymysql"):
             #BUG IN PYMYSQL: CAN NOT HANDLE MULTIPLE STATEMENTS
             for b in backlog:
                 try:
                     self.cursor.execute(b)
                 except Exception, e:
-                    Log.error("Can not execute sql:\n{{sql}}", {"sql":b}, e)
+                    Log.error(u"Can not execute sql:\n{{sql}}", {u"sql":b}, e)
             self.cursor.close()
             self.cursor = self.db.cursor()
         else:
             for i, g in Q.groupby(backlog, size=MAX_BATCH_SIZE):
-                sql=";\n".join(g)
+                sql=u";\n".join(g)
                 try:
-                    if self.debug: Log.note("Execute block of SQL:\n"+indent(sql))
+                    if self.debug: Log.note(u"Execute block of SQL:\n"+indent(sql))
                     self.cursor.execute(sql)
                     self.cursor.close()
                     self.cursor = self.db.cursor()
                 except Exception, e:
-                    Log.error("Problem executing SQL:\n{{sql}}", {"sql":indent(sql.strip())}, e, offset=1)
+                    Log.error(u"Problem executing SQL:\n{{sql}}", {u"sql":indent(sql.strip())}, e, offset=1)
 
 
 
 
     ## Insert dictionary of values into table
-    def insert (self, table_name, record):
+    def insert(self, table_name, record):
         keys = record.keys()
 
         try:
-            command = "INSERT INTO "+self.quote_column(table_name)+"("+\
-                      ",".join([self.quote_column(k) for k in keys])+\
-                      ") VALUES ("+\
-                      ",".join([self.quote_value(record[k]) for k in keys])+\
-                      ")"
+            command = u"INSERT INTO " + self.quote_column(table_name) + u"(" + \
+                      u",".join([self.quote_column(k) for k in keys]) + \
+                      u") VALUES (" + \
+                      u",".join([self.quote_value(record[k]) for k in keys]) + \
+                      u")"
 
             self.execute(command)
         except Exception, e:
-            Log.error("problem with record: {{record}}", {"record":record}, e)
+            Log.error(u"problem with record: {{record}}", {u"record": record}, e)
 
     # candidate_key IS LIST OF COLUMNS THAT CAN BE USED AS UID (USUALLY PRIMARY KEY)
     # ONLY INSERT IF THE candidate_key DOES NOT EXIST YET
     def insert_new(self, table_name, candidate_key, new_record):
         if not isinstance(candidate_key, list): candidate_key=[candidate_key]
 
-        condition=" AND\n".join([self.quote_column(k)+"="+self.quote_value(new_record[k]) if new_record[k] is not None else self.quote_column(k)+" IS NULL"  for k in candidate_key])
-        command="INSERT INTO "+self.quote_column(table_name)+" ("+\
-                ",".join([self.quote_column(k) for k in new_record.keys()])+\
-                ")\n"+\
-                "SELECT a.* FROM (SELECT "+",".join([self.quote_value(v)+" "+self.quote_column(k) for k,v in new_record.items()])+" FROM DUAL) a\n"+\
-                "LEFT JOIN "+\
-                "(SELECT 'dummy' exist FROM "+self.quote_column(table_name)+" WHERE "+condition+" LIMIT 1) b ON 1=1 WHERE exist IS NULL"
+        condition=u" AND\n".join([self.quote_column(k)+u"="+self.quote_value(new_record[k]) if new_record[k] is not None else self.quote_column(k)+u" IS NULL"  for k in candidate_key])
+        command=u"INSERT INTO "+self.quote_column(table_name)+u" ("+\
+                u",".join([self.quote_column(k) for k in new_record.keys()])+\
+                u")\n"+\
+                u"SELECT a.* FROM (SELECT "+u",".join([self.quote_value(v)+u" "+self.quote_column(k) for k,v in new_record.items()])+u" FROM DUAL) a\n"+\
+                u"LEFT JOIN "+\
+                u"(SELECT 'dummy' exist FROM "+self.quote_column(table_name)+u" WHERE "+condition+u" LIMIT 1) b ON 1=1 WHERE exist IS NULL"
         self.execute(command, {})
 
 
@@ -350,90 +355,115 @@ class DB():
         where=self.quote_param(where)
         new_values=self.quote_param(new_values)
 
-        command="UPDATE "+self.quote_column(table_name)+"\n"+\
-                "SET "+\
-                ",\n".join([self.quote_column(k)+"="+v for k,v in new_values.items()])+"\n"+\
-                "WHERE "+\
-                " AND\n".join([self.quote_column(k)+"="+v for k,v in where.items()])
+        command=u"UPDATE "+self.quote_column(table_name)+u"\n"+\
+                u"SET "+\
+                u",\n".join([self.quote_column(k)+u"="+v for k,v in new_values.items()])+u"\n"+\
+                u"WHERE "+\
+                u" AND\n".join([self.quote_column(k)+u"="+v for k,v in where.items()])
         self.execute(command, {})
 
 
     def quote_param(self, param):
         return {k:self.quote_value(v) for k, v in param.items()}
 
-    #convert values to mysql code for the same
-    #mostly delegate directly to the mysql lib, but some exceptions exist
     def quote_value(self, value):
+        """
+        convert values to mysql code for the same
+        mostly delegate directly to the mysql lib, but some exceptions exist
+        """
         try:
-            if isinstance(value, basestring):
+            if isinstance(value, SQL):
+                if value.param is None:
+                    #value.template CAN BE MORE THAN A TEMPLATE STRING
+                    return self.quote_sql(value.template)
+                param = {k: self.quote_sql(v) for k, v in value.param.items()}
+                return expand_template(value.template, param)
+            elif isinstance(value, basestring):
                 return self.db.literal(value)
             elif isinstance(value, datetime):
-                return "str_to_date('"+value.strftime("%Y%m%d%H%M%S")+"', '%Y%m%d%H%i%s')"
-            elif isinstance(value, list):
-                return "("+",".join([self.db.literal(vv) for vv in value])+")"
-            elif isinstance(value, SQL):
-                if value.param is None:
-                    return value.template
-                param = self.quote_param(value.param)
-                return expand_template(value.template, param)
+                return u"str_to_date('"+value.strftime(u"%Y%m%d%H%M%S")+u"', '%Y%m%d%H%i%s')"
+            elif hasattr(value, '__iter__'):
+                return self.db.literal(CNV.object2JSON(value))
             elif isinstance(value, dict):
-                return self.db.literal(None)
+                return self.db.literal(CNV.object2JSON(value))
             elif Math.is_number(value):
                 return unicode(value)
             else:
                 return self.db.literal(value)
         except Exception, e:
-            Log.error("problem quoting SQL", e)
+            Log.error(u"problem quoting SQL", e)
 
+
+    def quote_sql(self, value, param=None):
+        """
+        USED TO EXPAND THE PARAMETERS TO THE SQL() OBJECT
+        """
+        try:
+            if isinstance(value, SQL):
+                if param is None:
+                    return value
+                param = {k: self.quote_sql(v) for k, v in param.items()}
+                return expand_template(value, param)
+            elif isinstance(value, basestring):
+                return value
+            elif hasattr(value, '__iter__'):
+                return u"(" + u",".join([self.db.literal(vv) for vv in value]) + u")"
+            elif isinstance(value, dict):
+                return self.db.literal(CNV.object2JSON(value))
+            else:
+                return value
+        except Exception, e:
+            Log.error(u"problem quoting SQL", e)
 
     def quote_column(self, column_name):
         if isinstance(column_name, basestring):
-            return "`"+column_name.replace(".", "`.`")+"`"    #MY SQL QUOTE OF COLUMN NAMES
+            return SQL(u"`"+column_name.replace(u".", u"`.`")+u"`")    #MY SQL QUOTE OF COLUMN NAMES
         elif isinstance(column_name, list):
-            return ",".join(column_name)
+            return SQL(u",".join(column_name))
         else:
-            #ASSUME {"name":name, "value":value} FORM
-            return column_name.value+" AS "+self.quote_column(column_name.name)
+            #ASSUME {u"name":name, u"value":value} FORM
+            return SQL(column_name.value+u" AS "+self.quote_column(column_name.name))
         
 
     def esfilter2sqlwhere(self, esfilter):
         return SQL(self._filter2where(esfilter))
 
     def _filter2where(self, esfilter):
-        if esfilter["and"] is not None:
-            return "("+" AND ".join([self._filter2where(a) for a in esfilter["and"]])+")"
-        elif esfilter["or"] is not None:
-            return "("+" OR ".join([self._filter2where(a) for a in esfilter["or"]])+")"
+        if esfilter[u"and"] is not None:
+            return u"("+u" AND ".join([self._filter2where(a) for a in esfilter[u"and"]])+u")"
+        elif esfilter[u"or"] is not None:
+            return u"("+u" OR ".join([self._filter2where(a) for a in esfilter[u"or"]])+u")"
         elif esfilter.term is not None:
-            return "("+" AND ".join([self.quote_column(col)+"="+self.quote_value(val) for col, val in esfilter.term.items()])+")"
+            return u"("+u" AND ".join([self.quote_column(col)+u"="+self.quote_value(val) for col, val in esfilter.term.items()])+u")"
         elif esfilter.script is not None:
-            return "("+esfilter.script+")"
+            return u"("+esfilter.script+u")"
         elif esfilter.exists is not None:
             if isinstance(esfilter.exists, basestring):
-                return "("+self.quote_column(esfilter.exists)+" IS NOT NULL)"
+                return u"("+self.quote_column(esfilter.exists)+u" IS NOT NULL)"
             else:
-                return "("+self.quote_column(esfilter.exists.field)+" IS NOT NULL)"
+                return u"("+self.quote_column(esfilter.exists.field)+u" IS NOT NULL)"
         else:
-            Log.error("Can not convert esfilter to SQL: {{esfilter}}", {"esfilter":esfilter})
+            Log.error(u"Can not convert esfilter to SQL: {{esfilter}}", {u"esfilter":esfilter})
 
 
 def utf8_to_unicode(v):
     try:
         if isinstance(v, str):
-            return v.decode("utf8")
+            return v.decode(u"utf8")
         else:
             return v
     except Exception, e:
-        Log.error("not expected", e)
+        Log.error(u"not expected", e)
 
         
 #ACTUAL SQL, DO NOT QUOTE THIS STRING
-class SQL():
+class SQL(unicode):
 
 
     def __init__(self, template='', param=None):
+        unicode.__init__(self)
         self.template=template
         self.param=param
 
     def __str__(self):
-        Log.error("do not do this")
+        Log.error(u"do not do this")

@@ -34,4 +34,11 @@ You will also require:
 
 
 The JSON file of settings must be provided as an
-argument in the command line (see [example command line script](https://github.com/klahnakoski/Bugzilla-ETL/blob/master/resources/scripts/bz_etl.bat)). Examples of settings files can be found in [./resources/settings](resources/settings)
+argument in the command line (see [example command line script](resources/scripts/bz_etl.bat)). Examples of settings files can be found in [./resources/settings](resources/settings)
+
+Running Tests
+-------------
+
+You can run the functional tests, but you will still require a MySQL instance
+with the timezone database installed ([instructions](./tests/resources/MySQL/README.md))
+

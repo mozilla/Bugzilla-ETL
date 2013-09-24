@@ -9,6 +9,7 @@
 from bzETL import transform_bugzilla
 from bzETL.util.basic import nvl
 from bzETL.util.cnv import CNV
+from bzETL.util.elasticsearch import ElasticSearch
 from bzETL.util.maths import Math
 from bzETL.util.query import Q
 
@@ -73,9 +74,6 @@ def old2new(bug, max_date):
     CONVERT THE OLD ES FORMAT TO THE NEW
     THESE ARE KNOWN CHANGES THAT SHOULD BE MADE TO THE PRODUCTION VERSION
     """
-    bug.id=bug._id.replace(".", "_")[:-3]
-    bug._id=None
-
     if bug.everconfirmed is not None:
         if bug.everconfirmed=="":
             bug.everconfirmed=None
@@ -93,7 +91,7 @@ def old2new(bug, max_date):
         del bug["votes"]
     if Math.is_integer(bug.remaining_time) and int(bug.remaining_time) == 0:
         del bug["remaining_time"]
-    if bug.cf_due_date is not None:
+    if bug.cf_due_date is not None and not Math.is_number(bug.cf_due_date):
         bug.cf_due_date = CNV.datetime2milli(
             CNV.string2datetime(bug.cf_due_date, "%Y-%m-%d")
         )
@@ -131,5 +129,5 @@ def old2new(bug, max_date):
                 if k.endswith("isobsolete") or k.endswith("ispatch") or k.endswith("isprivate"):
                     a.dict[k]=CNV.value2int(a.dict[k])  # .dict REQUIRED TO  HANDLE DOT (.) IN k
 
-    bug=transform_bugzilla.scrub(transform_bugzilla.normalize(bug))
+    bug=ElasticSearch.scrub(transform_bugzilla.normalize(bug))
     return bug

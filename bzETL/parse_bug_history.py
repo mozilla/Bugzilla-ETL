@@ -81,7 +81,7 @@ class parse_bug_history_():
         try:
             self.currBugID = row_in.bug_id
             if self.currBugState.cc is None:
-                Log.note("PROBLEM expecting a created_ts")
+                Log.note("PROBLEM expecting a created_ts (did you install the timezone database into your MySQL instance?)")
 
             if self.settings.debug: Log.note("process row: {{row}}", {"row":row_in})
 

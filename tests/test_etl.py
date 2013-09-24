@@ -23,23 +23,22 @@ from bzETL.util.strings import json_scrub
 from bzETL.util.struct import Struct
 from bzETL.util.timer import Timer
 
-from util import compare_es
+from util import compare_es, database, elasticsearch
 from util.compare_es import get_all_bug_versions
-from util.fake_es import Fake_ES
+
+
 
 def main(settings):
+    """
+    USE A MYSQL DATABASE TO FILL AN ES INSTANCE WITH BUG VERSIONS
+    COMPARE THOSE VERSION TO A REFERENCE ES
+    USE Fake_ES() INSTANCES TO KEEP THIS TEST LOCAL
+    """
+    database.make_test_instance(settings.bugzilla)
 
-    #MAKE HANDLES TO CONTAINERS
     with DB(settings.bugzilla) as db:
-        #REAL ES
-#        if settings.candidate.alias is None:
-#            settings.candidate.alias=settings.candidate.index
-#            settings.candidate.index=settings.candidate.alias+CNV.datetime2string(datetime.utcnow(), "%Y%m%d_%H%M%S")
-#        candidate=ElasticSearch.create_index(settings.candidate, File(settings.candidate.schema_file).read())
-        File(settings.fake_es.filename).delete()
-        candidate=Fake_ES(settings.fake_es)
-
-        reference=ElasticSearch(settings.reference)
+        candidate=elasticsearch.make_test_instance("candidate", settings.candidate)
+        reference=elasticsearch.open_test_instance("reference", settings.reference)
 
         #SETUP RUN PARAMETERS
         param=Struct()
@@ -49,7 +48,7 @@ def main(settings):
         param.end_time=CNV.datetime2milli(datetime.utcnow())
         param.start_time=0
         param.alias_file=settings.param.alias_file
-        param.bug_list=settings.param.bugs
+        param.bug_list=SQL(settings.param.bugs)
         param.allow_private_bugs=settings.param.allow_private_bugs
 
         etl(db, candidate, param)
@@ -73,7 +72,7 @@ def random_sample_of_bugs(settings):
 
 
     with DB(settings.bugzilla) as db:
-        candidate=Fake_ES(settings.fake_es)
+        candidate=elasticsearch.make_test_instance("candidate", settings.candidate)
         reference=ElasticSearch(settings.reference)
 
         #GO FASTER BY STORING LOCAL FILE

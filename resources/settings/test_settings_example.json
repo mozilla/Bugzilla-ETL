@@ -1,6 +1,7 @@
 {
 	"reference":{
 		"description":"pointer to es with known good results",
+		"filename":"./tests/resources/reference_es.json",
 		"host":"http://elasticsearch7.metrics.scl3.mozilla.com",
 		"port":"9200",
 		"index":"bugs",
@@ -9,21 +10,21 @@
 	},
 	"candidate":{
 		"description":"pointer to es with test results",
+		"filename":"./tests/resources/test_results.json",
 		"host":"http://localhost",
 		"port":"9200",
 		"index":"test_bugs",
 		"type":"bug_version"
 	},
-	"fake_es":{
-		"filename":"./tests/resources/test_results.json"
-	},
 	"param":{
 		"bugs":[384, 1108,1045,1046,1157,1877,1865,1869,2586,3140,6810,9622,10575,11040,67742, 96421,123203,178960,367518,457765,458397, 471427,544327, 547727, 643420,692436, 726635,813650,889880],
 		"alias_file":"./resources/data/bugzilla_aliases.txt",
 		"temp_dir":"./tests/resources",
-		"errors":"./tests/resources/errors"
+		"errors":"./tests/resources/errors",
+		"allow_private_bugs":true
 	},
 	"bugzilla":{
+		"filename":"./tests/resources/sql/small_bugzilla.sql",
 		"host":"localhost",
 		"new.host":"klahnakoski-es.corp.tor1.mozilla.com",
 		"port":3306,

@@ -163,13 +163,13 @@ def main(settings):
         for b in range(settings.param.start, param.end, settings.param.increment):
             (min, max)=(b, b+settings.param.increment)
             try:
-                param.bug_list=db.query("""
+                param.bug_list=SQL(db.query("""
                     SELECT
                         bug_id
                     FROM
                         bugs
                     WHERE
-                        delta_ts >= FROM_UNIXTIME(CONVERT_TZ({{start_time}}/1000, 'UTC', 'US/Pacific')) AND
+                        delta_ts >= CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific') AND
                         {{min}} <= bug_id AND bug_id < {{max}}) AND
                         bug_id not in {{private_bugs}}
                     """, {
@@ -177,7 +177,7 @@ def main(settings):
                         "max":max,
                         "private_bugs":private_bugs,
                         "start_time":param.start_time
-                })
+                }))
 
                 etl(db, es, param)
             except Exception, e:

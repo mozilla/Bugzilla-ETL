@@ -35,12 +35,15 @@ def indent(value, prefix=u"\t", indent=None):
 
 
 def outdent(value):
-    num=100
-    lines=value.splitlines()
-    for l in lines:
-        trim=len(l.lstrip())
-        if trim>0: num=min(num, len(l)-len(l.lstrip()))
-    return u"\n".join([l[num:] for l in lines])
+    try:
+        num=100
+        lines=value.splitlines()
+        for l in lines:
+            trim=len(l.lstrip())
+            if trim>0: num=min(num, len(l)-len(l.lstrip()))
+        return u"\n".join([l[num:] for l in lines])
+    except Exception, e:
+        Log.error("can not outdent value", e)
 
 def between(value, prefix, suffix):
     s = value.find(prefix)
