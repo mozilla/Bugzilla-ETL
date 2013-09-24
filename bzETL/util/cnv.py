@@ -72,7 +72,9 @@ class CNV:
 
     @staticmethod
     def datetime2unix(d):
-        return time.mktime(d.timetuple())
+        if d is None:
+            return None
+        return long(time.mktime(d.timetuple()))
 
 
     @staticmethod
@@ -174,6 +176,10 @@ class CNV:
             except Exception, e:
                 Log.error("Not a number ({{value}})", {"value":v}, e)
 
+    @staticmethod
+    def utf82unicode(value):
+        return unicode(value.decode('utf8'))
 
-
-
+    @staticmethod
+    def latin12unicode(value):
+        return unicode(value.decode('iso-8859-1'))

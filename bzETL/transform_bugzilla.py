@@ -1,7 +1,8 @@
-from datetime import datetime
+from datetime import datetime, date
 import re
 from bzETL.util import struct
 from bzETL.util.cnv import CNV
+from bzETL.util.elasticsearch import ElasticSearch
 from bzETL.util.logs import Log
 from bzETL.util.maths import Math
 from bzETL.util.query import Q
@@ -68,7 +69,7 @@ def normalize(bug):
         bug.changes = Q.sort(bug.changes, ["attach_id", "field_name"])
 
     #bug IS CONVERTED TO A 'CLEAN' COPY
-    bug = scrub(bug)
+    bug = ElasticSearch.scrub(bug)
     # bug.attachments = nvl(bug.attachments, [])    # ATTACHMENTS MUST EXIST
 
 
@@ -88,7 +89,7 @@ def normalize(bug):
         v = bug[dateField]
         if v is None: continue
         try:
-            if isinstance(v, datetime):
+            if isinstance(v, datetime) or isinstance(v, date):
                 bug[dateField] = CNV.datetime2milli(v)
             elif isinstance(v, long) and len(unicode(v)) in [12, 13]:
                 bug[dateField] = v
@@ -113,56 +114,4 @@ def normalize(bug):
             Log.error("problem with converting date to milli (value={{value}})", {"value":bug[dateField]}, e)
 
     return bug
-
-
-def scrub(r):
-    """
-    REMOVE KEYS OF DEGENERATE VALUES (EMPTY STRINGS, EMPTY LISTS, AND NULLS)
-    TO LOWER CASE
-    CONVERT STRINGS OF NUMBERS TO NUMBERS
-    RETURNS **COPY**, DOES NOT CHANGE ORIGINAL
-    """
-    return struct.wrap(_scrub(r))
-
-
-def _scrub(r):
-    try:
-        if r is None:
-            return None
-        elif isinstance(r, basestring):
-            if r == "":
-                return None
-            return r.lower()
-        elif Math.is_number(r):
-            return CNV.value2number(r)
-        elif isinstance(r, dict):
-            if isinstance(r, Struct):
-                r = r.dict
-            output = {}
-            for k, v in r.items():
-                v = _scrub(v)
-                if v is not None:
-                    output[k.lower()] = v
-            if len(output) == 0:
-                return None
-            return output
-        elif hasattr(r, '__iter__'):
-            if isinstance(r, StructList):
-                r = r.list
-            output = []
-            for v in r:
-                v = _scrub(v)
-                if v is not None:
-                    output.append(v)
-            if len(output) == 0:
-                return None
-            try:
-                return Q.sort(output)
-            except Exception:
-                return output
-        else:
-            return r
-    except Exception, e:
-        Log.warning("Can not scrub: {{json}}", {"json": r})
-
 

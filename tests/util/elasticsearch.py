@@ -1,7 +1,28 @@
 from bzETL.util.cnv import CNV
+from bzETL.util.elasticsearch import ElasticSearch
 from bzETL.util.logs import Log
 from bzETL.util.files import File
 from bzETL.util.struct import Struct, wrap
+
+
+def make_test_instance(name, settings):
+    if settings.filename is not None:
+        File(settings.filename).delete()
+    return open_test_instance(name, settings)
+
+def open_test_instance(name, settings):
+    if settings.filename is not None:
+        Log.note("Using {{filename}} as {{type}}", {
+            "filename": settings.filename,
+            "type": name
+        })
+        return Fake_ES(settings)
+    else:
+        Log.note("Using ES cluster at {{host}} as {{type}}", {
+            "host": settings.host,
+            "type": name
+        })
+        return ElasticSearch(settings)
 
 
 class Fake_ES():

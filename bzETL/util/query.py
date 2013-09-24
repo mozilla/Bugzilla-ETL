@@ -235,6 +235,17 @@ class Q:
         except Exception, e:
             Log.error("Problem sorting\n{{data}}", {"data":data}, e)
 
+            
+    @staticmethod
+    def add(*values):
+        total=None
+        for v in values:
+            if total is None:
+                total=v
+            else:
+                if v is not None:
+                    total+=v
+        return total
 
 
     def filter(data, where):
@@ -289,12 +300,14 @@ class Q:
 
 
 
-
-
-
-
 def groupby_size(data, size):
-    iterator=data.__iter__()
+    if hasattr(data, "next"):
+        iterator = data
+    elif hasattr(data, "__iter__"):
+        iterator = data.__iter__()
+    else:
+        Log.error("do not know how to handle this type")
+
     done=[]
     def more():
         output=[]
@@ -443,8 +456,6 @@ class Index(object):
                 output = Index(self._keys[-len(key):])
                 output._data = d
                 return output
-
-                return struct.wrap(d)
         except Exception, e:
             Log.error("something went wrong", e)
 

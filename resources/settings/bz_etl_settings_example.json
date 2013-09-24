@@ -3,7 +3,8 @@
 		"start":0,
 		"increment":1000,
 		"alias_file":"./resources/data/bugzilla_aliases.txt",
-		"incremental":false
+		"incremental":false,
+		"last_run_time":"./resources/data/last_run_time.txt"
 	},
 	"bugzilla":{
 		"old.host":"localhost",
@@ -20,6 +21,13 @@
 		"index":"bugs",
 		"type":"bug_version",
 		"schema_file":"./resources/json/bug_version.json"
+	},
+	"es_comments":{
+		"host":"http://localhost",
+		"port":"9200",
+		"index":"bugs",
+		"type":"bug_comment",
+		"schema_file":"./resources/json/bug_comment.json"
 	},
 	"debug":{
 		"log":[{

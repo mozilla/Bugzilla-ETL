@@ -62,7 +62,10 @@ class Log(object):
     @staticmethod
     def note(template, params=None):
         template="{{log_timestamp}} - "+template
-        if params is None: params={}
+        if params is None:
+            params = {}
+        else:
+            params = params.copy()
 
         #NICE TO GATHER MANY MORE ITEMS FOR LOGGING (LIKE STACK TRACES AND LINE NUMBERS)
         params["log_timestamp"]=datetime.utcnow().strftime("%H:%M:%S")

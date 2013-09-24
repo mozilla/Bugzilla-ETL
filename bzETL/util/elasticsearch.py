@@ -2,6 +2,9 @@ import sha
 
 import requests
 import time
+import struct
+from .maths import Math
+from .query import Q
 from .cnv import CNV
 from .logs import Log
 from .basic import nvl
@@ -214,5 +217,57 @@ class ElasticSearch():
             return response
         except Exception, e:
             Log.error("Problem with call to {{url}}", {"url":list[0]}, e)
+
+
+    @staticmethod
+    def scrub(r):
+        """
+        REMOVE KEYS OF DEGENERATE VALUES (EMPTY STRINGS, EMPTY LISTS, AND NULLS)
+        TO LOWER CASE
+        CONVERT STRINGS OF NUMBERS TO NUMBERS
+        RETURNS **COPY**, DOES NOT CHANGE ORIGINAL
+        """
+        return struct.wrap(_scrub(r))
+
+
+def _scrub(r):
+    try:
+        if r is None:
+            return None
+        elif isinstance(r, basestring):
+            if r == "":
+                return None
+            return r.lower()
+        elif Math.is_number(r):
+            return CNV.value2number(r)
+        elif isinstance(r, dict):
+            if isinstance(r, Struct):
+                r = r.dict
+            output = {}
+            for k, v in r.items():
+                v = _scrub(v)
+                if v is not None:
+                    output[k.lower()] = v
+            if len(output) == 0:
+                return None
+            return output
+        elif hasattr(r, '__iter__'):
+            if isinstance(r, StructList):
+                r = r.list
+            output = []
+            for v in r:
+                v = _scrub(v)
+                if v is not None:
+                    output.append(v)
+            if len(output) == 0:
+                return None
+            try:
+                return Q.sort(output)
+            except Exception:
+                return output
+        else:
+            return r
+    except Exception, e:
+        Log.warning("Can not scrub: {{json}}", {"json": r})
 
 
