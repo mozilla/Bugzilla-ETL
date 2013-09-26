@@ -83,15 +83,15 @@ def old2new(bug, max_date):
 
     bug=CNV.JSON2object(CNV.object2JSON(bug).replace("bugzilla: other b.m.o issues ", "bugzilla: other b.m.o issues"))
 
-    if bug.expires_on != Null and bug.expires_on >= max_date:
+    if bug.expires_on != Null and bug.expires_on > max_date:
         bug.expires_on = Null
     if bug.votes != Null:
         bug.votes = int(bug.votes)
     bug.dupe_by = CNV.value2intlist(bug.dupe_by)
     if bug.votes == 0:
         del bug["votes"]
-    if Math.is_integer(bug.remaining_time) and int(bug.remaining_time) == 0:
-        del bug["remaining_time"]
+    # if Math.is_integer(bug.remaining_time) and int(bug.remaining_time) == 0:
+    #     bug.remaining_time = 0
     if bug.cf_due_date != Null and not Math.is_number(bug.cf_due_date):
         bug.cf_due_date = CNV.datetime2milli(
             CNV.string2datetime(bug.cf_due_date, "%Y-%m-%d")

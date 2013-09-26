@@ -3,7 +3,8 @@
 		"host":"http://elasticsearch7.metrics.scl3.mozilla.com",
 		"port":"9200",
 		"index":"bugs",
-		"type":"bug_version"
+        "type":"bug_version",
+        "debug":true
 	},
 	"destination":{
 		"host":"http://localhost",
@@ -11,6 +12,9 @@
 		"index":"bugs",
 		"type":"bug_version"
 	},
+    "param":{
+        "last_replication_time":"./resources/data/last_replication_time.txt"
+    },
 	"debug":{
 		"log":[{
 			"class": "logging.handlers.RotatingFileHandler",

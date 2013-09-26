@@ -31,7 +31,7 @@
 		"username":"username",
 		"password":"password",
 		"schema":"bugzilla",
-		"expires_on": 1372341250000,
+		"expires_on": 1372867005000,
 		"debug":true
 	},
 	"debug":{
