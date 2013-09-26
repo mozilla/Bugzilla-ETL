@@ -40,5 +40,5 @@ Running Tests
 -------------
 
 You can run the functional tests, but you will still require a MySQL instance
-with the timezone database installed ([instructions](./tests/resources/MySQL/README.md))
+with the timezone database installed ([instructions](./tests/resources/mySQL/README.md))
 

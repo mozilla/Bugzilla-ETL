@@ -10,6 +10,8 @@
 
 import argparse
 from .cnv import CNV
+from . import struct
+from .struct import Null
 from .logs import Log
 from .files import File
 
@@ -43,9 +45,9 @@ class startup():
 
 
     @staticmethod
-    def read_settings(filename=None):
+    def read_settings(filename=Null):
         # READ SETTINGS
-        if filename is None:
+        if filename == Null:
             args=startup.argparse([
                 {
                     "name":["--settings", "--settings-file", "--settings_file"],

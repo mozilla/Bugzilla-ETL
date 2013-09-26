@@ -11,41 +11,73 @@ from .logs import Log
 from .basic import nvl
 import struct
 from .strings import indent, expand_template
-from .struct import StructList, Struct
+from .struct import StructList, Struct, Null
 from .multiset import multiset
 
 
 # A COLLECTION OF DATABASE OPERATORS (RELATIONAL ALGEBRA OPERATORS)
 class Q:
-
     def __init__(self, query):
         pass
-        
 
-    
+
     @staticmethod
-    def groupby(data, keys=None, size=None, min_size=None, max_size=None):
+    def run(query):
+        query = struct.wrap(query)
+        if isinstance(query["from"], list):
+            _from = query["from"]
+        else:
+            _from = Q.run(query["from"])
+
+        if query.edges != Null:
+            Log.error("not implemented yet")
+
+        if query.filter != Null:
+            Log.error("not implemented yet")
+
+        if query.window != Null:
+            w = query.window
+            if not isinstance(w, list):
+                w = [w]
+
+            for param in w:
+                Q.window(_from, param)
+
+        if query.where != Null:
+            w = query.where
+            _from = Q.filter(_from, w)
+
+        if query.select != Null:
+            _from = Q.select(_from, query.select)
+
+        return _from
+
+
+    @staticmethod
+    def groupby(data, keys=Null, size=Null, min_size=Null, max_size=Null):
     #return list of (keys, values) pairs where
     #group by the set of set of keys
     #values IS LIST OF ALL data that has those keys
-        if size is not None or min_size is not None or max_size is not None:
-            if size is not None: max_size=size
+        if size != Null or min_size != Null or max_size != Null:
+            if size != Null: max_size = size
             return groupby_min_max_size(data, min_size=min_size, max_size=max_size)
-        
+
         try:
             def keys2string(x):
                 #REACH INTO dict TO GET PROPERTY VALUE
                 return "|".join([unicode(x[k]) for k in keys])
-            def get_keys(d): return struct.wrap({k:d[k] for k in keys})
 
-            agg={}
+            def get_keys(d):
+                return struct.wrap({k: d[k] for k in keys})
+
+            agg = {}
             for d in data:
-                key=keys2string(d)
+                key = keys2string(d)
                 if key in agg:
-                    pair=agg[key]
+                    pair = agg[key]
                 else:
-                    pair=(get_keys(d), StructList())
-                    agg[key]=pair
+                    pair = (get_keys(d), StructList())
+                    agg[key] = pair
                 pair[1].append(d)
 
             return agg.values()
@@ -54,45 +86,44 @@ class Q:
 
 
     @staticmethod
-    def index(data, keys=None):
+    def index(data, keys=Null):
     #return dict that uses keys to index data
-        if not isinstance(keys, list): keys=[keys]
+        if not isinstance(keys, list): keys = [keys]
 
-        output=dict()
+        output = dict()
         for d in data:
-            o=output
+            o = output
             for k in keys[:-1]:
-                v=d[k]
-                if v not in o: o[v]=dict()
-                o=o[v]
-            v=d[keys[-1]]
-            if v not in o: o[v]=list()
-            o=o[v]
+                v = d[k]
+                if v not in o: o[v] = dict()
+                o = o[v]
+            v = d[keys[-1]]
+            if v not in o: o[v] = list()
+            o = o[v]
             o.append(d)
         return output
 
 
     @staticmethod
-    def unique_index(data, keys=None):
+    def unique_index(data, keys=Null):
         """
         RETURN dict THAT USES KEYS TO INDEX DATA
         ONLY ONE VALUE ALLOWED PER UNIQUE KEY
         """
-        if not isinstance(keys, list): keys=[keys]
-        o=Index(keys)
+        if not isinstance(keys, list): keys = [keys]
+        o = Index(keys)
 
         for d in data:
             try:
                 o.add(d)
             except Exception, e:
                 Log.error("index {{index}} is not unique {{key}} maps to both {{value1}} and {{value2}}", {
-                    "index":keys,
-                    "key":Q.select([d], keys)[0],
-                    "value1":o[d],
-                    "value2":d
+                    "index": keys,
+                    "key": Q.select([d], keys)[0],
+                    "value1": o[d],
+                    "value2": d
                 }, e)
         return o
-
 
 
     @staticmethod
@@ -107,23 +138,21 @@ class Q:
 
     @staticmethod
     def get_columns(data):
-        output={}
+        output = {}
         for d in data:
             for k, v in d.items():
-                c=output[k]
-                if c is None:
-                    c={"name":k, "domain":None}
-                    output[k]=c
+                c = output[k]
+                if c == Null:
+                    c = {"name": k, "domain": Null}
+                    output[k] = c
 
-                # IT WOULD BE NICE TO ADD DOMAIN ANALYSIS HERE
+                    # IT WOULD BE NICE TO ADD DOMAIN ANALYSIS HERE
 
-            
-
-        return [{"name":n} for n in output]
+        return [{"name": n} for n in output]
 
 
     @staticmethod
-    def stack(data, name=None, value_column=None, columns=None):
+    def stack(data, name=Null, value_column=Null, columns=Null):
         """
         STACK ALL CUBE DATA TO A SINGLE COLUMN, WITH ONE COLUMN PER DIMENSION
         >>> s
@@ -144,54 +173,74 @@ class Q:
         columns - explicitly list the value columns (USE SELECT INSTEAD)
         """
 
-        assert value_column is not None
+        assert value_column != Null
         if isinstance(data, Cube): Log.error("Do not know how to deal with cubes yet")
 
-        if columns is None:
-            columns=data.get_columns()
-        data=data.select(columns)
+        if columns == Null:
+            columns = data.get_columns()
+        data = data.select(columns)
 
-        name=nvl(name, data.name)
+        name = nvl(name, data.name)
 
+        output = []
 
-        output=[]
-
-        parts=set()
+        parts = set()
         for r in data:
             for c in columns:
-                v=r[c]
+                v = r[c]
                 parts.add(c)
-                output.append({"name":c, "value":v})
+                output.append({"name": c, "value": v})
 
-
-
-        edge=struct.wrap({"domain":{"type":"set", "partitions":parts}})
+        edge = struct.wrap({"domain": {"type": "set", "partitions": parts}})
 
 
     #UNSTACKING CUBES WILL BE SIMPLER BECAUSE THE keys ARE IMPLIED (edges-column)
     @staticmethod
-    def unstack(data, keys=None, column=None, value=None):
-        assert keys is not None
-        assert column is not None
-        assert value is not None
+    def unstack(data, keys=Null, column=Null, value=Null):
+        assert keys != Null
+        assert column != Null
+        assert value != Null
         if isinstance(data, Cube): Log.error("Do not know how to deal with cubes yet")
 
-        output=[]
+        output = []
         for key, values in Q.groupby(data, keys):
             for v in values:
-                key[v[column]]=v[value]
+                key[v[column]] = v[value]
             output.append(key)
-            
+
         return StructList(output)
 
-    
-    # PASS A FIELD NAME, OR LIST OF FIELD NAMES, OR LIST OF STRUCTS WITH {"field":field_name, "sort":direction}
-    @staticmethod
-    def sort(data, fieldnames=None):
-        try:
-            if data is None: return None
 
-            if fieldnames is None:
+    @staticmethod
+    def normalize_sort(fieldnames):
+        """
+        CONVERT SORT PARAMETERS TO A NORMAL FORM SO EASIER TO USE
+        """
+        if fieldnames == Null:
+            return []
+
+        if not isinstance(fieldnames, list):
+            fieldnames = [fieldnames]
+
+        formal = []
+        for f in fieldnames:
+            if isinstance(f, basestring):
+                f = {"field": f, "sort": 1}
+            formal.append(f)
+
+        return formal
+
+
+    @staticmethod
+    def sort(data, fieldnames=Null):
+        """
+        PASS A FIELD NAME, OR LIST OF FIELD NAMES, OR LIST OF STRUCTS WITH {"field":field_name, "sort":direction}
+        """
+        try:
+            if data == Null:
+                return Null
+
+            if fieldnames == Null:
                 return sorted(data)
 
             if not isinstance(fieldnames, list):
@@ -199,105 +248,117 @@ class Q:
                 if isinstance(fieldnames, basestring):
                     def comparer(left, right):
                         return cmp(nvl(left, Struct())[fieldnames], nvl(right, Struct())[fieldnames])
+
                     return sorted(data, cmp=comparer)
                 else:
                     #EXPECTING {"field":f, "sort":i} FORMAT
                     def comparer(left, right):
-                        return fieldnames["sort"]*cmp(nvl(left, Struct())[fieldnames["field"]],  nvl(right, Struct())[fieldnames["field"]])
+                        return fieldnames["sort"] * cmp(nvl(left, Struct())[fieldnames["field"]],
+                                                        nvl(right, Struct())[fieldnames["field"]])
+
                     return sorted(data, cmp=comparer)
 
-            formal=[]
-            for f in fieldnames:
-                if isinstance(f, basestring):
-                    f={"field":f, "sort":1}
-                formal.append(f)
-
-            #DEFINITLY NOT FAST IN PYPY
-    #        code="def comparer(left, right):\n"
-    #        first=True
-    #        for col in formal:
-    #            if not first: code+="    if result!=0: return result\n"
-    #            first=False
-    #            code+="    result="+unicode(col["sort"])+" * cmp(left["+CNV.string2quote(col["field"])+"], right["+CNV.string2quote(col["field"])+"])\n"
-    #        code+="    return result"
-    #        exec(code)
+            formal = Q.normalize_sort(fieldnames)
 
             def comparer(left, right):
-                left=nvl(left, Struct())
-                right=nvl(right, Struct())
+                left = nvl(left, Struct())
+                right = nvl(right, Struct())
                 for f in formal:
-                    result=f["sort"]*cmp(left[f["field"]], right[f["field"]])
-                    if result!=0: return result
+                    result = f["sort"] * cmp(left[f["field"]], right[f["field"]])
+                    if result != 0: return result
                 return 0
 
-            output=sorted(data, cmp=comparer)
+            output = sorted(data, cmp=comparer)
             return output
         except Exception, e:
-            Log.error("Problem sorting\n{{data}}", {"data":data}, e)
+            Log.error("Problem sorting\n{{data}}", {"data": data}, e)
 
-            
+
     @staticmethod
     def add(*values):
-        total=None
+        total = Null
         for v in values:
-            if total is None:
-                total=v
+            if total == Null:
+                total = v
             else:
-                if v is not None:
-                    total+=v
+                if v != Null and v != Null:
+                    total += v
         return total
 
-
+    @staticmethod
     def filter(data, where):
         """
         where  - a function that accepts (record, rownum, rows) and return s boolean
         """
-        return [d for i, d in enumerate(data) if where(d, rownum=i, rows=data)]
-            
+        where = Q.wrap_function(where)
+        return [d for i, d in enumerate(data) if where(d, i, data)]
+
+    @staticmethod
+    def wrap_function(func):
+        """
+        RETURN A THREE-PARAMETER WINDOW FUNCTION TO MATCH
+        """
+        numarg = func.__code__.co_argcount
+        if numarg == 0:
+            def temp(row, rownum, rows):
+                return func()
+            return temp
+        elif numarg == 1:
+            def temp(row, rownum, rows):
+                return func(row)
+            return temp
+        elif numarg == 2:
+            def temp(row, rownum, rows):
+                return func(row, rownum)
+            return temp
+        elif numarg == 3:
+            return func
 
 
     @staticmethod
-    def window(data, name, value, edges=None, sort=None, aggregate=None, _range=None):
+    def window(data, param):
         """
         MAYBE WE CAN DO THIS WITH NUMPY??
         data - list of records
-        name - column to assign window function result
-        edges - columns to gourp by
-        sort - columns to sort by
-        value - function that takes a record and returns a value (for aggregation)
-        aggregate - WindowFunction to apply
-        range - of form {"min":-10, "max":0} to specify the size and relative position of window
         """
-        if aggregate is None and sort is None and edges is None:
+        name = param.name            # column to assign window function result
+        edges = param.edges          # columns to gourp by
+        sort = param.sort            # columns to sort by
+        value = Q.wrap_function(param.value) # function that takes a record and returns a value (for aggregation)
+        aggregate = param.aggregate  # WindowFunction to apply
+        _range = param.range          # of form {"min":-10, "max":0} to specify the size and relative position of window
+
+        if aggregate == Null and sort == Null and edges == Null:
             #SIMPLE CALCULATED VALUE
-            for i, r in enumerate(data):
-                r[name]=value(r, rownum=1, rows=data)
+            for rownum, r in enumerate(data):
+                r[name] = value(r, rownum, data)
+
             return
 
-        for i, r in data:
-            r["__temp__"]=value(r, rownum=1, rows=data)
+        for rownum, r in enumerate(data):
+            r["__temp__"] = value(r, rownum, data)
 
         for keys, values in Q.groupby(data, edges):
-            if len(values)==0: continue     #CAN DO NOTHING WITH THIS ONE SAMPLE
+            if len(values) == 0:
+                continue     # CAN DO NOTHING WITH THIS ONE SAMPLE
 
-            sequence=Q.sort(values, sort)
-            head=nvl(_range.max, _range.stop)
-            tail=nvl(_range.min, _range.start)
+            sequence = struct.wrap(Q.sort(values, sort))
+            head = nvl(_range.max, _range.stop)
+            tail = nvl(_range.min, _range.start)
 
             #PRELOAD total
-            total=aggregate()
-            for i in range(range.max):
-                total+=sequence[i].__temp__
+            total = aggregate()
+            for i in range(head):
+                total += sequence[i].__temp__
 
             #WINDOW FUNCTION APPLICATION
             for i, r in enumerate(sequence):
-                r[name]=total.end()
-                total.add(sequence[i+head].__temp__)
-                total.sub(sequence[i+tail].__temp__)
+                r[name] = total.end()
+                total.add(sequence[i + head].__temp__)
+                total.sub(sequence[i + tail].__temp__)
 
         for r in data:
-            r["__temp__"]=None  #CLEANUP
-
+            r["__temp__"] = Null  #CLEANUP
 
 
 def groupby_size(data, size):
@@ -308,9 +369,10 @@ def groupby_size(data, size):
     else:
         Log.error("do not know how to handle this type")
 
-    done=[]
+    done = []
+
     def more():
-        output=[]
+        output = []
         for i in range(size):
             try:
                 output.append(iterator.next())
@@ -320,26 +382,26 @@ def groupby_size(data, size):
         return output
 
     #THIS IS LAZY
-    i=0
+    i = 0
     while True:
-        output=more()
+        output = more()
         yield (i, output)
-        if len(done)>0: break
-        i+=1
+        if len(done) > 0: break
+        i += 1
 
 
 def groupby_multiset(data, min_size, max_size):
     # GROUP multiset BASED ON POPULATION OF EACH KEY, TRYING TO STAY IN min/max LIMITS
-    if min_size is None: min_size=0
+    if min_size == Null: min_size = 0
 
     total = 0
     i = 0
     g = list()
     for k, c in data.items():
-        if total<min_size or total + c < max_size:
+        if total < min_size or total + c < max_size:
             total += c
             g.append(k)
-        elif total<max_size:
+        elif total < max_size:
             yield (i, g)
             i += 1
             total = c
@@ -347,46 +409,39 @@ def groupby_multiset(data, min_size, max_size):
 
         if total >= max_size:
             Log.error("({{min}}, {{max}}) range is too strict given step of {{increment}}", {
-                "min": min_size, "max": max_size, "increment":c
+                "min": min_size, "max": max_size, "increment": c
             })
 
     if len(g) > 0:
-        yield(i, g)
+        yield (i, g)
 
 
-def groupby_min_max_size(data, min_size=0, max_size=None,):
-    if max_size is None: max_size=sys.maxint
+def groupby_min_max_size(data, min_size=0, max_size=Null, ):
+    if max_size == Null: max_size = sys.maxint
 
     if isinstance(data, list):
-        return [(i, data[i:i+max_size]) for i in range(0, len(data), max_size)]
+        return [(i, data[i:i + max_size]) for i in range(0, len(data), max_size)]
     elif not isinstance(data, multiset):
         return groupby_size(data, max_size)
     else:
         return groupby_multiset(data, min_size, max_size)
 
 
-
 class Cube():
-    def __init__(self, data=None, edges=None, name=None):
+    def __init__(self, data=Null, edges=Null, name=Null):
         if isinstance(data, Cube): Log.error("do not know how to handle cubes yet")
 
-        columns=Q.get_columns(data)
+        columns = Q.get_columns(data)
 
-        if edges==None:
-            self.edges=[{"name":"index", "domain":{"type":"numeric", "min":0, "max":len(data), "interval":1}}]
-            self.data=data
-            self.select=columns
+        if edges == Null:
+            self.edges = [{"name": "index", "domain": {"type": "numeric", "min": 0, "max": len(data), "interval": 1}}]
+            self.data = data
+            self.select = columns
             return
 
-
-
-
-
-        self.name=name
-        self.edges=edges
-        self.select=None
-
-
+        self.name = name
+        self.edges = edges
+        self.select = Null
 
 
     def get_columns(self):
@@ -394,7 +449,6 @@ class Cube():
 
 
 class Domain():
-
     def __init__(self):
         pass
 
@@ -403,7 +457,6 @@ class Domain():
         pass
 
 
-    
     def part2label(self, part):
         pass
 
@@ -417,6 +470,7 @@ class Index(object):
     def __init__(self, keys):
         self._data = {}
         self._keys = keys
+        self.count = 0
 
         #THIS ONLY DEPENDS ON THE len(keys), SO WE COULD SHARED lookup
         #BETWEEN ALL n-key INDEXES.  FOR NOW, JUST MAKE lookup()
@@ -425,7 +479,7 @@ class Index(object):
             code = code + indent(expand_template(
                 "for k{{next}}, d{{next}} in d{{curr}}.items():\n", {
                     "next": i + 1,
-                    "curr": 1
+                    "curr": i
                 }), prefix="    ", indent=i + 1)
         i = len(self._keys)
         code = code + indent(expand_template(
@@ -445,10 +499,10 @@ class Index(object):
             d = self._data
             for k in self._keys:
                 v = key[k]
-                if v is None:
-                    Log.error("can not handle when {{key}} is None", {"key": k})
+                if v == Null:
+                    Log.error("can not handle when {{key}} == Null", {"key": k})
                 if v not in d:
-                    return None
+                    return Null
                 d = d[v]
 
             if len(key) != len(self._keys):
@@ -464,46 +518,49 @@ class Index(object):
 
 
     def add(self, val):
-        if not isinstance(val, dict): val={(self._keys[0], val)}
-        d=self._data
+        if not isinstance(val, dict): val = {(self._keys[0], val)}
+        d = self._data
         for k in self._keys[0:-1]:
-            v=val[k]
-            if v is None:
-                Log.error("can not handle when {{key}} is None", {"key":k})
+            v = val[k]
+            if v == Null:
+                Log.error("can not handle when {{key}} == Null", {"key": k})
             if v not in d:
-                e={}
-                d[v]=e
-            d=d[v]
-        v=val[self._keys[-1]]
+                e = {}
+                d[v] = e
+            d = d[v]
+        v = val[self._keys[-1]]
         if v in d:
             Log.error("key already filled")
-        d[v]=val
-
+        d[v] = val
+        self.count += 1
 
 
     def __contains__(self, key):
-        return self[key] is not None
+        return self[key] != Null
 
     def __iter__(self):
         return self.lookup(self._data)
 
     def __sub__(self, other):
-        output=Index(self._keys)
+        output = Index(self._keys)
         for v in self:
             if v not in other: output.add(v)
         return output
 
     def __and__(self, other):
-        output=Index(self._keys)
+        output = Index(self._keys)
         for v in self:
             if v in other: output.add(v)
         return output
 
     def __or__(self, other):
-        output=Index(self._keys)
+        output = Index(self._keys)
         for v in self: output.add(v)
         for v in other: output.add(v)
         return output
+
+    def __len__(self):
+        return self.count
 
     def subtract(self, other):
         return self.__sub__(other)

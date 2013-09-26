@@ -8,9 +8,9 @@ def main():
     DATABASE (8G+) INTO A TINY TESTING DB (FOR ADDING TO REPOSITORY)
     """
     try:
-        settings=startup.read_settings("test_settings.json")
+        settings=startup.read_settings()
         Log.start(settings.debug)
-        input=raw_input("We are going to totally wipe out the "+settings.bugzilla.schema+" at "+settings.bugzilla.host+"!  Type \"YES\" to continue: ")
+        input=raw_input("We are going to totally wipe out the "+settings.bugzilla.schema.upper()+" schema at "+settings.bugzilla.host.upper()+"!  Type \"YES\" to continue: ")
         if input!="YES":
             Log.note("Aborted.  No Changes made.")
             return

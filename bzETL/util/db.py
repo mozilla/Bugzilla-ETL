@@ -11,6 +11,7 @@ from datetime import datetime
 import subprocess
 from pymysql import connect
 from . import struct
+from .struct import Null
 from .maths import Math
 from .strings import expand_template
 from .basic import nvl
@@ -31,7 +32,7 @@ class DB():
 
     """
 
-    def __init__(self, settings, schema=None):
+    def __init__(self, settings, schema=Null):
         """OVERRIDE THE settings.schema WITH THE schema PARAMETER"""
         if isinstance(settings, DB):
             settings=settings.settings
@@ -50,13 +51,13 @@ class DB():
                 port=self.settings.port,
                 user=nvl(self.settings.username, self.settings.user),
                 passwd=nvl(self.settings.password, self.settings.passwd),
-                db=nvl(self.settings.schema, self.settings.schema, self.settings.db),
+                db=nvl(self.settings.schema, self.settings.db),
                 charset=u"utf8",
                 use_unicode=True
             )
         except Exception, e:
             Log.error(u"Failure to connect", e)
-        self.cursor=None
+        self.cursor = Null
         self.partial_rollback=False
         self.transaction_level=0
         self.backlog=[]     #accumulate the write commands so they are sent at once
@@ -70,7 +71,7 @@ class DB():
         if isinstance(value, BaseException):
             try:
                 if self.cursor: self.cursor.close()
-                self.cursor=None
+                self.cursor=Null
                 self.rollback()
             except Exception, e:
                 Log.warning(u"can not rollback()", e)
@@ -89,12 +90,13 @@ class DB():
     def begin(self):
         if self.transaction_level==0: self.cursor=self.db.cursor()
         self.transaction_level+=1
+        self.execute("SET TIME_ZONE='+00:00'")
 
 
     def close(self):
         if self.transaction_level>0:
             Log.error(u"expecting commit() or rollback() before close")
-        self.cursor=None  #NOT NEEDED
+        self.cursor=Null  #NOT NEEDED
         try:
             self.db.close()
         except Exception, e:
@@ -121,7 +123,7 @@ class DB():
                 Log.error(u"Commit after nested rollback is not allowed")
             else:
                 if self.cursor: self.cursor.close()
-                self.cursor=None
+                self.cursor=Null
                 self.db.commit()
 
         self.transaction_level-=1
@@ -144,8 +146,9 @@ class DB():
             Log.error(u"No transaction has begun")
         elif self.transaction_level==1:
             self.transaction_level-=1
-            if self.cursor: self.cursor.close()
-            self.cursor=None
+            if self.cursor!=Null:
+                self.cursor.close()
+            self.cursor=Null
             self.db.rollback()
         else:
             self.transaction_level-=1
@@ -165,14 +168,14 @@ class DB():
 
 
 
-    def query(self, sql, param=None):
+    def query(self, sql, param=Null):
         self._execute_backlog()
         try:
             old_cursor=self.cursor
-            if old_cursor is None: #ALLOW NON-TRANSACTIONAL READS
+            if old_cursor == Null: #ALLOW NON-TRANSACTIONAL READS
                 self.cursor=self.db.cursor()
 
-            if param is not None: sql=expand_template(sql, self.quote_param(param))
+            if param != Null: sql=expand_template(sql, self.quote_param(param))
             sql=outdent(sql)
             if self.debug: Log.note(u"Execute SQL:\n{{sql}}", {u"sql":indent(sql)})
 
@@ -182,9 +185,9 @@ class DB():
             fixed=[[utf8_to_unicode(c) for c in row] for row in self.cursor]
             result=CNV.table2list(columns, fixed)
 
-            if old_cursor is None:   #CLEANUP AFTER NON-TRANSACTIONAL READS
+            if old_cursor == Null:   #CLEANUP AFTER NON-TRANSACTIONAL READS
                 self.cursor.close()
-                self.cursor=None
+                self.cursor=Null
 
             return result
         except Exception, e:
@@ -192,18 +195,18 @@ class DB():
 
             
     # EXECUTE GIVEN METHOD FOR ALL ROWS RETURNED
-    def foreach(self, sql, param=None, execute=None):
-        assert execute is not None
+    def foreach(self, sql, param=Null, execute=Null):
+        assert execute != Null
 
         num=0
 
         self._execute_backlog()
         try:
             old_cursor=self.cursor
-            if old_cursor is None: #ALLOW NON-TRANSACTIONAL READS
+            if old_cursor == Null: #ALLOW NON-TRANSACTIONAL READS
                 self.cursor=self.db.cursor()
 
-            if param is not None: sql=expand_template(sql,self.quote_param(param))
+            if param != Null: sql=expand_template(sql,self.quote_param(param))
             sql=outdent(sql)
             if self.debug: Log.note(u"Execute SQL:\n{{sql}}", {u"sql":indent(sql)})
 
@@ -214,9 +217,9 @@ class DB():
                 num+=1
                 execute(struct.wrap(dict(zip(columns, [utf8_to_unicode(c) for c in r]))))
 
-            if old_cursor is None:   #CLEANUP AFTER NON-TRANSACTIONAL READS
+            if old_cursor == Null:   #CLEANUP AFTER NON-TRANSACTIONAL READS
                 self.cursor.close()
-                self.cursor=None
+                self.cursor=Null
 
         except Exception, e:
             Log.error(u"Problem executing SQL:\n"+indent(sql.strip()), e, offset=1)
@@ -224,25 +227,25 @@ class DB():
         return num
 
     
-    def execute(self, sql, param=None):
+    def execute(self, sql, param=Null):
         if self.transaction_level==0: Log.error(u"Expecting transaction to be started before issuing queries")
 
-        if param is not None: sql=expand_template(sql, self.quote_param(param))
+        if param != Null: sql=expand_template(sql, self.quote_param(param))
         sql=outdent(sql)
         self.backlog.append(sql)
         if len(self.backlog)>=MAX_BATCH_SIZE:
             self._execute_backlog()
 
         
-    def execute_file(self, filename, param=None):
+    def execute_file(self, filename, param=Null):
         content=File(filename).read()
         self.execute(content, param)
 
     @staticmethod
-    def execute_sql(settings, sql, param=None):
+    def execute_sql(settings, sql, param=Null):
         """EXECUTE MANY LINES OF SQL (FROM SQLDUMP FILE, MAYBE?"""
 
-        if param is not None:
+        if param != Null:
             with DB(settings) as temp:
                 sql=expand_template(sql, temp.quote_param(param))
         
@@ -274,7 +277,7 @@ class DB():
             })
 
     @staticmethod
-    def execute_file(settings, filename, param=None):
+    def execute_file(settings, filename, param=Null):
         # MySQLdb provides no way to execute an entire SQL file in bulk, so we
         # have to shell out to the commandline client.
         sql=File(filename).read()
@@ -286,12 +289,14 @@ class DB():
 
         (backlog, self.backlog)=(self.backlog, [])
         if self.db.__module__.startswith(u"pymysql"):
-            #BUG IN PYMYSQL: CAN NOT HANDLE MULTIPLE STATEMENTS
+            # BUG IN PYMYSQL: CAN NOT HANDLE MULTIPLE STATEMENTS
+            # https://github.com/PyMySQL/PyMySQL/issues/157
             for b in backlog:
                 try:
                     self.cursor.execute(b)
                 except Exception, e:
                     Log.error(u"Can not execute sql:\n{{sql}}", {u"sql":b}, e)
+
             self.cursor.close()
             self.cursor = self.db.cursor()
         else:
@@ -328,13 +333,13 @@ class DB():
     def insert_new(self, table_name, candidate_key, new_record):
         if not isinstance(candidate_key, list): candidate_key=[candidate_key]
 
-        condition=u" AND\n".join([self.quote_column(k)+u"="+self.quote_value(new_record[k]) if new_record[k] is not None else self.quote_column(k)+u" IS NULL"  for k in candidate_key])
+        condition=u" AND\n".join([self.quote_column(k)+u"="+self.quote_value(new_record[k]) if new_record[k] != Null else self.quote_column(k)+u" IS Null"  for k in candidate_key])
         command=u"INSERT INTO "+self.quote_column(table_name)+u" ("+\
                 u",".join([self.quote_column(k) for k in new_record.keys()])+\
                 u")\n"+\
                 u"SELECT a.* FROM (SELECT "+u",".join([self.quote_value(v)+u" "+self.quote_column(k) for k,v in new_record.items()])+u" FROM DUAL) a\n"+\
                 u"LEFT JOIN "+\
-                u"(SELECT 'dummy' exist FROM "+self.quote_column(table_name)+u" WHERE "+condition+u" LIMIT 1) b ON 1=1 WHERE exist IS NULL"
+                u"(SELECT 'dummy' exist FROM "+self.quote_column(table_name)+u" WHERE "+condition+u" LIMIT 1) b ON 1=1 WHERE exist IS Null"
         self.execute(command, {})
 
 
@@ -373,7 +378,7 @@ class DB():
         """
         try:
             if isinstance(value, SQL):
-                if value.param is None:
+                if value.param == Null:
                     #value.template CAN BE MORE THAN A TEMPLATE STRING
                     return self.quote_sql(value.template)
                 param = {k: self.quote_sql(v) for k, v in value.param.items()}
@@ -394,13 +399,13 @@ class DB():
             Log.error(u"problem quoting SQL", e)
 
 
-    def quote_sql(self, value, param=None):
+    def quote_sql(self, value, param=Null):
         """
         USED TO EXPAND THE PARAMETERS TO THE SQL() OBJECT
         """
         try:
             if isinstance(value, SQL):
-                if param is None:
+                if param == Null:
                     return value
                 param = {k: self.quote_sql(v) for k, v in param.items()}
                 return expand_template(value, param)
@@ -415,33 +420,59 @@ class DB():
         except Exception, e:
             Log.error(u"problem quoting SQL", e)
 
-    def quote_column(self, column_name):
+    def quote_column(self, column_name, table=Null):
+
+
+
         if isinstance(column_name, basestring):
-            return SQL(u"`"+column_name.replace(u".", u"`.`")+u"`")    #MY SQL QUOTE OF COLUMN NAMES
+            if table != Null:
+                column_name = table + "." + column_name
+            return SQL(u"`" + column_name.replace(u".", u"`.`") + u"`")    #MY SQL QUOTE OF COLUMN NAMES
         elif isinstance(column_name, list):
-            return SQL(u",".join(column_name))
+            if table != Null:
+                return SQL(u", ".join([self.quote_column(table + "." + c) for c in column_name]))
+            return SQL(u", ".join([self.quote_column(c) for c in column_name]))
         else:
             #ASSUME {u"name":name, u"value":value} FORM
-            return SQL(column_name.value+u" AS "+self.quote_column(column_name.name))
-        
+            return SQL(column_name.value + u" AS " + self.quote_column(column_name.name))
+
+    def sort2sqlorderby(self, sort):
+        sort = Q.normalize_sort(sort)
+        return u",\n".join([self.quote_column(s.field) + (" DESC" if s.sort == -1 else " ASC") for s in sort])
 
     def esfilter2sqlwhere(self, esfilter):
         return SQL(self._filter2where(esfilter))
 
     def _filter2where(self, esfilter):
-        if esfilter[u"and"] is not None:
+        esfilter=struct.wrap(esfilter)
+
+        if esfilter[u"and"] != Null:
             return u"("+u" AND ".join([self._filter2where(a) for a in esfilter[u"and"]])+u")"
-        elif esfilter[u"or"] is not None:
+        elif esfilter[u"or"] != Null:
             return u"("+u" OR ".join([self._filter2where(a) for a in esfilter[u"or"]])+u")"
-        elif esfilter.term is not None:
+        elif esfilter.term != Null:
             return u"("+u" AND ".join([self.quote_column(col)+u"="+self.quote_value(val) for col, val in esfilter.term.items()])+u")"
-        elif esfilter.script is not None:
+        elif esfilter.script != Null:
             return u"("+esfilter.script+u")"
-        elif esfilter.exists is not None:
+        elif esfilter.range != Null:
+            name2sign={
+                u"gt": u">",
+                u"gte": u">=",
+                u"lte": u"<=",
+                u"lt": u"<"
+            }
+            return u"(" + u" AND ".join([
+                " AND ".join([
+                    self.quote_column(col) + name2sign[sign] + self.quote_value(value)
+                    for sign, value in ranges.items()
+                ])
+                for col, ranges in esfilter.range.items()
+            ]) + u")"
+        elif esfilter.exists != Null:
             if isinstance(esfilter.exists, basestring):
-                return u"("+self.quote_column(esfilter.exists)+u" IS NOT NULL)"
+                return u"("+self.quote_column(esfilter.exists)+u" IS NOT Null)"
             else:
-                return u"("+self.quote_column(esfilter.exists.field)+u" IS NOT NULL)"
+                return u"("+self.quote_column(esfilter.exists.field)+u" IS NOT Null)"
         else:
             Log.error(u"Can not convert esfilter to SQL: {{esfilter}}", {u"esfilter":esfilter})
 
@@ -460,7 +491,7 @@ def utf8_to_unicode(v):
 class SQL(unicode):
 
 
-    def __init__(self, template='', param=None):
+    def __init__(self, template='', param=Null):
         unicode.__init__(self)
         self.template=template
         self.param=param

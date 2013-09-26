@@ -1,6 +1,9 @@
-from dzAlerts.util.logs import Log
-from dzAlerts.util.multiset import multiset
-from dzAlerts.util.stats import Z_moment, stats2z_moment, z_moment2stats
+from . import struct
+from .logs import Log
+from .maths import Math
+from .multiset import multiset
+from .stats import Z_moment, stats2z_moment, z_moment2stats
+from .struct import Null
 
 
 class AggregationFunction(object):
@@ -56,12 +59,12 @@ class Stats(WindowFunction):
 
 
     def add(self, value):
-        if value is None:
+        if value == Null:
             return
         self.total+=stats2z_moment(value)
 
     def sub(self, value):
-        if value is None:
+        if value == Null:
             return
         self.total-=stats2z_moment(value)
 
@@ -74,21 +77,19 @@ class Stats(WindowFunction):
 
 
 class Min(WindowFunction):
-
     def __init__(self):
-        self.total=multiset()
+        self.total = multiset()
 
 
     def add(self, value):
-        if value is None:
+        if value == Null:
             return
         self.total.add(value)
 
     def sub(self, value):
-        if value is None:
+        if value == Null:
             return
         self.total.remove(value)
 
-
     def end(self):
-        return min(self.total)
+        return Math.min(self.total)

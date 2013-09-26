@@ -8,8 +8,9 @@
 
 from math import sqrt
 from .basic import nvl
+from .maths import Math
 from .logs import Log
-from .struct import Struct
+
 
 DEBUG=True
 EPSILON=0.000001
@@ -52,8 +53,8 @@ def z_moment2stats(z_moment, unbiased=True):
 
     return Stats(
         count=N,
-        mean=z_moment.S[1]/N,
-        variance=(z_moment.S[2]-(z_moment.S[1]**2)/N)/(N-free),
+        mean=z_moment.S[1] / N if N > 0 else float('nan'),
+        variance=(z_moment.S[2] - (z_moment.S[1] ** 2) / N) / (N - free) if N - free > 0 else float('nan'),
         unbiased=unbiased
     )
 
@@ -140,7 +141,7 @@ class Z_moment():
 
     @staticmethod
     def new_instance(values):
-        if values is None: return Z_moment()
+        if values == Null: return Z_moment()
         values=[float(v) for v in values]
 
         return Z_moment(*[
