@@ -25,13 +25,18 @@ class Timer:
         self.description=expand_template(description, param)  #WE WOULD LIKE TO KEEP THIS TEMPLATE, AND PASS IT TO THE LOGGER ON __exit__(), WE FAKE IT FOR NOW
 
     def __enter__(self):
+        Log.note("Begin {{description}}", {
+            "description":self.description
+        })
+
+
         self.start = time.clock()
         return self
 
     def __exit__(self, type, value, traceback):
         self.end = time.clock()
         self.interval = self.end - self.start
-        Log.note("{{description}} took {{duration}} sec", {
+        Log.note("End {{description}} took {{duration}} sec", {
             "description":self.description,
             "duration":round(self.interval, 3)
         })

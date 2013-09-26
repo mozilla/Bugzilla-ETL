@@ -115,36 +115,37 @@ def random_sample_of_bugs(settings):
 def compare_both(candidate, reference, settings, some_bugs):
     File(settings.param.errors).delete()
 
-    found_errors=False
-    for bug_id in some_bugs:
-        try:
-            versions = Q.sort(
-                get_all_bug_versions(candidate, bug_id, datetime.utcnow()),
-                "modified_ts")
-            # WE CAN NOT EXPECT candidate TO BE UP TO DATE BECAUSE IT IS USING AN OLD IMAGE
-            if len(versions)==0:
-                max_time = CNV.milli2datetime(settings.bugzilla.expires_on)
-            else:
-                max_time = CNV.milli2datetime(versions[-1].modified_ts)
+    with Timer("Comparing to reference"):
+        found_errors=False
+        for bug_id in some_bugs:
+            try:
+                versions = Q.sort(
+                    get_all_bug_versions(candidate, bug_id, datetime.utcnow()),
+                    "modified_ts")
+                # WE CAN NOT EXPECT candidate TO BE UP TO DATE BECAUSE IT IS USING AN OLD IMAGE
+                if len(versions)==0:
+                    max_time = CNV.milli2datetime(settings.bugzilla.expires_on)
+                else:
+                    max_time = CNV.milli2datetime(versions[-1].modified_ts)
 
-            ref_versions = \
-                Q.sort(
-                    map(
-                        lambda x: compare_es.old2new(x, settings.bugzilla.expires_on),
-                        get_all_bug_versions(reference, bug_id, max_time)
-                    ),
-                    "modified_ts"
-                )
+                ref_versions = \
+                    Q.sort(
+                        map(
+                            lambda x: compare_es.old2new(x, settings.bugzilla.expires_on),
+                            get_all_bug_versions(reference, bug_id, max_time)
+                        ),
+                        "modified_ts"
+                    )
 
-            can = json.dumps(json_scrub(versions), indent=4, sort_keys=True, separators=(',', ': '))
-            ref = json.dumps(json_scrub(ref_versions), indent=4, sort_keys=True, separators=(',', ': '))
-            if can != ref:
+                can = json.dumps(json_scrub(versions), indent=4, sort_keys=True, separators=(',', ': '))
+                ref = json.dumps(json_scrub(ref_versions), indent=4, sort_keys=True, separators=(',', ': '))
+                if can != ref:
+                    found_errors=True
+                    File(settings.param.errors + "/try/" + unicode(bug_id) + ".txt").write(can)
+                    File(settings.param.errors + "/ref/" + unicode(bug_id) + ".txt").write(ref)
+            except Exception, e:
                 found_errors=True
-                File(settings.param.errors + "/try/" + unicode(bug_id) + ".txt").write(can)
-                File(settings.param.errors + "/ref/" + unicode(bug_id) + ".txt").write(ref)
-        except Exception, e:
-            found_errors=True
-            Log.warning("Problem ETL'ing bug {{bug_id}}", {"bug_id":bug_id}, e)
+                Log.warning("Problem ETL'ing bug {{bug_id}}", {"bug_id":bug_id}, e)
 
     return found_errors
 

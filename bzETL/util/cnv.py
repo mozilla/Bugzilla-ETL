@@ -170,6 +170,8 @@ class CNV:
     @staticmethod
     def value2number(v):
         try:
+            if isinstance(v, float) and round(v,0)!=v:
+                return v
             #IF LOOKS LIKE AN INT, RETURN AN INT
             return int(v)
         except Exception:
