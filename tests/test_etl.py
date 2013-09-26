@@ -147,7 +147,7 @@ def compare_both(candidate, reference, settings, some_bugs):
                 found_errors=True
                 Log.warning("Problem ETL'ing bug {{bug_id}}", {"bug_id":bug_id}, e)
 
-    return found_errors
+        return found_errors
 
 
 
@@ -157,6 +157,7 @@ def test_etl():
         Log.start(settings.debug)
 #        random_sample_of_bugs(settings)
         main(settings)
+        Log.note("All tests pass!  Success!!")
     finally:
         Log.stop()
 
