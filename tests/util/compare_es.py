@@ -16,6 +16,7 @@ from bzETL.util.query import Q
 
 
 #PULL ALL BUG DOCS FROM ONE ES
+from bzETL.util.struct import Null
 from bzETL.util.timer import Timer
 
 def get_all_bug_versions(es, bug_id, max_time):
@@ -74,24 +75,24 @@ def old2new(bug, max_date):
     CONVERT THE OLD ES FORMAT TO THE NEW
     THESE ARE KNOWN CHANGES THAT SHOULD BE MADE TO THE PRODUCTION VERSION
     """
-    if bug.everconfirmed is not None:
+    if bug.everconfirmed != Null:
         if bug.everconfirmed=="":
-            bug.everconfirmed=None
+            bug.everconfirmed=Null
         else:
             bug.everconfirmed=int(bug.everconfirmed)
 
     bug=CNV.JSON2object(CNV.object2JSON(bug).replace("bugzilla: other b.m.o issues ", "bugzilla: other b.m.o issues"))
 
-    if bug.expires_on is not None and bug.expires_on >= max_date:
-        bug.expires_on = None
-    if bug.votes is not None:
+    if bug.expires_on != Null and bug.expires_on >= max_date:
+        bug.expires_on = Null
+    if bug.votes != Null:
         bug.votes = int(bug.votes)
     bug.dupe_by = CNV.value2intlist(bug.dupe_by)
     if bug.votes == 0:
         del bug["votes"]
     if Math.is_integer(bug.remaining_time) and int(bug.remaining_time) == 0:
         del bug["remaining_time"]
-    if bug.cf_due_date is not None and not Math.is_number(bug.cf_due_date):
+    if bug.cf_due_date != Null and not Math.is_number(bug.cf_due_date):
         bug.cf_due_date = CNV.datetime2milli(
             CNV.string2datetime(bug.cf_due_date, "%Y-%m-%d")
         )
@@ -117,11 +118,11 @@ def old2new(bug, max_date):
     for c in nvl(bug.changes, []):
         c.field_name=c.field_name.replace("attachments.", "attachments_")
         if c.attach_id=='':
-            c.attach_id=None
+            c.attach_id=Null
         else:
             c.attach_id=CNV.value2int(c.attach_id)
 
-    if bug.attachments is not None:
+    if bug.attachments != Null:
         bug.attachments=Q.sort(bug.attachments, "attach_id")
         for a in bug.attachments:
             a.attach_id=CNV.value2int(a.attach_id)
@@ -129,5 +130,5 @@ def old2new(bug, max_date):
                 if k.endswith("isobsolete") or k.endswith("ispatch") or k.endswith("isprivate"):
                     a.dict[k]=CNV.value2int(a.dict[k])  # .dict REQUIRED TO  HANDLE DOT (.) IN k
 
-    bug=ElasticSearch.scrub(transform_bugzilla.normalize(bug))
+    bug=transform_bugzilla.normalize(bug)
     return bug

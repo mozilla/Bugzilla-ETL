@@ -16,7 +16,7 @@ from .extract_bugzilla import get_bugs, get_dependencies, get_flags, get_new_act
 from .parse_bug_history import parse_bug_history_
 from bzETL.util import struct
 from bzETL.util.logs import Log
-from bzETL.util.struct import Struct
+from bzETL.util.struct import Struct, Null
 from bzETL.util.files import File
 from bzETL.util.startup import startup
 from bzETL.util.threads import Queue, Thread
@@ -95,12 +95,12 @@ def main(settings):
         else:
             last_run_time=0
 
-            if settings.es.alias is None:
+            if settings.es.alias == Null:
                 settings.es.alias=settings.es.index
                 settings.es.index=settings.es.alias+CNV.datetime2string(datetime.utcnow(), "%Y%m%d_%H%M%S")
             es=ElasticSearch.create_index(settings.es, File(settings.es.schema_file).read())
 
-            if settings.es_comments.alias is None:
+            if settings.es_comments.alias == Null:
                 settings.es_comments.alias=settings.es_comments.index
                 settings.es_comments.index=settings.es_comments.alias+CNV.datetime2string(datetime.utcnow(), "%Y%m%d_%H%M%S")
             es_comments=ElasticSearch.create_index(settings.es_comments, File(settings.es_comments.schema_file).read())

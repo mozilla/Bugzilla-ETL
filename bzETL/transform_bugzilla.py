@@ -1,12 +1,10 @@
 from datetime import datetime, date
 import re
-from bzETL.util import struct
 from bzETL.util.cnv import CNV
 from bzETL.util.elasticsearch import ElasticSearch
 from bzETL.util.logs import Log
-from bzETL.util.maths import Math
 from bzETL.util.query import Q
-from bzETL.util.struct import Struct, StructList
+from bzETL.util.struct import Null
 
 
 USE_ATTACHMENTS_DOT = True
@@ -31,7 +29,7 @@ DATE_PATTERN_RELAXED = re.compile("^[0-9]{4}[\\/-][0-9]{2}[\\/-][0-9]{2}")
 
 #WE ARE RENAMING THE ATTACHMENTS FIELDS TO CAUSE LESS PROBLEMS IN ES QUERIES
 def rename_attachments(bug_version):
-    if bug_version.attachments is None: return bug_version
+    if bug_version.attachments == Null: return bug_version
     if not USE_ATTACHMENTS_DOT:
         bug_version.attachments=CNV.JSON2object(CNV.object2JSON(bug_version.attachments).replace("attachments.", "attachments_"))
     return bug_version
@@ -42,13 +40,13 @@ def rename_attachments(bug_version):
 def normalize(bug):
     bug=bug.copy()
     bug.id = unicode(bug.bug_id) + "_" + unicode(bug.modified_ts)[:-3]
-    bug._id = None
+    bug._id = Null
 
     #ENSURE STRUCTURES ARE SORTED
     # Do some processing to make sure that diffing between runs stays as similar as possible.
     bug.flags=Q.sort(bug.flags, "value")
 
-    if bug.attachments is not None:
+    if bug.attachments != Null:
         if USE_ATTACHMENTS_DOT:
             bug.attachments=CNV.JSON2object(CNV.object2JSON(bug.attachments).replace("attachments_", "attachments."))
         bug.attachments = Q.sort(bug.attachments, "attach_id")
@@ -63,7 +61,7 @@ def normalize(bug):
 
             a.flags = Q.sort(a.flags, ["modified_ts", "value"])
 
-    if bug.changes is not None:
+    if bug.changes != Null:
         if USE_ATTACHMENTS_DOT:
             bug.changes=CNV.JSON2object(CNV.object2JSON(bug.changes).replace("attachments_", "attachments."))
         bug.changes = Q.sort(bug.changes, ["attach_id", "field_name"])
@@ -75,7 +73,7 @@ def normalize(bug):
 
     for f in NUMERIC_FIELDS:
         v = bug[f]
-        if v is None:
+        if v == Null:
             continue
         elif f in MULTI_FIELDS:
             bug[f] = CNV.value2intlist(v)
@@ -87,7 +85,7 @@ def normalize(bug):
     # Also reformat some date fields
     for dateField in ["deadline", "cf_due_date", "cf_last_resolved"]:
         v = bug[dateField]
-        if v is None: continue
+        if v == Null: continue
         try:
             if isinstance(v, datetime) or isinstance(v, date):
                 bug[dateField] = CNV.datetime2milli(v)
@@ -113,5 +111,5 @@ def normalize(bug):
         except Exception, e:
             Log.error("problem with converting date to milli (value={{value}})", {"value":bug[dateField]}, e)
 
-    return bug
+    return ElasticSearch.scrub(bug)
 

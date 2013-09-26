@@ -8,7 +8,7 @@ from .query import Q
 from .cnv import CNV
 from .logs import Log
 from .basic import nvl
-from .struct import Struct, StructList
+from .struct import Struct, StructList, Null
 
 DEBUG=False
 
@@ -19,12 +19,12 @@ class ElasticSearch():
 
 
     def __init__(self, settings):
-        assert settings.host is not None
-        assert settings.index is not None
-        assert settings.type is not None
+        assert settings.host != Null
+        assert settings.index != Null
+        assert settings.type != Null
 
-        self.metadata=None
-        if settings.port is None: settings.port=9200
+        self.metadata=Null
+        if settings.port == Null: settings.port=9200
         self.debug=nvl(settings.debug, DEBUG)
         globals()["DEBUG"]=DEBUG or self.debug
         
@@ -52,7 +52,7 @@ class ElasticSearch():
 
 
     @staticmethod
-    def delete_index(settings, index=None):
+    def delete_index(settings, index=Null):
         index=nvl(index, settings.index)
 
         ElasticSearch.delete(
@@ -60,13 +60,13 @@ class ElasticSearch():
         )
 
     #RETURN LIST OF {"alias":a, "index":i} PAIRS
-    #ALL INDEXES INCLUDED, EVEN IF NO ALIAS {"alias":None}
+    #ALL INDEXES INCLUDED, EVEN IF NO ALIAS {"alias":Null}
     def get_aliases(self):
         data=self.get_metadata().indices
         output=[]
         for index, desc in data.items():
-            if desc["aliases"] is None or len(desc["aliases"])==0:
-                output.append({"index":index, "alias":None})
+            if desc["aliases"] == Null or len(desc["aliases"])==0:
+                output.append({"index":index, "alias":Null})
             else:
                 for a in desc["aliases"]:
                     output.append({"index":index, "alias":a})
@@ -75,7 +75,7 @@ class ElasticSearch():
 
     
     def get_metadata(self):
-        if self.metadata is None:
+        if self.metadata == Null:
             response=self.get(self.settings.host+":"+unicode(self.settings.port)+"/_cluster/state")
             self.metadata=response.metadata
         return self.metadata
@@ -129,7 +129,7 @@ class ElasticSearch():
             else:
                 Log.error("Expecting every record given to have \"value\" or \"json\" property")
                 
-            if id is None: id=sha.new(json).hexdigest()
+            if id == Null: id=sha.new(json).hexdigest()
 
             lines.append('{"index":{"_id":"'+id+'"}}')
             lines.append(json)
@@ -182,7 +182,7 @@ class ElasticSearch():
             response=requests.post(*list, **args)
             if DEBUG: Log.note(response.content[:130])
             details=CNV.JSON2object(response.content)
-            if details.error is not None:
+            if details.error != Null:
                 Log.error(details.error)
             return details
         except Exception, e:
@@ -194,7 +194,7 @@ class ElasticSearch():
             response=requests.get(*list, **args)
             if DEBUG: Log.note(response.content[:130])
             details=CNV.JSON2object(response.content)
-            if details.error is not None:
+            if details.error != Null:
                 Log.error(details.error)
             return details
         except Exception, e:
@@ -232,11 +232,11 @@ class ElasticSearch():
 
 def _scrub(r):
     try:
-        if r is None:
-            return None
+        if r is None or r == Null:
+            return Null
         elif isinstance(r, basestring):
             if r == "":
-                return None
+                return Null
             return r.lower()
         elif Math.is_number(r):
             return CNV.value2number(r)
@@ -246,10 +246,10 @@ def _scrub(r):
             output = {}
             for k, v in r.items():
                 v = _scrub(v)
-                if v is not None:
+                if v != Null:
                     output[k.lower()] = v
             if len(output) == 0:
-                return None
+                return Null
             return output
         elif hasattr(r, '__iter__'):
             if isinstance(r, StructList):
@@ -257,10 +257,10 @@ def _scrub(r):
             output = []
             for v in r:
                 v = _scrub(v)
-                if v is not None:
+                if v != Null:
                     output.append(v)
             if len(output) == 0:
-                return None
+                return Null
             try:
                 return Q.sort(output)
             except Exception:

@@ -22,11 +22,11 @@ class Emailer:
         
 
     def send_email(self,
-        from_address=None,
-        to_addrs=None,
+        from_address=Null,
+        to_addrs=Null,
         subject='No Subject',
-        text_data=None,
-        html_data=None
+        text_data=Null,
+        html_data=Null
     ):
         """Sends an email.
 

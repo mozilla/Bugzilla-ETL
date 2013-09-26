@@ -6,11 +6,6 @@
 ## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 ################################################################################
 
-
-
-import copy
-import functools
-
 SPECIAL=["keys", "values", "items", "dict",  "copy"]
 
 
@@ -26,13 +21,20 @@ class Struct(dict):
     3) also, which I hardly use, is storing JSON paths in a variable, so :   a["b.c"]==a.b.c
 
     MORE ON MISSING VALUES: http://www.numpy.org/NA-overview.html
-
+    IT ONLY CONSIDERS THE STATISTICAL NULL, WHICH LOOKS AT LEGITIMATE-FIELD-WITH-MISSING-VALUE (Statistical Null)
+    AND DOES NOT LOOK AT FIELD-DOES-NOT-EXIST-IN-THIS-CONTEXT (Database Null)
     """
 
     
     def __init__(self, **map):
         dict.__init__(self)
         object.__setattr__(self, "__dict__", map)  #map IS A COPY OF THE PARAMETERS
+
+    def __bool__(self):
+        return True
+
+    def __nonzero__(self):
+        return True
 
     def __str__(self):
         return dict.__str__(object.__getattribute__(self, "__dict__"))
@@ -47,21 +49,27 @@ class Struct(dict):
                 d=d[n]
             return wrap(d)
 
-        if key not in d: return None
+        if key not in d: return Null
         return wrap(d[key])
 
     def __setitem__(self, key, value):
         try:
             d=object.__getattribute__(self, "__dict__")
             value=unwrap(value)
-            if key.find(".")==-1:
-                d[key]=value
+            if key.find(".") == -1:
+                if value == Null:
+                    del d[key]
+                else:
+                    d[key] = value
                 return self
 
-            key=key.replace("\\.", "\a")
+            key=key.replace("\.", "\a")
             seq=[k.replace("\a", ".") for k in key.split(".")]
             for k in seq[:-1]: d=d[k]
-            d[seq[-1]]=value
+            if value == Null:
+                del d[seq[-1]]
+            else:
+                d[seq[-1]] = value
             return self
         except Exception, e:
             raise e
@@ -69,7 +77,7 @@ class Struct(dict):
     def __getattribute__(self, key):
         d=object.__getattribute__(self, "__dict__")
         if key not in SPECIAL:
-            if key not in d: return None
+            if key not in d: return Null
             return wrap(d[key])
 
         #SOME dict FUNCTIONS
@@ -99,21 +107,66 @@ class Struct(dict):
             return
         del d[key]
 
-
     def keys(self):
         d=object.__getattribute__(self, "__dict__")
         return d.keys()
 
 
+# KEEP TRACK OF WHAT ATTRIBUTES ARE REQUESTED, MAYBE SOME (BUILTIN) ARE STILL USEFUL
+requested = set()
 
 
+class NullStruct(object):
+    """
+    STRUCTURAL NULL:
+        Null[x] == Null
+        Null.x == Null
+
+    """
+
+    def __init__(self):
+        pass
+
+    def __bool__(self):
+        return False
+
+    def __nonzero__(self):
+        return False
+
+    def __gt__(self, other):
+        return False
+
+    def __ge__(self, other):
+        return False
+
+    def __le__(self, other):
+        return False
+
+    def __lt__(self, other):
+        return False
+
+    def __getitem__(self, key):
+        return self
+
+    def __getattribute__(self, key):
+        requested.add(key)
+        return self
+
+    def keys(self):
+        return set()
+
+    def __str__(self):
+        return "None"
+
+
+Null = NullStruct()
 
 
 class StructList(list):
 
-    def __init__(self, vals=None):
+    def __init__(self, vals=Null):
         """ USE THE vals, NOT A COPY """
-        if vals is None:
+        if vals == Null:
             self.list=[]
         elif isinstance(vals, StructList):
             self.list=vals.list
@@ -121,8 +174,8 @@ class StructList(list):
             self.list=vals
 
     def __getitem__(self, index):
-        if index >= len(self.list):
-            return None
+        if index < 0 or len(self.list) <= index:
+            return Null
         return wrap(self.list[index])
 
     def __setitem__(self, i, y):
@@ -156,8 +209,8 @@ class StructList(list):
 
 
 def wrap(v):
-    if v is None:
-        return None
+    if v is None or v == Null:
+        return Null
     if isinstance(v, Struct):
         return v
     if isinstance(v, dict):
@@ -171,4 +224,6 @@ def wrap(v):
 def unwrap(v):
     if isinstance(v, Struct):
         return v.dict
+    if v == Null:
+        return None
     return v

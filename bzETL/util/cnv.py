@@ -16,7 +16,7 @@ import time
 from .logs import Log
 import struct
 from .strings import expand_template, NewJSONEncoder, json_decoder, json_scrub
-from .struct import StructList
+from .struct import StructList, Null
 from .threads import Lock
 
 json_lock=Lock()
@@ -36,12 +36,12 @@ class CNV:
             Log.error("Can not encode into JSON: {{value}}", {"value":repr(obj)}, e)
 
     @staticmethod
-    def JSON2object(json_string, params=None, flexible=False):
+    def JSON2object(json_string, params=Null, flexible=False):
         try:
             #REMOVE """COMMENTS""", #COMMENTS, //COMMENTS, AND \n \r
             if flexible: json_string=re.sub(r"\"\"\".*?\"\"\"|^\s*//\n|#.*?\n|\n|\r", r" ", json_string)  #DERIVED FROM https://github.com/jeads/datasource/blob/master/datasource/bases/BaseHub.py#L58
 
-            if params is not None:
+            if params != Null:
                 params=dict([(k,CNV.value2quote(v)) for k,v in params.items()])
                 json_string=expand_template(json_string, params)
 
@@ -72,8 +72,8 @@ class CNV:
 
     @staticmethod
     def datetime2unix(d):
-        if d is None:
-            return None
+        if d == Null:
+            return Null
         return long(time.mktime(d.timetuple()))
 
 
@@ -102,7 +102,9 @@ class CNV:
     #PROPER NULL HANDLING
     @staticmethod
     def value2string(value):
-        return unicode(value) if value is not None else None
+        if value == Null or value == Null:
+            return Null
+        return unicode(value)
 
 
     #RETURN PRETTY PYTHON CODE FOR THE SAME
@@ -124,7 +126,7 @@ class CNV:
 
 
     @staticmethod
-    def DataFrame2string(df, columns=None):
+    def DataFrame2string(df, columns=Null):
         output = StringIO.StringIO()
         try:
             df.to_csv(output, sep="\t", header=True, cols=columns, engine='python')
@@ -146,21 +148,21 @@ class CNV:
 
     @staticmethod
     def value2intlist(value):
-        if value is None:
-            return None
+        if value == Null:
+            return Null
         elif hasattr(value, '__iter__'):
             output=[int(d) for d in value if d!=""]
             return output
         elif value.strip()=="":
-            return None
+            return Null
         else:
             return [int(value)]
 
 
     @staticmethod
     def value2int(value):
-        if value is None:
-            return None
+        if value == Null:
+            return Null
         else:
             return int(value)
 

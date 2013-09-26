@@ -1,17 +1,18 @@
+from bzETL.util import struct
 from bzETL.util.cnv import CNV
 from bzETL.util.elasticsearch import ElasticSearch
 from bzETL.util.logs import Log
 from bzETL.util.files import File
-from bzETL.util.struct import Struct, wrap
+from bzETL.util.struct import Struct, Null
 
 
 def make_test_instance(name, settings):
-    if settings.filename is not None:
+    if settings.filename != Null:
         File(settings.filename).delete()
     return open_test_instance(name, settings)
 
 def open_test_instance(name, settings):
-    if settings.filename is not None:
+    if settings.filename != Null:
         Log.note("Using {{filename}} as {{type}}", {
             "filename": settings.filename,
             "type": name
@@ -36,8 +37,8 @@ class Fake_ES():
             self.data=Struct()
 
     def search(self, query):
-        filter=parse_filter(wrap(query).query.filtered.filter)
-        return wrap({"hits":{"hits":[{"_id":i, "_source":d} for i,d in self.data.items() if filter(d)]}})
+        filter=parse_filter(struct.wrap(query).query.filtered.filter)
+        return struct.wrap({"hits":{"hits":[{"_id":i, "_source":d} for i,d in self.data.items() if filter(d)]}})
 
 
     def add(self, records):

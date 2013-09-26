@@ -16,6 +16,7 @@ import struct, threads
 from .files import File
 from .strings import indent, expand_template
 from .threads import Thread
+from .struct import Null
 
 
 
@@ -25,8 +26,8 @@ WARNING="WARNING"
 NOTE="NOTE"
 
 
-main_log=None
-logging_multi=None
+main_log=Null
+logging_multi=Null
 
 
 
@@ -38,14 +39,14 @@ class Log(object):
     @classmethod
     def new_instance(cls, settings):
         settings=struct.wrap(settings)
-        if settings["class"] is not None:
+        if settings["class"] != Null:
             if not settings["class"].startswith("logging.handlers."):
                 return make_log_from_settings(settings)
             else:
                 return Log_usingLogger(settings)
-        if settings.file is not None: return Log_usingFile(file)
-        if settings.filename is not None: return Log_usingFile(settings.filename)
-        if settings.stream is not None: return Log_usingStream(settings.stream)
+        if settings.file != Null: return Log_usingFile(file)
+        if settings.filename != Null: return Log_usingFile(settings.filename)
+        if settings.stream != Null: return Log_usingStream(settings.stream)
 
     @classmethod
     def add_log(cls, log):
@@ -56,13 +57,13 @@ class Log(object):
 
 
     @staticmethod
-    def println(template, params=None):
+    def println(template, params=Null):
         Log.note(template, params)
 
     @staticmethod
-    def note(template, params=None):
+    def note(template, params=Null):
         template="{{log_timestamp}} - "+template
-        if params is None:
+        if params == Null:
             params = {}
         else:
             params = params.copy()
@@ -74,12 +75,12 @@ class Log(object):
 
 
     @staticmethod
-    def warning(template, params=None, cause=None):
+    def warning(template, params=Null, cause=Null):
         if isinstance(params, BaseException):
             cause=params
-            params=None
+            params=Null
 
-        if cause is not None and not isinstance(cause, Except):
+        if cause != Null and not isinstance(cause, Except):
             cause=Except(WARNING, unicode(cause), trace=format_trace(traceback.extract_tb(sys.exc_info()[2]), 0))
 
         e = Except(WARNING, template, params, cause, format_trace(traceback.extract_stack(), 1))
@@ -90,15 +91,15 @@ class Log(object):
     @staticmethod
     def error(
         template,       #human readable template
-        params=None,    #parameters for template
-        cause=None,     #pausible cause
+        params=Null,    #parameters for template
+        cause=Null,     #pausible cause
         offset=0        #stack trace offset (==1 if you do not want to report self)
     ):
         if isinstance(params, BaseException):
             cause=params
-            params=None
+            params=Null
 
-        if cause is not None and not isinstance(cause, Except):
+        if cause != Null and not isinstance(cause, Except):
             cause=Except(ERROR, unicode(cause), trace=format_trace(traceback.extract_tb(sys.exc_info()[2]), offset))
 
         trace=format_trace(traceback.extract_stack(), 1+offset)
@@ -108,10 +109,10 @@ class Log(object):
 
     #RUN ME FIRST TO SETUP THE THREADED LOGGING
     @classmethod
-    def start(cls, settings=None):
+    def start(cls, settings=Null):
         ##http://victorlin.me/2012/08/good-logging-practice-in-python/
-        if settings is None: return
-        if settings.log is None: return
+        if settings == Null: return
+        if settings.log == Null: return
 
         globals()["logging_multi"]=Log_usingMulti()
         globals()["main_log"]=Log_usingThread(logging_multi)
@@ -154,7 +155,7 @@ def format_trace(tbs, trim=0):
 
 
 class Except(Exception):
-    def __init__(self, type=ERROR, template=None, params=None, cause=None, trace=None):
+    def __init__(self, type=ERROR, template=Null, params=Null, cause=Null, trace=Null):
         super(Exception, self).__init__(self)
         self.type=type
         self.template=template
@@ -168,12 +169,12 @@ class Except(Exception):
 
     def __str__(self):
         output=self.template
-        if self.params is not None: output=expand_template(output, self.params)
+        if self.params != Null: output=expand_template(output, self.params)
 
-        if self.trace is not None:
+        if self.trace != Null:
             output+="\n"+indent(self.trace)
 
-        if self.cause is not None:
+        if self.cause != Null:
             output+="\ncaused by\n\t"+self.cause.__str__()
 
         return output+"\n"
@@ -185,7 +186,7 @@ class Except(Exception):
 class Log_usingFile(Log):
 
     def __init__(self, file):
-        assert file is not None
+        assert file != Null
         self.file=File(file)
         if self.file.exists:
             self.file.backup()
@@ -212,7 +213,7 @@ class Log_usingLogger(Log):
 
 
 def make_log_from_settings(settings):
-    assert settings["class"] is not None
+    assert settings["class"] != Null
 
     # IMPORT MODULE FOR HANDLER
     path=settings["class"].split(".")
@@ -233,7 +234,7 @@ class Log_usingStream(Log):
     #stream CAN BE AN OBJCET WITH write() METHOD, OR A STRING
     #WHICH WILL eval() TO ONE
     def __init__(self, stream):
-        assert stream is not None
+        assert stream != Null
         if isinstance(stream, basestring):
             stream=eval(stream)
         self.stream=stream
@@ -256,7 +257,7 @@ class Log_usingThread(Log):
         from threads import Queue
 
         self.queue=Queue()
-        self.thread=worker_thread("log thread", self.queue, None, partial(Log_usingMulti.write, logger))
+        self.thread=worker_thread("log thread", self.queue, Null, partial(Log_usingMulti.write, logger))
 
     def write(self, template, params):
         try:
@@ -305,5 +306,5 @@ class Log_usingMulti(Log):
 
 
 
-if main_log is None:
+if main_log == Null:
     main_log=Log_usingStream(sys.stdout)

@@ -9,6 +9,7 @@
 
 from datetime import datetime, timedelta
 from bzETL.util.maths import Math
+from bzETL.util.struct import Null
 from bzETL.util.timer import Timer
 import transform_bugzilla
 from bzETL.util.cnv import CNV
@@ -112,12 +113,12 @@ def get_or_create_index(destination_settings, source):
     if len(indexes) == 0:
         #CREATE INDEX
         schema = source.get_schema()
-        assert schema.settings is not None
-        assert schema.mappings is not None
+        assert schema.settings != Null
+        assert schema.mappings != Null
         ElasticSearch.create_index(destination_settings, schema)
     elif len(indexes) > 1:
         Log.error("do not know how to replicate to more than one index")
-    elif indexes[0].alias is not None:
+    elif indexes[0].alias != Null:
         destination_settings.alias = destination_settings.index
         destination_settings.index = indexes[0].index
 
@@ -158,7 +159,7 @@ def replicate(source, destination, pending, last_updated):
 
 def main(settings):
     #USE A FILE
-    if settings.source.filename is not None:
+    if settings.source.filename != Null:
         settings.destination.alias = settings.destination.index
         settings.destination.index = settings.destination.alias + \
             CNV.datetime2string(datetime.utcnow(), "%Y%m%d_%H%M%S")
@@ -182,7 +183,7 @@ def main(settings):
 
     # GET LAST UPDATED
     time_file = File(settings.param.last_replication_time)
-    from_file = None
+    from_file = Null
     if time_file.exists:
         from_file = CNV.milli2datetime(CNV.value2int(time_file.read()))
     from_es = get_last_updated(destination)

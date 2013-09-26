@@ -5,12 +5,12 @@
 ################################################################################
 ## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 ################################################################################
-
+from .struct import Null
 
 
 def nvl(*args):
     #pick the first none-null value
     for a in args:
-        if a is not None: return a
-    return None
+        if a is not None and a != Null: return a
+    return Null
 

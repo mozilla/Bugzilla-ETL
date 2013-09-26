@@ -5,13 +5,14 @@
 ################################################################################
 ## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 ################################################################################
+from .struct import Null
 
 from .logs import Log
 
 class multiset():
 
-    def __init__(self, list=None, key_field=None, count_field=None):
-        if list is None:
+    def __init__(self, list=Null, key_field=Null, count_field=Null):
+        if list == Null:
             self.dic=dict()
             return
 
