@@ -2,40 +2,44 @@ from datetime import datetime
 from bzETL.util.db import DB
 from bzETL.util.logs import Log
 from bzETL.util.struct import Struct, Null
+from bzETL.util.timer import Timer
 
 
 def make_test_instance(db_settings):
-    try:
-        #CLEAR SCHEMA
-        no_schema=db_settings.copy()
-        no_schema.schema=Null
-        with DB(no_schema) as db:
-            db.execute("DROP DATABASE IF EXISTS {{schema}}", {"schema":db.quote_column(db_settings.schema)})
-            db.execute("CREATE DATABASE {{schema}}", {"schema":db.quote_column(db_settings.schema)})
+    with Timer("Make database instance"):
+        try:
+            #CLEAR SCHEMA
+            Log.note("Make empty {{schema}} schema", {"schema":db_settings.schema})
+            no_schema=db_settings.copy()
+            no_schema.schema=Null
+            with DB(no_schema) as db:
+                db.execute("DROP DATABASE IF EXISTS {{schema}}", {"schema":db.quote_column(db_settings.schema)})
+                db.execute("CREATE DATABASE {{schema}}", {"schema":db.quote_column(db_settings.schema)})
 
-        #FILL SCHEMA
-        DB.execute_file(db_settings, db_settings.filename)
+            #FILL SCHEMA
+            Log.note("Fill {{schema}} schema with data", {"schema":db_settings.schema})
+            DB.execute_file(db_settings, db_settings.filename)
 
-        #FIX BECAUSE DATETIME ARE ALL IN EDT (MY MISTAKE)
-        with DB(db_settings) as db:
-            db.execute("UPDATE attachments SET creation_ts=CONVERT_TZ(creation_ts, 'UTC', 'US/Eastern')")
-            db.execute("UPDATE attachments SET modification_time=CONVERT_TZ(modification_time, 'UTC', 'US/Eastern')")
-            db.execute("UPDATE bugs SET cf_due_date=CONVERT_TZ(cf_due_date, 'UTC', 'US/Eastern')")
-            db.execute("UPDATE bugs SET cf_last_resolved=CONVERT_TZ(cf_last_resolved, 'UTC', 'US/Eastern')")
-            db.execute("UPDATE bugs SET creation_ts=CONVERT_TZ(creation_ts, 'UTC', 'US/Eastern')")
-            db.execute("UPDATE bugs SET deadline=CONVERT_TZ(deadline, 'UTC', 'US/Eastern')")
-            db.execute("UPDATE bugs SET delta_ts=CONVERT_TZ(delta_ts, 'UTC', 'US/Eastern')")
-            db.execute("UPDATE bugs SET lastdiffed=CONVERT_TZ(lastdiffed, 'UTC', 'US/Eastern')")
-            db.execute("UPDATE bugs_activity SET bug_when=CONVERT_TZ(bug_when, 'UTC', 'US/Eastern')")
-            db.execute("UPDATE flags SET creation_date=CONVERT_TZ(creation_date, 'UTC', 'US/Eastern')")
-            db.execute("UPDATE flags SET modification_date=CONVERT_TZ(modification_date, 'UTC', 'US/Eastern')")
-            db.execute("UPDATE longdescs SET bug_when=CONVERT_TZ(bug_when, 'UTC', 'US/Eastern')")
-            db.execute("UPDATE profiles SET creation_ts=CONVERT_TZ(creation_ts, 'UTC', 'US/Eastern')")
-            db.execute("UPDATE profiles_activity SET profiles_when=CONVERT_TZ(profiles_when, 'UTC', 'US/Eastern')")
+            #FIX BECAUSE DATETIME ARE ALL IN EDT (MY MISTAKE)
+            with DB(db_settings) as db:
+                db.execute("UPDATE attachments SET creation_ts=CONVERT_TZ(creation_ts, 'UTC', 'US/Eastern')")
+                db.execute("UPDATE attachments SET modification_time=CONVERT_TZ(modification_time, 'UTC', 'US/Eastern')")
+                db.execute("UPDATE bugs SET cf_due_date=CONVERT_TZ(cf_due_date, 'UTC', 'US/Eastern')")
+                db.execute("UPDATE bugs SET cf_last_resolved=CONVERT_TZ(cf_last_resolved, 'UTC', 'US/Eastern')")
+                db.execute("UPDATE bugs SET creation_ts=CONVERT_TZ(creation_ts, 'UTC', 'US/Eastern')")
+                db.execute("UPDATE bugs SET deadline=CONVERT_TZ(deadline, 'UTC', 'US/Eastern')")
+                db.execute("UPDATE bugs SET delta_ts=CONVERT_TZ(delta_ts, 'UTC', 'US/Eastern')")
+                db.execute("UPDATE bugs SET lastdiffed=CONVERT_TZ(lastdiffed, 'UTC', 'US/Eastern')")
+                db.execute("UPDATE bugs_activity SET bug_when=CONVERT_TZ(bug_when, 'UTC', 'US/Eastern')")
+                db.execute("UPDATE flags SET creation_date=CONVERT_TZ(creation_date, 'UTC', 'US/Eastern')")
+                db.execute("UPDATE flags SET modification_date=CONVERT_TZ(modification_date, 'UTC', 'US/Eastern')")
+                db.execute("UPDATE longdescs SET bug_when=CONVERT_TZ(bug_when, 'UTC', 'US/Eastern')")
+                db.execute("UPDATE profiles SET creation_ts=CONVERT_TZ(creation_ts, 'UTC', 'US/Eastern')")
+                db.execute("UPDATE profiles_activity SET profiles_when=CONVERT_TZ(profiles_when, 'UTC', 'US/Eastern')")
 
 
-    except Exception, e:
-        Log.error("Can not setup test database", e)
+        except Exception, e:
+            Log.error("Can not setup test database", e)
 
 
 def mark_attachment_private(db, attach_id):
