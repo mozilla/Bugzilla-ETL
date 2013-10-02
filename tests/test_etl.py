@@ -8,9 +8,10 @@
 
 import json
 from datetime import datetime
+from bzETL import bz_etl
 
 from bzETL.bz_etl import etl
-from bzETL.extract_bugzilla import get_bugs_table_columns
+from bzETL.util import db
 from bzETL.util.cnv import CNV
 from bzETL.util.db import DB, SQL
 from bzETL.util.logs import Log
@@ -20,7 +21,7 @@ from bzETL.util.query import Q
 from bzETL.util.randoms import Random
 from bzETL.util.startup import startup
 from bzETL.util.strings import json_scrub
-from bzETL.util.struct import Struct
+from bzETL.util.struct import Struct, Null
 from bzETL.util.timer import Timer
 
 from util import compare_es, database, elasticsearch
@@ -28,23 +29,21 @@ from util.compare_es import get_all_bug_versions
 
 
 
-def main(settings):
+def test_specific_bugs(settings):
     """
     USE A MYSQL DATABASE TO FILL AN ES INSTANCE WITH BUG VERSIONS
     COMPARE THOSE VERSION TO A REFERENCE ES
     USE Fake_ES() INSTANCES TO KEEP THIS TEST LOCAL
     """
+    settings.param.allow_private_bugs = True
     database.make_test_instance(settings.bugzilla)
 
     with DB(settings.bugzilla) as db:
         candidate=elasticsearch.make_test_instance("candidate", settings.candidate)
-        reference=elasticsearch.open_test_instance("reference", settings.reference)
+        reference=elasticsearch.open_test_instance("reference", settings.private_reference)
 
         #SETUP RUN PARAMETERS
         param=Struct()
-        param.bugs_columns=get_bugs_table_columns(db, settings.bugzilla.schema)
-        param.bugs_columns_SQL=SQL(",\n".join(["`"+c.column_name+"`" for c in param.bugs_columns]))
-        param.bugs_columns=Q.select(param.bugs_columns, "column_name")
         param.end_time=CNV.datetime2milli(datetime.utcnow())
         param.start_time=0
         param.alias_file=settings.param.alias_file
@@ -54,26 +53,23 @@ def main(settings):
         etl(db, candidate, param)
 
         #COMPARE ALL BUGS
-        problems=compare_both(candidate, reference, settings, settings.param.bugs)
-        if problems:
-            Log.error("DIFFERENCES FOUND")
+        compare_both(candidate, reference, settings, settings.param.bugs)
 
-            
+
+
 
 def random_sample_of_bugs(settings):
     """
     I USE THIS TO FIND BUGS THAT CAUSE MY CODE PROBLEMS.  OF COURSE, IT ONLY WORKS
     WHEN I HAVE A REFERENCE TO COMPARE TO
     """
-
-
     NUM_TO_TEST=100
     MAX_BUG_ID=900000
 
 
     with DB(settings.bugzilla) as db:
         candidate=elasticsearch.make_test_instance("candidate", settings.candidate)
-        reference=ElasticSearch(settings.reference)
+        reference=ElasticSearch(settings.private_reference)
 
         #GO FASTER BY STORING LOCAL FILE
         local_cache=File(settings.param.temp_dir+"/private_bugs.json")
@@ -89,9 +85,6 @@ def random_sample_of_bugs(settings):
 
             #SETUP RUN PARAMETERS
             param=Struct()
-            param.bugs_columns=get_bugs_table_columns(db, settings.bugzilla.schema)
-            param.bugs_columns_SQL=SQL(",\n".join(["`"+c.column_name+"`" for c in param.bugs_columns]))
-            param.bugs_columns=Q.select(param.bugs_columns, "column_name")
             param.end_time=CNV.datetime2milli(datetime.utcnow())
             param.start_time=0
             param.alias_file=settings.param.alias_file
@@ -111,9 +104,181 @@ def random_sample_of_bugs(settings):
                 Log.warning("Total failure during compare of bugs {{bugs}}", {"bugs":some_bugs}, e)
 
 
+
+def test_private_etl(settings):
+    """
+    ASSUME THE DATABASE OF BUGS IS SMALL AND PROCESS ALL USING bz_etl()
+    REQUIRES A REAL ES INSTANCE TO POINT TO
+    """
+    settings.param.incremental=False
+    settings.param.allow_private_bugs=True
+
+    database.make_test_instance(settings.bugzilla)
+    es=elasticsearch.make_test_instance("candidate", settings.candidate)
+    es_comments=elasticsearch.make_test_instance("candidate_comments", settings.candidate)
+    bz_etl.main(settings, es, es_comments)
+
+    ref=elasticsearch.open_test_instance("reference", settings.private_reference)
+    compare_both(es, ref, settings, settings.param.bugs)
+
+def test_public_etl(settings):
+    """
+    ASSUME THE DATABASE OF BUGS IS SMALL AND PROCESS ALL USING bz_etl()
+    REQUIRES A REAL ES INSTANCE TO POINT TO
+    """
+    settings.param.incremental=False
+    settings.param.allow_private_bugs=Null
+
+    database.make_test_instance(settings.bugzilla)
+    es=elasticsearch.make_test_instance("candidate", settings.test_main)
+    es_comments=elasticsearch.make_test_instance("candidate_comments", settings.test_comments)
+    bz_etl.main(settings, es, es_comments)
+
+    ref=elasticsearch.open_test_instance("reference", settings.public_reference)
+    compare_both(es, ref, settings, settings.param.bugs)
+
+
+def test_private_bugs_do_not_show(settings):
+    settings.param.allow_private_bugs=False
+    settings.param.incremental=False
+
+    private_bugs=settings.param.bugs[:3]  # THREE BUGS
+    database.make_test_instance(settings.bugzilla)
+
+    #MARK SOME BUGS PRIVATE
+    with DB(settings.bugzilla) as db:
+        for b in private_bugs:
+            database.add_bug_group(db, b, "super secret")
+
+
+    es=elasticsearch.make_test_instance("candidate", settings.test_main)
+    es_c=elasticsearch.make_test_instance("candidate_comments", settings.test_comments)
+    bz_etl.main(settings, es, es_c)
+
+    #VERIFY BUGS ARE NOT IN OUTPUT
+    for b in private_bugs:
+        versions=compare_es.get_all_bug_versions(es, b)
+        if len(versions)>0:
+            Log.error("Expecting no version for private bug {{bug_id}}", {
+                "bug_id":b
+            })
+
+
+def test_recent_private_bugs_do_not_show(settings):
+    settings.param.allow_private_bugs=False
+    settings.param.incremental=False
+    private_bugs=settings.param.bugs[3:6]  # THREE BUGS
+    database.make_test_instance(settings.bugzilla)
+
+    es=elasticsearch.make_test_instance("candidate", settings.test_main)
+    es_c=elasticsearch.make_test_instance("candidate_comments", settings.test_comments)
+    bz_etl.main(settings, es, es_c)
+
+    #MARK SOME BUGS PRIVATE
+    with DB(settings.bugzilla) as db:
+        for b in private_bugs:
+            database.add_bug_group(db, b, "super secret")
+
+    settings.incremental=True
+    bz_etl.main(settings, es)
+
+    #VERIFY BUGS ARE NOT IN OUTPUT
+    for b in private_bugs:
+        versions=compare_es.get_all_bug_versions(es, b)
+        if len(versions)>0:
+            Log.error("Expecting no version for private bug {{bug_id}}", {
+                "bug_id":b
+            })
+
+
+def test_private_attachments_do_not_show(settings):
+    settings.param.allow_private_bugs=False
+    database.make_test_instance(settings.bugzilla)
+
+    #MARK SOME STUFF PRIVATE
+    with DB(settings.bugzilla) as db:
+        private_attachments=db.query("""
+            SELECT
+                bug_id,
+                attach_id
+            FROM
+                attachments
+            ORDER BY
+                mod(attach_id, 7),
+                attach_id
+            LIMIT
+                5
+        """)
+
+        for a in private_attachments:
+            database.mark_attachment_private(db, a.attach_id)
+
+
+    es=elasticsearch.make_test_instance("candidate", settings.test_main)
+    es_c=elasticsearch.make_test_instance("candidate_comments", settings.test_comments)
+    bz_etl.main(settings, es, es_c)
+
+    #VERIFY ATTACHMENTS ARE NOT IN OUTPUT
+    for b in Q.select(private_attachments, "bug_id"):
+        versions=compare_es.get_all_bug_versions(es, b)
+        for v in versions:
+            for a in v.attachments:
+                if a.attach_id in private_attachments:
+                    Log.error("Private attachment should not exist")
+
+
+def test_private_comments_do_not_show(settings):
+    settings.param.allow_private_bugs=False
+    database.make_test_instance(settings.bugzilla)
+
+    #MARK SOME COMMENTS PRIVATE
+    with DB(settings.bugzilla) as db:
+        private_comments=db.query("""
+            SELECT
+                bug_id,
+                comment_id
+            FROM
+                long_desc
+            ORDER BY
+                mod(comment_id, 7),
+                comment_id
+            LIMIT
+                5
+        """)
+
+        for c in private_comments:
+            database.mark_comment_private(db, c.comment_id)
+
+
+    es=elasticsearch.make_test_instance("candidate", settings.test_main)
+    es_c=elasticsearch.make_test_instance("candidate_comments", settings.test_comments)
+    bz_etl.main(settings, es, es_c)
+
+    #VERIFY ATTACHMENTS ARE NOT IN OUTPUT
+    for c in private_comments:
+        data=es.search({
+            "query":{"filtered":{
+                "query":{"match_all":{}},
+                "filter":{"and":[
+                    {"term":{"comment_id":c.comment_id}}
+                ]}
+            }},
+            "from":0,
+            "size":200000,
+            "sort":[]
+        })
+
+        if len(Q.select(data.hits.hits, "_source")) > 0:
+            Log.error("Expecting no comments")
+
+
+
+
 #COMPARE ALL BUGS
 def compare_both(candidate, reference, settings, some_bugs):
     File(settings.param.errors).delete()
+    try_dir=settings.param.errors + "/try/"
+    ref_dir=settings.param.errors + "/ref/"
 
     with Timer("Comparing to reference"):
         found_errors=False
@@ -141,25 +306,29 @@ def compare_both(candidate, reference, settings, some_bugs):
                 ref = json.dumps(json_scrub(ref_versions), indent=4, sort_keys=True, separators=(',', ': '))
                 if can != ref:
                     found_errors=True
-                    File(settings.param.errors + "/try/" + unicode(bug_id) + ".txt").write(can)
-                    File(settings.param.errors + "/ref/" + unicode(bug_id) + ".txt").write(ref)
+                    File(try_dir + unicode(bug_id) + ".txt").write(can)
+                    File(ref_dir + unicode(bug_id) + ".txt").write(ref)
             except Exception, e:
                 found_errors=True
                 Log.warning("Problem ETL'ing bug {{bug_id}}", {"bug_id":bug_id}, e)
 
-        return found_errors
+        if found_errors:
+            Log.error("DIFFERENCES FOUND (Differences shown in {{path}})", {
+                "path":[try_dir, ref_dir]}
+            )
 
 
 
-def test_etl():
+def main():
     try:
         settings=startup.read_settings()
         Log.start(settings.debug)
-#        random_sample_of_bugs(settings)
-        main(settings)
+#        test_specific_bugs(settings)
+#         test_private_etl(settings)
+        test_public_etl(settings)
         Log.note("All tests pass!  Success!!")
     finally:
         Log.stop()
 
-test_etl()
+main()
 

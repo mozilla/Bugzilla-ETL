@@ -1,5 +1,5 @@
 {
-	"errors":"./resources/data",
+	"errors":"./results/data",
 	"source":{
 		"filename":"C:/Users/klahnakoski/git/ES Extract/data/bug_versions.txt",
 		"schema_filename":"./resources/json/bug_version.json"
@@ -14,7 +14,7 @@
 	"debug":{
 		"log":[{
 			"class": "logging.handlers.RotatingFileHandler",
-			"filename": "./tests/resources/logs/fileload.log",
+			"filename": "./tests/results/logs/fileload.log",
 			"maxBytes": 10000000,
 			"backupCount": 200,
 			"encoding": "utf8"

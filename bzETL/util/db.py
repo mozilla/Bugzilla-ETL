@@ -264,7 +264,8 @@ class DB():
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            )
+            bufsize=-1
+        )
         (output, _) = proc.communicate(sql)
 
         if proc.returncode:
@@ -411,12 +412,12 @@ class DB():
                 return expand_template(value, param)
             elif isinstance(value, basestring):
                 return value
-            elif hasattr(value, '__iter__'):
-                return u"(" + u",".join([self.db.literal(vv) for vv in value]) + u")"
             elif isinstance(value, dict):
                 return self.db.literal(CNV.object2JSON(value))
+            elif hasattr(value, '__iter__'):
+                return u"(" + u",".join([self.quote_sql(vv) for vv in value]) + u")"
             else:
-                return value
+                return unicode(value)
         except Exception, e:
             Log.error(u"problem quoting SQL", e)
 

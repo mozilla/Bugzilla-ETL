@@ -103,10 +103,6 @@ class parse_bug_history_():
                     return
                 self.startNewBug(row_in)
 
-            if row_in.modified_ts==927307531000:
-                Log.println("")
-
-
             # Bugzilla bug workaround - some values were truncated, introducing uncertainty / errors:
             # https://bugzilla.mozilla.org/show_bug.cgi?id=55161
             if row_in.field_name in TRUNC_FIELDS:
@@ -416,7 +412,7 @@ class parse_bug_history_():
                     self.currBugState.expires_on = nextVersion.modified_ts
                 else:
                     # Otherwise, we don't know when the version expires.
-                    Log.note("We have no nextVersion after #{{version}}", {"version": self.bug_version_num})
+                    Log.note("Last bug_version_num = {{version}}", {"version": self.bug_version_num})
 
                     self.currBugState.expires_on = Null
 

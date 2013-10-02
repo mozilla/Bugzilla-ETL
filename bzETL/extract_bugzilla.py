@@ -9,7 +9,8 @@
 from bzETL.util.db import SQL
 
 from bzETL.util.logs import Log
-from bzETL.util.struct import Struct
+from bzETL.util.query import Q
+from bzETL.util.struct import Struct, Null
 
 
 SCREENED_FIELDDEFS=[
@@ -21,6 +22,11 @@ SCREENED_FIELDDEFS=[
     74, #content
     83, #attach_data.thedata
 ]
+
+
+
+
+bugs_columns = Null
 
 
 def get_bugs_table_columns(db, schema_name):
@@ -59,11 +65,11 @@ def get_bugs_table_columns(db, schema_name):
 
 def get_private_bugs(db, param):
     if param.allow_private_bugs:
-        return []
+        return {0}
     
     try:
         private_bugs=db.query("SELECT DISTINCT bug_id FROM bug_group_map")
-        return set(private_bugs)
+        return set(private_bugs) | {0}
     except Exception, e:
         Log.error("problem getting private bugs", e)
 
@@ -108,8 +114,15 @@ def get_recent_private_comments(db, param):
 
 
 
-
 def get_bugs(db, param):
+    if bugs_columns == Null:
+        columns=get_bugs_table_columns(db, db.settings.schema)
+        globals()["bugs_columns"] = Q.select(columns, "column_name")
+
+    param.bugs_columns=bugs_columns
+    param.bugs_columns_SQL = db.quote_column(bugs_columns)
+
+
     if param.allow_private_bugs:
         param.sensitive_columns=SQL("""
             '<screened>' short_desc,
@@ -150,14 +163,14 @@ def get_bugs(db, param):
         #bugs IS LIST OF BUGS WHICH MUST BE CONVERTED TO THE DELTA RECORDS FOR ALL FIELDS
         output=[]
         for r in bugs:
-            flatten_bugs_record(r, param.bugs_columns, output)
+            flatten_bugs_record(r, output)
 
         return output
     except Exception, e:
         Log.error("can not get basic bug data", e)
 
 
-def flatten_bugs_record(r, bugs_fields, output):
+def flatten_bugs_record(r, output):
     newRow=Struct()
     newRow.bug_id=r.bug_id
     newRow.modified_ts=r.modified_ts
@@ -212,7 +225,7 @@ def flatten_bugs_record(r, bugs_fields, output):
     newRow._merge_order=1
     output.append(newRow)
 
-    for field_name in bugs_fields:
+    for field_name in bugs_columns:
         value = r[field_name]
         if field_name=="bug_file_loc":
             Log.note(value)

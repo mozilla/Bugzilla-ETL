@@ -8,6 +8,7 @@
 
 from math import sqrt
 from .basic import nvl
+from bzETL.util.struct import Null
 from .maths import Math
 from .logs import Log
 
@@ -140,9 +141,9 @@ class Z_moment():
 
 
     @staticmethod
-    def new_instance(values):
+    def new_instance(values=Null):
         if values == Null: return Z_moment()
-        values=[float(v) for v in values]
+        values=[float(v) for v in values if v != Null]
 
         return Z_moment(*[
             len(values),

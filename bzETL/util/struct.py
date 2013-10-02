@@ -145,8 +145,18 @@ class NullStruct(object):
     def __lt__(self, other):
         return False
 
+    def __eq__(self, other):
+        return id(Null) == id(other)
+
+    def __ne__(self, other):
+        return id(Null) != id(other)
+
+
     def __getitem__(self, key):
         return self
+
+
+
 
     def __getattribute__(self, key):
         requested.add(key)
