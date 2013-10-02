@@ -12,50 +12,56 @@ import codecs
 from datetime import datetime
 import os
 import shutil
+from bzETL.util.struct import Null
 
 
 class File():
 
     def __init__(self, filename):
+        assert filename != Null
         #USE UNIX STANDARD
-        self.filename = "/".join(filename.split(os.sep))
+        self._filename = "/".join(filename.split(os.sep))
 
+
+    @property
+    def filename(self):
+        return self._filename.replace("/", os.sep)
 
     def read(self, encoding="utf-8"):
-        with codecs.open(self.filename, "r", encoding=encoding) as file:
+        with codecs.open(self._filename, "r", encoding=encoding) as file:
             return file.read()
 
     def read_ascii(self):
         if not self.parent.exists: self.parent.create()
-        with open(self.filename, "r") as file:
+        with open(self._filename, "r") as file:
             return file.read()
 
     def write_ascii(self, content):
         if not self.parent.exists: self.parent.create()
-        with open(self.filename, "w") as file:
+        with open(self._filename, "w") as file:
             file.write(content)
 
     def write(self, data):
         if not self.parent.exists: self.parent.create()
-        with open(self.filename, "w") as file:
+        with open(self._filename, "w") as file:
             if not isinstance(data, list): data=[data]
             for d in data:
                 file.write(d)
 
     def iter(self):
-        return codecs.open(self.filename, "r")
+        return codecs.open(self._filename, "r")
 
     def append(self, content):
         if not self.parent.exists: self.parent.create()
-        with open(self.filename, "a") as output_file:
+        with open(self._filename, "a") as output_file:
             output_file.write(content)
 
     def delete(self):
         try:
-            if os.path.isdir(self.filename):
-                shutil.rmtree(self.filename)
-            elif os.path.isfile(self.filename):
-                os.remove(self.filename)
+            if os.path.isdir(self._filename):
+                shutil.rmtree(self._filename)
+            elif os.path.isfile(self._filename):
+                os.remove(self._filename)
             return self
         except Exception, e:
             if e.strerror=="The system cannot find the path specified":
@@ -64,24 +70,27 @@ class File():
             Log.warning("Could not remove file", e)
 
     def backup(self):
-        names=self.filename.split("/")[-1].split(".")
+        names=self._filename.split("/")[-1].split(".")
         if len(names)==1:
-            backup=File(self.filename+".backup "+datetime.utcnow().strftime("%Y%m%d %H%i%s"))
+            backup=File(self._filename+".backup "+datetime.utcnow().strftime("%Y%m%d %H%i%s"))
 
 
     def create(self):
         try:
-            os.makedirs(self.filename)
+            os.makedirs(self._filename)
         except Exception, e:
             from .logs import Log
-            Log.error("Could not make directory {{dir_name}}", {"dir_name":self.filename}, e)
+            Log.error("Could not make directory {{dir_name}}", {"dir_name":self._filename}, e)
 
 
     @property
     def parent(self):
-        return File("/".join(self.filename.split("/")[:-1]))
+        return File("/".join(self._filename.split("/")[:-1]))
 
     @property
     def exists(self):
-        if self.filename in ["", "."]: return True
-        return os.path.exists(self.filename)
+        if self._filename in ["", "."]: return True
+        try:
+            return os.path.exists(self._filename)
+        except Exception, e:
+            return False

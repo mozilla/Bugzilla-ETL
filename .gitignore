@@ -1,13 +1,8 @@
 *.pyc
 *.log
 *settings.json
-resources/logs/*
 out
-tests/resources/errors
-tests/resources/logs/*
-*test_results.json
-tests/logs/*
-tests/resources/private_bugs.json
+tests/results/*
 Error*.txt
 bzETL/util/.svn/*
 bzETL/util/.svn

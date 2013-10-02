@@ -10,7 +10,7 @@
 
 from datetime import datetime
 from bzETL import parse_bug_history
-from bzETL.extract_bugzilla import get_bugs_table_columns, get_private_bugs, get_recent_private_attachments, get_recent_private_comments
+from bzETL.extract_bugzilla import get_private_bugs, get_recent_private_attachments, get_recent_private_comments
 
 from .extract_bugzilla import get_bugs, get_dependencies, get_flags, get_new_activities, get_bug_see_also, get_attachments, get_keywords, get_cc, get_bug_groups, get_duplicates
 from .parse_bug_history import parse_bug_history_
@@ -81,46 +81,40 @@ def etl(db, es, param):
     return "done"
 
 
-def main(settings):
+def main(settings, es=Null, es_comments=Null):
 
-    current_run_time=CNV.datetime2milli(datetime.utcnow())
+    current_run_time=datetime.utcnow()
 
     #MAKE HANDLES TO CONTAINERS
     with DB(settings.bugzilla) as db:
 
         if settings.param.incremental:
             last_run_time = long(File(settings.param.last_run_time).read())
-            es = ElasticSearch(settings.es)
-            es_comments = ElasticSearch(settings.es_comments)
+            if es == Null:
+                es = ElasticSearch(settings.es)
+                es_comments = ElasticSearch(settings.es_comments)
         else:
             last_run_time=0
 
-            if settings.es.alias == Null:
-                settings.es.alias=settings.es.index
-                settings.es.index=settings.es.alias+CNV.datetime2string(datetime.utcnow(), "%Y%m%d_%H%M%S")
-            es=ElasticSearch.create_index(settings.es, File(settings.es.schema_file).read())
+            if es == Null:
+                if settings.es.alias == Null:
+                    settings.es.alias = settings.es.index
+                    settings.es.index = settings.es.alias + CNV.datetime2string(datetime.utcnow(), "%Y%m%d_%H%M%S")
+                es = ElasticSearch.create_index(settings.es, File(settings.es.schema_file).read())
 
-            if settings.es_comments.alias == Null:
-                settings.es_comments.alias=settings.es_comments.index
-                settings.es_comments.index=settings.es_comments.alias+CNV.datetime2string(datetime.utcnow(), "%Y%m%d_%H%M%S")
-            es_comments=ElasticSearch.create_index(settings.es_comments, File(settings.es_comments.schema_file).read())
-
-
+                if settings.es_comments.alias == Null:
+                    settings.es_comments.alias = settings.es_comments.index
+                    settings.es_comments.index = settings.es_comments.alias + CNV.datetime2string(datetime.utcnow(), "%Y%m%d_%H%M%S")
+                es_comments = ElasticSearch.create_index(settings.es_comments, File(settings.es_comments.schema_file).read())
 
 
         #SETUP RUN PARAMETERS
         param = Struct()
-        param.bugs_columns = get_bugs_table_columns(db,
-                                                    settings.bugzilla.schema)
-        param.bugs_columns_SQL = SQL(",\n".join([
-            "`" + c.column_name + "`"
-            for c in param.bugs_columns
-        ]))
-        param.bugs_columns = Q.select(param.bugs_columns, "column_name")
         param.end_time = CNV.datetime2milli(datetime.utcnow())
         param.start_time = last_run_time
         param.alias_file = settings.param.alias_file
         param.end = db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id
+        param.allow_private_bugs=settings.param.allow_private_bugs
 
         private_bugs = get_private_bugs(db, param)
 
@@ -163,22 +157,26 @@ def main(settings):
         for b in range(settings.param.start, param.end, settings.param.increment):
             (min, max)=(b, b+settings.param.increment)
             try:
-                param.bug_list=SQL(db.query("""
+                bug_list=Q.select(db.query("""
                     SELECT
                         bug_id
                     FROM
                         bugs
                     WHERE
                         delta_ts >= CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific') AND
-                        {{min}} <= bug_id AND bug_id < {{max}}) AND
+                        ({{min}} <= bug_id AND bug_id < {{max}}) AND
                         bug_id not in {{private_bugs}}
                     """, {
                         "min":min,
                         "max":max,
-                        "private_bugs":private_bugs,
+                        "private_bugs":SQL(private_bugs),
                         "start_time":param.start_time
-                }))
+                }), u"bug_id")
 
+                if len(bug_list) == 0:
+                    continue
+
+                param.bug_list=SQL(bug_list)
                 etl(db, es, param)
             except Exception, e:
                 Log.warning("Problem with etl in range [{{min}}, {{max}})", {
@@ -186,7 +184,7 @@ def main(settings):
                     "max":max
                 }, e)
 
-    File(settings.last_run_time).write(unicode(CNV.datetime2milli(current_run_time)))
+    File(settings.param.last_run_time).write(unicode(CNV.datetime2milli(current_run_time)))
 
 
 
