@@ -32,10 +32,16 @@ It is best you install on Linux, but if you do install on Windows you can find
 further Windows-specific Python installation instructions at one of my other projects: [https://github.com/klahnakoski/pyLibrary/blob/master/README.md](https://github.com/klahnakoski/pyLibrary/blob/master/README.md)
 
 
-Setup
------
+Running bz_etl.py
+-----------------------
 
-You must prepare a ```settings.json``` file to reference the resources, and it's filename must be provided as an argument in the command line (see [example command line script](resources/scripts/bz_etl.bat)). Examples of settings files can be found in [resources/settings](resources/settings)
+You must prepare a ```settings.json``` file to reference the resources, and it's filename must be provided as an argument in the command line. Examples of settings files can be found in [resources/settings](resources/settings)
+
+  * Set working directory to ```~/Bugzilla_ETL/```
+  * Set ```PYTHONPATH=.```
+  * Exceute ```python .\bzETL\bz_etl.py --settings=settings.json``` (also see [example command line script](resources/scripts/bz_etl.bat))
+
+
 
 Running Tests
 -------------
@@ -49,3 +55,10 @@ You can run the functional tests, but you must
 
 
 
+More on ElasticSearch
+---------------------
+
+If you are new to ElasticSearch, I recommend using [ElasticSearch Head](https://github.com/mobz/elasticsearch-head)
+for getting cluster status, current schema definitions, viewing individual
+records, and more.  Clone it off of GitHub, and open the ```index.html``` file
+from in your browser.  Here are some alternate [instructions](http://mobz.github.io/elasticsearch-head/).

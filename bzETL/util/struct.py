@@ -81,8 +81,21 @@ class Struct(dict):
             return wrap(d[key])
 
         #SOME dict FUNCTIONS
-        if key in ["keys", "values", "items"]:
-            return dict.__getattribute__(d, key)
+        if key=="keys":
+            def temp():
+                k=dict.__getattribute__(d, "keys")
+                return set(k())
+            return temp
+        if key=="values":
+            def temp():
+                vs=dict.__getattribute__(d, "values")
+                return [wrap(v) for v in vs()]
+            return temp
+        if key=="items":
+            def temp():
+                _is=dict.__getattribute__(d, "items")
+                return [(k, wrap(v)) for k,v in _is()]
+            return temp
         if key=="dict":
             return d
         if key=="copy":
@@ -155,8 +168,11 @@ class NullStruct(object):
     def __getitem__(self, key):
         return self
 
+    def __len__(self):
+        return 0
 
-
+    def __iter__(self):
+        return ZeroList
 
     def __getattribute__(self, key):
         requested.add(key)
@@ -170,6 +186,15 @@ class NullStruct(object):
 
 
 Null = NullStruct()
+
+class ZeroListClass():
+    def __init__(self):
+        pass
+
+    def next(self):
+        raise StopIteration
+
+ZeroList=ZeroListClass()
 
 
 class StructList(list):

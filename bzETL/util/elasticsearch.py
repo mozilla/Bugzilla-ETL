@@ -131,7 +131,7 @@ class ElasticSearch():
                 
             if id == Null: id=sha.new(json).hexdigest()
 
-            lines.append('{"index":{"_id":"'+id+'"}}')
+            lines.append('{"index":{"_id":"'+unicode(id)+'"}}')
             lines.append(json)
 
         if len(lines)==0: return

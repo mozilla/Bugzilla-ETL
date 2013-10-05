@@ -79,15 +79,22 @@ class CNV:
 
     @staticmethod
     def datetime2milli(d):
-        return int(time.mktime(d.timetuple())*1000)
+        try:
+            epoch = datetime.datetime(1970, 1, 1)
+            diff = d-epoch
+            return (diff.days * 86400000) + \
+                   (diff.seconds * 1000) + \
+                   (diff.microseconds / 1000)  # 86400000=24*3600*1000
+        except Exception, e:
+            Log.error("Can not convert {{value}}", {"value": d})
 
     @staticmethod
     def unix2datetime(u):
-        return datetime.datetime.fromtimestamp(u)
+        return datetime.datetime.utcfromtimestamp(u)
 
     @staticmethod
     def milli2datetime(u):
-        return datetime.datetime.fromtimestamp(u/1000)
+        return datetime.datetime.utcfromtimestamp(u/1000)
 
 
 

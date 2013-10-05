@@ -23,7 +23,7 @@ SCREENED_FIELDDEFS=[
     83, #attach_data.thedata
 ]
 
-
+PRIVATE_ATTACHMENT_FIELD_ID=65
 
 
 bugs_columns = Null
@@ -69,7 +69,7 @@ def get_private_bugs(db, param):
     
     try:
         private_bugs=db.query("SELECT DISTINCT bug_id FROM bug_group_map")
-        return set(private_bugs) | {0}
+        return set(Q.select(private_bugs, "bug_id")) | {0}
     except Exception, e:
         Log.error("problem getting private bugs", e)
 
@@ -77,6 +77,8 @@ def get_private_bugs(db, param):
 def get_recent_private_attachments(db, param):
     if param.allow_private_bugs:
         return []
+
+    param.field_id=PRIVATE_ATTACHMENT_FIELD_ID
 
     try:
         return db.query("""
@@ -87,7 +89,8 @@ def get_recent_private_attachments(db, param):
             bugs_activity a
         WHERE
             bug_when >= CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific') AND
-            isprivate=1
+            fieldid={{field_id}} AND
+            added <> 0
         """, param)
     except Exception, e:
         Log.error("problem getting recent private attachments", e)
@@ -102,7 +105,7 @@ def get_recent_private_comments(db, param):
             SELECT
                 c.comment_id
             FROM
-                longdesc c
+                longdescs c
             WHERE
                 bug_when >= CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific') AND
                 isprivate=1
@@ -118,6 +121,8 @@ def get_bugs(db, param):
     if bugs_columns == Null:
         columns=get_bugs_table_columns(db, db.settings.schema)
         globals()["bugs_columns"] = Q.select(columns, "column_name")
+
+    #TODO: CF_LAST_RESOLVED IS IN PDT, FIX IT
 
     param.bugs_columns=bugs_columns
     param.bugs_columns_SQL = db.quote_column(bugs_columns)
@@ -425,6 +430,9 @@ def get_new_activities(db, param):
     else:
         param.screened_fields=SQL([-1])
 
+    #TODO: CF_LAST_RESOLVED IS IN PDT, FIX IT
+
+
     return db.query("""
         SELECT
             a.bug_id,
@@ -500,7 +508,7 @@ def get_comments(db, param):
                 c.thetext comment,
                 c.isprivate
             FROM
-                longdesc c
+                longdescs c
             LEFT JOIN
                 profiles p ON c.who = p.userid
             WHERE

@@ -27,6 +27,8 @@ from .files import File
 DEBUG = False
 MAX_BATCH_SIZE=100
 
+all_db=[]
+
 class DB():
     """
 
@@ -34,6 +36,8 @@ class DB():
 
     def __init__(self, settings, schema=Null):
         """OVERRIDE THE settings.schema WITH THE schema PARAMETER"""
+        all_db.append(self)
+
         if isinstance(settings, DB):
             settings=settings.settings
 
@@ -100,7 +104,12 @@ class DB():
         try:
             self.db.close()
         except Exception, e:
+            if e.message.find("Already closed")>=0:
+                return
+
             Log.warning(u"can not close()", e)
+        finally:
+            all_db.remove(self)
 
     def commit(self):
         try:
@@ -191,6 +200,8 @@ class DB():
 
             return result
         except Exception, e:
+            if e.message.find("InterfaceError") >= 0:
+                Log.error(u"Did you close the db connection?", e)
             Log.error(u"Problem executing SQL:\n"+indent(sql.strip()), e, offset=1)
 
             
@@ -356,16 +367,22 @@ class DB():
             self.insert(table_name, r)
 
 
-    def update(self, table_name, where, new_values):
+    def update(self, table_name, where_slice, new_values):
+        """
+        where_slice IS A Struct WHICH WILL BE USED TO MATCH ALL IN table
+        """
+        new_values = self.quote_param(new_values)
 
-        where=self.quote_param(where)
-        new_values=self.quote_param(new_values)
+        where_clause = u" AND\n".join([
+            self.quote_column(k) + u"=" + self.quote_value(v) if v != Null else self.quote_column(k) + " IS NULL"
+            for k, v in where_slice.items()]
+        )
 
         command=u"UPDATE "+self.quote_column(table_name)+u"\n"+\
                 u"SET "+\
                 u",\n".join([self.quote_column(k)+u"="+v for k,v in new_values.items()])+u"\n"+\
                 u"WHERE "+\
-                u" AND\n".join([self.quote_column(k)+u"="+v for k,v in where.items()])
+                where_clause
         self.execute(command, {})
 
 
@@ -378,7 +395,9 @@ class DB():
         mostly delegate directly to the mysql lib, but some exceptions exist
         """
         try:
-            if isinstance(value, SQL):
+            if value == Null:
+                return "NULL"
+            elif isinstance(value, SQL):
                 if value.param == Null:
                     #value.template CAN BE MORE THAN A TEMPLATE STRING
                     return self.quote_sql(value.template)

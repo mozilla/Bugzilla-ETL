@@ -5,6 +5,7 @@
 ################################################################################
 ## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 ################################################################################
+from datetime import datetime
 
 from bzETL import transform_bugzilla
 from bzETL.util.basic import nvl
@@ -20,8 +21,8 @@ from bzETL.util.struct import Null
 from bzETL.util.timer import Timer
 
 def get_all_bug_versions(es, bug_id, max_time=Null):
-    if max_time==Null:
-        max_time=CNV.milli2datetime(CNV.string2datetime("99991231", "%Y%m%d"))
+    if max_time == Null:
+        max_time = datetime.max
 
     data=es.search({
         "query":{"filtered":{
