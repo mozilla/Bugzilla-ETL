@@ -22,3 +22,8 @@ class Random():
     @staticmethod
     def int(*args):
         return random.randrange(*args)
+
+    @staticmethod
+    def sample(data, count):
+        num=len(data)
+        return [data[Random.int(num)] for i in range(count)]

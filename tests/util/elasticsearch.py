@@ -36,9 +36,10 @@ class Fake_ES():
         except IOError:
             self.data=Struct()
 
+
     def search(self, query):
-        filter=parse_filter(struct.wrap(query).query.filtered.filter)
-        return struct.wrap({"hits":{"hits":[{"_id":i, "_source":d} for i,d in self.data.items() if filter(d)]}})
+        f=parse_filter(struct.wrap(query).query.filtered.filter)
+        return struct.wrap({"hits":{"hits":[{"_id":i, "_source":d} for i,d in self.data.items() if f(d)]}})
 
 
     def add(self, records):
@@ -48,6 +49,11 @@ class Fake_ES():
         File(self.filename).write(CNV.object2JSON(self.data))
         Log.note("{{num}} items added", {"num":len(records)})
 
+    def delete_record(self, filter):
+        f = parse_filter(filter)
+        self.data = struct.wrap({k: v for k, v in self.data if not f(v)})
+
+
 
 
 def parse_filter(filter):
@@ -56,6 +62,8 @@ def parse_filter(filter):
         return _and([parse_filter(v) for v in value])
     elif type=="term":
         return _term(value)
+    elif type=="terms":
+        return _terms(value)
     elif type=="range":
         (field, limits)=value.items()[0]
         parts=[_range(field, type, v) for type, v in limits.items()]
@@ -67,7 +75,8 @@ def parse_filter(filter):
 def _and(args):
     def output(data):
         for a in args:
-            if not a(data): return False
+            if not a(data):
+                return False
         return True
     return output
 
@@ -75,6 +84,12 @@ def _term(arg):
     (field, value)=arg.items()[0]
     def output(data):
         return data[field]==value
+    return output
+
+def _terms(arg):
+    (field, values)=arg.items()[0]
+    def output(data):
+        return data[field] in values
     return output
 
 def _range(field, type, value):

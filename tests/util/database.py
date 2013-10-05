@@ -43,7 +43,7 @@ def make_test_instance(db_settings):
 
 
 def mark_attachment_private(db, attach_id):
-    old_attach=db.query("SELECT * FROM attachments WHERE attach_id={{id}}", {"id":attach_id})
+    old_attach=db.query("SELECT * FROM attachments WHERE attach_id={{id}}", {"id":attach_id})[0]
     new_attach=old_attach.copy()
     new_attach.isprivate=1
 
@@ -52,26 +52,31 @@ def mark_attachment_private(db, attach_id):
 
 
 def mark_comment_private(db, comment_id):
-    old_comment=db.query("SELECT * FROM longdescs WHERE comment_id={{id}}", {"id":comment_id})
+    old_comment=db.query("SELECT * FROM longdescs WHERE comment_id={{id}}", {"id":comment_id})[0]
     new_comment=old_comment.copy()
     new_comment.isprivate=1
 
     diff(db, "longdescs", old_comment, new_comment)
-    db.update("longdescs", old_comment, new_comment)
+    db.update("longdescs", {"comment_id":old_comment.comment_id}, new_comment)
 
 
 def add_bug_group(db, bug_id, group_name):
     group_exists=db.query("SELECT id FROM groups WHERE name={{name}}", {"name": group_name})
     if len(group_exists)==0:
-        db.insert("groups", {"name":group_name})
-        group_exists=len(db.query("SELECT id FROM groups WHERE name={{name}}", {"name": group_name}))
+        db.insert("groups", {
+            "name":group_name,
+            "description":group_name,
+            "isbuggroup":1,
+            "userregexp":0
+        })
+        group_exists=db.query("SELECT id FROM groups WHERE name={{name}}", {"name": group_name})
     group_id=group_exists[0].id
 
-    db.insert("bug_group_map", {"bug_id":bug_id, "group_id":group_id})
     diff(db, "bugs",
         Struct(bug_id=bug_id, bug_group=Null),
         Struct(bug_id=bug_id, bug_group=group_name)
     )
+    db.insert("bug_group_map", {"bug_id":bug_id, "group_id":group_id})
 
 
 
@@ -79,8 +84,8 @@ def add_bug_group(db, bug_id, group_name):
 
 
 def diff(db, table, old_value, new_value):
-    changed=old_value.keys()^new_value.keys()
-    changed+=set([k for k,v in old_value.items() if v!=new_value[k]])
+    changed=set(old_value.keys()) ^ set(new_value.keys())
+    changed |= set([k for k,v in old_value.items() if v!=new_value[k]])
 
     if table!=u"bugs":
         prefix=table+u"."
@@ -99,5 +104,5 @@ def diff(db, table, old_value, new_value):
         )
         db.insert("bugs_activity", activity)
 
-    db.update(table, old_value, new_value)
+    # db.update(table, old_value, new_value)
 

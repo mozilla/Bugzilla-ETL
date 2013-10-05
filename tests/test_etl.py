@@ -8,12 +8,12 @@
 
 import json
 from datetime import datetime
+import pytest
 from bzETL import bz_etl
 
 from bzETL.bz_etl import etl
-from bzETL.util import db
 from bzETL.util.cnv import CNV
-from bzETL.util.db import DB, SQL
+from bzETL.util.db import DB, SQL, all_db
 from bzETL.util.logs import Log
 from bzETL.util.elasticsearch import ElasticSearch
 from bzETL.util.files import File
@@ -31,9 +31,9 @@ from util.compare_es import get_all_bug_versions
 
 def test_specific_bugs(settings):
     """
-    USE A MYSQL DATABASE TO FILL AN ES INSTANCE WITH BUG VERSIONS
-    COMPARE THOSE VERSION TO A REFERENCE ES
-    USE Fake_ES() INSTANCES TO KEEP THIS TEST LOCAL
+    USE A MYSQL DATABASE TO FILL AN ES INSTANCE (USE Fake_ES() INSTANCES TO KEEP
+    THIS TEST LOCAL) WITH VERSIONS OF BUGS FROM settings.param.bugs.  COMPARE
+    THOSE VERSIONS TO A REFERENCE ES (IN REPOSITOR
     """
     settings.param.allow_private_bugs = True
     database.make_test_instance(settings.bugzilla)
@@ -55,7 +55,8 @@ def test_specific_bugs(settings):
         #COMPARE ALL BUGS
         compare_both(candidate, reference, settings, settings.param.bugs)
 
-
+        #CLOSE THE CACHED DB CONNECTIONS
+        bz_etl.close_db_connections()
 
 
 def random_sample_of_bugs(settings):
@@ -107,8 +108,7 @@ def random_sample_of_bugs(settings):
 
 def test_private_etl(settings):
     """
-    ASSUME THE DATABASE OF BUGS IS SMALL AND PROCESS ALL USING bz_etl()
-    REQUIRES A REAL ES INSTANCE TO POINT TO
+    ENSURE IDENTIFIABLE INFORMATION DOES NOT EXIST ON ANY BUGS
     """
     settings.param.incremental=False
     settings.param.allow_private_bugs=True
@@ -121,10 +121,10 @@ def test_private_etl(settings):
     ref=elasticsearch.open_test_instance("reference", settings.private_reference)
     compare_both(es, ref, settings, settings.param.bugs)
 
+
 def test_public_etl(settings):
     """
-    ASSUME THE DATABASE OF BUGS IS SMALL AND PROCESS ALL USING bz_etl()
-    REQUIRES A REAL ES INSTANCE TO POINT TO
+
     """
     settings.param.incremental=False
     settings.param.allow_private_bugs=Null
@@ -138,11 +138,53 @@ def test_public_etl(settings):
     compare_both(es, ref, settings, settings.param.bugs)
 
 
+def verify_no_private_bugs(es, private_bugs):
+    #VERIFY BUGS ARE NOT IN OUTPUT
+    for b in private_bugs:
+        versions = compare_es.get_all_bug_versions(es, b)
+        if len(versions) > 0:
+            Log.error("Expecting no version for private bug {{bug_id}}", {
+                "bug_id": b
+            })
+
+def verify_no_private_attachments(es, private_attachments):
+    #VERIFY ATTACHMENTS ARE NOT IN OUTPUT
+    for b in Q.select(private_attachments, "bug_id"):
+        versions = compare_es.get_all_bug_versions(es, b)
+        #WE ASSUME THE ATTACHMENT, IF IT EXISTS, WILL BE SOMEWHERE IN THE BUG IT
+        #BELONGS TO, IF AT ALL
+        for v in versions:
+            for a in v.attachments:
+                if a.attach_id in Q.select(private_attachments, "attach_id"):
+                    Log.error("Private attachment should not exist")
+
+
+def verify_no_private_comments(es, private_comments):
+    for c in private_comments:
+        data = es.search({
+            "query": {"filtered": {
+                "query": {"match_all": {}},
+                "filter": {"and": [
+                    {"term": {"comment_id": c}}
+                ]}
+            }},
+            "from": 0,
+            "size": 200000,
+            "sort": []
+        })
+
+        if len(Q.select(data.hits.hits, "_source")) > 0:
+            Log.error("Expecting no comments")
+
+
+
 def test_private_bugs_do_not_show(settings):
     settings.param.allow_private_bugs=False
     settings.param.incremental=False
 
-    private_bugs=settings.param.bugs[:3]  # THREE BUGS
+    private_bugs = set(Random.sample(settings.param.bugs, 3))
+    Log.note("The private bugs for this test are {{bugs}}", {"bugs": private_bugs})
+
     database.make_test_instance(settings.bugzilla)
 
     #MARK SOME BUGS PRIVATE
@@ -150,45 +192,49 @@ def test_private_bugs_do_not_show(settings):
         for b in private_bugs:
             database.add_bug_group(db, b, "super secret")
 
-
     es=elasticsearch.make_test_instance("candidate", settings.test_main)
     es_c=elasticsearch.make_test_instance("candidate_comments", settings.test_comments)
     bz_etl.main(settings, es, es_c)
 
-    #VERIFY BUGS ARE NOT IN OUTPUT
-    for b in private_bugs:
-        versions=compare_es.get_all_bug_versions(es, b)
-        if len(versions)>0:
-            Log.error("Expecting no version for private bug {{bug_id}}", {
-                "bug_id":b
-            })
+    verify_no_private_bugs(es, private_bugs)
 
 
-def test_recent_private_bugs_do_not_show(settings):
+def test_recent_private_stuff_does_not_show(settings):
     settings.param.allow_private_bugs=False
     settings.param.incremental=False
-    private_bugs=settings.param.bugs[3:6]  # THREE BUGS
+
     database.make_test_instance(settings.bugzilla)
 
     es=elasticsearch.make_test_instance("candidate", settings.test_main)
     es_c=elasticsearch.make_test_instance("candidate_comments", settings.test_comments)
     bz_etl.main(settings, es, es_c)
 
-    #MARK SOME BUGS PRIVATE
+    #MARK SOME STUFF PRIVATE
     with DB(settings.bugzilla) as db:
+        private_bugs = set(Random.sample(settings.param.bugs, 3))
+        Log.note("The private bugs are {{bugs}}", {"bugs": private_bugs})
         for b in private_bugs:
             database.add_bug_group(db, b, "super secret")
 
-    settings.incremental=True
-    bz_etl.main(settings, es)
+        comments=db.query("SELECT comment_id FROM longdescs")
+        private_comments = Random.sample(comments, 5)
+        Log.note("The private comments are {{comments}}", {"comments": private_comments})
+        for c in private_comments:
+            database.mark_comment_private(db, c.comment_id)
 
-    #VERIFY BUGS ARE NOT IN OUTPUT
-    for b in private_bugs:
-        versions=compare_es.get_all_bug_versions(es, b)
-        if len(versions)>0:
-            Log.error("Expecting no version for private bug {{bug_id}}", {
-                "bug_id":b
-            })
+        attachments=db.query("SELECT bug_id, attach_id FROM attachments")
+        private_attachments=Random.sample(attachments, 5)
+        Log.note("The private attachments are {{attachments}}", {"attachments": private_attachments})
+        for a in private_attachments:
+            database.mark_attachment_private(db, a.attach_id)
+
+    settings.param.incremental=True
+    bz_etl.main(settings, es, es_c)
+
+    verify_no_private_bugs(es, private_bugs)
+    verify_no_private_attachments(es, private_attachments)
+    verify_no_private_comments(es_c, private_comments)
+
 
 
 def test_private_attachments_do_not_show(settings):
@@ -218,13 +264,7 @@ def test_private_attachments_do_not_show(settings):
     es_c=elasticsearch.make_test_instance("candidate_comments", settings.test_comments)
     bz_etl.main(settings, es, es_c)
 
-    #VERIFY ATTACHMENTS ARE NOT IN OUTPUT
-    for b in Q.select(private_attachments, "bug_id"):
-        versions=compare_es.get_all_bug_versions(es, b)
-        for v in versions:
-            for a in v.attachments:
-                if a.attach_id in private_attachments:
-                    Log.error("Private attachment should not exist")
+    verify_no_private_attachments(es, private_attachments)
 
 
 def test_private_comments_do_not_show(settings):
@@ -238,7 +278,7 @@ def test_private_comments_do_not_show(settings):
                 bug_id,
                 comment_id
             FROM
-                long_desc
+                longdescs
             ORDER BY
                 mod(comment_id, 7),
                 comment_id
@@ -249,30 +289,11 @@ def test_private_comments_do_not_show(settings):
         for c in private_comments:
             database.mark_comment_private(db, c.comment_id)
 
-
     es=elasticsearch.make_test_instance("candidate", settings.test_main)
     es_c=elasticsearch.make_test_instance("candidate_comments", settings.test_comments)
     bz_etl.main(settings, es, es_c)
 
-    #VERIFY ATTACHMENTS ARE NOT IN OUTPUT
-    for c in private_comments:
-        data=es.search({
-            "query":{"filtered":{
-                "query":{"match_all":{}},
-                "filter":{"and":[
-                    {"term":{"comment_id":c.comment_id}}
-                ]}
-            }},
-            "from":0,
-            "size":200000,
-            "sort":[]
-        })
-
-        if len(Q.select(data.hits.hits, "_source")) > 0:
-            Log.error("Expecting no comments")
-
-
-
+    verify_no_private_comments(es, private_comments)
 
 #COMPARE ALL BUGS
 def compare_both(candidate, reference, settings, some_bugs):
@@ -293,11 +314,12 @@ def compare_both(candidate, reference, settings, some_bugs):
                 else:
                     max_time = CNV.milli2datetime(versions[-1].modified_ts)
 
+                pre_ref_versions=get_all_bug_versions(reference, bug_id, max_time)
                 ref_versions = \
                     Q.sort(
-                        map(
+                        map( # map-lambda ADDED TO FIC OLD PRODUCTION BUG VERSIONS
                             lambda x: compare_es.old2new(x, settings.bugzilla.expires_on),
-                            get_all_bug_versions(reference, bug_id, max_time)
+                            pre_ref_versions
                         ),
                         "modified_ts"
                     )
@@ -319,16 +341,38 @@ def compare_both(candidate, reference, settings, some_bugs):
 
 
 
+@pytest.fixture()
+def settings(request):
+    settings=startup.read_settings(filename="test_settings.json")
+    Log.start(settings.debug)
+
+    def fin():
+        Log.stop()
+    request.addfinalizer(fin)
+
+    return settings
+
+
+
 def main():
     try:
         settings=startup.read_settings()
         Log.start(settings.debug)
-#        test_specific_bugs(settings)
-#         test_private_etl(settings)
+
+        test_specific_bugs(settings)
+        if len(all_db)>0:
+            Log.error("not all db connections are closed")
+
+        test_private_etl(settings)
         test_public_etl(settings)
+        test_private_bugs_do_not_show(settings)
+        test_private_comments_do_not_show(settings)
+        test_recent_private_stuff_does_not_show(settings)
+
         Log.note("All tests pass!  Success!!")
     finally:
         Log.stop()
 
-main()
+if __name__=="__main__":
+    main()
 

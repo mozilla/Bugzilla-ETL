@@ -83,7 +83,7 @@ class Queue():
 class Thread():
     @staticmethod
     def run(func):
-        thread.start_new_thread(func, ())
+        return thread.start_new_thread(func, ())
 
 
 Thread.STOP="stop"

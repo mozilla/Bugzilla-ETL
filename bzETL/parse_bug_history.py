@@ -80,8 +80,8 @@ class parse_bug_history_():
         if len(row_in.items())==0: return 
         try:
             self.currBugID = row_in.bug_id
-            if self.currBugState.created_ts == Null:
-                Log.note("PROBLEM expecting a created_ts (did you install the timezone database into your MySQL instance?)")
+            # if self.currBugState.created_ts == Null:
+            #     Log.note("PROBLEM expecting a created_ts (did you install the timezone database into your MySQL instance?)")
 
             if self.settings.debug: Log.note("process row: {{row}}", {"row":row_in})
 
@@ -164,6 +164,9 @@ class parse_bug_history_():
         except Exception, e:
             Log.warning("Problem processing row: {{row}}", {"row":row_in}, e)
         finally:
+            if self.currBugState.created_ts == Null:
+                Log.note("PROBLEM expecting a created_ts (did you install the timezone database into your MySQL instance?)")
+
             for b in self.currBugState.blocked:
                 if isinstance(b, basestring):
                     Log.note("PROBLEM error")
@@ -262,7 +265,7 @@ class parse_bug_history_():
         flag = self.makeFlag(row_in.new_value, row_in.modified_ts, row_in.modified_by)
         if row_in.attach_id != Null:
             if self.currBugAttachmentsMap[unicode(row_in.attach_id)] == Null:
-                Log.note("PROBLEM Unable to find attachment {{attach_id}} for bug_id {{start_time}}", {
+                Log.note("Unable to find attachment {{attach_id}} for bug_id {{bug_id}}", {
                     "attach_id":row_in.attach_id,
                     "bug_id":self.currBugID
                 })
@@ -449,8 +452,6 @@ class parse_bug_history_():
                     attach_id = change.attach_id
                     if attach_id != Null:
 
-
-
                         # Handle the special change record that signals the creation of the attachment
                         if change.field_name == "attachment_added":
 
@@ -469,8 +470,10 @@ class parse_bug_history_():
                             # target.tada="test"+unicode(currVersion.modified_ts)
                             targetName = "attachment"
                             if target == Null:
-                                Log.warning("Encountered a change to missing attachment for bug '"
-                                    + currVersion["bug_id"] + "': " + CNV.object2JSON(change) + ".")
+                                Log.warning("Encountered a change to missing attachment for bug {{version}}: {{change}}", {
+                                    "version": currVersion["bug_id"],
+                                    "change": change
+                                })
 
                                 # treat it as a change to the main bug instead :(
                                 target = self.currBugState
@@ -528,7 +531,7 @@ class parse_bug_history_():
                         state=normalize(self.currBugState)
                         if state.blocked != Null and len(state.blocked)==1 and "Null" in state.blocked:
                             Log.note("PROBLEM error")
-                        Log.note("Bug {{bug_state.bug_id}} v{{bug_state.bug_version_num}} (_id = {{bug_state._id}}): {{bug_state}}" , {
+                        Log.note("Bug {{bug_state.bug_id}} v{{bug_state.bug_version_num}} (id = {{bug_state.id}})" , {
                             "bug_state":state
                         })
                         self.output.add(state)

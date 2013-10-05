@@ -26,7 +26,7 @@
 		"port":"9200",
 		"index":"bugs",
 		"type":"bug_comment",
-		"schema_file":"./resources/json/bug_comment.json"
+		"schema_file":"./resources/json/bug_comments.json"
 	},
 	"debug":{
 		"log":[{
