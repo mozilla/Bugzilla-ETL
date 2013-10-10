@@ -7,10 +7,10 @@
 ################################################################################
 
 import re
-from bzETL.util.jsons import toString, json_scrub
+from bzETL.util.jsons import json_encoder
 import struct
 
-from .struct import Null
+from .struct import Null, Struct
 
 import sys
 reload(sys)
@@ -89,7 +89,6 @@ def expand_template(template, values):
             try:
                 if e.message.find(u"is not JSON serializable"):
                     #WORK HARDER
-                    val=json_scrub(val)
                     val=toString(val)
                     return val
             except Exception:
@@ -97,3 +96,11 @@ def expand_template(template, values):
 
     return pattern.sub(replacer, template)
 
+
+def toString(val):
+    if isinstance(val, Struct):
+        return json_encoder.encode(val.dict)
+    elif isinstance(val, dict) or isinstance(val, list) or isinstance(val, set):
+        val=json_encoder.encode(val)
+        return val
+    return unicode(val)

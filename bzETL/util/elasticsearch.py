@@ -131,13 +131,13 @@ class ElasticSearch():
                 
             if id == Null: id=sha.new(json).hexdigest()
 
-            lines.append('{"index":{"_id":"'+unicode(id)+'"}}')
+            lines.append('{"index":{"_id":'+CNV.object2JSON(id)+'}}')
             lines.append(json)
 
         if len(lines)==0: return
         response=ElasticSearch.post(
             self.path+"/_bulk",
-            data="\n".join(lines)+"\n",
+            data="\n".join(lines).encode("utf8")+"\n",
             headers={"Content-Type":"text"}
         )
         items=response["items"]

@@ -270,8 +270,6 @@ def close_db_connections():
 
 
 def start():
-    #import profile
-    #profile.run("""
     try:
         settings = startup.read_settings(defs={
             "name": "--resume",
@@ -285,8 +283,15 @@ def start():
         Log.error("Problems exist", e)
     finally:
         Log.stop()
-    #""")
+
+
+
+def profile_etl():
+    import profile
+    profile.run("start()")
+
 
 
 if __name__=="__main__":
-    start()
+    profile_etl()
+    # start()

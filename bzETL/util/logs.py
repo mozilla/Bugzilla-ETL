@@ -222,6 +222,11 @@ def make_log_from_settings(settings):
     temp=__import__(path, globals(), locals(), [class_name], -1)
     constructor=object.__getattribute__(temp, class_name)
 
+    if settings.filename != Null:
+        f = File(settings.filename)
+        if not f.parent.exists:
+            f.parent.create()
+
     params = settings.dict
     del params['class']
     return constructor(**params)

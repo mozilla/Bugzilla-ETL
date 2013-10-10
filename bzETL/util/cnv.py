@@ -11,16 +11,13 @@ import StringIO
 import datetime
 import re
 import time
-from .jsons import NewJSONEncoder, json_decoder
+from .jsons import json_decoder, json_encoder
 from .logs import Log
 import struct
-from .strings import expand_template, json_scrub
+from .strings import expand_template
 from .struct import StructList, Null
-from .threads import Lock
 
 
-json_lock=Lock()
-json_encoder=NewJSONEncoder()
 
 
 class CNV:
@@ -31,10 +28,7 @@ class CNV:
     @staticmethod
     def object2JSON(obj):
         try:
-            obj=json_scrub(obj)
-            with json_lock:
-                return json_encoder.encode(obj)
-            
+            return json_encoder.encode(obj)
         except Exception, e:
             Log.error("Can not encode into JSON: {{value}}", {"value":repr(obj)}, e)
 
@@ -127,8 +121,8 @@ class CNV:
 
     @staticmethod
     def string2quote(value):
-        return repr(value)
-        # return "\""+value.replace("\\", "\\\\").replace("\"", "\\\"")+"\""
+        # return repr(value)
+        return "\""+value.replace("\\", "\\\\").replace("\"", "\\\"")+"\""
 
     #RETURN PYTHON CODE FOR THE SAME
     @staticmethod

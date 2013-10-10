@@ -2,7 +2,7 @@
 *.log
 *settings.json
 out
-results/logs/*
+results/*
 tests/results/*
 Error*.txt
 bzETL/util/.svn/*
