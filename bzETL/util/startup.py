@@ -9,8 +9,8 @@
 
 
 import argparse
+from bzETL.util.basic import listwrap
 from .cnv import CNV
-from . import struct
 from .struct import Null
 from .logs import Log
 from .files import File
@@ -33,11 +33,11 @@ class startup():
     @staticmethod
     def argparse(defs):
         parser = argparse.ArgumentParser()
-        for d in defs:
-            args=dict([(k,v) for k,v in d.items()])
-            name=args.pop("name")
-            if not isinstance(name, list): name=[name]
-            parser.add_argument(*name, **args)
+        for d in listwrap(defs):
+            args = d.copy()
+            name = args.name
+            args.name = Null
+            parser.add_argument(*(listwrap(name).list), **(args.dict))
         return parser.parse_args()
 
 
@@ -45,23 +45,36 @@ class startup():
 
 
     @staticmethod
-    def read_settings(filename=Null):
+    def read_settings(filename=Null, defs=Null):
         # READ SETTINGS
-        if filename == Null:
-            args=startup.argparse([
-                {
-                    "name":["--settings", "--settings-file", "--settings_file"],
-                    "help":"path to JSON file with settings",
-                    #"nargs":1,
-                    "type":str,
-                    "dest":"filename",
-                    "default":"./settings.json"
-                }
-            ])
-            filename=args.filename
+        if filename != Null:
+            settings_file = File(filename)
+            if not settings_file.exists:
+                Log.error("Can not file settings file {{filename}}", {
+                    "filename": settings_file.abspath
+                })
+            json = settings_file.read()
+            settings = CNV.JSON2object(json, flexible=True)
+            if defs != Null:
+                settings.args = startup.argparse(defs)
+            return settings
 
-        settings_file=File(filename)
-        if not settings_file.exists:
-            Log.error("Can not file settings file {{filename}}", {"filename":filename})
-        json=settings_file.read()
-        return CNV.JSON2object(json, flexible=True)
+        if filename == Null:
+            defs=listwrap(defs)
+            defs.append({
+                "name": ["--settings", "--settings-file", "--settings_file"],
+                "help": "path to JSON file with settings",
+                "type": str,
+                "dest": "filename",
+                "default": "./settings.json",
+                "required": False
+            })
+            args = startup.argparse(defs)
+            settings_file = File(args.filename)
+            if not settings_file.exists:
+                Log.error("Can not file settings file {{filename}}", {
+                    "filename": settings_file.abspath
+                })
+            json = settings_file.read()
+            settings = CNV.JSON2object(json, flexible=True)
+            return settings

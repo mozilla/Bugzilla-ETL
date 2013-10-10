@@ -19,5 +19,5 @@ def test_replication():
         Log.stop()
 
 
-
-test_replication()
+if __name__=="__main__":
+    test_replication()

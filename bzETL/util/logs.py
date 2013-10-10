@@ -11,6 +11,7 @@ from datetime import datetime
 import traceback
 import logging
 import sys
+from bzETL.util.basic import listwrap
 
 import struct, threads
 from .files import File
@@ -117,8 +118,7 @@ class Log(object):
         globals()["logging_multi"]=Log_usingMulti()
         globals()["main_log"]=Log_usingThread(logging_multi)
 
-        if not isinstance(settings.log, list): settings.log=[settings.log]
-        for log in settings.log:
+        for log in listwrap(settings.log):
             Log.add_log(Log.new_instance(log))
 
 

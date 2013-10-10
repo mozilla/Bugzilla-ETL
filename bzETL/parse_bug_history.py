@@ -569,6 +569,7 @@ class parse_bug_history_():
             ):
                 Log.note("Using bzAliases to match change '" + aFlag.value + "' to '" + eFlag.value + "'")
                 return eFlag
+        return Null
 
             
     def processFlagChange(self, target, change, modified_ts, modified_by, reverse=False):
@@ -801,6 +802,9 @@ class parse_bug_history_():
 
                 found=self.findFlag(total, flag)
                 if found != Null:
+                    if found is None:
+                        found=self.findFlag(total, flag)
+                        Log.error("problem")
                     removeMe.append(CNV.object2JSON(found)) #FOR SOME REASON, REMOVAL BY OBJECT DOES NOT WORK
                 else:
                     Log.note("PROBLEM Unable to find {{type}} value: {{object}}.{{field_name}}: (All {{missing}}" + " not in : {{existing}})",{
@@ -813,12 +817,15 @@ class parse_bug_history_():
 
             total=[a for a in total if CNV.object2JSON(a) not in removeMe]
             if valueType=="added" and len(removeMe)>0:
-                self.currActivity.changes.append({
-                    "field_name": field_name,
-                    "new_value": ", ".join(Q.sort([CNV.JSON2object(r).value for r in removeMe])),
-                    "old_value": Null,
-                    "attach_id": target.attach_id
-                })
+                try:
+                    self.currActivity.changes.append({
+                        "field_name": field_name,
+                        "new_value": u", ".join(Q.sort([CNV.JSON2object(r).value for r in removeMe])),
+                        "old_value": Null,
+                        "attach_id": target.attach_id
+                    })
+                except Exception, e:
+                    Log.error("problem", e)
             return total
         else:
             removed = total & remove

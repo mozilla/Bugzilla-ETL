@@ -7,10 +7,13 @@
 ################################################################################
 
 ## REPLACES THE KETTLE FLOW CONTROL PROGRAM, AND BASH SCRIPT
+import argparse
 
-from datetime import datetime
+from datetime import datetime, timedelta
+from math import floor
 from bzETL import parse_bug_history, transform_bugzilla
 from bzETL.extract_bugzilla import get_private_bugs, get_recent_private_attachments, get_recent_private_comments, get_comments
+from bzETL.util.maths import Math
 
 from extract_bugzilla import get_bugs, get_dependencies, get_flags, get_new_activities, get_bug_see_also, get_attachments, get_keywords, get_cc, get_bug_groups, get_duplicates
 from parse_bug_history import parse_bug_history_
@@ -105,15 +108,19 @@ def main(settings, es=Null, es_comments=Null):
     #MAKE HANDLES TO CONTAINERS
     try:
         with DB(settings.bugzilla) as db:
-
-            if settings.param.incremental:
+            if settings.resume:
+                last_run_time = 0
+                current_run_time = datetime.utcnow() - timedelta(day=1)
+                if es == Null:
+                    es = ElasticSearch(settings.es)
+                    es_comments = ElasticSearch(settings.es_comments)
+            elif settings.param.incremental:
                 last_run_time = long(File(settings.param.last_run_time).read())
                 if es == Null:
                     es = ElasticSearch(settings.es)
                     es_comments = ElasticSearch(settings.es_comments)
             else:
                 last_run_time=0
-
                 if es == Null:
                     schema=File(settings.es.schema_file).read()
                     if transform_bugzilla.USE_ATTACHMENTS_DOT:
@@ -135,6 +142,9 @@ def main(settings, es=Null, es_comments=Null):
             param.end_time = CNV.datetime2milli(datetime.utcnow())
             param.start_time = last_run_time
             param.alias_file = settings.param.alias_file
+            if settings.resume:
+                param.start = Math.floor(get_max_bug_id(es), settings.param.increment)
+
             param.end = db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id
             param.allow_private_bugs=settings.param.allow_private_bugs
 
@@ -221,6 +231,33 @@ def main(settings, es=Null, es_comments=Null):
         close_db_connections()
 
 
+def get_max_bug_id(es):
+    try:
+        results = es.search({
+            "query": {"filtered": {
+                "query": {"match_all": {}},
+                "filter": {"script": {"script":"true"}}
+            }},
+            "from": 0,
+            "size": 0,
+            "sort": [],
+            "facets": {"0": {"statistical": {"field": "bug_id"}}}
+        })
+
+        if results.facets["0"].count == 0:
+            return 0
+        return results.facets["0"].max
+    except Exception, e:
+        Log.error("Can not get_max_bug from {{host}}/{{index}}",{
+            "host": es.settings.host,
+            "index": es.settings.index
+        }, e)
+
+
+
+
+
+
 def close_db_connections():
     (globals()["db_cache"], temp)=([], db_cache)
     for db in temp:
@@ -236,7 +273,12 @@ def start():
     #import profile
     #profile.run("""
     try:
-        settings=startup.read_settings()
+        settings = startup.read_settings(defs={
+            "name": "--resume",
+            "help": "set to true to resume from incomplete previous run",
+            "action": "store_true",
+            "dest": "resume"
+        })
         Log.start(settings.debug)
         main(settings)
     except Exception, e:

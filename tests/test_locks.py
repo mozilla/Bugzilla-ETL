@@ -41,5 +41,5 @@ def test_locks():
 
     sys.stdout.write("ok\n")
 
-
-test_locks()
+if __name__=="__main__":
+    test_locks()
