@@ -8,7 +8,7 @@
 
 import sys
 from .logs import Log
-from .basic import nvl
+from .basic import nvl, listwrap
 import struct
 from .strings import indent, expand_template
 from .struct import StructList, Struct, Null
@@ -35,13 +35,8 @@ class Q:
         if query.filter != Null:
             Log.error("not implemented yet")
 
-        if query.window != Null:
-            w = query.window
-            if not isinstance(w, list):
-                w = [w]
-
-            for param in w:
-                Q.window(_from, param)
+        for param in listwrap(query.window):
+            Q.window(_from, param)
 
         if query.where != Null:
             w = query.where
@@ -88,7 +83,7 @@ class Q:
     @staticmethod
     def index(data, keys=Null):
     #return dict that uses keys to index data
-        if not isinstance(keys, list): keys = [keys]
+        keys=listwrap(keys)
 
         output = dict()
         for d in data:
@@ -110,8 +105,7 @@ class Q:
         RETURN dict THAT USES KEYS TO INDEX DATA
         ONLY ONE VALUE ALLOWED PER UNIQUE KEY
         """
-        if not isinstance(keys, list): keys = [keys]
-        o = Index(keys)
+        o = Index(listwrap(keys))
 
         for d in data:
             try:
@@ -219,11 +213,8 @@ class Q:
         if fieldnames == Null:
             return []
 
-        if not isinstance(fieldnames, list):
-            fieldnames = [fieldnames]
-
         formal = []
-        for f in fieldnames:
+        for f in listwrap(fieldnames):
             if isinstance(f, basestring):
                 f = {"field": f, "sort": 1}
             formal.append(f)

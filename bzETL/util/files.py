@@ -12,6 +12,7 @@ import codecs
 from datetime import datetime
 import os
 import shutil
+from bzETL.util.basic import listwrap
 from bzETL.util.struct import Null
 
 
@@ -26,6 +27,10 @@ class File():
     @property
     def filename(self):
         return self._filename.replace("/", os.sep)
+
+    @property
+    def abspath(self):
+        return os.path.abspath(self._filename)
 
     def read(self, encoding="utf-8"):
         with codecs.open(self._filename, "r", encoding=encoding) as file:
@@ -44,8 +49,7 @@ class File():
     def write(self, data):
         if not self.parent.exists: self.parent.create()
         with open(self._filename, "w") as file:
-            if not isinstance(data, list): data=[data]
-            for d in data:
+            for d in listwrap(data):
                 file.write(d)
 
     def iter(self):

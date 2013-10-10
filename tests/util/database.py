@@ -6,6 +6,10 @@ from bzETL.util.timer import Timer
 
 
 def make_test_instance(db_settings):
+    if db_settings.filename == Null:
+        Log.note("Database schema will not be touched")
+        return
+
     with Timer("Make database instance"):
         try:
             #CLEAR SCHEMA

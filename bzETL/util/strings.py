@@ -5,15 +5,12 @@
 ################################################################################
 ## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 ################################################################################
-import datetime
-from decimal import Decimal
-import json
+
 import re
-from threading import Lock
-import time
+from bzETL.util.jsons import toString, json_scrub
 import struct
 
-from .struct import Struct, StructList, Null
+from .struct import Null
 
 import sys
 reload(sys)
@@ -100,68 +97,3 @@ def expand_template(template, values):
 
     return pattern.sub(replacer, template)
 
-
-
-class NewJSONEncoder(json.JSONEncoder):
-
-    def __init__(self):
-        json.JSONEncoder.__init__(self, sort_keys=True)
-
-    def default(self, obj):
-        if obj == Null:
-            return None
-        elif isinstance(obj, set):
-            return list(obj)
-        elif isinstance(obj, Struct):
-            return obj.dict
-        elif isinstance(obj, StructList):
-            return obj.list
-        elif isinstance(obj, Decimal):
-            return float(obj)
-        elif isinstance(obj, datetime.datetime):
-            return int(time.mktime(obj.timetuple())*1000)
-        return json.JSONEncoder.default(self, obj)
-
-#OH HUM, cPython with uJSON, OR pypy WITH BUILTIN JSON?
-#http://liangnuren.wordpress.com/2012/08/13/python-json-performance/
-
-json_lock=Lock()
-json_encoder=NewJSONEncoder()
-json_decoder=json._default_decoder
-
-def toString(val):
-    with json_lock:
-        if isinstance(val, Struct):
-            return json_encoder.encode(val.dict)
-        elif isinstance(val, dict) or isinstance(val, list) or isinstance(val, set):
-            val=json_encoder.encode(val)
-            return val
-    return unicode(val)
-
-#REMOVE VALUES THAT CAN NOT BE JSON-IZED
-def json_scrub(r):
-    return _scrub(r)
-
-
-def _scrub(r):
-    if r == Null:
-        return Null
-    elif isinstance(r, dict):
-        output = {}
-        for k, v in r.items():
-            v = _scrub(v)
-            output[k] = v
-        return output
-    elif hasattr(r, '__iter__'):
-        output = []
-        for v in r:
-            v = _scrub(v)
-            output.append(v)
-        return output
-    else:
-        try:
-            with json_lock:
-                json_encoder.encode(r)
-                return r
-        except Exception, e:
-            return None

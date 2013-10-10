@@ -7,23 +7,26 @@
 ################################################################################
 
 
-#DUE TO MY POOR MEMORY, THIS IS A LIST OF ALL CONVERSION ROUTINES
 import StringIO
 import datetime
 import re
 import time
-
+from .jsons import NewJSONEncoder, json_decoder
 from .logs import Log
 import struct
-from .strings import expand_template, NewJSONEncoder, json_decoder, json_scrub
+from .strings import expand_template, json_scrub
 from .struct import StructList, Null
 from .threads import Lock
+
 
 json_lock=Lock()
 json_encoder=NewJSONEncoder()
 
 
 class CNV:
+    """
+    DUE TO MY POOR MEMORY, THIS IS A LIST OF ALL CONVERSION ROUTINES
+    """
 
     @staticmethod
     def object2JSON(obj):
@@ -124,7 +127,8 @@ class CNV:
 
     @staticmethod
     def string2quote(value):
-        return "\""+value.replace("\\", "\\\\").replace("\"", "\\\"")+"\""
+        return repr(value)
+        # return "\""+value.replace("\\", "\\\\").replace("\"", "\\\"")+"\""
 
     #RETURN PYTHON CODE FOR THE SAME
     @staticmethod

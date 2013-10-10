@@ -57,8 +57,9 @@ class Struct(dict):
             d=object.__getattribute__(self, "__dict__")
             value=unwrap(value)
             if key.find(".") == -1:
-                if value == Null:
-                    del d[key]
+                if value is None:
+                    if key in d:
+                        del d[key]
                 else:
                     d[key] = value
                 return self
@@ -77,7 +78,8 @@ class Struct(dict):
     def __getattribute__(self, key):
         d=object.__getattribute__(self, "__dict__")
         if key not in SPECIAL:
-            if key not in d: return Null
+            if key not in d:
+                return Null
             return wrap(d[key])
 
         #SOME dict FUNCTIONS
@@ -107,7 +109,8 @@ class Struct(dict):
 
 
     def __setattr__(self, key, value):
-        dict.__setattr__(self, unicode(key), value)
+        Struct.__setitem__(self, key, value)
+        # dict.__setattr__(self, unicode(key), value)
 
 
     def __delitem__(self, key):
@@ -172,7 +175,7 @@ class NullStruct(object):
         return 0
 
     def __iter__(self):
-        return ZeroList
+        return ZeroList.__iter__()
 
     def __getattribute__(self, key):
         requested.add(key)
@@ -187,14 +190,7 @@ class NullStruct(object):
 
 Null = NullStruct()
 
-class ZeroListClass():
-    def __init__(self):
-        pass
-
-    def next(self):
-        raise StopIteration
-
-ZeroList=ZeroListClass()
+ZeroList=[]
 
 
 class StructList(list):

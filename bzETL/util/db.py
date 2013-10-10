@@ -343,7 +343,7 @@ class DB():
     # candidate_key IS LIST OF COLUMNS THAT CAN BE USED AS UID (USUALLY PRIMARY KEY)
     # ONLY INSERT IF THE candidate_key DOES NOT EXIST YET
     def insert_new(self, table_name, candidate_key, new_record):
-        if not isinstance(candidate_key, list): candidate_key=[candidate_key]
+        candidate_key=listwrap(candidate_key)
 
         condition=u" AND\n".join([self.quote_column(k)+u"="+self.quote_value(new_record[k]) if new_record[k] != Null else self.quote_column(k)+u" IS Null"  for k in candidate_key])
         command=u"INSERT INTO "+self.quote_column(table_name)+u" ("+\
