@@ -1,45 +1,94 @@
+from StringIO import StringIO
 from datetime import datetime, time
 from decimal import Decimal
 import json
-from threading import Lock
-from .struct import Null, Struct, StructList
+from .struct import Null
 
 
-class NewJSONEncoder(json.JSONEncoder):
+class NewJSONEncoder(object):
 
     def __init__(self):
-        json.JSONEncoder.__init__(self, sort_keys=True)
+        object.__init__(self)
 
-    def default(self, obj):
-        if obj == Null:
-            return None
-        elif isinstance(obj, set):
-            return list(obj)
-        elif isinstance(obj, Struct):
-            return obj.dict
-        elif isinstance(obj, StructList):
-            return obj.list
-        elif isinstance(obj, Decimal):
-            return float(obj)
-        elif isinstance(obj, datetime.datetime):
-            return int(time.mktime(obj.timetuple())*1000)
-        return json.JSONEncoder.default(self, obj)
+    def encode(self, value):
+        buffer = []
+        _value2json(value, buffer)
+        output = u"".join(buffer)
+        return output
+
 
 # OH HUM, cPython with uJSON, OR pypy WITH BUILTIN JSON?
 # http://liangnuren.wordpress.com/2012/08/13/python-json-performance/
 # http://morepypy.blogspot.ca/2011/10/speeding-up-json-encoding-in-pypy.html
-json_lock=Lock()  #NOT SURE IF INSTANCE CAN HANDLE MORE THAN ONE INSTANCE
 json_encoder=NewJSONEncoder()
 json_decoder=json._default_decoder
 
-def toString(val):
-    with json_lock:
-        if isinstance(val, Struct):
-            return json_encoder.encode(val.dict)
-        elif isinstance(val, dict) or isinstance(val, list) or isinstance(val, set):
-            val=json_encoder.encode(val)
-            return val
-    return unicode(val)
+
+
+def _value2json(value, _buffer):
+    if value == Null or value is None:
+        _buffer.append("null")
+    elif value is True:
+        _buffer.append('true')
+    elif value is False:
+        _buffer.append('false')
+    elif isinstance(value, basestring):
+        _string2json(value, _buffer)
+    elif isinstance(value, (int, long, Decimal)):
+        _buffer.append(str(value))
+    elif isinstance(value, float):
+        _buffer.append(repr(value))
+    elif isinstance(value, datetime):
+        _buffer.append(unicode(long(time.mktime(value.timetuple())*1000)))
+    elif isinstance(value, dict):
+        _dict2json(value, _buffer)
+    elif hasattr(value, '__iter__'):
+        _list2json(value, _buffer)
+    else:
+        raise Exception(repr(value)+" is not JSON serializable")
+
+
+def _list2json(value, _buffer):
+    _buffer.append("[")
+    first = True
+    for v in value:
+        if not first:
+            _buffer.append(", ")
+        first = False
+        _value2json(v, _buffer)
+    _buffer.append("]")
+
+def _dict2json(value, _buffer):
+    _buffer.append("{")
+    first = True
+    for k, v in value.items():
+        if not first:
+            _buffer.append(", ")
+        first = False
+        _string2json(k, _buffer)
+        _buffer.append(": ")
+        _value2json(v, _buffer)
+    _buffer.append("}")
+
+
+special = u"\\\"\t\n\r"
+replacement = [u"\\\\", u"\\\"", u"\\t", u"\\n", u"\\r"]
+
+
+def _string2json(value, _buffer):
+    """
+    SLOW IN cPython, FAST IN pypy
+    """
+    _buffer.append("\"")
+    for c in value:
+        i=special.find(c)
+        if i>=0:
+            _buffer.append(replacement[i])
+        else:
+            _buffer.append(c)
+    _buffer.append("\"")
+
+
 
 #REMOVE VALUES THAT CAN NOT BE JSON-IZED
 def json_scrub(r):
@@ -63,61 +112,10 @@ def _scrub(r):
         return output
     else:
         try:
-            with json_lock:
-                json_encoder.encode(r)
-                return r
+            json_encoder.encode(r)
+            return r
         except Exception, e:
             return None
 
 
-def value2json(value):
-    buffer=[]
-    _value2json(value, buffer)
-    return "".join(buffer)
 
-
-
-def _value2json(value, buffer):
-    if value == Null or value is None:
-        buffer.append("null")
-    elif value is True:
-        buffer.append('true')
-    elif value is False:
-        buffer.append('false')
-    elif isinstance(value, basestring):
-        return repr(value)
-    elif isinstance(value, (int, long, Decimal)):
-        buffer.append(str(value))
-    elif isinstance(value, float):
-        buffer.append(repr(value))
-    elif isinstance(value, datetime.datetime):
-        return int(time.mktime(value.timetuple())*1000)
-    elif isinstance(value, dict):
-        _dict2json(value, buffer)
-    elif hasattr(value, '__iter__'):
-        _list2json(value, buffer)
-    else:
-        raise Exception("Can not jsonize "+repr(value))
-
-
-def _list2json(value, buffer):
-    buffer.append("[")
-    first = True
-    for v in value:
-        if not first:
-            buffer.append(", ")
-        first = False
-        value2json(v, buffer)
-    buffer.append("]")
-
-def _dict2json(value, buffer):
-    buffer.append("{")
-    first = False
-    for k, v in value.items():
-        if not first:
-            buffer.append(", ")
-        first = False
-        buffer.append(unicode(k))
-        buffer.append(": ")
-        value2json(v, buffer)
-    buffer.append("}")
