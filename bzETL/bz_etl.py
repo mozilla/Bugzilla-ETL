@@ -293,5 +293,5 @@ def profile_etl():
 
 
 if __name__=="__main__":
-    profile_etl()
-    # start()
+    # profile_etl()
+    start()
