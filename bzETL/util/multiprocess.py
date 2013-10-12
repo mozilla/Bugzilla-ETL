@@ -1,14 +1,11 @@
 from multiprocessing.queues import Queue
-from bzETL.util.logs import Log
+from .logs import Log
 
 
 class worker():
     def __init__(func, inbound, outbound, logging):
         logger = Log_usingInterProcessQueue(logging)
-D.
 
-
-        pass
 
 
 class Log_usingInterProcessQueue(Log):

@@ -11,7 +11,7 @@ from datetime import datetime
 import traceback
 import logging
 import sys
-from bzETL.util.basic import listwrap
+from .basic import listwrap
 
 import struct, threads
 from .files import File

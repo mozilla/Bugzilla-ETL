@@ -6,7 +6,7 @@
 ## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 ################################################################################
 
-SPECIAL=["keys", "values", "items", "dict",  "copy"]
+SPECIAL=["keys", "values", "items", "iteritems", "dict",  "copy"]
 
 
 
@@ -83,6 +83,14 @@ class Struct(dict):
             return wrap(d[key])
 
         #SOME dict FUNCTIONS
+        if key == "items":
+            def temp():
+                _is = dict.__getattribute__(d, "items")
+                return [(k, wrap(v)) for k, v in _is()]
+            return temp
+        if key == "iteritems":
+            #LOW LEVEL ITERATION
+            return d.iteritems
         if key=="keys":
             def temp():
                 k=dict.__getattribute__(d, "keys")
@@ -92,11 +100,6 @@ class Struct(dict):
             def temp():
                 vs=dict.__getattribute__(d, "values")
                 return [wrap(v) for v in vs()]
-            return temp
-        if key=="items":
-            def temp():
-                _is=dict.__getattribute__(d, "items")
-                return [(k, wrap(v)) for k,v in _is()]
             return temp
         if key=="dict":
             return d
@@ -210,7 +213,7 @@ class StructList(list):
         return wrap(self.list[index])
 
     def __setitem__(self, i, y):
-        self.list[i]=y
+        self.list[i]=unwrap(y)
 
     def __iter__(self):
         i=self.list.__iter__()
@@ -235,14 +238,15 @@ class StructList(list):
         return self
 
     def extend(self, values):
-        self.list.extend(values)
+        for v in values:
+            self.list.append(unwrap(v))
         return self
 
 
 def wrap(v):
     if v is None or v == Null:
         return Null
-    if isinstance(v, Struct):
+    if isinstance(v, (Struct, StructList)):
         return v
     if isinstance(v, dict):
         m = Struct()
@@ -254,7 +258,7 @@ def wrap(v):
 
 def unwrap(v):
     if isinstance(v, Struct):
-        return v.dict
+        return object.__getattribute__(v, "__dict__")
     if v == Null:
         return None
     return v

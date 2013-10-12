@@ -7,7 +7,7 @@
 ################################################################################
 
 import re
-from bzETL.util.jsons import json_encoder
+from .jsons import json_encoder
 import struct
 
 from .struct import Null, Struct
