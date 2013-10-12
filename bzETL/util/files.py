@@ -12,8 +12,8 @@ import codecs
 from datetime import datetime
 import os
 import shutil
-from bzETL.util.basic import listwrap
-from bzETL.util.struct import Null
+from .basic import listwrap
+from .struct import Null
 
 
 class File():

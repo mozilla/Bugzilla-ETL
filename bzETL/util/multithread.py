@@ -8,7 +8,6 @@
 
 import threading
 from .basic import nvl
-from . import struct
 from .struct import Null
 from .logs import Log
 from .threads import Queue, Thread
@@ -87,14 +86,14 @@ class Multithread():
     #WAIT FOR ALL QUEUED WORK TO BE DONE BEFORE RETURNING
     def __exit__(self, a, b, c):
         try:
-            self.inbound.close() # SEND STOPS TO WAKE UP THE WORKERS WAITING ON inbound.pop()
+            self.inbound.add(Thread.STOP)
+            self.join()
         except Exception, e:
-            Log.warning("Problem adding to inbound", e)
-
-        self.join()
+            Log.warning("Problem sending stops", e)
 
 
-    #IF YOU SENT A stop(), OR STOP, YOU MAY WAIT FOR SHUTDOWN
+
+    #IF YOU SENT A stop(), OR Thread.STOP, YOU MAY WAIT FOR SHUTDOWN
     def join(self):
         try:
             #WAIT FOR FINISH
@@ -107,10 +106,10 @@ class Multithread():
         finally:
             for t in self.threads:
                 t.keep_running=False
-            for t in self.threads:
-                t.join()
             self.inbound.close()
             self.outbound.close()
+            for t in self.threads:
+                t.join()
 
 
     #RETURN A GENERATOR THAT HAS len(parameters) RESULTS (ANY ORDER)

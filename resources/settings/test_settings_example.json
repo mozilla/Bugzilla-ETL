@@ -8,7 +8,7 @@
 		"debug":true
 	},
 	"public_reference":{
-   		"description":"pointer to es with known good results",
+   		"description":"pointer to es with known good *public* results",
    		"filename":"./tests/resources/public_reference_es.json"
    	},
 	"private_reference":{
@@ -35,8 +35,8 @@
 		"bugs0":[643420],
 		"start":0,
 		"increment":10000,
-		"bugs":[384, 1108,1045,1046,1157,1877,1865,1869,2586,3140,6810,9622,10575,11040,67742, 96421,123203,178960,367518,457765,458397, 471427,544327, 547727, 643420,692436, 726635,813650,889880],
-		"alias_file":"./resources/data/bugzilla_aliases.txt",
+        "bugs": [384, 1108, 1045, 1046, 1157, 1877, 1865, 1869, 2586, 3140, 6810, 9622, 10575, 11040, 12911, 67742, 96421, 123203, 178960, 367518, 457765, 458397, 471427, 544327, 547727, 643420, 692436, 726635, 813650, 889880],
+        "alias_file":"./resources/data/bugzilla_aliases.txt",
 		"temp_dir":"./tests/resources",
 		"errors":"./tests/results/errors",
 		"allow_private_bugs":true,
@@ -48,7 +48,7 @@
 		"port":3306,
 		"username":"username",
 		"password":"password",
-		"schema":"bugzilla",
+		"schema":"test_bugzilla",
 		"expires_on": 1372867005000,
 		"debug":true
 	},

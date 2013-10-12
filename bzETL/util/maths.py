@@ -82,13 +82,16 @@ class Math():
 
     @staticmethod
     def min(values):
-        output=Null
+        output = Null
         for v in values:
-            if v == Null: continue
-            if output == Null:
-                output=v
+            if v == Null:
                 continue
-            output=min(output, v)
+            if math.isnan(v):
+                continue
+            if output == Null:
+                output = v
+                continue
+            output = min(output, v)
         return output
 
 
@@ -98,6 +101,8 @@ class Math():
         output = Null
         for v in values:
             if v == Null:
+                continue
+            if math.isnan(v):
                 continue
             if output == Null:
                 output = v

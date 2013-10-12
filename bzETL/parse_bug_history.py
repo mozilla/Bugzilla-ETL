@@ -434,15 +434,15 @@ class parse_bug_history_():
                         #PACK ADDS AND REMOVES TO SINGLE CHANGE TO MATCH ORIGINAL
                         next = changes[c + 1]
                         if change.attach_id == next.attach_id and\
-                           change.field_name == next.field_name and\
-                           change.old_value != Null and\
-                           next.old_value == Null:
+                            change.field_name == next.field_name and\
+                            change.old_value != Null and\
+                            next.old_value == Null:
                             next.old_value = change.old_value
                             changes[c] = Null
                             continue
                         if change.new_value == Null and \
-                           change.old_value == Null and \
-                           change.field_name!="attachment_added":
+                            change.old_value == Null and \
+                            change.field_name!="attachment_added":
                             changes[c] = Null
                             continue
 
@@ -835,7 +835,7 @@ class parse_bug_history_():
             if valueType=="added":
                 self.currActivity.changes.append({
                     "field_name": field_name,
-                    "new_value": ", ".join(map(unicode, Q.sort(removed))),
+                    "new_value": u", ".join(map(unicode, Q.sort(removed))),
                     "old_value": Null,
                     "attach_id": target.attach_id
                 })
