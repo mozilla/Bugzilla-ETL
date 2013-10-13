@@ -7,10 +7,10 @@
 ################################################################################
 
 ## REPLACES THE KETTLE FLOW CONTROL PROGRAM, AND BASH SCRIPT
-import argparse
+
 
 from datetime import datetime, timedelta
-from math import floor
+import functools
 from bzETL import parse_bug_history, transform_bugzilla
 from bzETL.extract_bugzilla import get_private_bugs, get_recent_private_attachments, get_recent_private_comments, get_comments
 from bzETL.util.maths import Math
@@ -22,7 +22,7 @@ from bzETL.util.logs import Log
 from bzETL.util.struct import Struct, Null
 from bzETL.util.files import File
 from bzETL.util.startup import startup
-from bzETL.util.threads import Queue, Thread
+from bzETL.util.threads import Queue, Thread, AllThread
 from bzETL.util.cnv import CNV
 from bzETL.util.elasticsearch import ElasticSearch
 from bzETL.util.multithread import Multithread
@@ -63,29 +63,30 @@ def etl_comments(db, es, param):
 
 #MIMIC THE KETTLE GRAPHICAL PROGRAM
 def etl(db, es, param):
-
     # CONNECTIONS ARE EXPENSIVE, CACHE HERE
     if len(db_cache) == 0:
         db_cache.extend([DB(db) for f in get_stuff_from_bugzilla])
 
-    #GIVE THEM ALL THE SAME PARAMETERS
-    output = []
-    with Multithread(get_stuff_from_bugzilla) as multi:
-        params = [
-            {"db": db_cache[i], "param": param}
-            for i, f in enumerate(get_stuff_from_bugzilla)
-        ]
-        responses = multi.execute(params)
+    # ASYMMETRIC MULTI THREADING
+    db_results=Queue()
+    with AllThread() as all:
+        for i,f in enumerate(get_stuff_from_bugzilla):
+            def process(target, db, param):
+                db_results.extend(target(db, param))
 
-        #CONCAT ALL RESPONSES (BLOCKS UNTIL ALL RETRIEVED)
-        for r in responses:
-            output.extend(r)
+            all.add(process, f, db_cache[i], param)
+    db_results.add(Thread.STOP)
 
     output_queue = Queue()
-    sorted = Q.sort(output, ["bug_id", "_merge_order", {"field":"modified_ts", "sort":-1}, "modified_by"])
-
     #TODO: USE SEPARATE THREAD TO SORT AND PROCESS BUG CHANGE RECORDS
     process = parse_bug_history_(param, output_queue)
+
+    sorted = Q.sort(db_results, [
+        "bug_id",
+        "_merge_order",
+        {"field":"modified_ts", "sort":-1},
+        "modified_by"
+    ])
     for s in sorted:
         process.processRow(s)
     process.processRow(struct.wrap({"bug_id": parse_bug_history.STOP_BUG, "_merge_order": 1}))

@@ -21,7 +21,7 @@ class Struct(dict):
     3) also, which I hardly use, is storing JSON paths in a variable, so :   a["b.c"]==a.b.c
 
     MORE ON MISSING VALUES: http://www.numpy.org/NA-overview.html
-    IT ONLY CONSIDERS THE STATISTICAL NULL, WHICH LOOKS AT LEGITIMATE-FIELD-WITH-MISSING-VALUE (Statistical Null)
+    IT ONLY CONSIDERS THE LEGITIMATE-FIELD-WITH-MISSING-VALUE (Statistical Null)
     AND DOES NOT LOOK AT FIELD-DOES-NOT-EXIST-IN-THIS-CONTEXT (Database Null)
     """
 
@@ -49,8 +49,7 @@ class Struct(dict):
                 d=d[n]
             return wrap(d)
 
-        if key not in d: return Null
-        return wrap(d[key])
+        return wrap(d.get(key, Null))
 
     def __setitem__(self, key, value):
         try:

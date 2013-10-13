@@ -259,7 +259,13 @@ class Q:
                     if result != 0: return result
                 return 0
 
-            output = sorted(data, cmp=comparer)
+            if isinstance(data, list):
+                output = sorted(data, cmp=comparer)
+            elif hasattr(data, "__iter__"):
+                output = sorted(list(data), cmp=comparer)
+            else:
+                Log.error("Do not know how to handle")
+
             return output
         except Exception, e:
             Log.error("Problem sorting\n{{data}}", {"data": data}, e)
