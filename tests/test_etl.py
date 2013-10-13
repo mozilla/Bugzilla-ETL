@@ -359,13 +359,13 @@ def main():
         settings=startup.read_settings()
         Log.start(settings.debug)
 
-        #RUN THE TESTS
-        # test_specific_bugs(settings)
-        test_private_etl(settings)
-        test_public_etl(settings)
-        test_private_bugs_do_not_show(settings)
-        test_private_comments_do_not_show(settings)
-        test_recent_private_stuff_does_not_show(settings)
+        with Timer("Run all tests"):
+            test_specific_bugs(settings)
+            test_private_etl(settings)
+            test_public_etl(settings)
+            test_private_bugs_do_not_show(settings)
+            test_private_comments_do_not_show(settings)
+            test_recent_private_stuff_does_not_show(settings)
 
         if len(all_db)>0:
             Log.error("not all db connections are closed")

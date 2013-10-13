@@ -25,6 +25,7 @@ class worker_thread(threading.Thread):
         self.out_queue=out_queue
         self.function=function
         self.keep_running=True
+        self.num_runs=0
         self.start()
 
     #REQUIRED TO DETECT KEYBOARD, AND OTHER, INTERRUPTS
@@ -35,20 +36,37 @@ class worker_thread(threading.Thread):
 
     def run(self):
         while self.keep_running:
-            params=self.in_queue.pop()
-            if params==Thread.STOP:
+            request=self.in_queue.pop()
+            if request==Thread.STOP:
+                if len(self.in_queue.queue)>0:
+                    Log.warning("programmer error")
                 break
+            if not self.keep_running:
+                break
+
             try:
-                if not self.keep_running: break
-                result=self.function(**params)
-                if self.keep_running and self.out_queue != Null:
+                if DEBUG and hasattr(self.function, "func_name"):
+                    Log.note("run {{function}}", {"function":self.function.func_name})
+                result=self.function(**request)
+                if self.out_queue != Null:
                     self.out_queue.add({"response":result})
             except Exception, e:
-                Log.warning("Can not execute with params={{params}}", {"params": params}, e)
-                if self.keep_running and self.out_queue != Null:
+                Log.warning("Can not execute with params={{params}}", {"params": request}, e)
+                if self.out_queue != Null:
                     self.out_queue.add({"exception":e})
+            finally:
+                self.num_runs+=1
 
         self.keep_running=False
+        if self.num_runs==0:
+            Log.warning("{{name}} thread did no work", {"name":self.name})
+        if DEBUG and self.num_runs!=1:
+            Log.note("{{name}} thread did {{num}} units of work", {
+                "name":self.name,
+                "num":self.num_runs
+            })
+        if len(self.in_queue.queue)>0:
+            Log.warning("programmer error")
         if DEBUG:
             Log.note("{{thread}} DONE", {"thread":self.name})
 
@@ -84,8 +102,10 @@ class Multithread():
         return self
 
     #WAIT FOR ALL QUEUED WORK TO BE DONE BEFORE RETURNING
-    def __exit__(self, a, b, c):
+    def __exit__(self, type, value, traceback):
         try:
+            if isinstance(value, Exception):
+                self.inbound.close()
             self.inbound.add(Thread.STOP)
             self.join()
         except Exception, e:
@@ -113,11 +133,11 @@ class Multithread():
 
 
     #RETURN A GENERATOR THAT HAS len(parameters) RESULTS (ANY ORDER)
-    def execute(self, parameters):
+    def execute(self, request):
         #FILL QUEUE WITH WORK
-        self.inbound.extend(parameters)
+        self.inbound.extend(request)
 
-        num=len(parameters)
+        num=len(request)
         def output():
             for i in xrange(num):
                 result=self.outbound.pop()
