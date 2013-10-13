@@ -1,0 +1,32 @@
+{
+	"source":{
+		"host":"http://elasticsearch7.metrics.scl3.mozilla.com",
+		"port":"9200",
+		"index":"bugs",
+		"type":"bug_version",
+		"debug":true
+	},
+	"destination":{
+		"host":"http://localhost",
+		"port":"9200",
+		"index":"bugs",
+		"type":"bug_version"
+	},
+		"param":{
+		"last_replication_time":"./results/data/last_replication_time.txt"
+	},
+	"debug":{
+		"log":[{
+			"class": "logging.handlers.RotatingFileHandler",
+			"filename": "./results/logs/replication.log",
+			"maxBytes": 10000000,
+			"backupCount": 200,
+			"encoding": "utf8"
+		},{
+			"class":"bzETL.util.logs.Log_usingStream",
+			"stream":"sys.stdout"
+		}]
+	}
+
+
+}

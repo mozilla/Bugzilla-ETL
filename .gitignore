@@ -1,0 +1,11 @@
+*.pyc
+*.log
+*settings.json
+out
+results/*
+tests/results/*
+Error*.txt
+bzETL/util/.svn/*
+bzETL/util/.svn
+.idea
+*.iml

@@ -1,0 +1,64 @@
+{
+	"settings":{
+		"index.number_of_shards":1,
+		"index.number_of_replicas":0,
+		"index.store.throttle.type": "merge",
+		"index.store.throttle.max_bytes_per_sec": "2mb"
+	},
+	"mappings": {
+		"bug_comment": {
+			"_all": {
+				"enabled": false
+			},
+			"_source": {
+				"compress": true,
+				"enabled": true
+			},
+			"_id": {
+				"path": "comment_id"
+			},
+			"properties": {
+				"comment_id":{
+					"type": "integer",
+					"index": "not_analyzed",
+					"store": "yes"
+				},
+				"bug_id":{
+					"type": "integer",
+					"index": "not_analyzed",
+					"store": "yes"
+				},
+				"modified_by": {
+					"index": "not_analyzed",
+					"type": "string",
+					"store": "yes"
+				},
+				"modified_ts": {
+					"type": "long",
+					"index": "not_analyzed",
+					"store": "yes"
+				},
+				"isprivate":{
+					"type": "integer",
+					"index": "not_analyzed",
+					"store": "yes"
+				},
+				"comment": {
+					"type": "multi_field",
+					"fields":{
+						"comment":{
+							"type": "string",
+							"index": "not_analyzed",
+							"store": "yes"
+						},
+						"words":{
+							"type": "string",
+							"index": "analyzed",
+							"store": "no"
+						}
+					}
+				}
+			}
+		}
+	}
+}

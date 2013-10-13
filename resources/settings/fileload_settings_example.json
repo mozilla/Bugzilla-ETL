@@ -1,0 +1,30 @@
+{
+	"errors":"./results/data",
+	"source":{
+		"filename":"C:/Users/klahnakoski/git/ES Extract/data/bug_versions.txt",
+		"schema_filename":"./resources/json/bug_version.json"
+	},
+	"destination":{
+		"host":"http://localhost",
+		"port":9200,
+		"index":"bugs",
+		"type":"bug_version",
+		"debug":true
+	},
+	"debug":{
+		"log":[{
+			"class": "logging.handlers.RotatingFileHandler",
+			"filename": "./tests/results/logs/fileload.log",
+			"maxBytes": 10000000,
+			"backupCount": 200,
+			"encoding": "utf8"
+		},{
+			"class":"bzETL.util.logs.Log_usingStream",
+			"stream":"sys.stdout"
+		}]
+	}
+
+
+
+
+}
