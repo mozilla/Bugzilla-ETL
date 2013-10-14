@@ -61,7 +61,7 @@ FLAG_PATTERN = re.compile("^(.*)([?+-])(\\([^)]*\\))?$")
 TRUNC_FIELDS = ["cc", "blocked", "dependson", "keywords"]
 
 STOP_BUG = 999999999
-
+MAX_TIME = 9999999999000
 
 class parse_bug_history_():
 
@@ -417,7 +417,7 @@ class parse_bug_history_():
                     # Otherwise, we don't know when the version expires.
                     Log.note("Last bug_version_num = {{version}}", {"version": self.bug_version_num})
 
-                    self.currBugState.expires_on = Null
+                    self.currBugState.expires_on = MAX_TIME
 
                 # Copy all attributes from the current version into self.currBugState
                 for propName, propValue in currVersion.items():

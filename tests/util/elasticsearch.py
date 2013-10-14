@@ -1,8 +1,11 @@
+from flask import json
 from bzETL.util import struct
 from bzETL.util.cnv import CNV
 from bzETL.util.elasticsearch import ElasticSearch
+from bzETL.util.jsons import json_scrub
 from bzETL.util.logs import Log
 from bzETL.util.files import File
+from bzETL.util.query import Q
 from bzETL.util.struct import Struct, Null
 
 
@@ -46,7 +49,9 @@ class Fake_ES():
         records={v["id"]:v["value"] for v in records}
 
         self.data.dict.update(records)
-        File(self.filename).write(CNV.object2JSON(self.data))
+
+        data_as_json=json.dumps(json_scrub(self.data), indent=4, sort_keys=True, separators=(',', ': '))
+        File(self.filename).write(data_as_json)
         Log.note("{{num}} items added", {"num":len(records)})
 
     def delete_record(self, filter):
