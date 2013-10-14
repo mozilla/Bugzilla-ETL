@@ -3,7 +3,7 @@
 
 
 
-use bugzilla;
+use {{schema}};
 SET foreign_key_checks = 0;
 
 -- SELECT
@@ -19,6 +19,14 @@ SET foreign_key_checks = 0;
 START TRANSACTION;
 DELETE FROM
 	longdescs
+WHERE
+	bug_id not in {{bug_list}}
+;
+COMMIT;
+
+START TRANSACTION;
+DELETE FROM
+	tracking_flags_bugs
 WHERE
 	bug_id not in {{bug_list}}
 ;
@@ -116,6 +124,13 @@ DELETE FROM profile_setting;
 DELETE FROM components WHERE id NOT IN (SELECT component_id FROM bugs WHERE component_id IS NOT NULL); 
 DELETE FROM products WHERE id NOT IN (SELECT product_id FROM bugs WHERE product_id IS NOT NULL);
 
+COMMIT;
+
+
+START TRANSACTION;
+DELETE FROM audit_log;
+DELETE FROM user_group_map;
+DELETE FROM watch;
 COMMIT;
 
 

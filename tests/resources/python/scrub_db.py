@@ -18,7 +18,10 @@ def main():
         Log.note("Scrubbing db of those pesky records.")
         Log.note("This is going to take hours ...")
 
-        DB.execute_file(settings.bugzilla, "./tests/resources/sql/scrub_db.sql", {"bug_list":SQL(settings.param.bugs)})
+        DB.execute_file(settings.bugzilla, "./tests/resources/sql/scrub_db.sql", {
+            "schema":settings.bugzilla.schema,
+            "bug_list":SQL(settings.param.bugs)
+        })
         Log.note("... Done!")
     finally:
         Log.stop()
