@@ -2,13 +2,19 @@
 # schema required for types and nested types
 
 # only need to know the nested, and the mutli-valued
-from dzAlerts.util.db import DB
-from dzAlerts.util.logs import Log
-from dzAlerts.util.query import Q
-from dzAlerts.util.struct import Struct
+from msilib import schema
+from .db import DB, SQL
+from .logs import Log
+from .struct import Struct
 
 
-PRIMITIVES=["string", "integer", "float", "boolean"]
+PRIMITIVES={
+    "string":{"sql_type":"VARCHAR(100)"},
+    "integer":{"sql_type":"LONG"},
+    "float":{"sql_type":"DOUBLE"},
+    "boolean":{"sql_type":"DECIMAL(1)"}
+}
+TYPES=["object", "nested"]
 
 
 class indexed():
@@ -41,10 +47,6 @@ class indexed():
 
     def setup(self):
         self.db.execute("""
-
-
-
-
             CREATE TABLE `info.schema` (
                 path        VARCHAR(300),
                 type        VARCHAR (30),
@@ -62,14 +64,48 @@ class indexed():
                 `info.schema`
         """)
 
-    def build_schema(self, schema, path, item):
+    def add_columns(self, prefix, desc, columns):
+        for c in columns:
+            if c.type not in TYPES:
+                desc.append(self.db.quote_column(prefix+c.name) + " " + PRIMITIVES[c.type].sql_type)
+            elif c.type == "object":
+                self.add_columns(prefix+c.name+".", desc, c.columns)
 
-        assert schema.name.startswith(path[0])
 
-        if len(path)==1:
-            schema.columns.path=item
-            return
+    def build_schema(self, schema, path):
+        """
+        for storing the json, indexing should be done in separate indexed
+        tables
 
+        free-form text should have index and stored value seperate
+        index = (trigram, ref)
+        content =
+
+        """
+
+
+
+        # schema has name and columns
+        # path is fullpath of hierarchy
+        assert schema.name == path[-1]
+
+        desc=[]
+        self.add_columns("", desc, schema.columns)
+
+        for c in schema.columns:
+            if c.type=="nested":
+                self.build_schema(c, path+[schema.name])
+
+        # BUILD TABLE
+        self.db.execute("""
+            CREATE TABLE {{table_name}} (
+                {{columns}}
+            )
+        """, {
+            "table_name":self.db.quote_column(".".join(schema.path)),
+            "columns":SQL("\n".join(desc))
+
+        })
 
 
 

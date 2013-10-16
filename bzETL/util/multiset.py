@@ -34,6 +34,10 @@ class multiset():
         else:
             self.dic[value]=1
 
+    def extend(self, values):
+        for v in values:
+            self.add(v)
+
     def remove(self, value):
         if value not in self.dic:
             Log.error("{{value}} is not in multiset", {"value":value})

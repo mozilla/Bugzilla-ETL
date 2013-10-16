@@ -26,7 +26,6 @@ from bzETL.util.startup import startup
 from bzETL.util.threads import Queue, Thread, AllThread
 from bzETL.util.cnv import CNV
 from bzETL.util.elasticsearch import ElasticSearch
-from bzETL.util.multithread import Multithread
 from bzETL.util.query import Q
 from bzETL.util.db import DB, SQL
 
