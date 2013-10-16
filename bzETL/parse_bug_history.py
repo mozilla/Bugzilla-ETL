@@ -59,6 +59,9 @@ from bzETL.util.maths import Math
 FLAG_PATTERN = re.compile("^(.*)([?+-])(\\([^)]*\\))?$")
 
 
+DEBUG_CHANGES = False   # SHOW ACTIVITY RECORDS BEING PROCESSED
+DEBUG_STATUS = False    # SHOW CURRENT STATE OF PROCESSING
+
 
 # Fields that could have been truncated per bug 55161
 TRUNC_FIELDS = ["cc", "blocked", "dependson", "keywords"]
@@ -100,7 +103,7 @@ class parse_bug_history_():
             if self.prevBugID < self.currBugID:
                 if self.prevBugID>0:
                     # Start replaying versions in ascending order to build full data on each version
-                    Log.note("Emitting intermediate versions for {{bug_id}}", {"bug_id":self.prevBugID})
+                    if DEBUG_STATUS: Log.note("Emitting intermediate versions for {{bug_id}}", {"bug_id":self.prevBugID})
                     self.populateIntermediateVersionObjects()
                 if row_in.bug_id == STOP_BUG:
                     return
@@ -149,7 +152,7 @@ class parse_bug_history_():
             # Treat timestamps as int values
             new_value = CNV.value2int(row_in.new_value) if row_in.field_name.endswith("_ts") else row_in.new_value
             if row_in.field_name=="bug_file_loc" and (row_in.new_value == Null or len(row_in.new_value)>0):
-                Log.note("bug_file_loc is empty")
+                if DEBUG_STATUS: Log.note("bug_file_loc is empty")
             # Determine where we are in the bug processing workflow
             if row_in._merge_order==1:
                 self.processSingleValueTableItem(row_in.field_name, new_value)
@@ -226,7 +229,7 @@ class parse_bug_history_():
 
     def processAttachmentsTableItem(self, row_in):
         if row_in.attach_id==349397:
-            Log.note("")
+            Log.debug("")
 
         currActivityID = parse_bug_history_.uid(self.currBugID, row_in.modified_ts)
         if currActivityID != self.prevActivityID:
@@ -397,26 +400,26 @@ class parse_bug_history_():
                 # if nextVersion.modified_ts==933875761000:
                 #     Log.println("")
 
-                Log.note("Populating JSON for version {{id}}", {"id":currVersion._id})
+                if DEBUG_STATUS: Log.note("Populating JSON for version {{id}}", {"id":currVersion._id})
                 # Decide whether to merge this bug activity into the current state (without emitting
                 # a separate JSON document). This addresses the case where an attachment is created
                 # at exactly the same time as the bug itself.
                 # Effectively, we combine all the changes for a given timestamp into the last one.
                 mergeBugVersion = False
                 if nextVersion != Null and currVersion._id == nextVersion._id:
-                    Log.note("Merge mode: activated " + self.currBugState._id)
+                    if DEBUG_STATUS: Log.note("Merge mode: activated " + self.currBugState._id)
                     mergeBugVersion = True
 
                 # Link this version to the next one (if there is a next one)
                 if nextVersion != Null:
-                    Log.note("We have a nextVersion: {{timestamp}} (ver {{next_version}})", {
+                    if DEBUG_STATUS: Log.note("We have a nextVersion: {{timestamp}} (ver {{next_version}})", {
                         "timestamp":nextVersion.modified_ts,
                         "next_version":self.bug_version_num + 1
                     })
                     self.currBugState.expires_on = nextVersion.modified_ts
                 else:
                     # Otherwise, we don't know when the version expires.
-                    Log.note("Last bug_version_num = {{version}}", {"version": self.bug_version_num})
+                    if DEBUG_STATUS: Log.note("Last bug_version_num = {{version}}", {"version": self.bug_version_num})
 
                     self.currBugState.expires_on = MAX_TIME
 
@@ -447,7 +450,7 @@ class parse_bug_history_():
                             changes[c] = Null
                             continue
 
-                    Log.note("Processing change: " + CNV.object2JSON(change))
+                    if DEBUG_CHANGES: ("Processing change: " + CNV.object2JSON(change))
                     target = self.currBugState
                     targetName = "currBugState"
                     attach_id = change.attach_id
@@ -510,7 +513,7 @@ class parse_bug_history_():
                         state=normalize(self.currBugState)
                         if state.blocked != Null and len(state.blocked)==1 and "Null" in state.blocked:
                             Log.note("PROBLEM error")
-                        Log.note("Bug {{bug_state.bug_id}} v{{bug_state.bug_version_num}} (id = {{bug_state.id}})" , {
+                        if DEBUG_STATUS: Log.note("Bug {{bug_state.bug_id}} v{{bug_state.bug_version_num}} (id = {{bug_state.id}})" , {
                             "bug_state":state
                         })
                         self.output.add(state)
@@ -546,6 +549,10 @@ class parse_bug_history_():
 
 
     def processFlagChange(self, target, change, modified_ts, modified_by, reverse=False):
+        if target.flags == Null:
+            Log.note("PROBLEM  processFlagChange called with unset 'flags'")
+            target.flags = []
+
         addedFlags = parse_bug_history_.getMultiFieldValue("flags", change.new_value)
         removedFlags = parse_bug_history_.getMultiFieldValue("flags", change.old_value)
 
@@ -573,7 +580,7 @@ class parse_bug_history_():
                 existingFlag["previous_status"] = removed_flag["request_status"]
                 existingFlag["request_status"] = "d"
                 existingFlag["previous_value"] = flagStr
-                existingFlag["value"] = Null
+                existingFlag["value"] = Null            #SPECIAL INDICATOR
                 # request_type stays the same.
                 # requestee stays the same.
 
@@ -593,64 +600,55 @@ class parse_bug_history_():
 
             added_flag = self.makeFlag(flagStr, modified_ts, modified_by)
 
-            if target.flags == Null:
-                Log.note("PROBLEM  processFlagChange called with unset 'flags'")
-                target.flags = []
-
             candidates = [element for element in target.flags if
-                element["value"] == Null
+                element["value"] == Null    #SPECIAL INDICATOR
                     and added_flag["request_type"] == element["request_type"]
                     and added_flag["request_status"] != element["previous_status"] # Skip "r?(dre@mozilla)" -> "r?(mark@mozilla)"
             ]
 
-            if len(candidates) > 0:
-                chosen_one = candidates[0]
-                if len(candidates) > 1:
-                    # Multiple matches - use the best one.
-                    Log.note("Matched added flag {{flag}} to multiple removed flags.  Using the best of these:\n", {
-                        "flag":added_flag,
-                        "candidates":candidates
-                    })
-                    matched_ts = [element for element in candidates if
-                        added_flag.modified_ts == element.modified_ts
-                    ]
-
-                    if len(matched_ts) == 1:
-                        Log.note("Matching on modified_ts fixed it")
-                        chosen_one = matched_ts[0]
-                    else:
-                        Log.note("Matching on modified_ts left us with {{num}} matches", {"num":len(matched_ts)})
-                        # If we had no matches (or many matches), try matching on requestee.
-                        matched_req = [element for element in candidates if
-                            # Do case-insenitive comparison
-                            element["requestee"] != Null and
-                                added_flag["modified_by"].lower() == element["requestee"].lower()
-                        ]
-                        if len(matched_req) == 1:
-                            Log.note("Matching on requestee fixed it")
-                            chosen_one = matched_req[0]
-                        else:
-                            Log.warning("Matching on requestee left us with {{num}} matches. Skipping match.", {"num":len(matched_req)})
-                            # TODO: add "uncertain" flag?
-                            chosen_one = Null
-
-
-                else:
-                    # Obvious case - matched exactly one.
-                    Log.note("Matched added flag " + CNV.object2JSON(added_flag) + " to removed flag " + CNV.object2JSON(chosen_one))
-
-                if chosen_one != Null:
-                    for f in ["value", "request_status", "requestee"]:
-                        if added_flag[f] != Null:
-                            chosen_one[f] = added_flag[f]
-
-
-
-                # We need to avoid later adding this flag twice, since we rolled an add into a delete.
-            else:
+            if len(candidates)==0:
                 # No matching candidate. Totally new flag.
-                Log.note("PROBLEM Did not match added flag " + CNV.object2JSON(added_flag) + " to anything: " + CNV.object2JSON(target.flags))
                 target.flags.append(added_flag)
+                continue
+
+            chosen_one = candidates[0]
+            if len(candidates) > 1:
+                # Multiple matches - use the best one.
+                Log.note("Matched added flag {{flag}} to multiple removed flags {{candidates}}.  Using the best.", {
+                    "flag":added_flag,
+                    "candidates":candidates
+                })
+                matched_ts = [element for element in candidates if
+                    added_flag.modified_ts == element.modified_ts
+                ]
+
+                if len(matched_ts) == 1:
+                    Log.note("Matching on modified_ts fixed it")
+                    chosen_one = matched_ts[0]
+                else:
+                    Log.note("Matching on modified_ts left us with {{num}} matches", {"num":len(matched_ts)})
+                    # If we had no matches (or many matches), try matching on requestee.
+                    matched_req = [element for element in candidates if
+                        # Do case-insenitive comparison
+                        element["requestee"] != Null and
+                            added_flag["modified_by"].lower() == element["requestee"].lower()
+                    ]
+                    if len(matched_req) == 1:
+                        Log.note("Matching on requestee fixed it")
+                        chosen_one = matched_req[0]
+                    else:
+                        Log.warning("Matching on requestee left us with {{num}} matches. Skipping match.", {"num":len(matched_req)})
+                        # TODO: add "uncertain" flag?
+                        chosen_one = Null
+            else:
+                # Obvious case - matched exactly one.
+                Log.note("Matched added flag " + CNV.object2JSON(added_flag) + " to removed flag " + CNV.object2JSON(chosen_one))
+
+            if chosen_one != Null:
+                for f in ["value", "request_status", "requestee"]:
+                    chosen_one[f] = nvl(added_flag[f], chosen_one[f])
+
+            # We need to avoid later adding this flag twice, since we rolled an add into a delete.
 
 
 
@@ -766,7 +764,7 @@ class parse_bug_history_():
                 if found != Null:
                     removeMe.append(found.value) #FOR SOME REASON, REMOVAL BY OBJECT DOES NOT WORK
                 else:
-                    Log.note("PROBLEM Unable to find {{type}} value: {{object}}.{{field_name}}: (All {{missing}}" + " not in : {{existing}})",{
+                    Log.note("PROBLEM Unable to find {{type}} FLAG: {{object}}.{{field_name}}: (All {{missing}}" + " not in : {{existing}})",{
                         "type":valueType,
                         "object":arrayDesc,
                         "field_name":field_name,
@@ -798,20 +796,15 @@ class parse_bug_history_():
             diff = k_remove - k_total
             output = k_total - k_remove
 
-            if u"m_mozilla@wickline.org" in diff:
-                Log.debug()
-
             if not target.uncertain:
                 for lost in diff:
                     details = self.aliases[lost.replace(".", "\.")]
                     if details == Null:
                         details = Struct()
                         self.aliases[lost.replace(".", "\.")] = details
+                    details.last_seen = Math.max([details.last_seen, timestamp])
 
-                    if details.candidates == Null:
-                        details.candidates = output
-                    elif len(details.candidates)==0:
-                        #TRY AGAIN, FRESH THIS TIME
+                    if not details.candidates:
                         details.candidates = output
                     else:
                         details.candidates = set(details.candidates) & output
@@ -830,25 +823,34 @@ class parse_bug_history_():
                     else:
                         if len(details.candidates)==0:
                             Log.note("PROBLEM: EMPTY CANDIDATES!")
+                            #TRY AGAIN
                             details.candidates = output
 
-                        Log.note("PROBLEM: Unable to find {{type}} value: {{object}}.{{field_name}}: {{missing}} not in : {{existing}} (candidates={{candidates}})",{
+                        def shorten(emails):
+                            if len(emails)>5:
+                                return"["+str(len(target[field_name]))+" email addresses]"
+                            else:
+                                return CNV.object2JSON(emails)
+
+                        Log.note("PROBLEM: Unable to find CC: {{missing}} not in : {{existing}} (candidates={{candidates}})",{
                             "type":valueType,
                             "object":arrayDesc,
                             "field_name":field_name,
                             "missing":lost,
-                            "existing":"["+str(len(target[field_name]))+" email addresses]",
-                            "candidates":"["+str(len(details.candidates))+" email addresses]"
+                            "existing":shorten(target[field_name]),
+                            "candidates":shorten(details.candidates)
                         })
             else:
                 # PATTERN MATCH EMAIL ADDRESSES
                 for lost in diff:
-                    best_score=0.3
-                    best=Null
+                    best_score = 0.3
+                    best = Null
                     for found in output:
-                        score=Math.min([
+                        score = Math.min([
                             strings.edit_distance(found, lost),
-                            strings.edit_distance(found.split("@")[0], lost.split("@")[0])
+                            strings.edit_distance(found.split("@")[0], lost.split("@")[0]),
+                            strings.edit_distance(c_total[found], lost),
+                            strings.edit_distance(c_total[found].split("@")[0], lost.split("@")[0])
                         ])
                         if score<best_score:
                             best_score=score
@@ -856,13 +858,13 @@ class parse_bug_history_():
                     if best!=Null:
                         Log.note("UNCERTAIN ALIAS FOUND: {{lost}} == {{found}}", {
                             "lost":lost,
-                            "found":found
+                            "found":best
                         })
                         #DO NOT SAVE THE ALIAS, IT MAY BE WRONG
                         removed.add(best)
                         output.discard(best)
                     else:
-                        Log.note("PROBLEM Unable to find {{type}} value: {{object}}.{{field_name}}: ({{missing}}" + " not in : {{existing}})",{
+                        Log.note("PROBLEM Unable to pattern match {{type}} value: {{object}}.{{field_name}}: ({{missing}}" + " not in : {{existing}})",{
                             "type":valueType,
                             "object":arrayDesc,
                             "field_name":field_name,
@@ -902,7 +904,8 @@ class parse_bug_history_():
                 })
 
             if len(diff)>0:
-                Log.note("PROBLEM Unable to find {{type}} value: {{object}}.{{field_name}}: (All {{missing}}" + " not in : {{existing}})",{
+                Log.note("PROBLEM Unable to find {{type}} value in {{bug_id}}: {{object}}.{{field_name}}: (All {{missing}}" + " not in : {{existing}})",{
+                    "bug_id":target.bug_id,
                     "type":valueType,
                     "object":arrayDesc,
                     "field_name":field_name,
@@ -942,29 +945,29 @@ class parse_bug_history_():
         return nvl(alias, name)
 
     def add_alias(self, lost, found, timestamp):
-        # if found=="bugzilla@blakeross.com":
-        #     Log.note("hgi")
+        # if lost in ("david@krause.net"):
+        #     Log.debug()
 
 
         found_record = self.aliases[found.replace(".", "\.")]
         if found_record != Null:
-            found_record.last_seen = Math.max([found_record.last_seen, timestamp])
             new_canonical = found_record.canonical
+            found_record.last_seen = Math.max([found_record.last_seen, timestamp])
         else:
+            new_canonical = found
             found_record = {"last_seen": timestamp, "canonical": found}
             self.aliases[found.replace(".", "\.")] = found_record
-            new_canonical = found
 
         lost_record = self.aliases[lost.replace(".", "\.")]
         if lost_record != Null:
+            old_canonical = nvl(lost_record.canonical, lost)
             lost_record.canonical = new_canonical
             lost_record.last_seen = Math.max([lost_record.last_seen, timestamp])
             lost_record.candidates = Null
-            old_canonical = lost_record.canonical
         else:
+            old_canonical = lost
             lost_record = {"last_seen": timestamp, "canonical": new_canonical}
             self.aliases[lost.replace(".", "\.")] = lost_record
-            old_canonical=lost
 
         if old_canonical != new_canonical:
             for k, v in self.aliases.items():
@@ -975,14 +978,18 @@ class parse_bug_history_():
 
     def initializeAliases(self):
         try:
-            self.aliases=CNV.JSON2object(File(self.settings.alias_file).read())
+            try:
+                alias_json = File(self.settings.alias_file).read()
+            except Exception, e:
+                alias_json = "{}"
+            self.aliases = CNV.JSON2object(alias_json)
         except Exception, e:
             Log.error("Can not init aliases", e)
 
     def saveAliases(self):
-        for k,v in self.aliases.items():
+        for k, v in self.aliases.items():
             if v.candidates != Null:
-                v.candidates=Q.sort(v.candidates)
+                v.candidates = Q.sort(v.candidates)
         alias_json = CNV.object2JSON(self.aliases, pretty=True)
         File(self.settings.alias_file).write(alias_json)
 

@@ -117,7 +117,7 @@ class Log(object):
 
     #RUN ME FIRST TO SETUP THE THREADED LOGGING
     @staticmethod
-    def start(cls, settings=Null):
+    def start(settings=Null):
         ##http://victorlin.me/2012/08/good-logging-practice-in-python/
         if settings == Null: return
         if settings.log == Null: return
@@ -190,7 +190,19 @@ class Except(Exception):
 
 
 
-class Log_usingFile(Log):
+
+
+
+class BaseLog(object):
+    def write(self, template, params):
+        pass
+
+    def stop(self):
+        pass
+
+
+
+class Log_usingFile(BaseLog):
 
     def __init__(self, file):
         assert file != Null
@@ -209,7 +221,7 @@ class Log_usingFile(Log):
 
 
 #WRAP PYTHON CLASSIC logger OBJECTS
-class Log_usingLogger(Log):
+class Log_usingLogger(BaseLog):
     def __init__(self, settings):
         self.logger=logging.Logger("unique name", level=logging.INFO)
         self.logger.addHandler(make_log_from_settings(settings))
@@ -242,7 +254,7 @@ def make_log_from_settings(settings):
 
 
 
-class Log_usingStream(Log):
+class Log_usingStream(BaseLog):
     #stream CAN BE AN OBJCET WITH write() METHOD, OR A STRING
     #WHICH WILL eval() TO ONE
     def __init__(self, stream):
@@ -260,16 +272,19 @@ class Log_usingStream(Log):
         self.queue=Queue()
 
         def worker():
+            keep_running = True
             queue=self.queue
 
-            while True:
-                next_run=datetime.utcnow() + timedelta(seconds=1)
+            while keep_running:
+                next_run = datetime.utcnow() + timedelta(seconds=1)
                 logs = queue.pop_all()
                 if len(logs)>0:
                     lines=[]
                     for log in logs:
                         try:
                             if log==Thread.STOP:
+                                keep_running = False
+                                next_run = datetime.utcnow()
                                 break
                             lines.append(expand_template(log.get("template", Null), log.get("params", Null)))
                         except Exception, e:
@@ -304,7 +319,7 @@ class Log_usingStream(Log):
 
 
 
-class Log_usingThread(Log):
+class Log_usingThread(BaseLog):
     def __init__(self, logger):
         #DELAYED LOAD FOR THREADS MODULE
         from threads import Queue
@@ -345,7 +360,7 @@ class Log_usingThread(Log):
 
 
 
-class Log_usingMulti(Log):
+class Log_usingMulti(BaseLog):
     def __init__(self):
         self.many=[]
 
