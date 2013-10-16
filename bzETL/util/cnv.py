@@ -26,9 +26,9 @@ class CNV:
     """
 
     @staticmethod
-    def object2JSON(obj):
+    def object2JSON(obj, pretty=False):
         try:
-            return json_encoder.encode(obj)
+            return json_encoder.encode(obj, pretty=pretty)
         except Exception, e:
             Log.error("Can not encode into JSON: {{value}}", {"value":repr(obj)}, e)
 

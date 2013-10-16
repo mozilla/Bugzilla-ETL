@@ -50,7 +50,7 @@ class Fake_ES():
 
         self.data.dict.update(records)
 
-        data_as_json=json.dumps(json_scrub(self.data), indent=4, sort_keys=True, separators=(',', ': '))
+        data_as_json=CNV.object2JSON(self.data, pretty=True)
         File(self.filename).write(data_as_json)
         Log.note("{{num}} items added", {"num":len(records)})
 

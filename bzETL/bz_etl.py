@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 import functools
 from bzETL import parse_bug_history, transform_bugzilla
 from bzETL.extract_bugzilla import get_private_bugs, get_recent_private_attachments, get_recent_private_comments, get_comments
+from bzETL.util.basic import nvl
 from bzETL.util.maths import Math
 
 from extract_bugzilla import get_bugs, get_dependencies, get_flags, get_new_activities, get_bug_see_also, get_attachments, get_keywords, get_cc, get_bug_groups, get_duplicates
@@ -95,8 +96,10 @@ def etl(db, es, param):
     #USE MAIN THREAD TO SEND TO ES
     #output_queue IS A MULTI-THREADED QUEUE, SO THIS WILL BLOCK UNTIL THE 10K ARE READY
     for i, g in Q.groupby(output_queue, size=10000):
+        Log.note("write {{num}} block to es", {"num":len(g)})
         es.add({"id": x.id, "value": x} for x in g)
 
+    process.saveAliases()
     return "done"
 
 
@@ -109,11 +112,30 @@ def main(settings, es=Null, es_comments=Null):
     #MAKE HANDLES TO CONTAINERS
     try:
         with DB(settings.bugzilla) as db:
-            if settings.resume:
+            if settings.args.resume:
                 last_run_time = 0
-                current_run_time = datetime.utcnow() - timedelta(day=1)
+                current_run_time = datetime.utcnow() - timedelta(days=1)
                 if es == Null:
+                    if settings.es.alias == Null:
+                        settings.es.alias = settings.es.index
+                        temp = Q.run({
+                            "from":ElasticSearch(settings.es).get_aliases(),
+                            "select":"index",
+                            "where":lambda(r):r.alias==settings.es.alias,
+                            "sort":"index"
+                        })
+                        settings.es.index = temp[-1]
                     es = ElasticSearch(settings.es)
+                    es.set_refresh_interval(1)
+
+                    if settings.es_comments.alias == Null:
+                        settings.es_comments.alias = settings.es_comments.index
+                        settings.es_comments.index = Q.run({
+                            "from":ElasticSearch(settings.es_comments).get_aliases(),
+                            "select":"index",
+                            "where":lambda(r):r.alias==settings.es_comments.alias,
+                            "sort":"index"
+                        })[-1]
                     es_comments = ElasticSearch(settings.es_comments)
             elif settings.param.incremental:
                 last_run_time = long(File(settings.param.last_run_time).read())
@@ -143,10 +165,8 @@ def main(settings, es=Null, es_comments=Null):
             param.end_time = CNV.datetime2milli(datetime.utcnow())
             param.start_time = last_run_time
             param.alias_file = settings.param.alias_file
-            if settings.resume:
-                param.start = Math.floor(get_max_bug_id(es), settings.param.increment)
 
-            param.end = db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id
+
             param.allow_private_bugs=settings.param.allow_private_bugs
 
             private_bugs = get_private_bugs(db, param)
@@ -189,8 +209,12 @@ def main(settings, es=Null, es_comments=Null):
             ## MAIN ETL LOOP
             ########################################################################
 
+            end = nvl(settings.param.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
+            start = nvl(settings.param.start, 0)
+            if settings.args.resume:
+                start = nvl(settings.param.start, Math.floor(get_max_bug_id(es), settings.param.increment))
             #WE SHOULD SPLIT THIS OUT INTO PROCESSES FOR GREATER SPEED!!
-            for b in range(settings.param.start, param.end, settings.param.increment):
+            for b in range(start, end, settings.param.increment):
                 (min, max)=(b, b+settings.param.increment)
                 try:
                     bug_list=Q.select(db.query("""
@@ -225,6 +249,9 @@ def main(settings, es=Null, es_comments=Null):
                         "min":min,
                         "max":max
                     }, e)
+
+        if settings.es.alias != Null:
+            es.delete_all_but(settings.es.alias, settings.es.index)
 
         File(settings.param.last_run_time).write(unicode(CNV.datetime2milli(current_run_time)))
 

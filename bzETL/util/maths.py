@@ -63,8 +63,9 @@ class Math():
         x == floor(x, a) + mod(x, a)  FOR ALL a
         """
         if mod == Null:
-            mod=1
-        return int(math.floor(value))-mod(value, mod)
+            mod = 1
+        v = int(math.floor(value))
+        return v - (v % mod)
 
 
     #RETURN A VALUE CLOSE TO value, BUT WITH SHORTER len(unicode(value))<len(unicode(value)):

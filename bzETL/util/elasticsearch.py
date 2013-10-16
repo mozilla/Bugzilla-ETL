@@ -161,11 +161,16 @@ class ElasticSearch():
         else:
             interval = unicode(seconds) + "s"
 
-        ElasticSearch.put(
+        response=ElasticSearch.put(
             self.settings.host + ":" + unicode(
                 self.settings.port) + "/" + self.settings.index + "/_settings",
             data="{\"index.refresh_interval\":\"" + interval + "\"}"
         )
+
+        if response.content != '{"ok":true}':
+            Log.error("Can not set refresh interval ({{error}})", {
+                "error": response.content
+            })
 
 
     def search(self, query):

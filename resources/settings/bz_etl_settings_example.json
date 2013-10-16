@@ -2,7 +2,7 @@
 	"param":{
 		"start":0,
 		"increment":1000,
-		"alias_file":"./resources/data/bugzilla_aliases.txt",
+		"alias_file":"./resources/json/bugzilla_aliases.json",
 		"incremental":false,
 		"last_run_time":"./results/data/last_run_time.txt"
 	},

@@ -7,7 +7,7 @@
 ################################################################################
 
 
-# vim: set filetype=javascript ts=2 et sw=2: */
+
 # Workflow:
 # Create the current state object
 #
@@ -40,9 +40,12 @@
 # Used to split a flag into (type, status [,requestee])
 # Example: "review?(mreid@mozilla.com)" -> (review, ?, mreid@mozilla.com)
 # Example: "review-" -> (review, -)
+import json
 import re
 import math
-from bzETL.util import struct
+from bzETL.util import struct, strings
+from bzETL.util.basic import nvl
+from bzETL.util.jsons import json_scrub
 from transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS
 
 from bzETL.util.cnv import CNV
@@ -66,7 +69,7 @@ MAX_TIME = 9999999999000
 class parse_bug_history_():
 
     def __init__(self, settings, output_queue):
-        self.bzAliases = Null
+        self.aliases = Null
         self.startNewBug(struct.wrap({"bug_id":0, "modified_ts":0, "_merge_order":1}))
         self.prevActivityID = Null
         self.prev_row=Null
@@ -282,8 +285,8 @@ class parse_bug_history_():
         if row_in.field_name == "flagtypes_name":
             row_in.field_name = "flags"
 
-        multi_field_value = self.getMultiFieldValue(row_in.field_name, row_in.new_value)
-        multi_field_value_removed = parse_bug_history_.getMultiFieldValue(row_in.field_name, row_in.old_value)
+        multi_field_new_value = self.getMultiFieldValue(row_in.field_name, row_in.new_value)
+        multi_field_old_value = self.getMultiFieldValue(row_in.field_name, row_in.old_value)
 
         currActivityID = parse_bug_history_.uid(self.currBugID, row_in.modified_ts)
         if currActivityID != self.prevActivityID:
@@ -318,11 +321,11 @@ class parse_bug_history_():
             else:
 
                 if row_in.field_name in MULTI_FIELDS:
-                    a = attachment[row_in.field_name]
+                    total = attachment[row_in.field_name]
                     # Can have both added and removed values.
-                    a=self.removeValues(a, multi_field_value, "added", row_in.field_name, "attachment", attachment)
-                    a=self.addValues(a, multi_field_value_removed, "removed attachment", row_in.field_name, attachment)
-                    attachment[row_in.field_name]=a
+                    total=self.removeValues(total, multi_field_new_value, "added", row_in.field_name, "attachment", attachment, row_in.modified_ts)
+                    total=self.addValues(total, multi_field_old_value, "removed attachment", row_in.field_name, attachment)
+                    attachment[row_in.field_name]=total
                 else:
                     attachment[row_in.field_name] = row_in.old_value
                     self.currActivity.changes.append({
@@ -337,13 +340,11 @@ class parse_bug_history_():
                 # PROBLEM: WHEN GOING BACK IN HISTORY, AND THE ADDED VALUE IS NOT FOUND IN THE CURRENT
                 # STATE, IT IS STILL RECORDED (see above self.currActivity.changes.append...).  THIS MEANS
                 # WHEN GOING THROUGH THE CHANGES IN IN ORDER THE VALUE WILL EXIST, BUT IT SHOULD NOT
-                a = self.currBugState[row_in.field_name]
+                total = self.currBugState[row_in.field_name]
                 # Can have both added and removed values.
-                a = self.removeValues(a, multi_field_value, "added", row_in.field_name, "currBugState", self.currBugState)
-                a = self.addValues(a, multi_field_value_removed, "removed bug", row_in.field_name, self.currBugState)
-                self.currBugState[row_in.field_name]=a
-                if a == Null:
-                    Log.note("PROBLEM error")
+                total = self.removeValues(total, multi_field_new_value, "added", row_in.field_name, "currBugState", self.currBugState, row_in.modified_ts)
+                total = self.addValues(total, multi_field_old_value, "removed bug", row_in.field_name, self.currBugState)
+                self.currBugState[row_in.field_name]=total
             else:
                 # Replace current value
                 self.currBugState[row_in.field_name] = row_in.old_value
@@ -454,17 +455,11 @@ class parse_bug_history_():
 
                         # Handle the special change record that signals the creation of the attachment
                         if change.field_name == "attachment_added":
-
-
                             # This change only exists when the attachment has been added to the map, so no missing case needed.
                             att=self.currBugAttachmentsMap[unicode(attach_id)]
                             self.currBugState.attachments.append(att)
                             continue
                         else:
-
-                            # if currVersion.modified_ts != Null and currVersion.modified_ts==1227294880000:
-                            #     Log.note("")
-
                             # Attachment change
                             target = self.currBugAttachmentsMap[unicode(attach_id)]
                             # target.tada="test"+unicode(currVersion.modified_ts)
@@ -479,43 +474,27 @@ class parse_bug_history_():
                                 target = self.currBugState
                                 targetName = "currBugState"
 
-
-                    # if currVersion.modified_ts==1227294880000:
-                    #     target.tada2="test"
                     if change.field_name == "flags":
                         self.processFlagChange(target, change, currVersion.modified_ts, currVersion.modified_by)
-                    elif change.field_name not in MULTI_FIELDS:
+                    elif change.field_name in MULTI_FIELDS:
+                        a = target[change.field_name]
+                        multi_field_value = parse_bug_history_.getMultiFieldValue(change.field_name, change.new_value)
+                        multi_field_value_removed = parse_bug_history_.getMultiFieldValue(change.field_name, change.old_value)
+
+                        # This was a deletion, find and delete the value(s)
+                        a = self.removeValues(a, multi_field_value_removed, "removed", change.field_name, targetName, target, currVersion.modified_ts)
+                        # Handle addition(s) (if any)
+                        a = self.addValues(a, multi_field_value, "added", change.field_name, target)
+                        target[change.field_name]=a
+                    else:
+                        # Simple field change.
                         # Track the previous value
                         # Single-value field has changed in bug or attachment
                         # Make sure it's actually changing.  We seem to get change
                         # entries for attachments that show the current field value.
                         if target[change.field_name] != change.new_value:
                             self.setPrevious(target, change.field_name, target[change.field_name], currVersion.modified_ts)
-                        else:
-                            Log.note("PROBLEM Skipping fake change to " + targetName + ": "
-                                + CNV.object2JSON(target) + ", change: " + CNV.object2JSON(change))
 
-                    else:
-                        Log.note("Skipping previous_value for " + targetName
-                            + " multi-value field " + change.field_name)
-
-                    # Multi-value fields
-                    if change.field_name == "flags":
-                        # Already handled by "processFlagChange" above.
-                        Log.note("Skipping previously processed flag change")
-                    elif change.field_name in MULTI_FIELDS:
-                        a = target[change.field_name]
-                        multi_field_value = parse_bug_history_.getMultiFieldValue(change.field_name, change.new_value)
-                        multi_field_value_removed = parse_bug_history_.getMultiFieldValue(change.field_name,
-                                                                                          change.old_value)
-
-                        # This was a deletion, find and delete the value(s)
-                        a = self.removeValues(a, multi_field_value_removed, "removed", change.field_name, targetName, target)
-                        # Handle addition(s) (if any)
-                        a = self.addValues(a, multi_field_value, "added", change.field_name, target)
-                        target[change.field_name]=a
-                    else:
-                        # Simple field change.
                         target[change.field_name] = change.new_value
 
 
@@ -551,31 +530,22 @@ class parse_bug_history_():
                     Log.note("expecting a created_ts")
                 pass
             
-    def findFlag(self, aFlagList, aFlag):
-        existingFlag = self.findByKey(aFlagList, "value", aFlag.value)  # len([f for f in aFlagList if f.value==aFlag.value])>0   aFlag.value in Q.select(aFlagList, "value")
-        if existingFlag != Null:
-            return existingFlag
+    def findFlag(self, flag_list, flag):
+        for f in flag_list:
+            if f.value==flag.value:
+                return f
 
-        for eFlag in aFlagList:
             if (
-                eFlag.request_type == aFlag.request_type and
-                eFlag.request_status == aFlag.request_status and
-                aFlag.requestee != Null and
-                eFlag.requestee != Null and
-                (
-                    aFlag.requestee.lower() + "=" + eFlag.requestee.lower() in self.bzAliases or # Try both directions.
-                    eFlag.requestee.lower() + "=" + aFlag.requestee.lower() in self.bzAliases
-                )
+                f.request_type == flag.request_type and
+                f.request_status == flag.request_status and
+                self.alias(f.requestee)==self.alias(flag.requestee)
             ):
-                Log.note("Using bzAliases to match change '" + aFlag.value + "' to '" + eFlag.value + "'")
-                return eFlag
+                Log.note("Using bzAliases to match change '" + flag.value + "' to '" + f.value + "'")
+                return f
         return Null
 
-            
-    def processFlagChange(self, target, change, modified_ts, modified_by, reverse=False):
-        # if modified_ts==1227294880000:
-        #     target.tada2="test"
 
+    def processFlagChange(self, target, change, modified_ts, modified_by, reverse=False):
         addedFlags = parse_bug_history_.getMultiFieldValue("flags", change.new_value)
         removedFlags = parse_bug_history_.getMultiFieldValue("flags", change.old_value)
 
@@ -712,14 +682,6 @@ class parse_bug_history_():
             Log.error("", e)
         pv[ddField] = math.floor(duration_ms / (1000.0 * 60 * 60 * 24))
 
-    @staticmethod
-    def findByKey(aList, aField, aValue):
-        for item in aList:
-            if isinstance(item, basestring):
-                Log.error("expecting structure")
-            if item[aField] == aValue:
-                return item
-        return Null
 
 
 
@@ -794,7 +756,7 @@ class parse_bug_history_():
 
 
 
-    def removeValues(self, total, remove, valueType, field_name, arrayDesc, target):
+    def removeValues(self, total, remove, valueType, field_name, arrayDesc, target, timestamp):
         if field_name == "flags":
             removeMe=[]
             for v in remove:
@@ -802,10 +764,7 @@ class parse_bug_history_():
 
                 found=self.findFlag(total, flag)
                 if found != Null:
-                    if found is None:
-                        found=self.findFlag(total, flag)
-                        Log.error("problem")
-                    removeMe.append(CNV.object2JSON(found)) #FOR SOME REASON, REMOVAL BY OBJECT DOES NOT WORK
+                    removeMe.append(found.value) #FOR SOME REASON, REMOVAL BY OBJECT DOES NOT WORK
                 else:
                     Log.note("PROBLEM Unable to find {{type}} value: {{object}}.{{field_name}}: (All {{missing}}" + " not in : {{existing}})",{
                         "type":valueType,
@@ -815,18 +774,120 @@ class parse_bug_history_():
                         "existing":target[field_name]
                     })
 
-            total=[a for a in total if CNV.object2JSON(a) not in removeMe]
+            total=[a for a in total if a.value not in removeMe]
+
             if valueType=="added" and len(removeMe)>0:
                 try:
                     self.currActivity.changes.append({
                         "field_name": field_name,
-                        "new_value": u", ".join(Q.sort([CNV.JSON2object(r).value for r in removeMe])),
+                        "new_value": u", ".join(Q.sort(removeMe)),
                         "old_value": Null,
                         "attach_id": target.attach_id
                     })
                 except Exception, e:
                     Log.error("problem", e)
             return total
+        elif field_name == "cc":
+            # MAP CANONICAL TO EXISTING
+            c_total={self.alias(t):t for t in total}
+            k_total=set(c_total.keys())
+            c_remove={self.alias(r):r for r in remove}
+            k_remove=set(c_remove.keys())
+
+            removed = k_total & k_remove
+            diff = k_remove - k_total
+            output = k_total - k_remove
+
+            if u"m_mozilla@wickline.org" in diff:
+                Log.debug()
+
+            if not target.uncertain:
+                for lost in diff:
+                    details = self.aliases[lost.replace(".", "\.")]
+                    if details == Null:
+                        details = Struct()
+                        self.aliases[lost.replace(".", "\.")] = details
+
+                    if details.candidates == Null:
+                        details.candidates = output
+                    elif len(details.candidates)==0:
+                        #TRY AGAIN, FRESH THIS TIME
+                        details.candidates = output
+                    else:
+                        details.candidates = set(details.candidates) & output
+
+                    if len(details.candidates)==1:
+                        found=iter(details.candidates).next()
+
+                        Log.note("ALIAS FOUND: {{lost}} == {{found}}", {
+                            "lost":lost,
+                            "found":found
+                        })
+
+                        self.add_alias(lost, found, timestamp)
+                        removed.add(self.alias(lost))
+                        output.discard(found)
+                    else:
+                        if len(details.candidates)==0:
+                            Log.note("PROBLEM: EMPTY CANDIDATES!")
+                            details.candidates = output
+
+                        Log.note("PROBLEM: Unable to find {{type}} value: {{object}}.{{field_name}}: {{missing}} not in : {{existing}} (candidates={{candidates}})",{
+                            "type":valueType,
+                            "object":arrayDesc,
+                            "field_name":field_name,
+                            "missing":lost,
+                            "existing":"["+str(len(target[field_name]))+" email addresses]",
+                            "candidates":"["+str(len(details.candidates))+" email addresses]"
+                        })
+            else:
+                # PATTERN MATCH EMAIL ADDRESSES
+                for lost in diff:
+                    best_score=0.3
+                    best=Null
+                    for found in output:
+                        score=Math.min([
+                            strings.edit_distance(found, lost),
+                            strings.edit_distance(found.split("@")[0], lost.split("@")[0])
+                        ])
+                        if score<best_score:
+                            best_score=score
+                            best=found
+                    if best!=Null:
+                        Log.note("UNCERTAIN ALIAS FOUND: {{lost}} == {{found}}", {
+                            "lost":lost,
+                            "found":found
+                        })
+                        #DO NOT SAVE THE ALIAS, IT MAY BE WRONG
+                        removed.add(best)
+                        output.discard(best)
+                    else:
+                        Log.note("PROBLEM Unable to find {{type}} value: {{object}}.{{field_name}}: ({{missing}}" + " not in : {{existing}})",{
+                            "type":valueType,
+                            "object":arrayDesc,
+                            "field_name":field_name,
+                            "missing":lost,
+                            "existing":target[field_name]
+                        })
+
+            if valueType=="added":
+                # DURING WALK BACK IN TIME, WE POPULATE THE changes
+                try:
+                    final_removed = [c_total[r] for r in removed]
+                    self.currActivity.changes.append({
+                        "field_name": field_name,
+                        "new_value": u", ".join(map(unicode, Q.sort(final_removed))),
+                        "old_value": Null,
+                        "attach_id": target.attach_id
+                    })
+                except Exception, e:
+                    Log.error("issues", e)
+
+
+            if "Null" in output:
+                Log.note("PROBLEM error")
+
+            return {c_total[o] for o in output}
         else:
             removed = total & remove
             diff = remove - total
@@ -867,19 +928,63 @@ class parse_bug_history_():
 
         return {value}
 
-    
+
+    def alias(self, name):
+        if name == Null:
+            return Null
+        alias=self.aliases[name.replace(".", "\.")].canonical
+
+        if alias == Null and name.endswith("@formerly-netscape.com.tld"):
+            canonical = name.replace("@formerly-netscape.com.tld", "@netscape.com")
+            self.add_alias(name, canonical, 0)
+            return canonical
+
+        return nvl(alias, name)
+
+    def add_alias(self, lost, found, timestamp):
+        # if found=="bugzilla@blakeross.com":
+        #     Log.note("hgi")
+
+
+        found_record = self.aliases[found.replace(".", "\.")]
+        if found_record != Null:
+            found_record.last_seen = Math.max([found_record.last_seen, timestamp])
+            new_canonical = found_record.canonical
+        else:
+            found_record = {"last_seen": timestamp, "canonical": found}
+            self.aliases[found.replace(".", "\.")] = found_record
+            new_canonical = found
+
+        lost_record = self.aliases[lost.replace(".", "\.")]
+        if lost_record != Null:
+            lost_record.canonical = new_canonical
+            lost_record.last_seen = Math.max([lost_record.last_seen, timestamp])
+            lost_record.candidates = Null
+            old_canonical = lost_record.canonical
+        else:
+            lost_record = {"last_seen": timestamp, "canonical": new_canonical}
+            self.aliases[lost.replace(".", "\.")] = lost_record
+            old_canonical=lost
+
+        if old_canonical != new_canonical:
+            for k, v in self.aliases.items():
+                if v.canonical == old_canonical:
+                    v.canonical = new_canonical
+
+
+
     def initializeAliases(self):
         try:
-            BZ_ALIASES = File(self.settings.alias_file).read().split("\n")
-            self.bzAliases ={}
-            Log.note("Initializing aliases")
-            for alias in [s.split(";")[0].strip() for s in BZ_ALIASES]:
-                if self.settings.debug: Log.note("Adding alias '" + alias + "'")
-                self.bzAliases[alias] = True
+            self.aliases=CNV.JSON2object(File(self.settings.alias_file).read())
         except Exception, e:
             Log.error("Can not init aliases", e)
 
-
+    def saveAliases(self):
+        for k,v in self.aliases.items():
+            if v.candidates != Null:
+                v.candidates=Q.sort(v.candidates)
+        alias_json = CNV.object2JSON(self.aliases, pretty=True)
+        File(self.settings.alias_file).write(alias_json)
 
 
 
