@@ -324,8 +324,8 @@ def compare_both(candidate, reference, settings, some_bugs):
                         "modified_ts"
                     )
 
-                can = json.dumps(json_scrub(versions), indent=4, sort_keys=True, separators=(',', ': '))
-                ref = json.dumps(json_scrub(ref_versions), indent=4, sort_keys=True, separators=(',', ': '))
+                can = CNV.object2JSON(versions, pretty=True)
+                ref = CNV.object2JSON(ref_versions, pretty=True)
                 if can != ref:
                     found_errors=True
                     File(try_dir + unicode(bug_id) + ".txt").write(can)
@@ -360,14 +360,6 @@ def main():
         Log.start(settings.debug)
 
         with Timer("Run all tests"):
-            file=File("C:/Users/klahnakoski/git\Bugzilla-ETL/tests/resources/private_reference_es.json")
-            data_as_json=json.dumps(json_scrub(CNV.JSON2object(file.read())), indent=4, sort_keys=True, separators=(',', ': '))
-            file.write(data_as_json)
-
-            file=File("C:/Users/klahnakoski/git/Bugzilla-ETL/tests/resources/public_reference_es.json")
-            data_as_json=json.dumps(json_scrub(CNV.JSON2object(file.read())), indent=4, sort_keys=True, separators=(',', ': '))
-            file.write(data_as_json)
-
             test_specific_bugs(settings)
             test_private_etl(settings)
             test_public_etl(settings)

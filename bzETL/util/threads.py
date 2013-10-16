@@ -5,11 +5,11 @@
 ################################################################################
 ## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 ################################################################################
-
-
+from datetime import datetime
 
 import threading
 import thread
+import time
 from bzETL.util.struct import Null
 
 
@@ -76,6 +76,24 @@ class Queue():
                 self.lock.wait()
             return Thread.STOP
 
+    def pop_all(self):
+        """
+        NON-BLOCKING POP ALL IN QUEUE, IF ANY
+        """
+        with self.lock:
+            if not self.keep_running:
+                return [Thread.STOP]
+            if len(self.queue) == 0:
+                return []
+
+            for v in self.queue:
+                if v == Thread.STOP:  #SENDING A STOP INTO THE QUEUE IS ALSO AN OPTION
+                    self.keep_running = False
+
+            output = list(self.queue)
+            del self.queue[:]       #CLEAR
+            return output
+
     def close(self):
         with self.lock:
             self.keep_running=False
@@ -129,8 +147,14 @@ class Thread():
     """
     join() ENHANCED TO ALLOW CAPTURE OF CTRL-C, AND RETURN POSSIBLE THREAD EXCEPTIONS
     run() ENHANCED TO CAPTURE EXCEPTIONS
-
     """
+
+    num_threads=0
+    STOP="stop"
+    TIMEOUT="TIMEOUT"
+
+
+
     def __init__(self, name, target, *args, **kwargs):
         self.name = name
         self.target = target
@@ -155,6 +179,8 @@ class Thread():
         except Exception, e:
             with self.synch_lock:
                 self.response={"exception":e}
+            from .logs import Log
+            Log.error("Problem in thread", e)
         finally:
             del self.target, self.args, self.kwargs
 
@@ -184,7 +210,7 @@ class Thread():
     @staticmethod
     def run(target, *args, **kwargs):
         if hasattr(target, "func_name") and target.func_name != "<lambda>":
-            name = "thread-" + target.func_name
+            name = "thread-" + str(Thread.num_threads) + " (" + target.func_name + ")"
         else:
             name = "thread-" + str(Thread.num_threads)
 
@@ -194,11 +220,15 @@ class Thread():
         output.start()
         return output
 
+    @staticmethod
+    def sleep(seconds=None, till=None):
+        if seconds is not None:
+            time.sleep(seconds)
+        if till is not None:
+            duration=(till-datetime.utcnow()).total_seconds()
+            if duration>0:
+                time.sleep(duration)
 
-
-Thread.num_threads=0
-Thread.STOP="stop"
-Thread.TIMEOUT="TIMEOUT"
 
 
 

@@ -46,7 +46,10 @@ class Struct(dict):
             key=key.replace("\\.", "\a")
             seq=[k.replace("\a", ".") for k in key.split(".")]
             for n in seq:
-                d=d[n]
+                d=d.get(n, None)
+                if d is None:
+                    return Null
+                d=unwrap(d)
             return wrap(d)
 
         return wrap(d.get(key, Null))

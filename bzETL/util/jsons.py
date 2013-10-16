@@ -36,7 +36,10 @@ class PyPyJSONEncoder(object):
     def __init__(self):
         object.__init__(self)
 
-    def encode(self, value):
+    def encode(self, value, pretty=False):
+        if pretty:
+            return json.dumps(json_scrub(value), indent=4, sort_keys=True, separators=(',', ': '))
+
         _buffer = StringBuilder(1024)
         _value2json(value, _buffer.append)
         output = _buffer.build()
@@ -47,7 +50,10 @@ class cPythonJSONEncoder(object):
     def __init__(self):
         object.__init__(self)
 
-    def encode(self, value):
+    def encode(self, value, pretty=False):
+        if pretty:
+            return json.dumps(json_scrub(value), indent=4, sort_keys=True, separators=(',', ': '))
+
         return json.dumps(json_scrub(value))
 
 

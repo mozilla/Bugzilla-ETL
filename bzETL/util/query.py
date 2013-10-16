@@ -42,8 +42,12 @@ class Q:
             w = query.where
             _from = Q.filter(_from, w)
 
+        if query.sort != Null:
+            _from = Q.sort(_from, query.sort)
+
         if query.select != Null:
             _from = Q.select(_from, query.select)
+
 
         return _from
 

@@ -9,6 +9,7 @@
 
 
 import argparse
+from bzETL.util import struct
 from bzETL.util.basic import listwrap
 from .cnv import CNV
 from .struct import Null
@@ -37,8 +38,10 @@ class startup():
             args = d.copy()
             name = args.name
             args.name = Null
-            parser.add_argument(*(listwrap(name).list), **(args.dict))
-        return parser.parse_args()
+            parser.add_argument(*listwrap(name).list, **args.dict)
+        namespace=parser.parse_args()
+        output={k: getattr(namespace, k) for k in vars(namespace)}
+        return struct.wrap(output)
 
 
 
@@ -77,4 +80,5 @@ class startup():
                 })
             json = settings_file.read()
             settings = CNV.JSON2object(json, flexible=True)
+            settings.args = args
             return settings
