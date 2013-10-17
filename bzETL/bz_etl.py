@@ -79,26 +79,30 @@ def etl(db, es, param):
 
     output_queue = Queue()
     #TODO: USE SEPARATE THREAD TO SORT AND PROCESS BUG CHANGE RECORDS
-    process = parse_bug_history_(param, output_queue)
+    def process_records(param):
+        process = parse_bug_history_(param, output_queue)
 
-    sorted = Q.sort(db_results, [
-        "bug_id",
-        "_merge_order",
-        {"field":"modified_ts", "sort":-1},
-        "modified_by"
-    ])
-    for s in sorted:
-        process.processRow(s)
-    process.processRow(struct.wrap({"bug_id": parse_bug_history.STOP_BUG, "_merge_order": 1}))
-    output_queue.add(Thread.STOP)
+        sorted = Q.sort(db_results, [
+            "bug_id",
+            "_merge_order",
+            {"field":"modified_ts", "sort":-1},
+            "modified_by"
+        ])
+        for s in sorted:
+            process.processRow(s)
+        process.processRow(struct.wrap({"bug_id": parse_bug_history.STOP_BUG, "_merge_order": 1}))
+        output_queue.add(Thread.STOP)
+        process.saveAliases()
+
+    process_thread=Thread.run(process_records, param)
 
     #USE MAIN THREAD TO SEND TO ES
     #output_queue IS A MULTI-THREADED QUEUE, SO THIS WILL BLOCK UNTIL THE 10K ARE READY
-    for i, g in Q.groupby(output_queue, size=10000):
-        Log.note("write {{num}} block to es", {"num":len(g)})
+    for i, g in Q.groupby(output_queue, size=5000):
+        Log.note("write {{num}} records to es", {"num":len(g)})
         es.add({"id": x.id, "value": x} for x in g)
 
-    process.saveAliases()
+    process_thread.join()
     return "done"
 
 
@@ -228,7 +232,7 @@ def main(settings, es=Null, es_comments=Null):
                         """, {
                             "min":min,
                             "max":max,
-                            "private_bugs":SQL(private_bugs),
+                            "private_bugs": SQL(Q.filter(private_bugs, lambda r: min <= r < max)),
                             "start_time":param.start_time
                     }), u"bug_id")
 
@@ -307,7 +311,7 @@ def start():
         Log.start(settings.debug)
         main(settings)
     except Exception, e:
-        Log.error("Problems exist", e)
+        Log.error("Can not start", e)
     finally:
         Log.stop()
 

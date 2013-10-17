@@ -259,8 +259,11 @@ class Q:
                 left = nvl(left, Struct())
                 right = nvl(right, Struct())
                 for f in formal:
-                    result = f["sort"] * cmp(left[f["field"]], right[f["field"]])
-                    if result != 0: return result
+                    try:
+                        result = f["sort"] * cmp(left[f["field"]], right[f["field"]])
+                        if result != 0: return result
+                    except Exception, e:
+                        Log.error("problem with compare", e)
                 return 0
 
             if isinstance(data, list):
@@ -285,6 +288,7 @@ class Q:
                 if v != Null and v != Null:
                     total += v
         return total
+
 
     @staticmethod
     def filter(data, where):

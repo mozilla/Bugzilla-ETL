@@ -43,16 +43,12 @@ class Queue():
     def __iter__(self):
         while self.keep_running:
             try:
-                value=self.queue.pop(0)
-                if value==Thread.STOP:  #SENDING A STOP INTO THE QUEUE IS ALSO AN OPTION
-                    self.keep_running=False
-                    raise StopIteration()
-                yield value
-            except StopIteration:
-                pass
+                value=self.pop()
+                if value!=Thread.STOP:
+                    yield value
             except Exception, e:
                 from .logs import Log
-                Log.warning("Tell me about what happends here", e)
+                Log.warning("Tell me about what happend here", e)
 
     def add(self, value):
         with self.lock:
