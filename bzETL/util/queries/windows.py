@@ -80,7 +80,7 @@ class Stats(WindowFunction):
 class Min(WindowFunction):
     def __init__(self):
         object.__init__(self)
-        self.total = multiset()
+        self.total = Multiset()
 
 
     def add(self, value):
@@ -100,7 +100,7 @@ class Min(WindowFunction):
 class Max(WindowFunction):
     def __init__(self):
         object.__init__(self)
-        self.total = multiset()
+        self.total = Multiset()
 
 
     def add(self, value):

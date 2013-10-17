@@ -11,7 +11,7 @@ import StringIO
 import datetime
 import re
 import time
-from bzETL.util.multiset import multiset
+from .multiset import Multiset
 from .jsons import json_decoder, json_encoder
 from .logs import Log
 import struct
@@ -97,11 +97,11 @@ class CNV:
 
 
     @staticmethod
-    def dict2multiset(dic):
+    def dict2Multiset(dic):
         if dic == Null:
             return Null
 
-        output = multiset()
+        output = Multiset()
         output.dic = struct.unwrap(dic).copy()
         return output
 

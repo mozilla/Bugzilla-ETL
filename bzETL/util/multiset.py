@@ -9,7 +9,7 @@ from .struct import Null
 
 from .logs import Log
 
-class multiset():
+class Multiset():
 
     def __init__(self, list=Null, key_field=Null, count_field=Null):
         if not key_field and not count_field:

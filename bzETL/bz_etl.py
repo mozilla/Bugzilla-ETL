@@ -15,6 +15,7 @@ from bzETL import parse_bug_history, transform_bugzilla
 from bzETL.extract_bugzilla import get_private_bugs, get_recent_private_attachments, get_recent_private_comments, get_comments
 from bzETL.util.basic import nvl
 from bzETL.util.maths import Math
+from bzETL.util.multithread import Multithread
 
 from extract_bugzilla import get_bugs, get_dependencies, get_flags, get_new_activities, get_bug_see_also, get_attachments, get_keywords, get_cc, get_bug_groups, get_duplicates
 from parse_bug_history import parse_bug_history_
@@ -23,14 +24,16 @@ from bzETL.util.logs import Log
 from bzETL.util.struct import Struct, Null
 from bzETL.util.files import File
 from bzETL.util.startup import startup
-from bzETL.util.threads import Queue, Thread, AllThread
+from bzETL.util.threads import Queue, Thread, AllThread, Lock
 from bzETL.util.cnv import CNV
 from bzETL.util.elasticsearch import ElasticSearch
 from bzETL.util.query import Q
 from bzETL.util.db import DB, SQL
 
 
+db_cache_lock=Lock()
 db_cache = []
+comment_db_cache_lock=Lock()
 comment_db_cache = []
 
 #HERE ARE ALL THE FUNCTIONS WE WANT TO RUN, IN PARALLEL
@@ -51,59 +54,60 @@ get_stuff_from_bugzilla = [
 
 def etl_comments(db, es, param):
     # CONNECTIONS ARE EXPENSIVE, CACHE HERE
-    if len(comment_db_cache) == 0:
-        comment_db_cache.append(DB(db))
+    with comment_db_cache_lock:
+        if len(comment_db_cache) == 0:
+            comment_db_cache.append(DB(db))
 
-    def temp():
+    with comment_db_cache_lock:
         comments=get_comments(comment_db_cache[0], param)
-        es.add([{"id":c.comment_id, "value":c} for c in comments])
-    return Thread.run(temp)
+    es.add([{"id":c.comment_id, "value":c} for c in comments])
 
+
+
+
+def etl(db, output_queue, param):
+    """
+    PROCESS RANGE, AS SPECIFIED IN param AND PUSH
+    BUG VERSION RECORDS TO output_queue
+    """
+
+    # CONNECTIONS ARE EXPENSIVE, CACHE HERE
+    with db_cache_lock:
+        if len(db_cache) == 0:
+            db_cache.extend([DB(db) for f in get_stuff_from_bugzilla])
+
+    db_results=Queue()
+    with db_cache_lock:
+        # ASYMMETRIC MULTI THREADING TO GET RECORDS FROM DB
+        with AllThread() as all:
+            for i,f in enumerate(get_stuff_from_bugzilla):
+                def process(target, db, param):
+                    db_results.extend(target(db, param))
+
+                all.add(process, f, db_cache[i], param)
+    db_results.add(Thread.STOP)
+
+    sorted = Q.sort(db_results, [
+        "bug_id",
+        "_merge_order",
+        {"field":"modified_ts", "sort":-1},
+        "modified_by"
+    ])
+
+    process = parse_bug_history_(param, output_queue)
+    for s in sorted:
+        process.processRow(s)
+    process.processRow(struct.wrap({"bug_id": parse_bug_history.STOP_BUG, "_merge_order": 1}))
+    process.saveAliases()
 
 
 #MIMIC THE KETTLE GRAPHICAL PROGRAM
-def etl(db, es, param):
-    # CONNECTIONS ARE EXPENSIVE, CACHE HERE
-    if len(db_cache) == 0:
-        db_cache.extend([DB(db) for f in get_stuff_from_bugzilla])
+def run_both_etl(db, output_queue, es_comments, param):
+    comment_thread=Thread.run(etl_comments, db, es_comments, param)
+    process_thread=Thread.run(etl, db, output_queue, param)
 
-    # ASYMMETRIC MULTI THREADING
-    db_results=Queue()
-    with AllThread() as all:
-        for i,f in enumerate(get_stuff_from_bugzilla):
-            def process(target, db, param):
-                db_results.extend(target(db, param))
-
-            all.add(process, f, db_cache[i], param)
-    db_results.add(Thread.STOP)
-
-    output_queue = Queue()
-    #TODO: USE SEPARATE THREAD TO SORT AND PROCESS BUG CHANGE RECORDS
-    def process_records(param):
-        process = parse_bug_history_(param, output_queue)
-
-        sorted = Q.sort(db_results, [
-            "bug_id",
-            "_merge_order",
-            {"field":"modified_ts", "sort":-1},
-            "modified_by"
-        ])
-        for s in sorted:
-            process.processRow(s)
-        process.processRow(struct.wrap({"bug_id": parse_bug_history.STOP_BUG, "_merge_order": 1}))
-        output_queue.add(Thread.STOP)
-        process.saveAliases()
-
-    process_thread=Thread.run(process_records, param)
-
-    #USE MAIN THREAD TO SEND TO ES
-    #output_queue IS A MULTI-THREADED QUEUE, SO THIS WILL BLOCK UNTIL THE 10K ARE READY
-    for i, g in Q.groupby(output_queue, size=5000):
-        Log.note("write {{num}} records to es", {"num":len(g)})
-        es.add({"id": x.id, "value": x} for x in g)
-
+    comment_thread.join()
     process_thread.join()
-    return "done"
 
 
 def main(settings, es=Null, es_comments=Null):
@@ -168,8 +172,6 @@ def main(settings, es=Null, es_comments=Null):
             param.end_time = CNV.datetime2milli(datetime.utcnow())
             param.start_time = last_run_time
             param.alias_file = settings.param.alias_file
-
-
             param.allow_private_bugs=settings.param.allow_private_bugs
 
             private_bugs = get_private_bugs(db, param)
@@ -216,42 +218,55 @@ def main(settings, es=Null, es_comments=Null):
             start = nvl(settings.param.start, 0)
             if settings.args.resume:
                 start = nvl(settings.param.start, Math.floor(get_max_bug_id(es), settings.param.increment))
-            #WE SHOULD SPLIT THIS OUT INTO PROCESSES FOR GREATER SPEED!!
-            for b in range(start, end, settings.param.increment):
-                (min, max)=(b, b+settings.param.increment)
-                try:
-                    bug_list=Q.select(db.query("""
-                        SELECT
-                            bug_id
-                        FROM
-                            bugs
-                        WHERE
-                            delta_ts >= CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific') AND
-                            ({{min}} <= bug_id AND bug_id < {{max}}) AND
-                            bug_id not in {{private_bugs}}
-                        """, {
+
+            output_queue = Queue()
+
+            def push_to_es():
+                #output_queue IS A MULTI-THREADED QUEUE, SO THIS WILL BLOCK UNTIL THE 5K ARE READY
+                for i, g in Q.groupby(output_queue, size=5000):
+                    Log.note("write {{num}} records to es", {"num":len(g)})
+                    es.add({"id": x.id, "value": x} for x in g)
+
+            with Thread.run(push_to_es):
+                #TWO WORKERS IS MORE THAN ENOUGH FOR A SINGLE THREAD
+                # with Multithread([run_both_etl, run_both_etl]) as workers:
+                for b in range(start, end, settings.param.increment):
+                    (min, max)=(b, b+settings.param.increment)
+                    try:
+                        bug_list=Q.select(db.query("""
+                            SELECT
+                                bug_id
+                            FROM
+                                bugs
+                            WHERE
+                                delta_ts >= CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific') AND
+                                ({{min}} <= bug_id AND bug_id < {{max}}) AND
+                                bug_id not in {{private_bugs}}
+                            """, {
+                                "min":min,
+                                "max":max,
+                                "private_bugs": SQL(set(Q.filter(private_bugs, lambda r: min <= r < max)) | {0}),
+                                "start_time":param.start_time
+                        }), u"bug_id")
+
+                        if len(bug_list) == 0:
+                            continue
+
+                        param.bug_list=SQL(bug_list)
+                        run_both_etl(**{
+                            "db":db,
+                            "output_queue":output_queue,
+                            "es_comments":es_comments,
+                            "param":param.copy()
+                        })
+
+                    except Exception, e:
+                        Log.warning("Problem with dispatch loop in range [{{min}}, {{max}})", {
                             "min":min,
-                            "max":max,
-                            "private_bugs": SQL(Q.filter(private_bugs, lambda r: min <= r < max)),
-                            "start_time":param.start_time
-                    }), u"bug_id")
+                            "max":max
+                        }, e)
 
-                    if len(bug_list) == 0:
-                        continue
-
-                    param.bug_list=SQL(bug_list)
-
-                    comment_thread=etl_comments(db, es_comments, param)
-                    etl(db, es, param)
-                    comment_thread.join()
-
-
-
-                except Exception, e:
-                    Log.warning("Problem with etl in range [{{min}}, {{max}})", {
-                        "min":min,
-                        "max":max
-                    }, e)
+                output_queue.add(Thread.STOP)
 
         if settings.es.alias != Null:
             es.delete_all_but(settings.es.alias, settings.es.index)

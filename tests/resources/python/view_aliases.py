@@ -1,3 +1,4 @@
+from bzETL.util import struct
 from bzETL.util.cnv import CNV
 from bzETL.util.files import File
 from bzETL.util.logs import Log
@@ -11,7 +12,7 @@ def main(settings):
     file=File(settings.param.alias_file)
     aliases=CNV.JSON2object(file.read())
     for v in aliases.values():
-        v.candidates=CNV.dict2multiset(v.candidates)
+        v.candidates=CNV.dict2Multiset(v.candidates)
 
     data=[
         {
@@ -22,9 +23,24 @@ def main(settings):
         if d.canonical != Null and n!=d.canonical
     ]
 
+
+
+
     sorted=Q.sort(data, "found")
     for s in sorted:
         Log.note("{{found}} == {{lost}}", s)
+
+
+    clean={
+        n: d.canonical
+        for n, d in aliases.items()
+        if d.canonical != Null and n!=d.canonical and n!=""
+    }
+
+    rev_clean=struct.inverse(clean)
+    Log.note(CNV.object2JSON(rev_clean, pretty=True))
+
+
 
 def start():
     try:
