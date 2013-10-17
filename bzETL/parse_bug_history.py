@@ -40,13 +40,11 @@
 # Used to split a flag into (type, status [,requestee])
 # Example: "review?(mreid@mozilla.com)" -> (review, ?, mreid@mozilla.com)
 # Example: "review-" -> (review, -)
-import json
 import re
 import math
 from bzETL.util import struct, strings
 from bzETL.util.basic import nvl
-from bzETL.util.jsons import json_scrub
-from bzETL.util.multiset import multiset
+from bzETL.util.multiset import Multiset
 from transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS
 
 from bzETL.util.cnv import CNV
@@ -808,7 +806,7 @@ class parse_bug_history_():
                     details.last_seen = Math.max([details.last_seen, timestamp])
 
                     if not details.candidates:
-                        details.candidates = multiset(output)
+                        details.candidates = Multiset(output)
                     else:
                         details.candidates.extend(output)
 
@@ -959,10 +957,6 @@ class parse_bug_history_():
         return nvl(alias, name)
 
     def add_alias(self, lost, found, timestamp):
-        # if lost in ("david@krause.net"):
-        #     Log.debug()
-
-
         found_record = self.aliases[found.replace(".", "\.")]
         if found_record != Null:
             new_canonical = nvl(found_record.canonical, found)
@@ -986,6 +980,11 @@ class parse_bug_history_():
         if old_canonical != new_canonical:
             for k, v in self.aliases.items():
                 if v.canonical == old_canonical:
+                    Log.note("ALIAS REMAPPED: {{alias}}->{{old}} to {{alias}}->{{new}}",{
+                        "alias":k,
+                        "old":old_canonical,
+                        "new":new_canonical
+                    })
                     v.canonical = new_canonical
 
 
@@ -999,7 +998,7 @@ class parse_bug_history_():
             self.aliases = CNV.JSON2object(alias_json)
 
             for v in self.aliases.values():
-                v.candidates=CNV.dict2multiset(v.candidates)
+                v.candidates=CNV.dict2Multiset(v.candidates)
         except Exception, e:
             Log.error("Can not init aliases", e)
 
@@ -1008,7 +1007,8 @@ class parse_bug_history_():
             v.candidates=CNV.multiset2dict(v.candidates)
 
         alias_json = CNV.object2JSON(self.aliases, pretty=True)
-        File(self.settings.alias_file).write(alias_json)
+        file = File(self.settings.alias_file)
+        File(file.backup_name()).write(alias_json)
 
 
 
@@ -1018,18 +1018,23 @@ def clear_winner(candidates):
     """
     RETURN THE ELEMENT THAT HAS CLEARLY MORE HITS THAN THE OTHERS
     """
-    if candidates == Null:
-        return False
+    if candidates == Null or not candidates.keys():
+        return Null
 
-    if not isinstance(candidates, multiset):
+    if not isinstance(candidates, Multiset):
         Log.error("Expecting multiset")
 
     ordered=Q.sort([{"k":k, "c":c} for k, c in candidates.dic.items()], "c")
-    if not ordered:
-        return Null
-    elif len(ordered) == 1 and ordered[0]["c"] >= CLEARLY:
+    best=ordered[-1]
+
+    # SOME EMAIL ADDRESSES MATCH TOO WELL
+    clearly = CLEARLY
+    # if best["k"] in ("reidr@pobox.com"):
+    #     clearly += 2
+
+    if len(ordered) == 1 and best["c"] >= clearly:
         return ordered[-1]["k"]
-    elif len(ordered) > 1 and ordered[-1]["c"] >= ordered[-2]["c"] + CLEARLY:
+    elif len(ordered) > 1 and best["c"] >= ordered[-2]["c"] + clearly:
         return ordered[-1]["k"]
     else:
         return Null

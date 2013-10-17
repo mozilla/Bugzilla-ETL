@@ -14,7 +14,6 @@ import sys
 from .basic import listwrap, nvl
 
 import struct, threads
-from .files import File
 from .strings import indent, expand_template
 from .threads import Thread
 from .struct import Null
@@ -206,6 +205,8 @@ class Log_usingFile(BaseLog):
 
     def __init__(self, file):
         assert file != Null
+
+        from files import File
         self.file=File(file)
         if self.file.exists:
             self.file.backup()
@@ -215,6 +216,7 @@ class Log_usingFile(BaseLog):
 
 
     def write(self, template, params):
+        from files import File
         with self.file_lock:
             File(self.filename).append(expand_template(template, params))
 
@@ -243,6 +245,7 @@ def make_log_from_settings(settings):
 
     #IF WE NEED A FILE, MAKE SURE DIRECTORY EXISTS
     if settings.filename != Null:
+        from files import File
         f = File(settings.filename)
         if not f.parent.exists:
             f.parent.create()

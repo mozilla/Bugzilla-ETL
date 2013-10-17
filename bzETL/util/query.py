@@ -12,7 +12,7 @@ from .basic import nvl, listwrap
 import struct
 from .strings import indent, expand_template
 from .struct import StructList, Struct, Null
-from .multiset import multiset
+from .multiset import Multiset
 
 
 # A COLLECTION OF DATABASE OPERATORS (RELATIONAL ALGEBRA OPERATORS)
@@ -395,7 +395,7 @@ def groupby_size(data, size):
         i += 1
 
 
-def groupby_multiset(data, min_size, max_size):
+def groupby_Multiset(data, min_size, max_size):
     # GROUP multiset BASED ON POPULATION OF EACH KEY, TRYING TO STAY IN min/max LIMITS
     if min_size == Null: min_size = 0
 
@@ -426,10 +426,10 @@ def groupby_min_max_size(data, min_size=0, max_size=Null, ):
 
     if isinstance(data, list):
         return [(i, data[i:i + max_size]) for i in range(0, len(data), max_size)]
-    elif not isinstance(data, multiset):
+    elif not isinstance(data, Multiset):
         return groupby_size(data, max_size)
     else:
-        return groupby_multiset(data, min_size, max_size)
+        return groupby_Multiset(data, min_size, max_size)
 
 
 class Cube():

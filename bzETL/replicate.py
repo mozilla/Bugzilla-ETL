@@ -92,7 +92,7 @@ def get_pending(es, since):
     if len(result.facets.default.terms) >= 200000:
         Log.error("Can not handle more than 200K bugs changed")
 
-    pending_bugs = multiset(
+    pending_bugs = Multiset(
         result.facets.default.terms,
         key_field="term",
         count_field="count"

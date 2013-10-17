@@ -159,6 +159,14 @@ class Thread():
         self.response = Null
         self.synch_lock=Lock()
 
+
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.join()
+
     def start(self):
         try:
             self.thread=thread.start_new_thread(Thread._run, (self, ))

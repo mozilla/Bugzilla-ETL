@@ -264,3 +264,13 @@ def unwrap(v):
     if v == Null:
         return None
     return v
+
+def inverse(d):
+    """
+    reverse the k:v pairs
+    """
+    output = {}
+    for k, v in unwrap(d).iteritems():
+        output[v] = output.get(v, [])
+        output[v].append(k)
+    return wrap(output)
