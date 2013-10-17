@@ -10,6 +10,8 @@ def main(settings):
 
     file=File(settings.param.alias_file)
     aliases=CNV.JSON2object(file.read())
+    for v in aliases.values():
+        v.candidates=CNV.dict2multiset(v.candidates)
 
     data=[
         {

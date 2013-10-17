@@ -11,6 +11,7 @@ import StringIO
 import datetime
 import re
 import time
+from bzETL.util.multiset import multiset
 from .jsons import json_decoder, json_encoder
 from .logs import Log
 import struct
@@ -93,6 +94,22 @@ class CNV:
     def milli2datetime(u):
         return datetime.datetime.utcfromtimestamp(u/1000)
 
+
+
+    @staticmethod
+    def dict2multiset(dic):
+        if dic == Null:
+            return Null
+
+        output = multiset()
+        output.dic = struct.unwrap(dic).copy()
+        return output
+
+    @staticmethod
+    def multiset2dict(value):
+        if value == Null:
+            return Null
+        return dict(value.dic)
 
 
     @staticmethod

@@ -2,19 +2,43 @@
 # schema required for types and nested types
 
 # only need to know the nested, and the mutli-valued
-from msilib import schema
+import string
+from bzETL.util import struct
+from bzETL.util.strings import expand_template
 from .db import DB, SQL
 from .logs import Log
 from .struct import Struct
 
 
-PRIMITIVES={
+OBJECT="object" # USED IN property.type TO INDICATE FURTHER STRUCTURE
+NESTED="nested" # USED TO INDICATE column.type IS AN OBJECT
+MULTI="multi"  # True IF multi-valued column, "ordered" if multivalued and ordered (has index)
+ORDERED="ordered"
+INDEX="index"  # True, "yes", "not_analyzed", <PARSER NAME> to indicate the for of text parsing used
+
+NOT_ANALYZED="not_analyzed"
+
+PRIMITIVES=struct.wrap({
     "string":{"sql_type":"VARCHAR(100)"},
     "integer":{"sql_type":"LONG"},
     "float":{"sql_type":"DOUBLE"},
     "boolean":{"sql_type":"DECIMAL(1)"}
+})
+TYPES=[OBJECT, "nested"]
+
+
+PARSERS = {
+    True: simple_words,
+    "yes": simple_words,
+    NOT_ANALYZED: no_parse,
+
 }
-TYPES=["object", "nested"]
+
+def simple_words(value):
+    return value.split(" ")
+
+def no_parse(value):
+    return value.trim()
 
 
 class indexed():
@@ -54,7 +78,7 @@ class indexed():
             )
         """)
 
-    def start(settings):
+    def start(self, settings):
         schema_list=self.db.query("""
             SELECT
                 path,
@@ -66,9 +90,9 @@ class indexed():
 
     def add_columns(self, prefix, desc, columns):
         for c in columns:
-            if c.type not in TYPES:
+            if not c[MULTI] and c.type not in TYPES:
                 desc.append(self.db.quote_column(prefix+c.name) + " " + PRIMITIVES[c.type].sql_type)
-            elif c.type == "object":
+            elif c.type == OBJECT:
                 self.add_columns(prefix+c.name+".", desc, c.columns)
 
 
@@ -77,10 +101,9 @@ class indexed():
         for storing the json, indexing should be done in separate indexed
         tables
 
-        free-form text should have index and stored value seperate
+        free-form text should have index and stored value separate
         index = (trigram, ref)
-        content =
-
+        content = (ref, content)
         """
 
 
@@ -90,10 +113,31 @@ class indexed():
         assert schema.name == path[-1]
 
         desc=[]
+        if schema.multi:
+            desc.append("_id INTEGER PRIMARY KEY")
+
+        if schema.multi==ORDERED:
+            desc.append(expand_template("_parent INTEGER REFERENCES {{parent}}(_id)", {
+                "parent":self.db.quote_column(".".join(path[:-1]))
+            }))
+
+        if schema.type in PRIMITIVES:
+            desc.append("_value " + PRIMITIVES[schema.type].sql_type)
+
         self.add_columns("", desc, schema.columns)
 
+        self.db.execute("""
+            CREATE TABLE {{table_name}} (
+                {{columns}}
+            )
+        """, {
+            "table_name":self.db.quote_column(path),
+            "columns":SQL(desc)
+        })
+
+        #MAKE CHILD TABLES
         for c in schema.columns:
-            if c.type=="nested":
+            if c.type=="nested" or c.multi:
                 self.build_schema(c, path+[schema.name])
 
         # BUILD TABLE
@@ -108,14 +152,14 @@ class indexed():
         })
 
 
-
-
-
     def enhance_schema(self, path, type):
-
+        pass
 
 
     def _add(self, json, type_name, type_info):
+        #ENSURE THE json FITS IN THE SCHEMA
+
+
         # FIND NESTED FIELDS
 
         record=Struct()

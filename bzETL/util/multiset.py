@@ -12,11 +12,13 @@ from .logs import Log
 class multiset():
 
     def __init__(self, list=Null, key_field=Null, count_field=Null):
-        if list == Null:
-            self.dic=dict()
+        if not key_field and not count_field:
+            self.dic = dict()
+            for i in list:
+                self.add(i)
             return
-
-        self.dic={i[key_field]:i[count_field] for i in list}
+        else:
+            self.dic={i[key_field]:i[count_field] for i in list}
         
 
     def __iter__(self):
@@ -27,6 +29,9 @@ class multiset():
 
     def items(self):
         return self.dic.items()
+
+    def keys(self):
+        return self.dic.keys()
 
     def add(self, value):
         if value in self.dic:

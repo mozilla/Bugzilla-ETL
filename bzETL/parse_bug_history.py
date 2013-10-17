@@ -46,6 +46,7 @@ import math
 from bzETL.util import struct, strings
 from bzETL.util.basic import nvl
 from bzETL.util.jsons import json_scrub
+from bzETL.util.multiset import multiset
 from transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS
 
 from bzETL.util.cnv import CNV
@@ -734,7 +735,8 @@ class parse_bug_history_():
 
             #WE CAN NOT REMOVE VALUES WE KNOW TO BE THERE AFTER
             if len(removed)>0:
-                Log.note("PROBLEM: Found {{type}} {{field_name}} value: (Removing {{removed}} can not result in {{existing}})",{
+                Log.note("PROBLEM: Found {{type}}({{bug_id}}).{{field_name}} value: (Removing {{removed}} can not result in {{existing}})",{
+                    "bug_id":target.bug_id,
                     "type":valueType,
                     "field_name":field_name,
                     "removed":removed,
@@ -786,15 +788,16 @@ class parse_bug_history_():
                     Log.error("problem", e)
             return total
         elif field_name == "cc":
-            # MAP CANONICAL TO EXISTING
-            c_total={self.alias(t):t for t in total}
-            k_total=set(c_total.keys())
-            c_remove={self.alias(r):r for r in remove}
-            k_remove=set(c_remove.keys())
+            # MAP CANONICAL TO EXISTING (BETWEEN map_* AND self.aliases WE HAVE A BIJECTION)
+            map_total={self.alias(t):t for t in total}
+            map_remove={self.alias(r):r for r in remove}
+            # CANONICAL VALUES
+            c_total=set(map_total.keys())
+            c_remove=set(map_remove.keys())
 
-            removed = k_total & k_remove
-            diff = k_remove - k_total
-            output = k_total - k_remove
+            removed = c_total & c_remove
+            diff = c_remove - c_total
+            output = c_total - c_remove
 
             if not target.uncertain:
                 for lost in diff:
@@ -805,27 +808,25 @@ class parse_bug_history_():
                     details.last_seen = Math.max([details.last_seen, timestamp])
 
                     if not details.candidates:
-                        details.candidates = output
+                        details.candidates = multiset(output)
                     else:
-                        details.candidates = set(details.candidates) & output
+                        details.candidates.extend(output)
 
-                    if len(details.candidates)==1:
-                        found=iter(details.candidates).next()
-
+                    found = clear_winner(details.candidates)
+                    if found:
                         Log.note("ALIAS FOUND: {{lost}} == {{found}}", {
                             "lost":lost,
                             "found":found
                         })
 
                         self.add_alias(lost, found, timestamp)
-                        removed.add(self.alias(lost))
+                        new_lost=self.alias(lost)  # IN CASE THE ALIAS CHANGED
+                        removed.add(new_lost)
+                        map_total[lost]=map_total[found]
+                        if new_lost!=found:
+                            Log.error("not expected")
                         output.discard(found)
                     else:
-                        if len(details.candidates)==0:
-                            Log.note("PROBLEM: EMPTY CANDIDATES!")
-                            #TRY AGAIN
-                            details.candidates = output
-
                         def shorten(emails):
                             if len(emails)>5:
                                 return"["+str(len(target[field_name]))+" email addresses]"
@@ -838,7 +839,7 @@ class parse_bug_history_():
                             "field_name":field_name,
                             "missing":lost,
                             "existing":shorten(target[field_name]),
-                            "candidates":shorten(details.candidates)
+                            "candidates":shorten(details.candidates.keys())
                         })
             else:
                 # PATTERN MATCH EMAIL ADDRESSES
@@ -849,8 +850,8 @@ class parse_bug_history_():
                         score = Math.min([
                             strings.edit_distance(found, lost),
                             strings.edit_distance(found.split("@")[0], lost.split("@")[0]),
-                            strings.edit_distance(c_total[found], lost),
-                            strings.edit_distance(c_total[found].split("@")[0], lost.split("@")[0])
+                            strings.edit_distance(map_total[found], lost),
+                            strings.edit_distance(map_total[found].split("@")[0], lost.split("@")[0])
                         ])
                         if score<best_score:
                             best_score=score
@@ -875,7 +876,24 @@ class parse_bug_history_():
             if valueType=="added":
                 # DURING WALK BACK IN TIME, WE POPULATE THE changes
                 try:
-                    final_removed = [c_total[r] for r in removed]
+                    if removed - set(map_total.keys()):
+                        Log.error("problem with alias finding:\n"+
+                                  "map_total={{map_total}}\n"+
+                                  "map_remove={{map_remove}}\n"+
+                                  "c_total={{c_total}}\n"+
+                                  "c_remove={{c_remove}}\n"+
+                                  "removed={{removed}}\n"+
+                                  "diff={{diff}}\n"+
+                                  "output={{output}}\n", {
+                                  "map_total":map_total,
+                                  "c_total":c_total,
+                                  "map_remove":map_remove,
+                                  "c_remove":c_remove,
+                                  "removed":removed,
+                                  "diff":diff,
+                                  "output":output
+                        })
+                    final_removed = [map_total[r] for r in removed]
                     self.currActivity.changes.append({
                         "field_name": field_name,
                         "new_value": u", ".join(map(unicode, Q.sort(final_removed))),
@@ -885,11 +903,7 @@ class parse_bug_history_():
                 except Exception, e:
                     Log.error("issues", e)
 
-
-            if "Null" in output:
-                Log.note("PROBLEM error")
-
-            return {c_total[o] for o in output}
+            return {map_total[o] for o in output}
         else:
             removed = total & remove
             diff = remove - total
@@ -951,7 +965,7 @@ class parse_bug_history_():
 
         found_record = self.aliases[found.replace(".", "\.")]
         if found_record != Null:
-            new_canonical = found_record.canonical
+            new_canonical = nvl(found_record.canonical, found)
             found_record.last_seen = Math.max([found_record.last_seen, timestamp])
         else:
             new_canonical = found
@@ -983,15 +997,39 @@ class parse_bug_history_():
             except Exception, e:
                 alias_json = "{}"
             self.aliases = CNV.JSON2object(alias_json)
+
+            for v in self.aliases.values():
+                v.candidates=CNV.dict2multiset(v.candidates)
         except Exception, e:
             Log.error("Can not init aliases", e)
 
     def saveAliases(self):
         for k, v in self.aliases.items():
-            if v.candidates != Null:
-                v.candidates = Q.sort(v.candidates)
+            v.candidates=CNV.multiset2dict(v.candidates)
+
         alias_json = CNV.object2JSON(self.aliases, pretty=True)
         File(self.settings.alias_file).write(alias_json)
 
 
 
+CLEARLY = 2
+
+def clear_winner(candidates):
+    """
+    RETURN THE ELEMENT THAT HAS CLEARLY MORE HITS THAN THE OTHERS
+    """
+    if candidates == Null:
+        return False
+
+    if not isinstance(candidates, multiset):
+        Log.error("Expecting multiset")
+
+    ordered=Q.sort([{"k":k, "c":c} for k, c in candidates.dic.items()], "c")
+    if not ordered:
+        return Null
+    elif len(ordered) == 1 and ordered[0]["c"] >= CLEARLY:
+        return ordered[-1]["k"]
+    elif len(ordered) > 1 and ordered[-1]["c"] >= ordered[-2]["c"] + CLEARLY:
+        return ordered[-1]["k"]
+    else:
+        return Null
