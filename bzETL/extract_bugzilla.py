@@ -75,6 +75,11 @@ def get_private_bugs(db, param):
 
 
 def get_recent_private_attachments(db, param):
+    """
+    GET ONLY RECENT ATTACHMENTS THAT HAVE GONE PRIVATE
+    THIS LIST IS USED TO SIGNAL BUGS THAT NEED TOTAL RE-ETL
+    """
+
     if param.allow_private_bugs:
         return []
 
@@ -359,6 +364,9 @@ def get_keywords(db, param):
 
 
 def get_attachments(db, param):
+    """
+    GET ALL CURRENT ATTACHMENTS
+    """
     if param.allow_private_bugs:
         param.attachments_filter=SQL("1=1")  #ALWAYS TRUE, ALLOWS ALL ATTACHMENTS
     else:

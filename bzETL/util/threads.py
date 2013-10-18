@@ -13,6 +13,9 @@ import time
 from bzETL.util.struct import Null
 
 
+
+DEBUG = True
+
 class Lock():
     """
     SIMPLE LOCK (ACTUALLY, A PYTHON threadind.Condition() WITH notify() BEFORE EVERY RELEASE)
@@ -29,8 +32,13 @@ class Lock():
         self.monitor.notify()
         self.monitor.release()
 
-    def wait(self, timeout=None):
+    def wait(self, timeout=None, till=None):
+        if till:
+            timeout=(datetime.utcnow()-till).total_seconds()
         self.monitor.wait(timeout=timeout)
+
+    def notify_all(self):
+        self.monitor.notify_all()
 
 
 # SIMPLE MESSAGE QUEUE, multiprocessing.Queue REQUIRES SERIALIZATION, WHICH IS HARD TO USE JUST BETWEEN THREADS
@@ -154,17 +162,26 @@ class Thread():
     def __init__(self, name, target, *args, **kwargs):
         self.name = name
         self.target = target
-        self.args = args
-        self.kwargs = kwargs
         self.response = Null
         self.synch_lock=Lock()
+        self.args = args
 
+        #ENSURE THERE IS A SHARED please_stop SIGNAL
+        self.kwargs = kwargs.copy()
+        self.kwargs["please_stop"]=self.kwargs.get("please_stop", Signal())
+        self.please_stop=self.kwargs["please_stop"]
+
+        self.stopped=Signal()
 
 
     def __enter__(self):
         return self
 
     def __exit__(self, type, value, traceback):
+        if isinstance(type, BaseException):
+            self.please_stop.go()
+
+        # TODO: AFTER A WHILE START KILLING THREAD
         self.join()
 
     def start(self):
@@ -186,33 +203,44 @@ class Thread():
             from .logs import Log
             Log.error("Problem in thread", e)
         finally:
+            self.stopped.go()
             del self.target, self.args, self.kwargs
 
     def is_alive(self):
-        return self.response == Null
+        return not self.stopped
 
 
-    def join(self, timeout=None):
+    def join(self, timeout=None, till=None):
         """
         RETURN THE RESULT OF THE THREAD EXECUTION (INCLUDING EXCEPTION)
         """
-        if timeout is None:
+        if not till and timeout:
+            till=(till-datetime.utcnow()).total_seconds
+
+        if till is None:
             while True:
                 with self.synch_lock:
-                    if not self.is_alive():
-                        break
-                    self.synch_lock.wait(0.5)
+                    for i in range(10):
+                        if self.stopped:
+                            return self.response
+                        self.synch_lock.wait(0.5)
+
                 from .logs import Log
-                Log.note("Waiting on thread {{thread}}", {"thread":self.name})
-            return self.response
+                if DEBUG:
+                    Log.note("Waiting on thread {{thread}}", {"thread":self.name})
         else:
-            with self.synch_lock:
-                if self.is_alive():
-                    self.synch_lock.wait(timeout)
-            return self.response
+            self.stopped.wait_for_go(till=till)
+
+            from logs import Except
+            raise Except(type=Thread.TIMEOUT)
 
     @staticmethod
     def run(target, *args, **kwargs):
+        #ENSURE target HAS please_stop ARGUMENT
+        if "please_stop" not in target.__code__.co_varnames:
+            from logs import Log
+            Log.error("function must have please_stop argument for signalling emergency shutdown")
+
         if hasattr(target, "func_name") and target.func_name != "<lambda>":
             name = "thread-" + str(Thread.num_threads) + " (" + target.func_name + ")"
         else:
@@ -235,9 +263,59 @@ class Thread():
 
 
 
+class Signal():
+    """
+    SINGLE-USE THREAD SAFE SIGNAL
+    """
+
+    def __init__(self):
+        self.lock = Lock()
+        self._go = False
+        self.job_queue=[]
 
 
+    def __bool__(self):
+        with self.lock:
+            return self._go
 
+    def __nonzero__(self):
+        with self.lock:
+            return self._go
+
+
+    def wait_for_go(self, timeout=None, till=None):
+        with self.lock:
+            while not self._go:
+                self.lock.wait(timeout=timeout, till=till)
+
+            return True
+
+    def go(self):
+        with self.lock:
+            if self._go:
+                return
+
+            self._go = True
+            jobs=self.job_queue
+            self.job_queue=[]
+            self.lock.notify_all()
+
+        for j in jobs:
+            j()
+
+    def is_go(self):
+        with self.lock:
+            return self._go
+
+    def on_go(self, target):
+        """
+        RUN target WHEN SIGNALED
+        """
+        with self.lock:
+            if self._go:
+                target()
+            else:
+                self.job_queue.append(target)
 
 
 
