@@ -12,7 +12,7 @@ Motivation and Details
 Requirements
 ------------
 
-  * Python 2.7
+  * PyPy 2.1.0 using Python 2.7  (cPython is way too slow)
   * A MySQL/Maria database with Mozilla's Bugzilla schema ([old public version can be found here](http://people.mozilla.com/~mhoye/bugzilla/))
   * A timezone database ([instructions](./tests/resources/mySQL/README.md))
   * An ElasticSearch (v 0.20.5) cluster to hold the bug version documents

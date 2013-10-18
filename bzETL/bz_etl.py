@@ -237,7 +237,9 @@ def main(settings, es=Null, es_comments=Null):
                             SELECT
                                 bug_id
                             FROM
-                                bugs
+                                bugs m
+                            LEFT JOIN
+                                bug_group_map m ON m.bug_id
                             WHERE
                                 delta_ts >= CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific') AND
                                 ({{min}} <= bug_id AND bug_id < {{max}}) AND

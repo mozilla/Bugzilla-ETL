@@ -785,6 +785,28 @@ class parse_bug_history_():
                 except Exception, e:
                     Log.error("problem", e)
             return total
+        elif field_name == "keywords":
+            diff = remove - total
+            output = total - remove
+
+            if valueType=="added":
+                self.currActivity.changes.append({
+                    "field_name": field_name,
+                    "new_value": u", ".join(map(unicode, Q.sort(remove))),
+                    "old_value": Null,
+                    "attach_id": target.attach_id
+                })
+
+            if len(diff)>0:
+                Log.note("PROBLEM Unable to find {{type}} KEYWORD {{object}}({{bug_id}}) (adding anyway): (All {{missing}}" + " not in : {{existing}})",{
+                    "bug_id":target.bug_id,
+                    "type":valueType,
+                    "object":arrayDesc,
+                    "field_name":field_name,
+                    "missing":diff,
+                    "existing":target[field_name]
+                })
+            return output
         elif field_name == "cc":
             # MAP CANONICAL TO EXISTING (BETWEEN map_* AND self.aliases WE HAVE A BIJECTION)
             map_total={self.alias(t):t for t in total}
@@ -924,8 +946,6 @@ class parse_bug_history_():
                     "missing":diff,
                     "existing":target[field_name]
                 })
-            if "Null" in output:
-                Log.note("PROBLEM error")
 
             return output
 
@@ -1008,7 +1028,8 @@ class parse_bug_history_():
 
         alias_json = CNV.object2JSON(self.aliases, pretty=True)
         file = File(self.settings.alias_file)
-        File(file.backup_name()).write(alias_json)
+        file = File(file.backup_name())
+        file.write(alias_json)
 
 
 
