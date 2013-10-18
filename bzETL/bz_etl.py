@@ -235,15 +235,15 @@ def main(settings, es=Null, es_comments=Null):
                     try:
                         bug_list=Q.select(db.query("""
                             SELECT
-                                bug_id
+                                b.bug_id
                             FROM
-                                bugs m
+                                bugs b
                             LEFT JOIN
-                                bug_group_map m ON m.bug_id
+                                bug_group_map m ON m.bug_id=b.bug_id
                             WHERE
                                 delta_ts >= CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific') AND
                                 ({{min}} <= bug_id AND bug_id < {{max}}) AND
-                                bug_id not in {{private_bugs}}
+                                m.bug_id IS NULL
                             """, {
                                 "min":min,
                                 "max":max,
