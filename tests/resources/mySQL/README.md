@@ -1,5 +1,8 @@
 
-If you plan to run tests, you must install the timezone database:
+Mozilla's Bugzilla instance stores time in local DST-adjusted Pacific Time.
+The ETL script converts all times to GMT for ease of comparison.  If you plan to
+run tests or generate your own ES instance from a MySQL database
+you will need to install the timezone database to perform this conversion.
 
 Windows
 

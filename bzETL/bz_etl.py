@@ -16,6 +16,7 @@ from bzETL.extract_bugzilla import get_private_bugs, get_recent_private_attachme
 from bzETL.util.basic import nvl
 from bzETL.util.maths import Math
 from bzETL.util.multithread import Multithread
+from bzETL.util.timer import Timer
 
 from extract_bugzilla import get_bugs, get_dependencies, get_flags, get_new_activities, get_bug_see_also, get_attachments, get_keywords, get_cc, get_bug_groups, get_duplicates
 from parse_bug_history import parse_bug_history_
@@ -52,7 +53,7 @@ get_stuff_from_bugzilla = [
 
 
 
-def etl_comments(db, es, param):
+def etl_comments(db, es, param, please_stop):
     # CONNECTIONS ARE EXPENSIVE, CACHE HERE
     with comment_db_cache_lock:
         if len(comment_db_cache) == 0:
@@ -65,7 +66,7 @@ def etl_comments(db, es, param):
 
 
 
-def etl(db, output_queue, param):
+def etl(db, output_queue, param, please_stop):
     """
     PROCESS RANGE, AS SPECIFIED IN param AND PUSH
     BUG VERSION RECORDS TO output_queue
@@ -81,7 +82,7 @@ def etl(db, output_queue, param):
         # ASYMMETRIC MULTI THREADING TO GET RECORDS FROM DB
         with AllThread() as all:
             for i,f in enumerate(get_stuff_from_bugzilla):
-                def process(target, db, param):
+                def process(target, db, param, please_stop):
                     db_results.extend(target(db, param))
 
                 all.add(process, f, db_cache[i], param)
@@ -144,7 +145,7 @@ def main(settings, es=Null, es_comments=Null):
                             "sort":"index"
                         })[-1]
                     es_comments = ElasticSearch(settings.es_comments)
-            elif settings.param.incremental:
+            elif File(settings.param.last_run_time).exists:
                 last_run_time = long(File(settings.param.last_run_time).read())
                 if es == Null:
                     es = ElasticSearch(settings.es)
@@ -176,7 +177,7 @@ def main(settings, es=Null, es_comments=Null):
 
             private_bugs = get_private_bugs(db, param)
 
-            if settings.param.incremental:
+            if param.start_time > 0:
                 ####################################################################
                 ## ES TAKES TIME TO DELETE RECORDS, DO DELETE FIRST WITH HOPE THE
                 ## INDEX GETS A REWRITE DURING ADD OF NEW RECORDS
@@ -221,11 +222,15 @@ def main(settings, es=Null, es_comments=Null):
 
             output_queue = Queue()
 
-            def push_to_es():
+            def push_to_es(please_stop):
+                please_stop.on_go(lambda : output_queue.add(Thread.STOP))
+
                 #output_queue IS A MULTI-THREADED QUEUE, SO THIS WILL BLOCK UNTIL THE 5K ARE READY
                 for i, g in Q.groupby(output_queue, size=5000):
                     Log.note("write {{num}} records to es", {"num":len(g)})
                     es.add({"id": x.id, "value": x} for x in g)
+                    if please_stop:
+                        return
 
             with Thread.run(push_to_es):
                 #TWO WORKERS IS MORE THAN ENOUGH FOR A SINGLE THREAD
@@ -233,23 +238,23 @@ def main(settings, es=Null, es_comments=Null):
                 for b in range(start, end, settings.param.increment):
                     (min, max)=(b, b+settings.param.increment)
                     try:
-                        bug_list=Q.select(db.query("""
-                            SELECT
-                                b.bug_id
-                            FROM
-                                bugs b
-                            LEFT JOIN
-                                bug_group_map m ON m.bug_id=b.bug_id
-                            WHERE
-                                delta_ts >= CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific') AND
-                                ({{min}} <= bug_id AND bug_id < {{max}}) AND
-                                m.bug_id IS NULL
-                            """, {
-                                "min":min,
-                                "max":max,
-                                "private_bugs": SQL(set(Q.filter(private_bugs, lambda r: min <= r < max)) | {0}),
-                                "start_time":param.start_time
-                        }), u"bug_id")
+                        with Timer("time to get buglist"):
+                            bug_list=Q.select(db.query("""
+                                SELECT
+                                    b.bug_id
+                                FROM
+                                    bugs b
+                                LEFT JOIN
+                                    bug_group_map m ON m.bug_id=b.bug_id
+                                WHERE
+                                    delta_ts >= CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific') AND
+                                    ({{min}} <= b.bug_id AND b.bug_id < {{max}}) AND
+                                    m.bug_id IS NULL
+                                """, {
+                                    "min":min,
+                                    "max":max,
+                                    "start_time":param.start_time
+                            }), u"bug_id")
 
                         if len(bug_list) == 0:
                             continue

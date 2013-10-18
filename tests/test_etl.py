@@ -33,7 +33,7 @@ def test_specific_bugs(settings):
     """
     USE A MYSQL DATABASE TO FILL AN ES INSTANCE (USE Fake_ES() INSTANCES TO KEEP
     THIS TEST LOCAL) WITH VERSIONS OF BUGS FROM settings.param.bugs.  COMPARE
-    THOSE VERSIONS TO A REFERENCE ES (IN REPOSITOR
+    THOSE VERSIONS TO A REFERENCE ES (ALSO CHECKED INTO REPOSITORY)
     """
     settings.param.allow_private_bugs = True
     database.make_test_instance(settings.bugzilla)
@@ -110,7 +110,7 @@ def test_private_etl(settings):
     """
     ENSURE IDENTIFIABLE INFORMATION DOES NOT EXIST ON ANY BUGS
     """
-    settings.param.incremental=False
+    File(settings.param.last_run_time).delete()
     settings.param.allow_private_bugs=True
 
     database.make_test_instance(settings.bugzilla)
@@ -126,7 +126,7 @@ def test_public_etl(settings):
     """
 
     """
-    settings.param.incremental=False
+    File(settings.param.last_run_time).delete()
     settings.param.allow_private_bugs=Null
 
     database.make_test_instance(settings.bugzilla)
@@ -180,7 +180,7 @@ def verify_no_private_comments(es, private_comments):
 
 def test_private_bugs_do_not_show(settings):
     settings.param.allow_private_bugs=False
-    settings.param.incremental=False
+    File(settings.param.last_run_time).delete()
 
     private_bugs = set(Random.sample(settings.param.bugs, 3))
     Log.note("The private bugs for this test are {{bugs}}", {"bugs": private_bugs})
@@ -201,7 +201,7 @@ def test_private_bugs_do_not_show(settings):
 
 def test_recent_private_stuff_does_not_show(settings):
     settings.param.allow_private_bugs=False
-    settings.param.incremental=False
+    File(settings.param.last_run_time).delete()
 
     database.make_test_instance(settings.bugzilla)
 
@@ -226,9 +226,10 @@ def test_recent_private_stuff_does_not_show(settings):
         private_attachments=Random.sample(attachments, 5)
         Log.note("The private attachments are {{attachments}}", {"attachments": private_attachments})
         for a in private_attachments:
-            database.mark_attachment_private(db, a.attach_id)
+            database.mark_attachment_private(db, a.attach_id, isprivate=1)
 
-    settings.param.incremental=True
+    if not File(settings.param.last_run_time).exists:
+        Log.error("last_run_time should exist")
     bz_etl.main(settings, es, es_c)
 
     verify_no_private_bugs(es, private_bugs)
@@ -257,7 +258,7 @@ def test_private_attachments_do_not_show(settings):
         """)
 
         for a in private_attachments:
-            database.mark_attachment_private(db, a.attach_id)
+            database.mark_attachment_private(db, a.attach_id, isprivate=1)
 
 
     es=elasticsearch.make_test_instance("candidate", settings.test_main)

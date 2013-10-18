@@ -46,19 +46,19 @@ def make_test_instance(db_settings):
             Log.error("Can not setup test database", e)
 
 
-def mark_attachment_private(db, attach_id):
+def mark_attachment_private(db, attach_id, isprivate):
     old_attach=db.query("SELECT * FROM attachments WHERE attach_id={{id}}", {"id":attach_id})[0]
     new_attach=old_attach.copy()
-    new_attach.isprivate=1
+    new_attach.isprivate=isprivate
 
     diff(db, "attachments", old_attach, new_attach)
     db.update("attachments", old_attach, new_attach)
 
 
-def mark_comment_private(db, comment_id):
+def mark_comment_private(db, comment_id, isprivate):
     old_comment=db.query("SELECT * FROM longdescs WHERE comment_id={{id}}", {"id":comment_id})[0]
     new_comment=old_comment.copy()
-    new_comment.isprivate=1
+    new_comment.isprivate=isprivate
 
     diff(db, "longdescs", old_comment, new_comment)
     db.update("longdescs", {"comment_id":old_comment.comment_id}, new_comment)
@@ -87,9 +87,12 @@ def add_bug_group(db, bug_id, group_name):
 
 
 
-def diff(db, table, old_value, new_value):
-    changed=set(old_value.keys()) ^ set(new_value.keys())
-    changed |= set([k for k,v in old_value.items() if v!=new_value[k]])
+def diff(db, table, old_record, new_record):
+    """
+    UPDATE bugs_activity WITH THE CHANGES IN RECORDS
+    """
+    changed=set(old_record.keys()) ^ set(new_record.keys())
+    changed |= set([k for k,v in old_record.items() if v!=new_record[k]])
 
     if table!=u"bugs":
         prefix=table+u"."
@@ -98,13 +101,13 @@ def diff(db, table, old_value, new_value):
 
     for c in changed:
         activity=Struct(
-            bug_id=old_value.bug_id,
+            bug_id=old_record.bug_id,
             who=1,
             bug_when=datetime.utcnow(),
             fieldid=db.query("SELECT id FROM fielddefs WHERE name={{field_name}}", {"field_name":prefix+c})[0].id,
-            removed=old_value[c],
-            added=new_value[c],
-            attach_id=old_value.attach_id
+            removed=old_record[c],
+            added=new_record[c],
+            attach_id=old_record.attach_id
         )
         db.insert("bugs_activity", activity)
 

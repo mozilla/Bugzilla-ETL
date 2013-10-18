@@ -274,11 +274,10 @@ class Log_usingStream(BaseLog):
         from threads import Queue
         self.queue=Queue()
 
-        def worker():
-            keep_running = True
+        def worker(please_stop):
             queue=self.queue
 
-            while keep_running:
+            while not please_stop:
                 next_run = datetime.utcnow() + timedelta(seconds=0.3)
                 logs = queue.pop_all()
                 if len(logs)>0:
@@ -286,7 +285,7 @@ class Log_usingStream(BaseLog):
                     for log in logs:
                         try:
                             if log==Thread.STOP:
-                                keep_running = False
+                                please_stop.go()
                                 next_run = datetime.utcnow()
                                 break
                             lines.append(expand_template(log.get("template", Null), log.get("params", Null)))
