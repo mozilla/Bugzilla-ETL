@@ -79,7 +79,6 @@ def get_recent_private_attachments(db, param):
     GET ONLY RECENT ATTACHMENTS THAT HAVE GONE PRIVATE
     THIS LIST IS USED TO SIGNAL BUGS THAT NEED TOTAL RE-ETL
     """
-
     if param.allow_private_bugs:
         return []
 
