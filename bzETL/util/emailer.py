@@ -12,7 +12,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
 import sys
-from .basic import nvl
+from .struct import nvl
 
 
 class Emailer:

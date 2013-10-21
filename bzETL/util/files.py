@@ -12,8 +12,8 @@ import codecs
 from datetime import datetime
 import os
 import shutil
-from .basic import listwrap, nvl
-from bzETL.util.cnv import CNV
+from .struct import listwrap, nvl
+from .cnv import CNV
 from .struct import Null
 
 

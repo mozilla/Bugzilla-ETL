@@ -7,7 +7,7 @@
 ################################################################################
 
 import threading
-from .basic import nvl
+from .struct import nvl
 from .struct import Null
 from .logs import Log
 from .threads import Queue, Thread
@@ -35,10 +35,12 @@ class worker_thread(threading.Thread):
             threading.Thread.join(self, nvl(timeout, 0.5))
 
     def run(self):
+        got_stop=False
         while self.keep_running:
-            request=self.in_queue.pop()
-            if request==Thread.STOP:
-                if len(self.in_queue.queue)>0:
+            request = self.in_queue.pop()
+            if request == Thread.STOP:
+                got_stop=True
+                if len(self.in_queue.queue) > 0:
                     Log.warning("programmer error")
                 break
             if not self.keep_running:
@@ -46,18 +48,18 @@ class worker_thread(threading.Thread):
 
             try:
                 if DEBUG and hasattr(self.function, "func_name"):
-                    Log.note("run {{function}}", {"function":self.function.func_name})
-                result=self.function(**request)
+                    Log.note("run {{function}}", {"function": self.function.func_name})
+                result = self.function(**request)
                 if self.out_queue != Null:
-                    self.out_queue.add({"response":result})
+                    self.out_queue.add({"response": result})
             except Exception, e:
                 Log.warning("Can not execute with params={{params}}", {"params": request}, e)
                 if self.out_queue != Null:
-                    self.out_queue.add({"exception":e})
+                    self.out_queue.add({"exception": e})
             finally:
-                self.num_runs+=1
+                self.num_runs += 1
 
-        self.keep_running=False
+        self.keep_running = False
         if self.num_runs==0:
             Log.warning("{{name}} thread did no work", {"name":self.name})
         if DEBUG and self.num_runs!=1:
@@ -65,8 +67,8 @@ class worker_thread(threading.Thread):
                 "name":self.name,
                 "num":self.num_runs
             })
-        if len(self.in_queue.queue)>0:
-            Log.warning("programmer error")
+        if got_stop and len(self.in_queue.queue)>0:
+            Log.warning("multithread programmer error")
         if DEBUG:
             Log.note("{{thread}} DONE", {"thread":self.name})
 

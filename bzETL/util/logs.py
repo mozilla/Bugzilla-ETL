@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 import traceback
 import logging
 import sys
-from .basic import listwrap, nvl
+from .struct import listwrap, nvl
 
 import struct, threads
 from .strings import indent, expand_template

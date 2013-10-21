@@ -17,7 +17,7 @@ from bzETL.util.logs import Log
 from bzETL.util.query import Q
 from bzETL.util.startup import startup
 from bzETL.util.files import File
-from bzETL.util.multiset import multiset
+from bzETL.util.multiset import Multiset
 from bzETL.util.elasticsearch import ElasticSearch
 
 

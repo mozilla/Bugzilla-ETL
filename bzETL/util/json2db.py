@@ -3,8 +3,8 @@
 
 # only need to know the nested, and the mutli-valued
 import string
-from bzETL.util import struct
-from bzETL.util.strings import expand_template
+import struct
+from .strings import expand_template
 from .db import DB, SQL
 from .logs import Log
 from .struct import Struct
@@ -152,8 +152,36 @@ class indexed():
         })
 
 
-    def enhance_schema(self, path, type):
-        pass
+    def enhance_schema(self, path, json, schema):
+        #LOOK FOR NEW PRIMITIVE ATTRIBUTES
+        #PRIMITIVE TO MULTIVALUED
+        #OBJECT TO NESTED
+
+        for k, v in json.items():
+            full_path = "."[path, k.replace(".", "\.")]
+
+            if not schema[k]:
+                column_def = self.defaults.getSchema(full_path, example=v)  # PATTERN MATCHING SCHEMA GENERATOR
+                # ALTER TABLE TO HANDLE NEW SCHEMA
+
+                desc=[]  #ADDED COLUMN DEFINITIONS
+                self.add_columns(path, desc, [column_def])
+                self.build_schema(column_def, full_path)
+                self.db.execute("ALTER TABLE {{table_name}} ({{details}}", {
+                    "table_name": self.db.quote_column(path),
+                    "details": "\n".join(desc)
+                })
+            elif isinstance(v, list):
+                if schema[k].type==MULTI:
+                    self.enhance_schema(full_path, v, schema[k])
+                elif schema[k].type==NESTED:
+                    self.enhance_schema(full_path, v, schema[k])
+                else:
+                    #MOVE FROM PRIMITIVE TO MULTI
+                    #MOVE FROM OBJECT TO NESTED
+            elif isinstance(v, dict) and not schema[k].type==OBJECT:
+
+
 
 
     def _add(self, json, type_name, type_info):

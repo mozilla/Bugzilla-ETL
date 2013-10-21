@@ -130,6 +130,7 @@ def get_bugs(db, param):
 
     param.bugs_columns=bugs_columns
     param.bugs_columns_SQL = db.quote_column(bugs_columns)
+    param.bug_filter = db.esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
 
 
     if param.allow_private_bugs:
@@ -166,7 +167,7 @@ def get_bugs(db, param):
                 LEFT JOIN products prod ON prod.id = product_id
                 LEFT JOIN components comp ON comp.id = component_id
             WHERE
-                bug_id IN {{bug_list}}
+                {{bug_filter}}
             """, param)
 
         #bugs IS LIST OF BUGS WHICH MUST BE CONVERTED TO THE DELTA RECORDS FOR ALL FIELDS
@@ -257,6 +258,9 @@ def flatten_bugs_record(r, output):
 
 
 def get_dependencies(db, param):
+    param.blocks_filter=db.esfilter2sqlwhere({"terms":{"blocked":param.bug_list}})
+    param.dependson_filter=db.esfilter2sqlwhere({"terms":{"dependson":param.bug_list}})
+
     return db.query("""
         SELECT blocked AS bug_id
             , CAST(null AS signed) AS modified_ts
@@ -268,7 +272,7 @@ def get_dependencies(db, param):
             , 2 AS _merge_order
         FROM dependencies d
         WHERE
-            blocked IN {{bug_list}}
+           {{blocks_filter}}
         UNION
         SELECT dependson dependson
             , null
@@ -279,12 +283,18 @@ def get_dependencies(db, param):
             , null
             , 2
         FROM dependencies d
-        WHERE dependson IN {{bug_list}}
+        WHERE
+            {{dependson_filter}}
         ORDER BY bug_id
     """, param)
 
 
 def get_duplicates(db, param):
+    param.dupe_filter=db.esfilter2sqlwhere({"terms":{"dupe":param.bug_list}})
+    param.dupe_of_filter=db.esfilter2sqlwhere({"terms":{"dupe_of":param.bug_list}})
+
+
+
     return db.query("""
         SELECT dupe AS bug_id
             , CAST(null AS signed) AS modified_ts
@@ -295,7 +305,8 @@ def get_duplicates(db, param):
             , CAST(null AS signed) AS attach_id
             , 2 AS _merge_order
         FROM duplicates d
-        WHERE dupe IN {{bug_list}}
+        WHERE
+            {{dupe_filter}}
         UNION
         SELECT dupe_of
             , null
@@ -306,12 +317,15 @@ def get_duplicates(db, param):
             , null
             , 2
         FROM duplicates d
-        WHERE dupe_of IN {{bug_list}}
+        WHERE
+            {{dupe_of_filter}}
         ORDER BY bug_id
     """, param)
 
 
 def get_bug_groups(db, param):
+    param.bug_filter=db.esfilter2sqlwhere({"terms":{"bug_id":param.bug_list}})
+
     return db.query("""
         SELECT bug_id
             , CAST(null AS signed) AS modified_ts
@@ -323,7 +337,8 @@ def get_bug_groups(db, param):
             , 2 AS _merge_order
         FROM bug_group_map bg
         JOIN groups g ON bg.group_id = g.id
-        WHERE bug_id IN {{bug_list}}
+        WHERE
+            {{bug_filter}}
     """, param)
 
 
@@ -346,6 +361,8 @@ def get_cc(db, param):
 
 
 def get_keywords(db, param):
+    param.bug_filter=db.esfilter2sqlwhere({"terms":{"bug_id":param.bug_list}})
+
     return db.query("""
         SELECT bug_id
             , NULL AS modified_ts
@@ -357,7 +374,8 @@ def get_keywords(db, param):
             , 2 AS _merge_order
         FROM keywords k
         JOIN keyworddefs kd ON k.keywordid = kd.id
-        WHERE bug_id IN {{bug_list}}
+        WHERE
+            {{bug_filter}}
         ORDER BY bug_id
     """, param)
 
@@ -370,6 +388,9 @@ def get_attachments(db, param):
         param.attachments_filter=SQL("1=1")  #ALWAYS TRUE, ALLOWS ALL ATTACHMENTS
     else:
         param.attachments_filter=SQL("isprivate=0")
+
+    param.bug_filter=db.esfilter2sqlwhere({"terms":{"bug_id":param.bug_list}})
+
 
     output=db.query("""
         SELECT bug_id
@@ -385,7 +406,7 @@ def get_attachments(db, param):
             attachments a
             JOIN profiles p ON a.submitter_id = p.userid
         WHERE
-            bug_id IN {{bug_list}} AND
+            {{bug_filter}} AND
             {{attachments_filter}}
         ORDER BY
             bug_id,
@@ -415,6 +436,9 @@ def flatten_attachments(data):
 
 
 def get_bug_see_also(db, param):
+    param.bug_filter=db.esfilter2sqlwhere({"terms":{"bug_id":param.bug_list}})
+
+
     return db.query("""
         SELECT bug_id
             , CAST(null AS signed) AS modified_ts
@@ -425,7 +449,8 @@ def get_bug_see_also(db, param):
             , CAST(null AS signed) AS attach_id
             , 2 AS _merge_order
         FROM bug_see_also
-        WHERE bug_id IN {{bug_list}}
+        WHERE
+            {{bug_filter}}
         ORDER BY bug_id
     """, param)
 
@@ -438,6 +463,7 @@ def get_new_activities(db, param):
         param.screened_fields=SQL([-1])
 
     #TODO: CF_LAST_RESOLVED IS IN PDT, FIX IT
+    param.bug_filter=db.esfilter2sqlwhere({"terms":{"a.bug_id":param.bug_list}})
 
 
     return db.query("""
@@ -469,7 +495,7 @@ def get_new_activities(db, param):
         JOIN
             fielddefs field ON a.fieldid = field.`id`
         WHERE
-            a.bug_id IN {{bug_list}} AND
+            {{bug_filter}} AND
             bug_when >= CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific')
         ORDER BY
             bug_id,
@@ -479,6 +505,8 @@ def get_new_activities(db, param):
 
 
 def get_flags(db, param):
+    param.bug_filter=db.esfilter2sqlwhere({"terms":{"bug_id":param.bug_list}})
+
     return db.query("""
         SELECT bug_id
             , UNIX_TIMESTAMP(CONVERT_TZ(f.creation_date, 'US/Pacific','UTC'))*1000 AS modified_ts
@@ -493,7 +521,8 @@ def get_flags(db, param):
         JOIN `flagtypes` ft ON f.type_id = ft.id
         JOIN profiles ps ON f.setter_id = ps.userid
         LEFT JOIN profiles pr ON f.requestee_id = pr.userid
-        WHERE bug_id IN {{bug_list}}
+        WHERE
+            {{bug_filter}}
         ORDER BY
             bug_id
     """, param)
@@ -504,6 +533,7 @@ def get_comments(db, param):
         return []
 
     param.comments_filter=SQL("isprivate=0")
+    param.bug_filter=db.esfilter2sqlwhere({"terms":{"bug_id":param.bug_list}})
 
     try:
         comments=db.query("""
@@ -519,7 +549,7 @@ def get_comments(db, param):
             LEFT JOIN
                 profiles p ON c.who = p.userid
             WHERE
-                bug_id IN {{bug_list}} AND
+                {{bug_filter}} AND
                 bug_when >= CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific') AND
                 {{comments_filter}}
             """, param)

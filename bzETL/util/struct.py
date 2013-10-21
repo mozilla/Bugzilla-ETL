@@ -15,7 +15,7 @@ class Struct(dict):
     Struct is an anonymous class with some properties good for manipulating JSON
 
     0) a.b==a["b"]
-    1) the IDE does tab completion, so my spelling mistakes do not get found at runtime
+    1) the IDE does tab completion, so my spelling mistakes get found at "compile time"
     2) it deals with missing keys gracefully, so I can put it into set operations (database operations) without choking
     2b) missing keys is important when dealing with JSON, which is often almost anything
     3) also, which I hardly use, is storing JSON paths in a variable, so :   a["b.c"]==a.b.c
@@ -60,17 +60,17 @@ class Struct(dict):
             value=unwrap(value)
             if key.find(".") == -1:
                 if value is None:
-                    if key in d:
-                        del d[key]
+                    d.pop(key, None)
                 else:
                     d[key] = value
                 return self
 
             key=key.replace("\.", "\a")
             seq=[k.replace("\a", ".") for k in key.split(".")]
-            for k in seq[:-1]: d=d[k]
-            if value == Null:
-                del d[seq[-1]]
+            for k in seq[:-1]:
+                d = d[k]
+            if value == None:
+                d.pop(seq[-1], None)
             else:
                 d[seq[-1]] = value
             return self
@@ -80,9 +80,7 @@ class Struct(dict):
     def __getattribute__(self, key):
         d=object.__getattribute__(self, "__dict__")
         if key not in SPECIAL:
-            if key not in d:
-                return Null
-            return wrap(d[key])
+            return wrap(d.get(key, Null))
 
         #SOME dict FUNCTIONS
         if key == "items":
@@ -111,8 +109,6 @@ class Struct(dict):
                 return o
             return output
 
-
-
     def __setattr__(self, key, value):
         Struct.__setitem__(self, key, value)
         # dict.__setattr__(self, unicode(key), value)
@@ -121,12 +117,14 @@ class Struct(dict):
     def __delitem__(self, key):
         d=object.__getattribute__(self, "__dict__")
 
-        if key.find(".")>=0:
-            seq=key.split(".")
-            for k in seq[0,-1]: d=d[k]
-            del d[seq[-1]]
-            return
-        del d[key]
+        if key.find(".") == -1:
+            d.pop(key, None)
+
+        key=key.replace("\.", "\a")
+        seq=[k.replace("\a", ".") for k in key.split(".")]
+        for k in seq[:-1]:
+            d = d[k]
+        d.pop(seq[-1], None)
 
     def keys(self):
         d=object.__getattribute__(self, "__dict__")
@@ -202,6 +200,7 @@ class StructList(list):
 
     def __init__(self, vals=Null):
         """ USE THE vals, NOT A COPY """
+        list.__init__(self)
         if vals == Null:
             self.list=[]
         elif isinstance(vals, StructList):
@@ -258,12 +257,16 @@ def wrap(v):
         return StructList(v)
     return v
 
+
 def unwrap(v):
     if isinstance(v, Struct):
         return object.__getattribute__(v, "__dict__")
+    if isinstance(v, StructList):
+        return v.list
     if v == Null:
         return None
     return v
+
 
 def inverse(d):
     """
@@ -274,3 +277,43 @@ def inverse(d):
         output[v] = output.get(v, [])
         output[v].append(k)
     return wrap(output)
+
+
+
+
+def nvl(*args):
+    #pick the first none-null value
+    for a in args:
+        if a is not None and a != Null: return a
+    return Null
+
+
+def listwrap(value):
+    """
+    OFTEN IT IS NICE TO ALLOW FUNCTION PARAMETERS TO BE ASSIGNED A VALUE,
+    OR A list-OF-VALUES, OR NULL.  CHECKING FOR THIS IS TEDIOUS AND WE WANT TO CAST
+    FROM THOSE THREE CASES TO THE SINGLE CASE OF A LIST
+
+    Null -> []
+    value -> [value]
+    [...] -> [...]  (unchanged list)
+
+    #BEFORE
+    if a is not None:
+        if not isinstance(a, list):
+            a=[a]
+        for x in a:
+            #do something
+
+
+    #AFTER
+    for x in listwrap(a):
+        #do something
+
+    """
+    if value == Null:
+        return []
+    elif isinstance(value, list):
+        return wrap(value)
+    else:
+        return wrap([value])

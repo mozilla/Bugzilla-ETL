@@ -5,12 +5,12 @@
 ################################################################################
 ## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 ################################################################################
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import threading
 import thread
 import time
-from bzETL.util.struct import Null
+from .struct import Null
 
 
 
@@ -35,6 +35,8 @@ class Lock():
     def wait(self, timeout=None, till=None):
         if till:
             timeout=(datetime.utcnow()-till).total_seconds()
+            if timeout<0:
+                return
         self.monitor.wait(timeout=timeout)
 
     def notify_all(self):
@@ -209,13 +211,12 @@ class Thread():
     def is_alive(self):
         return not self.stopped
 
-
     def join(self, timeout=None, till=None):
         """
         RETURN THE RESULT OF THE THREAD EXECUTION (INCLUDING EXCEPTION)
         """
         if not till and timeout:
-            till=(till-datetime.utcnow()).total_seconds
+            till=datetime.utcnow()+timedelta(seconds=timeout)
 
         if till is None:
             while True:
@@ -230,9 +231,11 @@ class Thread():
                     Log.note("Waiting on thread {{thread}}", {"thread":self.name})
         else:
             self.stopped.wait_for_go(till=till)
-
-            from logs import Except
-            raise Except(type=Thread.TIMEOUT)
+            if self.stopped:
+                return self.response
+            else:
+                from logs import Except
+                raise Except(type=Thread.TIMEOUT)
 
     @staticmethod
     def run(target, *args, **kwargs):
@@ -248,7 +251,7 @@ class Thread():
 
         Thread.num_threads += 1
 
-        output=Thread(name, target, *args, **kwargs)
+        output = Thread(name, target, *args, **kwargs)
         output.start()
         return output
 
@@ -257,8 +260,8 @@ class Thread():
         if seconds is not None:
             time.sleep(seconds)
         if till is not None:
-            duration=(till-datetime.utcnow()).total_seconds()
-            if duration>0:
+            duration = (till - datetime.utcnow()).total_seconds()
+            if duration > 0:
                 time.sleep(duration)
 
 

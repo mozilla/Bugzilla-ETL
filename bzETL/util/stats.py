@@ -7,8 +7,8 @@
 ################################################################################
 
 from math import sqrt
-from .basic import nvl
-from bzETL.util.struct import Null
+from .struct import nvl
+from .struct import Null
 from .maths import Math
 from .logs import Log
 
@@ -137,7 +137,7 @@ class Z_moment():
     @property
     def dict(self):
     #RETURN HASH OF SUMS
-        return dict([("s"+unicode(i), m) for i, m in enumerate(self.S)])
+        return {"s"+unicode(i): m for i, m in enumerate(self.S)}
 
 
     @staticmethod
@@ -145,13 +145,13 @@ class Z_moment():
         if values == Null: return Z_moment()
         values=[float(v) for v in values if v != Null]
 
-        return Z_moment(*[
+        return Z_moment(
             len(values),
             sum([n for n in values]),
             sum([pow(n, 2) for n in values]),
             sum([pow(n, 3) for n in values]),
             sum([pow(n, 4) for n in values])
-        ])
+        )
 
 
 

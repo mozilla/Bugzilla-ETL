@@ -7,7 +7,7 @@ from .maths import Math
 from .query import Q
 from .cnv import CNV
 from .logs import Log
-from .basic import nvl
+from .struct import nvl
 from .struct import Struct, StructList, Null
 
 DEBUG=False
@@ -128,8 +128,9 @@ class ElasticSearch():
                 json=CNV.object2JSON(r["value"])
             else:
                 Log.error("Expecting every record given to have \"value\" or \"json\" property")
-                
-            if id == Null: id=sha.new(json).hexdigest()
+
+            if id == Null:
+                id = sha.new(json).hexdigest()
 
             lines.append('{"index":{"_id":'+CNV.object2JSON(id)+'}}')
             lines.append(json)

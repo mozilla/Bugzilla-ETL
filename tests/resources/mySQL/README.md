@@ -8,7 +8,7 @@ Windows
 -------
 
   * Shutdown MySQL service
-  * Copy contents of zip file to ```mysql``` schema direcotry (C:\ProgramData\MySQL\MySQL Server 5.5\data\mysql on Windows)
+  * Copy contents of zip file to ```mysql``` schema directory (```C:\ProgramData\MySQL\MySQL Server 5.5\data\mysql``` on Windows)
   * Start MySQL service
 
 Linux with zoneinfo database
@@ -19,7 +19,7 @@ Linux with zoneinfo database
 
 From [http://dev.mysql.com/doc/refman/5.0/en/time-zone-support.html](http://dev.mysql.com/doc/refman/5.0/en/time-zone-support.html):
 
-  > If your system has its own zoneinfo database (the set of files describing time zones), you should use the ```mysql_tzinfo_to_sql``` program for filling the time zone tables. Examples of such systems are Linux, FreeBSD, Solaris, and Mac OS X. One likely location for these files is the ```/usr/share/zoneinfo``` directory. If your system does not have a zoneinfo database, you can use the downloadable package described later in this section.
+  > If your system has its own zoneinfo database (the set of files describing time zones), you should use the ```mysql_tzinfo_to_sql``` program for filling the time zone tables. Examples of such systems are Linux, FreeBSD, Solaris, and Mac OS X. One likely location for these files is the ```/usr/share/zoneinfo``` directory.
 
 Linux without zoneinfo database
 -------------------------------

@@ -8,7 +8,7 @@
 
 import sys
 from .logs import Log
-from .basic import nvl, listwrap
+from .struct import nvl, listwrap
 import struct
 from .strings import indent, expand_template
 from .struct import StructList, Struct, Null
@@ -87,18 +87,16 @@ class Q:
     @staticmethod
     def index(data, keys=Null):
     #return dict that uses keys to index data
-        keys=listwrap(keys)
+        keys = struct.unwrap(listwrap(keys))
 
         output = dict()
         for d in data:
             o = output
             for k in keys[:-1]:
                 v = d[k]
-                if v not in o: o[v] = dict()
-                o = o[v]
+                o = o.get(v, dict())
             v = d[keys[-1]]
-            if v not in o: o[v] = list()
-            o = o[v]
+            o = o.get(v, list())
             o.append(d)
         return output
 

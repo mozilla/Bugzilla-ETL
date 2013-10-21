@@ -9,8 +9,8 @@
 
 
 import argparse
-from bzETL.util import struct
-from bzETL.util.basic import listwrap
+import struct
+from .struct import listwrap
 from .cnv import CNV
 from .struct import Null
 from .logs import Log

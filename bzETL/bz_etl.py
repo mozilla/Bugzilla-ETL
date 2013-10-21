@@ -11,6 +11,7 @@
 
 from datetime import datetime, timedelta
 import functools
+import gc
 from bzETL import parse_bug_history, transform_bugzilla
 from bzETL.extract_bugzilla import get_private_bugs, get_recent_private_attachments, get_recent_private_comments, get_comments
 from bzETL.util.basic import nvl
@@ -236,6 +237,9 @@ def main(settings, es=Null, es_comments=Null):
                 #TWO WORKERS IS MORE THAN ENOUGH FOR A SINGLE THREAD
                 # with Multithread([run_both_etl, run_both_etl]) as workers:
                 for b in range(start, end, settings.param.increment):
+                    # WITHOUT gc.collect() PYPYU MEMORY USAGE GROWS UNTIL 2gig LIMIT IS HIT AND CRASH
+                    # WITH THIS LINE IT SEEMS TO TOP OUT AT 1.2gig
+                    gc.collect()
                     (min, max)=(b, b+settings.param.increment)
                     try:
                         with Timer("time to get buglist"):
@@ -259,7 +263,7 @@ def main(settings, es=Null, es_comments=Null):
                         if len(bug_list) == 0:
                             continue
 
-                        param.bug_list=SQL(bug_list)
+                        param.bug_list=bug_list
                         run_both_etl(**{
                             "db":db,
                             "output_queue":output_queue,
