@@ -14,9 +14,9 @@ from . import struct
 from .struct import Null
 from .maths import Math
 from .strings import expand_template
-from .basic import nvl
+from .struct import nvl
 from .cnv import CNV
-from .logs import Log
+from .logs import Log, Except
 from .query import Q
 from .strings import indent
 from .strings import outdent
@@ -343,7 +343,7 @@ class DB():
     # candidate_key IS LIST OF COLUMNS THAT CAN BE USED AS UID (USUALLY PRIMARY KEY)
     # ONLY INSERT IF THE candidate_key DOES NOT EXIST YET
     def insert_new(self, table_name, candidate_key, new_record):
-        candidate_key=listwrap(candidate_key)
+        candidate_key=struct.listwrap(candidate_key)
 
         condition=u" AND\n".join([self.quote_column(k)+u"="+self.quote_value(new_record[k]) if new_record[k] != Null else self.quote_column(k)+u" IS Null"  for k in candidate_key])
         command=u"INSERT INTO "+self.quote_column(table_name)+u" ("+\
@@ -470,8 +470,18 @@ class DB():
             return u"("+u" AND ".join([self._filter2where(a) for a in esfilter[u"and"]])+u")"
         elif esfilter[u"or"] != Null:
             return u"("+u" OR ".join([self._filter2where(a) for a in esfilter[u"or"]])+u")"
+        elif esfilter[u"not"]:
+            return u"NOT ("+self._filter2where(esfilter[u"not"])+u")"
         elif esfilter.term != Null:
             return u"("+u" AND ".join([self.quote_column(col)+u"="+self.quote_value(val) for col, val in esfilter.term.items()])+u")"
+        elif esfilter.terms:
+            for col, v in esfilter.terms.items():
+                try:
+                    int_list=CNV.value2intlist(v)
+                    filter=int_list_packer(col, int_list)
+                    return self._filter2where(filter)
+                except Exception, e:
+                    return self.quote_column(col)+u" in ("+", ".join([self.quote_value(val) for val in v])+")"
         elif esfilter.script != Null:
             return u"("+esfilter.script+u")"
         elif esfilter.range != Null:
@@ -518,3 +528,69 @@ class SQL(unicode):
 
     def __str__(self):
         Log.error(u"do not do this")
+
+
+
+def int_list_packer(term, values):
+    """
+    return singletons, ranges and exclusions
+    """
+
+    singletons=set()
+    ranges=[]
+    exclude=set()
+
+    sorted=Q.sort(values)
+
+    last=sorted[0]
+    curr_start=last
+    curr_excl=set()
+
+    for v in sorted[1:]:
+        if v<=last+1:
+            pass
+        elif v-last > 3:
+            if last==curr_start:
+                singletons.add(last)
+            elif last-curr_start - len(curr_excl) < 4 or ((last-curr_start) < len(curr_excl)*3):
+                #small ranges are singletons, sparse ranges are singletons
+                singletons |= set(range(curr_start, last+1))
+                singletons -= curr_excl
+            else:
+                ranges.append({"gte":curr_start, "lte":last})
+                exclude |= curr_excl
+            curr_start=v
+            curr_excl=set()
+        else:
+            if v-curr_start >= len(curr_excl)*3:
+                add_me = set(range(last + 1, v))
+                curr_excl |= add_me
+            else:
+                ranges.append({"range":{term:{"gte":curr_start, "lte":last}}})
+                exclude |= curr_excl
+                curr_start=v
+                curr_excl=set()
+        last=v
+
+    if last==curr_start:
+        singletons.add(last)
+    else:
+        ranges.append({"gte":curr_start, "lte":last})
+
+
+    if ranges:
+        r={"or":[{"range":{term:r}} for r in ranges]}
+        if exclude:
+            r = {"and":[r, {"not":{"terms":{term:Q.sort(exclude)}}}]}
+        if singletons:
+            return {"or":[
+                {"terms":{term: Q.sort(singletons)}},
+                r
+            ]}
+        else:
+            return r
+    else:
+        raise Except("no packing possible")
+
+
+

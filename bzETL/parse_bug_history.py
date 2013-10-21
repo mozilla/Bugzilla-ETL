@@ -1017,6 +1017,8 @@ class parse_bug_history_():
                 alias_json = "{}"
             self.aliases = CNV.JSON2object(alias_json)
 
+            Log.note("{{num}} aliases loaded", {"num": len(self.aliases.keys())})
+
             for v in self.aliases.values():
                 v.candidates=CNV.dict2Multiset(v.candidates)
         except Exception, e:
@@ -1025,6 +1027,8 @@ class parse_bug_history_():
     def saveAliases(self):
         for k, v in self.aliases.items():
             v.candidates=CNV.multiset2dict(v.candidates)
+
+        Log.note("{{num}} aliases saved", {"num": len(self.aliases.keys())})
 
         alias_json = CNV.object2JSON(self.aliases, pretty=True)
         file = File(self.settings.alias_file)
