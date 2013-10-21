@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 import functools
 import gc
 from bzETL import parse_bug_history, transform_bugzilla
-from bzETL.extract_bugzilla import get_private_bugs, get_recent_private_attachments, get_recent_private_comments, get_comments
+from bzETL.extract_bugzilla import get_private_bugs, get_recent_private_attachments, get_recent_private_comments, get_comments, get_comments_by_id
 from bzETL.util.basic import nvl
 from bzETL.util.maths import Math
 from bzETL.util.multithread import Multithread
@@ -172,7 +172,12 @@ def main(settings, es=Null, es_comments=Null):
             #SETUP RUN PARAMETERS
             param = Struct()
             param.end_time = CNV.datetime2milli(datetime.utcnow())
-            param.start_time = last_run_time
+            param.start_time = db.query("""
+                SELECT
+                    CAST(CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific') AS CHAR) `value`
+                """, {
+                    "start_time":last_run_time
+            })[0].value
             param.alias_file = settings.param.alias_file
             param.allow_private_bugs=settings.param.allow_private_bugs
 
@@ -206,10 +211,14 @@ def main(settings, es=Null, es_comments=Null):
                             "parameters": refresh_param
                         }, e)
 
-                #REMOVE PRIVATE COMMENTS
+                #REFRESH COMMENTS WITH PRIVACY CHANGE
                 private_comments=get_recent_private_comments(db, param)
                 comment_list = Q.select(private_comments, "comment_id")
+                changed_comments=get_comments_by_id(db, comment_list, param)
                 es_comments.delete_record({"terms": {"comment_id": comment_list}})
+                es.add([{"id":c.comment_id, "value":c} for c in changed_comments])
+
+
 
 
             ########################################################################

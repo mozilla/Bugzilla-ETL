@@ -24,7 +24,7 @@ SCREENED_FIELDDEFS=[
 ]
 
 PRIVATE_ATTACHMENT_FIELD_ID=65
-
+PRIVATE_COMMENTS_FIELD_ID=82
 
 bugs_columns = Null
 
@@ -76,7 +76,7 @@ def get_private_bugs(db, param):
 
 def get_recent_private_attachments(db, param):
     """
-    GET ONLY RECENT ATTACHMENTS THAT HAVE GONE PRIVATE
+    GET ONLY RECENT ATTACHMENTS THAT HAVE SWITCHED PRIVACY INDICATOR
     THIS LIST IS USED TO SIGNAL BUGS THAT NEED TOTAL RE-ETL
     """
     if param.allow_private_bugs:
@@ -92,7 +92,7 @@ def get_recent_private_attachments(db, param):
         FROM
             bugs_activity a
         WHERE
-            bug_when >= CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific') AND
+            bug_when >= {{start_time}} AND
             fieldid={{field_id}} AND
             added <> 0
         """, param)
@@ -101,23 +101,30 @@ def get_recent_private_attachments(db, param):
 
 
 def get_recent_private_comments(db, param):
+    """
+    GET COMMENTS THAT HAVE HAD THEIR PRIVACY INDICATOR CHANGED
+    """
     if param.allow_private_bugs:
         return []
+
+    param.field_id=PRIVATE_COMMENTS_FIELD_ID
 
     try:
         comments=db.query("""
             SELECT
-                c.comment_id
+                a.comment_id,
+                a.bug_id
             FROM
-                longdescs c
+                bugs_activity a
             WHERE
-                bug_when >= CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific') AND
-                isprivate=1
+                bug_when >= {{start_time}} AND
+                fieldid={{field_id}}
             """, param)
 
         return comments
     except Exception, e:
         Log.error("problem getting recent private attachments", e)
+
 
 
 
@@ -292,8 +299,6 @@ def get_dependencies(db, param):
 def get_duplicates(db, param):
     param.dupe_filter=db.esfilter2sqlwhere({"terms":{"dupe":param.bug_list}})
     param.dupe_of_filter=db.esfilter2sqlwhere({"terms":{"dupe_of":param.bug_list}})
-
-
 
     return db.query("""
         SELECT dupe AS bug_id
@@ -496,7 +501,7 @@ def get_new_activities(db, param):
             fielddefs field ON a.fieldid = field.`id`
         WHERE
             {{bug_filter}} AND
-            bug_when >= CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific')
+            bug_when >= {{start_time}}
         ORDER BY
             bug_id,
             bug_when DESC,
@@ -550,7 +555,40 @@ def get_comments(db, param):
                 profiles p ON c.who = p.userid
             WHERE
                 {{bug_filter}} AND
-                bug_when >= CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific') AND
+                bug_when >= {{start_time}} AND
+                {{comments_filter}}
+            """, param)
+
+        return comments
+    except Exception, e:
+        Log.error("can not get comment data", e)
+
+def get_comments_by_id(db, comments, param):
+    """
+    GET SPECIFIC COMMENTS
+    """
+    if param.allow_private_bugs:
+        return []
+
+    param.comments_filter=db.esfilter2sqlwhere({"and":[
+        {"term":{"isprivate":0}},
+        {"terms":{"c.comment_id":comments}}
+    ]})
+
+    try:
+        comments=db.query("""
+            SELECT
+                c.comment_id,
+                c.bug_id,
+                p.login_name modified_by,
+                UNIX_TIMESTAMP(CONVERT_TZ(bug_when, 'US/Pacific','UTC'))*1000 AS modified_ts,
+                c.thetext comment,
+                c.isprivate
+            FROM
+                longdescs c
+            LEFT JOIN
+                profiles p ON c.who = p.userid
+            WHERE
                 {{comments_filter}}
             """, param)
 

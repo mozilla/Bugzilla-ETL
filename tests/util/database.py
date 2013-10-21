@@ -83,10 +83,6 @@ def add_bug_group(db, bug_id, group_name):
     db.insert("bug_group_map", {"bug_id":bug_id, "group_id":group_id})
 
 
-
-
-
-
 def diff(db, table, old_record, new_record):
     """
     UPDATE bugs_activity WITH THE CHANGES IN RECORDS

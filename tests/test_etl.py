@@ -6,7 +6,6 @@
 ## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 ################################################################################
 
-import json
 from datetime import datetime
 import pytest
 from bzETL import bz_etl
@@ -14,7 +13,6 @@ from bzETL import bz_etl
 from bzETL.bz_etl import etl
 from bzETL.util.cnv import CNV
 from bzETL.util.db import DB, SQL, all_db
-from bzETL.util.jsons import json_scrub
 from bzETL.util.logs import Log
 from bzETL.util.elasticsearch import ElasticSearch
 from bzETL.util.files import File
@@ -50,7 +48,7 @@ def test_specific_bugs(settings):
         param.bug_list=SQL(settings.param.bugs)
         param.allow_private_bugs=settings.param.allow_private_bugs
 
-        etl(db, candidate, param)
+        etl(db, candidate, param, please_stop=None)
 
         #COMPARE ALL BUGS
         compare_both(candidate, reference, settings, settings.param.bugs)
