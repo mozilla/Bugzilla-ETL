@@ -178,7 +178,7 @@ def verify_no_private_comments(es, private_comments):
             "sort": []
         })
 
-        if len(Q.select(data.hits.hits, "_source")) > 0:
+        if Q.select(data.hits.hits, "_source"):
             Log.error("Expecting no comments")
 
 
@@ -366,9 +366,9 @@ def main():
         Log.start(settings.debug)
 
         with Timer("Run all tests"):
-            test_specific_bugs(settings)
-            test_private_etl(settings)
-            test_public_etl(settings)
+            # test_specific_bugs(settings)
+            # test_private_etl(settings)
+            # test_public_etl(settings)
             test_private_bugs_do_not_show(settings)
             test_private_comments_do_not_show(settings)
             test_recent_private_stuff_does_not_show(settings)
