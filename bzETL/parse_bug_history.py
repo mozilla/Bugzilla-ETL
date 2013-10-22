@@ -150,8 +150,8 @@ class parse_bug_history_():
 
             # Treat timestamps as int values
             new_value = CNV.value2int(row_in.new_value) if row_in.field_name.endswith("_ts") else row_in.new_value
-            if row_in.field_name=="bug_file_loc" and (row_in.new_value == None or len(row_in.new_value)>0):
-                if DEBUG_STATUS: Log.note("bug_file_loc is empty")
+
+
             # Determine where we are in the bug processing workflow
             if row_in._merge_order==1:
                 self.processSingleValueTableItem(row_in.field_name, new_value)
@@ -388,10 +388,10 @@ class parse_bug_history_():
         self.bug_version_num = 1
 
         # continue if there are more bug versions, or there is one final nextVersion
-        while len(self.bugVersions) > 0 or nextVersion != None:
+        while self.bugVersions or nextVersion != None:
             try:
                 currVersion = nextVersion
-                if len(self.bugVersions) > 0:
+                if self.bugVersions:
                     nextVersion = self.bugVersions.pop() # Oldest version
                 else:
                     nextVersion = Null
@@ -605,7 +605,7 @@ class parse_bug_history_():
                     and added_flag["request_status"] != element["previous_status"] # Skip "r?(dre@mozilla)" -> "r?(mark@mozilla)"
             ]
 
-            if len(candidates)==0:
+            if not candidates:
                 # No matching candidate. Totally new flag.
                 target.flags.append(added_flag)
                 continue
@@ -702,7 +702,7 @@ class parse_bug_history_():
 
 
     def addValues(self, total, add, valueType, field_name, target):
-        if len(add)==0: return total
+        if not add: return total
 #        Log.note("Adding " + valueType + " " + fieldName + " values:" + CNV.object2JSON(someValues))
         if field_name == "flags":
             for v in add:
@@ -732,7 +732,7 @@ class parse_bug_history_():
             removed=total&add
 
             #WE CAN NOT REMOVE VALUES WE KNOW TO BE THERE AFTER
-            if len(removed)>0:
+            if removed:
                 Log.note("PROBLEM: Found {{type}}({{bug_id}}).{{field_name}} value: (Removing {{removed}} can not result in {{existing}})",{
                     "bug_id":target.bug_id,
                     "type":valueType,
@@ -741,7 +741,7 @@ class parse_bug_history_():
                     "existing":target[field_name]
                 })
 
-            if valueType!="added" and len(diff)>0:
+            if valueType!="added" and diff:
                 self.currActivity.changes.append({
                     "field_name": field_name,
                     "new_value": Null,
@@ -774,7 +774,7 @@ class parse_bug_history_():
 
             total=[a for a in total if a.value not in removeMe]
 
-            if valueType=="added" and len(removeMe)>0:
+            if valueType=="added" and removeMe:
                 try:
                     self.currActivity.changes.append({
                         "field_name": field_name,
@@ -797,7 +797,7 @@ class parse_bug_history_():
                     "attach_id": target.attach_id
                 })
 
-            if len(diff)>0:
+            if diff:
                 Log.note("PROBLEM Unable to find {{type}} KEYWORD {{object}}({{bug_id}}) (adding anyway): (All {{missing}}" + " not in : {{existing}})",{
                     "bug_id":target.bug_id,
                     "type":valueType,
@@ -937,7 +937,7 @@ class parse_bug_history_():
                     "attach_id": target.attach_id
                 })
 
-            if len(diff)>0:
+            if diff:
                 Log.note("PROBLEM Unable to find {{type}} value in {{bug_id}}: {{object}}.{{field_name}}: (All {{missing}}" + " not in : {{existing}})",{
                     "bug_id":target.bug_id,
                     "type":valueType,

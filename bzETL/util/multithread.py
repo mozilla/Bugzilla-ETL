@@ -39,7 +39,7 @@ class worker_thread(threading.Thread):
             request = self.in_queue.pop()
             if request == Thread.STOP:
                 got_stop=True
-                if len(self.in_queue.queue) > 0:
+                if self.in_queue.queue:
                     Log.warning("programmer error")
                 break
             if not self.keep_running:
@@ -66,7 +66,7 @@ class worker_thread(threading.Thread):
                 "name":self.name,
                 "num":self.num_runs
             })
-        if got_stop and len(self.in_queue.queue)>0:
+        if got_stop and self.in_queue.queue:
             Log.warning("multithread programmer error")
         if DEBUG:
             Log.note("{{thread}} DONE", {"thread":self.name})

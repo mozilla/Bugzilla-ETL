@@ -5,11 +5,12 @@
 ################################################################################
 ## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 ################################################################################
+from bzETL.util.struct import Null
 from .logs import Log
 
 class Multiset():
 
-    def __init__(self, list=None, key_field=None, count_field=None):
+    def __init__(self, list=Null, key_field=None, count_field=None):
         if not key_field and not count_field:
             self.dic = dict()
             for i in list:

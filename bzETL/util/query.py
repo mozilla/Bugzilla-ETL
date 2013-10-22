@@ -341,8 +341,8 @@ class Q:
             r["__temp__"] = value(r, rownum, data)
 
         for keys, values in Q.groupby(data, edges):
-            if len(values) == 0:
-                continue     # CAN DO NOTHING WITH THIS ONE SAMPLE
+            if not values:
+                continue     # CAN DO NOTHING WITH THIS ZERO-SAMPLE
 
             sequence = struct.wrap(Q.sort(values, sort))
             head = nvl(_range.max, _range.stop)
@@ -414,7 +414,7 @@ def groupby_Multiset(data, min_size, max_size):
                 "min": min_size, "max": max_size, "increment": c
             })
 
-    if len(g) > 0:
+    if g:
         yield (i, g)
 
 

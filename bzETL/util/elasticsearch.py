@@ -136,7 +136,7 @@ class ElasticSearch():
             lines.append('{"index":{"_id":'+CNV.object2JSON(id)+'}}')
             lines.append(json)
 
-        if len(lines)==0: return
+        if not lines: return
         response=ElasticSearch.post(
             self.path+"/_bulk",
             data="\n".join(lines).encode("utf8")+"\n",
@@ -267,7 +267,7 @@ def _scrub(r):
                 v = _scrub(v)
                 if v != None:
                     output.append(v)
-            if len(output) == 0:
+            if not output:
                 return None
             try:
                 return Q.sort(output)

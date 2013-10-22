@@ -19,7 +19,7 @@ def main():
 
         test_specific_bugs(settings)
 
-        if len(all_db)>0:
+        if all_db:
             Log.error("not all db connections are closed")
 
         Log.note("All tests pass!  Success!!")
