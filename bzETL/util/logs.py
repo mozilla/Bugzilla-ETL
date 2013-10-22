@@ -276,7 +276,7 @@ class Log_usingStream(BaseLog):
             while not please_stop:
                 next_run = datetime.utcnow() + timedelta(seconds=0.3)
                 logs = queue.pop_all()
-                if len(logs)>0:
+                if logs:
                     lines=[]
                     for log in logs:
                         try:

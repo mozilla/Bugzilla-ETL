@@ -55,7 +55,7 @@ get_stuff_from_bugzilla = [
 def etl_comments(db, es, param, please_stop):
     # CONNECTIONS ARE EXPENSIVE, CACHE HERE
     with comment_db_cache_lock:
-        if len(comment_db_cache) == 0:
+        if not comment_db_cache:
             comment_db_cache.append(DB(db))
 
     with comment_db_cache_lock:
@@ -73,7 +73,7 @@ def etl(db, output_queue, param, please_stop):
 
     # CONNECTIONS ARE EXPENSIVE, CACHE HERE
     with db_cache_lock:
-        if len(db_cache) == 0:
+        if not db_cache:
             db_cache.extend([DB(db) for f in get_stuff_from_bugzilla])
 
     db_results=Queue()
@@ -203,7 +203,7 @@ def main(settings, es=None, es_comments=None):
 
                     #REBUILD BUGS THAT GOT REMOVED
                     bug_list = bugs_to_refresh - private_bugs # BUT NOT PRIVATE BUGS
-                    if len(bug_list) > 0:
+                    if bug_list:
                         refresh_param = param.copy()
                         refresh_param.bug_list = SQL(bug_list)
                         refresh_param.start_time = 0
@@ -261,7 +261,7 @@ def main(settings, es=None, es_comments=None):
                                     "start_time_str":param.start_time_str
                             }), u"bug_id")
 
-                        if len(bug_list) == 0:
+                        if not bug_list:
                             continue
 
                         param.bug_list=bug_list

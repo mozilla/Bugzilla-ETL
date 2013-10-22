@@ -147,7 +147,7 @@ def verify_no_private_bugs(es, private_bugs):
     #VERIFY BUGS ARE NOT IN OUTPUT
     for b in private_bugs:
         versions = compare_es.get_all_bug_versions(es, b)
-        if len(versions) > 0:
+        if versions:
             Log.error("Expecting no version for private bug {{bug_id}}", {
                 "bug_id": b
             })
@@ -315,7 +315,7 @@ def compare_both(candidate, reference, settings, some_bugs):
                     get_all_bug_versions(candidate, bug_id, datetime.utcnow()),
                     "modified_ts")
                 # WE CAN NOT EXPECT candidate TO BE UP TO DATE BECAUSE IT IS USING AN OLD IMAGE
-                if len(versions)==0:
+                if not versions:
                     max_time = CNV.milli2datetime(settings.bugzilla.expires_on)
                 else:
                     max_time = CNV.milli2datetime(versions[-1].modified_ts)
@@ -373,7 +373,7 @@ def main():
             test_private_comments_do_not_show(settings)
             test_recent_private_stuff_does_not_show(settings)
 
-        if len(all_db)>0:
+        if all_db:
             Log.error("not all db connections are closed")
 
         Log.note("All tests pass!  Success!!")

@@ -296,7 +296,7 @@ class DB():
 
 
     def _execute_backlog(self):
-        if len(self.backlog)==0: return
+        if not self.backlog: return
 
         (backlog, self.backlog)=(self.backlog, [])
         if self.db.__module__.startswith(u"pymysql"):

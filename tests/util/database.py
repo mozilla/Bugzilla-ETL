@@ -66,7 +66,7 @@ def mark_comment_private(db, comment_id, isprivate):
 
 def add_bug_group(db, bug_id, group_name):
     group_exists=db.query("SELECT id FROM groups WHERE name={{name}}", {"name": group_name})
-    if len(group_exists)==0:
+    if not group_exists:
         db.insert("groups", {
             "name":group_name,
             "description":group_name,

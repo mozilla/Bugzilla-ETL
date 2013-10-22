@@ -72,7 +72,7 @@ class Queue():
     def pop(self):
         with self.lock:
             while self.keep_running:
-                if len(self.queue)>0:
+                if self.queue:
                     value=self.queue.pop(0)
                     if value==Thread.STOP:  #SENDING A STOP INTO THE QUEUE IS ALSO AN OPTION
                         self.keep_running=False
@@ -87,7 +87,7 @@ class Queue():
         with self.lock:
             if not self.keep_running:
                 return [Thread.STOP]
-            if len(self.queue) == 0:
+            if not self.queue:
                 return []
 
             for v in self.queue:
@@ -130,7 +130,7 @@ class AllThread():
             from .logs import Log
             Log.warning("Problem joining", e)
 
-        if len(exceptions)>0:
+        if exceptions:
             from .logs import Log
             Log.error("Problem in child threads", exceptions)
 

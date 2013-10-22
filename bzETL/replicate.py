@@ -109,7 +109,7 @@ def get_or_create_index(destination_settings, source):
     aliases = es.get_aliases()
 
     indexes = [a for a in aliases if a.alias == destination_settings.index]
-    if len(indexes) == 0:
+    if not indexes:
         #CREATE INDEX
         schema = source.get_schema()
         assert schema.settings
