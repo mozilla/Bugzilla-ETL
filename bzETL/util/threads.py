@@ -323,4 +323,31 @@ class Signal():
 
 
 
-        
+
+class ThreadedQueue(Queue):
+    """
+    DISPATCH TO ANOTHER (SLOWER) queue IN BATCHES OF GIVEN size
+    """
+    def __init__(self, queue, size):
+        Queue.__init__(self)
+
+        def push_to_queue(please_stop):
+            please_stop.on_go(lambda : self.add(Thread.STOP))
+
+            #output_queue IS A MULTI-THREADED QUEUE, SO THIS WILL BLOCK UNTIL THE 5K ARE READY
+            from .query import Q
+            for i, g in Q.groupby(self, size=size):
+                queue.extend(g)
+                if please_stop:
+                    return
+        self.thread=Thread.run(push_to_queue)
+
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, a, b, c):
+        self.add(Thread.STOP)
+        if isinstance(b, BaseException):
+            self.thread.please_stop.go()
+        self.thread.join()

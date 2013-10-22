@@ -420,10 +420,22 @@ def groupby_Multiset(data, min_size, max_size):
 
 
 def groupby_min_max_size(data, min_size=0, max_size=Null, ):
-    if max_size == Null: max_size = sys.maxint
+    if max_size == Null:
+        max_size = sys.maxint
 
-    if isinstance(data, list):
-        return [(i, data[i:i + max_size]) for i in range(0, len(data), max_size)]
+    if hasattr(data, "__iter__"):
+        def _iter():
+            g=0
+            out=[]
+            for i, d in enumerate(data):
+                out.append(d)
+                if (i+1)%max_size==0:
+                    yield g, out
+                    g+=1
+                    out=[]
+            if out:
+                yield g, out
+        return _iter()
     elif not isinstance(data, Multiset):
         return groupby_size(data, max_size)
     else:

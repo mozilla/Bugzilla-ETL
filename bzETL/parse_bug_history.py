@@ -43,7 +43,7 @@
 import re
 import math
 from bzETL.util import struct, strings
-from bzETL.util.basic import nvl
+from bzETL.util.struct import nvl
 from bzETL.util.multiset import Multiset
 from transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS
 
@@ -169,7 +169,7 @@ class parse_bug_history_():
         except Exception, e:
             Log.warning("Problem processing row: {{row}}", {"row":row_in}, e)
         finally:
-            if self.currBugState.created_ts == Null:
+            if row_in._merge_order>1 and self.currBugState.created_ts == Null:
                 Log.note("PROBLEM expecting a created_ts (did you install the timezone database into your MySQL instance?)")
 
             for b in self.currBugState.blocked:
@@ -515,7 +515,7 @@ class parse_bug_history_():
                         if DEBUG_STATUS: Log.note("Bug {{bug_state.bug_id}} v{{bug_state.bug_version_num}} (id = {{bug_state.id}})" , {
                             "bug_state":state
                         })
-                        self.output.add(state)
+                        self.output.add({"id": state.id, "value": state})  #ES EXPECTED FORMAT
 
                     else:
                         Log.note("PROBLEM Not outputting {{_id}} - it is before self.start_time ({{start_time}})", {
@@ -1032,7 +1032,7 @@ class parse_bug_history_():
 
         alias_json = CNV.object2JSON(self.aliases, pretty=True)
         file = File(self.settings.alias_file)
-        file = File(file.backup_name())
+        # file = File(file.backup_name())
         file.write(alias_json)
 
 

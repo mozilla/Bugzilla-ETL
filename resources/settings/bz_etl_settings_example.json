@@ -23,7 +23,7 @@
 	"es_comments":{
 		"host":"http://localhost",
 		"port":"9200",
-		"index":"bugs",
+		"index":"comments",
 		"type":"bug_comment",
 		"schema_file":"./resources/json/bug_comments.json"
 	},

@@ -2,6 +2,7 @@ import sha
 
 import requests
 import time
+from bzETL.util.threads import Queue, Thread
 import struct
 from .maths import Math
 from .query import Q
@@ -113,7 +114,8 @@ class ElasticSearch():
                 self.path+"/"+query
             )
 
-
+    def extend(self, records):
+        self.add(records)
 
     # RECORDS MUST HAVE id AND json AS A STRING OR
     # HAVE id AND value AS AN OBJECT
@@ -180,8 +182,9 @@ class ElasticSearch():
         except Exception, e:
             Log.error("Problem with search", e)
 
-    
-        
+    def threaded_queue(self, size):
+        return Threaded_Queue(self, size)
+
     @staticmethod
     def post(*list, **args):
         try:
@@ -275,5 +278,7 @@ def _scrub(r):
             return r
     except Exception, e:
         Log.warning("Can not scrub: {{json}}", {"json": r})
+
+
 
 

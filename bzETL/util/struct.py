@@ -43,7 +43,7 @@ class Struct(dict):
         d=object.__getattribute__(self, "__dict__")
 
         if key.find(".")>=0:
-            key=key.replace("\\.", "\a")
+            key=key.replace("\.", "\a")
             seq=[k.replace("\a", ".") for k in key.split(".")]
             for n in seq:
                 d=d.get(n, None)
@@ -137,9 +137,11 @@ requested = set()
 
 class NullStruct(object):
     """
-    STRUCTURAL NULL:
+    Structural Null provides closure under the dot (.) operator
         Null[x] == Null
         Null.x == Null
+
+
 
     """
 

@@ -1,11 +1,8 @@
-from flask import json
 from bzETL.util import struct
 from bzETL.util.cnv import CNV
 from bzETL.util.elasticsearch import ElasticSearch
-from bzETL.util.jsons import json_scrub
 from bzETL.util.logs import Log
 from bzETL.util.files import File
-from bzETL.util.query import Q
 from bzETL.util.struct import Struct, Null
 
 
@@ -44,6 +41,11 @@ class Fake_ES():
         f=parse_filter(struct.wrap(query).query.filtered.filter)
         return struct.wrap({"hits":{"hits":[{"_id":i, "_source":d} for i,d in self.data.items() if f(d)]}})
 
+    def extend(self, records):
+        """
+        JUST SO WE MODEL A Queue
+        """
+        return self.add(records)
 
     def add(self, records):
         records={v["id"]:v["value"] for v in records}
@@ -58,7 +60,8 @@ class Fake_ES():
         f = parse_filter(filter)
         self.data = struct.wrap({k: v for k, v in self.data if not f(v)})
 
-
+    def set_refresh_interval(self, seconds):
+        pass
 
 
 def parse_filter(filter):

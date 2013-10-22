@@ -8,7 +8,7 @@
 
 from datetime import datetime
 import pytest
-from bzETL import bz_etl
+from bzETL import bz_etl, extract_bugzilla
 
 from bzETL.bz_etl import etl
 from bzETL.util.cnv import CNV
@@ -20,6 +20,7 @@ from bzETL.util.query import Q
 from bzETL.util.randoms import Random
 from bzETL.util.startup import startup
 from bzETL.util.struct import Struct, Null
+from bzETL.util.threads import ThreadedQueue
 from bzETL.util.timer import Timer
 
 from util import compare_es, database, elasticsearch
@@ -33,7 +34,7 @@ def test_specific_bugs(settings):
     THIS TEST LOCAL) WITH VERSIONS OF BUGS FROM settings.param.bugs.  COMPARE
     THOSE VERSIONS TO A REFERENCE ES (ALSO CHECKED INTO REPOSITORY)
     """
-    settings.param.allow_private_bugs = True
+    # settings.param.allow_private_bugs = True
     database.make_test_instance(settings.bugzilla)
 
     with DB(settings.bugzilla) as db:
@@ -44,11 +45,15 @@ def test_specific_bugs(settings):
         param=Struct()
         param.end_time=CNV.datetime2milli(datetime.utcnow())
         param.start_time=0
+        param.start_time_str = extract_bugzilla.milli2string(db, 0)
+
+
         param.alias_file=settings.param.alias_file
-        param.bug_list=SQL(settings.param.bugs)
+        param.bug_list=settings.param.bugs
         param.allow_private_bugs=settings.param.allow_private_bugs
 
-        etl(db, candidate, param, please_stop=None)
+        with ThreadedQueue(candidate, size=1000) as output:
+            etl(db, output, param, please_stop=None)
 
         #COMPARE ALL BUGS
         compare_both(candidate, reference, settings, settings.param.bugs)
@@ -86,11 +91,13 @@ def random_sample_of_bugs(settings):
             param=Struct()
             param.end_time=CNV.datetime2milli(datetime.utcnow())
             param.start_time=0
+            param.start_time_str = extract_bugzilla.milli2string(db, 0)
             param.alias_file=settings.param.alias_file
 #            param.bugs_filter=SQL("bug_id in {{bugs}}", {"bugs":db.quote_value(some_bugs)})
 
             try:
-                etl(db, candidate, param)
+                with ThreadedQueue(candidate, 100) as output:
+                    etl(db, output, param, please_stop=None)
 
                 #COMPARE ALL BUGS
                 found_errors=compare_both(candidate, reference, settings, some_bugs)
@@ -359,8 +366,8 @@ def main():
         Log.start(settings.debug)
 
         with Timer("Run all tests"):
-            test_specific_bugs(settings)
-            test_private_etl(settings)
+            # test_specific_bugs(settings)
+            # test_private_etl(settings)
             test_public_etl(settings)
             test_private_bugs_do_not_show(settings)
             test_private_comments_do_not_show(settings)
@@ -373,6 +380,26 @@ def main():
     finally:
         Log.stop()
 
+
+
+def profile_etl():
+    import profile
+    import pstats
+    filename="profile_stats.txt"
+
+    profile.run("""
+try:
+    main()
+except Exception, e:
+    pass
+    """, filename)
+    p = pstats.Stats(filename)
+    p.strip_dirs().sort_stats("tottime").print_stats(40)
+
+
+
+
 if __name__=="__main__":
+    # profile_etl()
     main()
 

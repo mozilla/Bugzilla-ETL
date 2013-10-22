@@ -102,12 +102,14 @@ class Log(object):
         cause=Null,     #pausible cause
         offset=0        #stack trace offset (==1 if you do not want to report self)
     ):
-        if isinstance(params, BaseException):
+        if params and isinstance(struct.listwrap(params)[0], BaseException):
             cause=params
             params=Null
 
         if cause != Null and not isinstance(cause, Except):
-            cause=Except(ERROR, unicode(cause), trace=format_trace(traceback.extract_tb(sys.exc_info()[2]), offset))
+            cause=[Except(ERROR, unicode(cause), trace=format_trace(traceback.extract_tb(sys.exc_info()[2]), offset))]
+        else:
+            cause=listwrap(cause)
 
         trace=format_trace(traceback.extract_stack(), 1+offset)
         e=Except(ERROR, template, params, cause, trace)
@@ -180,8 +182,9 @@ class Except(Exception):
         if self.trace != Null:
             output+="\n"+indent(self.trace)
 
-        if self.cause != Null:
-            output+="\ncaused by\n\t"+self.cause.__str__()
+
+        if self.cause:
+            output+="\ncaused by\n\t"+"\nand caused by\n\t".join([c.__str__() for c in self.cause])
 
         return output+"\n"
 

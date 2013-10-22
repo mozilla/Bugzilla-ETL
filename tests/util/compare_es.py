@@ -7,10 +7,9 @@
 ################################################################################
 from datetime import datetime
 
-from bzETL import transform_bugzilla
-from bzETL.util.basic import nvl
+from bzETL import transform_bugzilla, parse_bug_history
+from bzETL.util.struct import nvl
 from bzETL.util.cnv import CNV
-from bzETL.util.elasticsearch import ElasticSearch
 from bzETL.util.maths import Math
 from bzETL.util.query import Q
 
@@ -86,8 +85,8 @@ def old2new(bug, max_date):
 
     bug=CNV.JSON2object(CNV.object2JSON(bug).replace("bugzilla: other b.m.o issues ", "bugzilla: other b.m.o issues"))
 
-    if bug.expires_on != Null and bug.expires_on > max_date:
-        bug.expires_on = Null
+    if bug.expires_on > max_date:
+        bug.expires_on = parse_bug_history.MAX_TIME
     if bug.votes != Null:
         bug.votes = int(bug.votes)
     bug.dupe_by = CNV.value2intlist(bug.dupe_by)
