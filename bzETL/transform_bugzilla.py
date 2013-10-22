@@ -111,5 +111,7 @@ def normalize(bug):
         except Exception, e:
             Log.error("problem with converting date to milli (value={{value}})", {"value":bug[dateField]}, e)
 
+    bug.votes = Null
+
     return ElasticSearch.scrub(bug)
 

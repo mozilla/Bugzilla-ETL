@@ -28,6 +28,17 @@ PRIVATE_COMMENTS_FIELD_ID=82
 
 bugs_columns = Null
 
+def milli2string(db, value):
+    """
+    CONVERT GMT MILLI TO BUGZILLA DATETIME STRING
+    """
+    return db.query("""
+        SELECT
+            CAST(CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific') AS CHAR) `value`
+        """, {
+            "start_time":value
+    })[0].value
+
 
 def get_bugs_table_columns(db, schema_name):
 
@@ -92,7 +103,7 @@ def get_recent_private_attachments(db, param):
         FROM
             bugs_activity a
         WHERE
-            bug_when >= {{start_time}} AND
+            bug_when >= {{start_time_str}} AND
             fieldid={{field_id}} AND
             added <> 0
         """, param)
@@ -117,7 +128,7 @@ def get_recent_private_comments(db, param):
             FROM
                 bugs_activity a
             WHERE
-                bug_when >= {{start_time}} AND
+                bug_when >= {{start_time_str}} AND
                 fieldid={{field_id}}
             """, param)
 
@@ -188,64 +199,7 @@ def get_bugs(db, param):
 
 
 def flatten_bugs_record(r, output):
-    newRow=Struct()
-    newRow.bug_id=r.bug_id
-    newRow.modified_ts=r.modified_ts
-    newRow.modified_by=r.modified_by
-    newRow.field_name="created_ts"
-    newRow.new_value=r.created_ts
-    newRow._merge_order=1
-    output.append(newRow)
-
-    newRow=Struct()
-    newRow.bug_id=r.bug_id
-    newRow.modified_ts=r.modified_ts
-    newRow.modified_by=r.modified_by
-    newRow.field_name="created_by"
-    newRow.new_value=r.created_by
-    newRow._merge_order=1
-    output.append(newRow)
-
-    newRow=Struct()
-    newRow.bug_id=r.bug_id
-    newRow.modified_ts=r.modified_ts
-    newRow.modified_by=r.modified_by
-    newRow.field_name="assigned_to"
-    newRow.new_value=r.assigned_to
-    newRow._merge_order=1
-    output.append(newRow)
-
-    newRow=Struct()
-    newRow.bug_id=r.bug_id
-    newRow.modified_ts=r.modified_ts
-    newRow.modified_by=r.modified_by
-    newRow.field_name="qa_contact"
-    newRow.new_value=r.qa_contact
-    newRow._merge_order=1
-    output.append(newRow)
-
-    newRow=Struct()
-    newRow.bug_id=r.bug_id
-    newRow.modified_ts=r.modified_ts
-    newRow.modified_by=r.modified_by
-    newRow.field_name="product"
-    newRow.new_value=r.product
-    newRow._merge_order=1
-    output.append(newRow)
-
-    newRow=Struct()
-    newRow.bug_id=r.bug_id
-    newRow.modified_ts=r.modified_ts
-    newRow.modified_by=r.modified_by
-    newRow.field_name="component"
-    newRow.new_value=r.component
-    newRow._merge_order=1
-    output.append(newRow)
-
-    for field_name in bugs_columns:
-        value = r[field_name]
-        if field_name=="bug_file_loc":
-            Log.note(value)
+    for field_name, value in r.items():
         if value != "---":
             newRow=Struct()
             newRow.bug_id=r.bug_id
@@ -255,9 +209,6 @@ def flatten_bugs_record(r, output):
             newRow.new_value=value
             newRow._merge_order=1
             output.append(newRow)
-
-    return output
-
 
 
 
@@ -349,6 +300,8 @@ def get_bug_groups(db, param):
 
 
 def get_cc(db, param):
+    param.bug_filter=db.esfilter2sqlwhere({"terms":{"bug_id":param.bug_list}})
+
     return db.query("""
         SELECT bug_id
             , CAST(null AS signed) AS modified_ts
@@ -358,9 +311,12 @@ def get_cc(db, param):
             , CAST(null AS char(255)) AS old_value
             , CAST(null AS signed) AS attach_id
             , 2 AS _merge_order
-        FROM cc
-        JOIN profiles p ON cc.who = p.userid
-        WHERE bug_id IN {{bug_list}}
+        FROM
+            cc
+        JOIN
+            profiles p ON cc.who = p.userid
+        WHERE
+            {{bug_filter}}
     """, param)
 
 
@@ -501,7 +457,7 @@ def get_new_activities(db, param):
             fielddefs field ON a.fieldid = field.`id`
         WHERE
             {{bug_filter}} AND
-            bug_when >= {{start_time}}
+            bug_when >= {{start_time_str}}
         ORDER BY
             bug_id,
             bug_when DESC,
@@ -555,7 +511,7 @@ def get_comments(db, param):
                 profiles p ON c.who = p.userid
             WHERE
                 {{bug_filter}} AND
-                bug_when >= {{start_time}} AND
+                bug_when >= {{start_time_str}} AND
                 {{comments_filter}}
             """, param)
 
