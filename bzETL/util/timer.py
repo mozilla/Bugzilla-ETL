@@ -6,7 +6,6 @@
 ## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 ################################################################################
 import time
-from .struct import Null
 from .strings import expand_template
 from .logs import Log
 
@@ -21,7 +20,7 @@ class Timer:
         doing hard time took 45.468 sec
     """
 
-    def __init__(self, description, param=Null):
+    def __init__(self, description, param=None):
         self.description=expand_template(description, param)  #WE WOULD LIKE TO KEEP THIS TEMPLATE, AND PASS IT TO THE LOGGER ON __exit__(), WE FAKE IT FOR NOW
 
     def __enter__(self):

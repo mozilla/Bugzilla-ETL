@@ -14,13 +14,12 @@ import os
 import shutil
 from .struct import listwrap, nvl
 from .cnv import CNV
-from .struct import Null
 
 
 class File():
 
     def __init__(self, filename):
-        assert filename != Null
+        assert filename != None
         #USE UNIX STANDARD
         self._filename = "/".join(filename.split(os.sep))
 

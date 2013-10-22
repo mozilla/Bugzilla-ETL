@@ -12,7 +12,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
 import sys
-from .struct import nvl, Null
+from .struct import nvl
 
 
 class Emailer:
@@ -22,11 +22,11 @@ class Emailer:
         
 
     def send_email(self,
-        from_address=Null,
-        to_addrs=Null,
+        from_address = None,
+        to_addrs = None,
         subject='No Subject',
-        text_data=Null,
-        html_data=Null
+        text_data = None,
+        html_data = None
     ):
         """Sends an email.
 

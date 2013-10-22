@@ -47,7 +47,7 @@ class Struct(dict):
             seq=[k.replace("\a", ".") for k in key.split(".")]
             for n in seq:
                 d=d.get(n, None)
-                if d is None:
+                if d == None:
                     return Null
                 d=unwrap(d)
             return wrap(d)
@@ -138,8 +138,8 @@ requested = set()
 class NullStruct(object):
     """
     Structural Null provides closure under the dot (.) operator
-        Null[x] == Null
-        Null.x == Null
+        Null[x] == None
+        Null.x == None
 
 
 
@@ -167,11 +167,10 @@ class NullStruct(object):
         return False
 
     def __eq__(self, other):
-        return id(Null) == id(other)
+        return other is Null or other is None
 
     def __ne__(self, other):
-        return id(Null) != id(other)
-
+        return other is not Null and other is not None
 
     def __getitem__(self, key):
         return self
@@ -183,8 +182,32 @@ class NullStruct(object):
         return ZeroList.__iter__()
 
     def __getattribute__(self, key):
-        requested.add(key)
-        return self
+        if key not in SPECIAL:
+            return Null
+
+        #SOME dict FUNCTIONS
+        if key == "items":
+            def temp():
+                return ZeroList
+            return temp
+        if key == "iteritems":
+            #LOW LEVEL ITERATION
+            return self.__iter__()
+        if key=="keys":
+            def temp():
+                return ZeroList
+            return temp
+        if key=="values":
+            def temp():
+                return ZeroList
+            return temp
+        if key=="dict":
+            return Null
+        if key=="copy":
+            #THE INTENT IS USUALLY PREPARE FOR UPDATES
+            def output():
+                return Struct()
+            return output
 
     def keys(self):
         return set()
@@ -200,10 +223,10 @@ ZeroList=[]
 
 class StructList(list):
 
-    def __init__(self, vals=Null):
+    def __init__(self, vals=None):
         """ USE THE vals, NOT A COPY """
         list.__init__(self)
-        if vals == Null:
+        if vals == None:
             self.list=[]
         elif isinstance(vals, StructList):
             self.list=vals.list
@@ -247,7 +270,7 @@ class StructList(list):
 
 
 def wrap(v):
-    if v is None or v == Null:
+    if v == None:
         return Null
     if isinstance(v, (Struct, StructList)):
         return v
@@ -265,7 +288,7 @@ def unwrap(v):
         return object.__getattribute__(v, "__dict__")
     if isinstance(v, StructList):
         return v.list
-    if v == Null:
+    if v == None:
         return None
     return v
 
@@ -286,7 +309,8 @@ def inverse(d):
 def nvl(*args):
     #pick the first none-null value
     for a in args:
-        if a is not None and a != Null: return a
+        if a != None:
+            return a
     return Null
 
 
@@ -313,7 +337,7 @@ def listwrap(value):
         #do something
 
     """
-    if value == Null:
+    if value == None:
         return []
     elif isinstance(value, list):
         return wrap(value)

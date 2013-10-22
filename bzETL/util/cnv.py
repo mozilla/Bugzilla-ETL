@@ -34,12 +34,12 @@ class CNV:
             Log.error("Can not encode into JSON: {{value}}", {"value":repr(obj)}, e)
 
     @staticmethod
-    def JSON2object(json_string, params=Null, flexible=False):
+    def JSON2object(json_string, params=None, flexible=False):
         try:
             #REMOVE """COMMENTS""", #COMMENTS, //COMMENTS, AND \n \r
             if flexible: json_string=re.sub(r"\"\"\".*?\"\"\"|\s+//.*\n|#.*?\n|\n|\r", r" ", json_string)  #DERIVED FROM https://github.com/jeads/datasource/blob/master/datasource/bases/BaseHub.py#L58
 
-            if params != Null:
+            if params:
                 params=dict([(k,CNV.value2quote(v)) for k,v in params.items()])
                 json_string=expand_template(json_string, params)
 
@@ -70,8 +70,8 @@ class CNV:
 
     @staticmethod
     def datetime2unix(d):
-        if d == Null:
-            return Null
+        if d == None:
+            return None
         return long(time.mktime(d.timetuple()))
 
 
@@ -98,8 +98,8 @@ class CNV:
 
     @staticmethod
     def dict2Multiset(dic):
-        if dic == Null:
-            return Null
+        if dic == None:
+            return None
 
         output = Multiset()
         output.dic = struct.unwrap(dic).copy()
@@ -107,8 +107,8 @@ class CNV:
 
     @staticmethod
     def multiset2dict(value):
-        if value == Null:
-            return Null
+        if value == None:
+            return None
         return dict(value.dic)
 
 
@@ -123,8 +123,8 @@ class CNV:
     #PROPER NULL HANDLING
     @staticmethod
     def value2string(value):
-        if value == Null or value == Null:
-            return Null
+        if value == None:
+            return None
         return unicode(value)
 
 
@@ -148,7 +148,7 @@ class CNV:
 
 
     @staticmethod
-    def DataFrame2string(df, columns=Null):
+    def DataFrame2string(df, columns=None):
         output = StringIO.StringIO()
         try:
             df.to_csv(output, sep="\t", header=True, cols=columns, engine='python')
@@ -170,21 +170,21 @@ class CNV:
 
     @staticmethod
     def value2intlist(value):
-        if value == Null:
-            return Null
+        if value == None:
+            return None
         elif hasattr(value, '__iter__'):
             output=[int(d) for d in value if d!=""]
             return output
         elif value.strip()=="":
-            return Null
+            return None
         else:
             return [int(value)]
 
 
     @staticmethod
     def value2int(value):
-        if value == Null:
-            return Null
+        if value == None:
+            return None
         else:
             return int(value)
 

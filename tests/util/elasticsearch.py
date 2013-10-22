@@ -3,16 +3,16 @@ from bzETL.util.cnv import CNV
 from bzETL.util.elasticsearch import ElasticSearch
 from bzETL.util.logs import Log
 from bzETL.util.files import File
-from bzETL.util.struct import Struct, Null
+from bzETL.util.struct import Struct
 
 
 def make_test_instance(name, settings):
-    if settings.filename != Null:
+    if settings.filename:
         File(settings.filename).delete()
     return open_test_instance(name, settings)
 
 def open_test_instance(name, settings):
-    if settings.filename != Null:
+    if settings.filename:
         Log.note("Using {{filename}} as {{type}}", {
             "filename": settings.filename,
             "type": name

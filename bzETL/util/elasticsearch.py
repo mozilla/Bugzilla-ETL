@@ -2,7 +2,6 @@ import sha
 
 import requests
 import time
-from bzETL.util.threads import Queue, Thread
 import struct
 from .maths import Math
 from .query import Q
@@ -20,12 +19,12 @@ class ElasticSearch():
 
 
     def __init__(self, settings):
-        assert settings.host != Null
-        assert settings.index != Null
-        assert settings.type != Null
+        assert settings.host
+        assert settings.index
+        assert settings.type
 
-        self.metadata=Null
-        if settings.port == Null: settings.port=9200
+        self.metadata = None
+        if not settings.port: settings.port=9200
         self.debug=nvl(settings.debug, DEBUG)
         globals()["DEBUG"]=DEBUG or self.debug
         
@@ -53,7 +52,7 @@ class ElasticSearch():
 
 
     @staticmethod
-    def delete_index(settings, index=Null):
+    def delete_index(settings, index=None):
         index=nvl(index, settings.index)
 
         ElasticSearch.delete(
@@ -66,8 +65,8 @@ class ElasticSearch():
         data=self.get_metadata().indices
         output=[]
         for index, desc in data.items():
-            if desc["aliases"] == Null or len(desc["aliases"])==0:
-                output.append({"index":index, "alias":Null})
+            if not desc["aliases"]:
+                output.append({"index":index, "alias":None})
             else:
                 for a in desc["aliases"]:
                     output.append({"index":index, "alias":a})
@@ -76,7 +75,7 @@ class ElasticSearch():
 
     
     def get_metadata(self):
-        if self.metadata == Null:
+        if not self.metadata:
             response=self.get(self.settings.host+":"+unicode(self.settings.port)+"/_cluster/state")
             self.metadata=response.metadata
         return self.metadata
@@ -131,7 +130,7 @@ class ElasticSearch():
             else:
                 Log.error("Expecting every record given to have \"value\" or \"json\" property")
 
-            if id == Null:
+            if id == None:
                 id = sha.new(json).hexdigest()
 
             lines.append('{"index":{"_id":'+CNV.object2JSON(id)+'}}')
@@ -191,7 +190,7 @@ class ElasticSearch():
             response=requests.post(*list, **args)
             if DEBUG: Log.note(response.content[:130])
             details=CNV.JSON2object(response.content)
-            if details.error != Null:
+            if details.error:
                 Log.error(details.error)
             return details
         except Exception, e:
@@ -203,7 +202,7 @@ class ElasticSearch():
             response=requests.get(*list, **args)
             if DEBUG: Log.note(response.content[:130])
             details=CNV.JSON2object(response.content)
-            if details.error != Null:
+            if details.error:
                 Log.error(details.error)
             return details
         except Exception, e:
@@ -241,11 +240,11 @@ class ElasticSearch():
 
 def _scrub(r):
     try:
-        if r is None or r == Null:
-            return Null
+        if r == None:
+            return None
         elif isinstance(r, basestring):
             if r == "":
-                return Null
+                return None
             return r.lower()
         elif Math.is_number(r):
             return CNV.value2number(r)
@@ -255,10 +254,10 @@ def _scrub(r):
             output = {}
             for k, v in r.items():
                 v = _scrub(v)
-                if v != Null:
+                if v != None:
                     output[k.lower()] = v
             if len(output) == 0:
-                return Null
+                return None
             return output
         elif hasattr(r, '__iter__'):
             if isinstance(r, StructList):
@@ -266,10 +265,10 @@ def _scrub(r):
             output = []
             for v in r:
                 v = _scrub(v)
-                if v != Null:
+                if v != None:
                     output.append(v)
             if len(output) == 0:
-                return Null
+                return None
             try:
                 return Q.sort(output)
             except Exception:

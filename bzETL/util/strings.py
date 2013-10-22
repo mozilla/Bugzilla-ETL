@@ -10,7 +10,7 @@ import re
 from .jsons import json_encoder
 import struct
 
-from .struct import Null, Struct
+from .struct import Struct
 
 import sys
 reload(sys)
@@ -18,8 +18,8 @@ sys.setdefaultencoding("utf-8")
 
 
 
-def indent(value, prefix=u"\t", indent=Null):
-    if indent != Null:
+def indent(value, prefix=u"\t", indent=None):
+    if indent != None:
         prefix=prefix*indent
         
     try:
@@ -45,12 +45,12 @@ def outdent(value):
 
 def between(value, prefix, suffix):
     s = value.find(prefix)
-    if s==-1: return Null
+    if s==-1: return None
     s+=len(prefix)
 
     e=value.find(suffix, s)
     if e==-1:
-        return Null
+        return None
 
     s=value.rfind(prefix, 0, e)+len(prefix) #WE KNOW THIS EXISTS, BUT THERE MAY BE A RIGHT-MORE ONE
     return value[s:e]
@@ -69,14 +69,13 @@ def find_first(value, find_arr, start=0):
     if i==len(value): return -1
     return i
 
-#TURNS OUT PYSTACHE MANGLES CHARS FOR HTML
-#def expand_template(template, values):
-#    if values == Null: values={}
-#    return pystache.render(template, values)
+
+
+
+
 
 pattern=re.compile(r"(\{\{[\w_\.]+\}\})")
 def expand_template(template, values):
-    # if values == Null: values={}
     values=struct.wrap(values)
 
     def replacer(found):
