@@ -4,7 +4,6 @@ from bzETL.util.files import File
 from bzETL.util.logs import Log
 from bzETL.util.query import Q
 from bzETL.util.startup import startup
-from bzETL.util.struct import Null
 
 
 def main(settings):
@@ -20,7 +19,7 @@ def main(settings):
             "found":d.canonical
         }
         for n, d in aliases.items()
-        if d.canonical != Null and n!=d.canonical
+        if d.canonical != None and n!=d.canonical
     ]
 
 
@@ -34,7 +33,7 @@ def main(settings):
     clean={
         n: d.canonical
         for n, d in aliases.items()
-        if d.canonical != Null and n!=d.canonical and n!=""
+        if d.canonical != None and n!=d.canonical and n!=""
     }
 
     rev_clean=struct.inverse(clean)

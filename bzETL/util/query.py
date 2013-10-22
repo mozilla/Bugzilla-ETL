@@ -29,23 +29,23 @@ class Q:
         else:
             _from = Q.run(query["from"])
 
-        if query.edges != Null:
+        if query.edges != None:
             Log.error("not implemented yet")
 
-        if query.filter != Null:
+        if query.filter != None:
             Log.error("not implemented yet")
 
         for param in listwrap(query.window):
             Q.window(_from, param)
 
-        if query.where != Null:
+        if query.where != None:
             w = query.where
             _from = Q.filter(_from, w)
 
-        if query.sort != Null:
+        if query.sort != None:
             _from = Q.sort(_from, query.sort)
 
-        if query.select != Null:
+        if query.select != None:
             _from = Q.select(_from, query.select)
 
 
@@ -53,12 +53,12 @@ class Q:
 
 
     @staticmethod
-    def groupby(data, keys=Null, size=Null, min_size=Null, max_size=Null):
+    def groupby(data, keys=None, size=None, min_size=None, max_size=None):
     #return list of (keys, values) pairs where
     #group by the set of set of keys
     #values IS LIST OF ALL data that has those keys
-        if size != Null or min_size != Null or max_size != Null:
-            if size != Null: max_size = size
+        if size != None or min_size != None or max_size != None:
+            if size != None: max_size = size
             return groupby_min_max_size(data, min_size=min_size, max_size=max_size)
 
         try:
@@ -85,7 +85,7 @@ class Q:
 
 
     @staticmethod
-    def index(data, keys=Null):
+    def index(data, keys=None):
     #return dict that uses keys to index data
         keys = struct.unwrap(listwrap(keys))
 
@@ -102,7 +102,7 @@ class Q:
 
 
     @staticmethod
-    def unique_index(data, keys=Null):
+    def unique_index(data, keys=None):
         """
         RETURN dict THAT USES KEYS TO INDEX DATA
         ONLY ONE VALUE ALLOWED PER UNIQUE KEY
@@ -137,8 +137,7 @@ class Q:
         output = {}
         for d in data:
             for k, v in d.items():
-                c = output[k]
-                if c == Null:
+                if k not in output:
                     c = {"name": k, "domain": Null}
                     output[k] = c
 
@@ -148,7 +147,7 @@ class Q:
 
 
     @staticmethod
-    def stack(data, name=Null, value_column=Null, columns=Null):
+    def stack(data, name=None, value_column=None, columns=None):
         """
         STACK ALL CUBE DATA TO A SINGLE COLUMN, WITH ONE COLUMN PER DIMENSION
         >>> s
@@ -169,10 +168,10 @@ class Q:
         columns - explicitly list the value columns (USE SELECT INSTEAD)
         """
 
-        assert value_column != Null
+        assert value_column != None
         if isinstance(data, Cube): Log.error("Do not know how to deal with cubes yet")
 
-        if columns == Null:
+        if columns == None:
             columns = data.get_columns()
         data = data.select(columns)
 
@@ -192,10 +191,10 @@ class Q:
 
     #UNSTACKING CUBES WILL BE SIMPLER BECAUSE THE keys ARE IMPLIED (edges-column)
     @staticmethod
-    def unstack(data, keys=Null, column=Null, value=Null):
-        assert keys != Null
-        assert column != Null
-        assert value != Null
+    def unstack(data, keys=None, column=None, value=None):
+        assert keys != None
+        assert column != None
+        assert value != None
         if isinstance(data, Cube): Log.error("Do not know how to deal with cubes yet")
 
         output = []
@@ -212,7 +211,7 @@ class Q:
         """
         CONVERT SORT PARAMETERS TO A NORMAL FORM SO EASIER TO USE
         """
-        if fieldnames == Null:
+        if fieldnames == None:
             return []
 
         formal = []
@@ -225,15 +224,15 @@ class Q:
 
 
     @staticmethod
-    def sort(data, fieldnames=Null):
+    def sort(data, fieldnames=None):
         """
         PASS A FIELD NAME, OR LIST OF FIELD NAMES, OR LIST OF STRUCTS WITH {"field":field_name, "sort":direction}
         """
         try:
-            if data == Null:
+            if data == None:
                 return Null
 
-            if fieldnames == Null:
+            if fieldnames == None:
                 return sorted(data)
 
             if not isinstance(fieldnames, list):
@@ -280,10 +279,10 @@ class Q:
     def add(*values):
         total = Null
         for v in values:
-            if total == Null:
+            if total == None:
                 total = v
             else:
-                if v != Null and v != Null:
+                if v != None:
                     total += v
         return total
 
@@ -331,7 +330,7 @@ class Q:
         aggregate = param.aggregate  # WindowFunction to apply
         _range = param.range          # of form {"min":-10, "max":0} to specify the size and relative position of window
 
-        if aggregate == Null and sort == Null and edges == Null:
+        if aggregate == None and sort == None and edges == None:
             #SIMPLE CALCULATED VALUE
             for rownum, r in enumerate(data):
                 r[name] = value(r, rownum, data)
@@ -395,7 +394,7 @@ def groupby_size(data, size):
 
 def groupby_Multiset(data, min_size, max_size):
     # GROUP multiset BASED ON POPULATION OF EACH KEY, TRYING TO STAY IN min/max LIMITS
-    if min_size == Null: min_size = 0
+    if min_size == None: min_size = 0
 
     total = 0
     i = 0
@@ -419,8 +418,8 @@ def groupby_Multiset(data, min_size, max_size):
         yield (i, g)
 
 
-def groupby_min_max_size(data, min_size=0, max_size=Null, ):
-    if max_size == Null:
+def groupby_min_max_size(data, min_size=0, max_size=None, ):
+    if max_size == None:
         max_size = sys.maxint
 
     if hasattr(data, "__iter__"):
@@ -443,12 +442,12 @@ def groupby_min_max_size(data, min_size=0, max_size=Null, ):
 
 
 class Cube():
-    def __init__(self, data=Null, edges=Null, name=Null):
+    def __init__(self, data=None, edges=None, name=None):
         if isinstance(data, Cube): Log.error("do not know how to handle cubes yet")
 
         columns = Q.get_columns(data)
 
-        if edges == Null:
+        if edges == None:
             self.edges = [{"name": "index", "domain": {"type": "numeric", "min": 0, "max": len(data), "interval": 1}}]
             self.data = data
             self.select = columns
@@ -514,8 +513,8 @@ class Index(object):
             d = self._data
             for k in self._keys:
                 v = key[k]
-                if v == Null:
-                    Log.error("can not handle when {{key}} == Null", {"key": k})
+                if v == None:
+                    Log.error("can not handle when {{key}} == None", {"key": k})
                 if v not in d:
                     return Null
                 d = d[v]
@@ -537,8 +536,8 @@ class Index(object):
         d = self._data
         for k in self._keys[0:-1]:
             v = val[k]
-            if v == Null:
-                Log.error("can not handle when {{key}} == Null", {"key": k})
+            if v == None:
+                Log.error("can not handle when {{key}} == None", {"key": k})
             if v not in d:
                 e = {}
                 d[v] = e
@@ -551,7 +550,7 @@ class Index(object):
 
 
     def __contains__(self, key):
-        return self[key] != Null
+        return self[key] != None
 
     def __iter__(self):
         return self.lookup(self._data)

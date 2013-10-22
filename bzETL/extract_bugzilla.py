@@ -140,7 +140,7 @@ def get_recent_private_comments(db, param):
 
 
 def get_bugs(db, param):
-    if bugs_columns == Null:
+    if not bugs_columns:
         columns=get_bugs_table_columns(db, db.settings.schema)
         globals()["bugs_columns"] = Q.select(columns, "column_name")
 

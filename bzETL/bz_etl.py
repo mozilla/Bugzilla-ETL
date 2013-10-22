@@ -120,8 +120,8 @@ def setup_es(settings, es, es_comments):
     if settings.args.resume:
         last_run_time = 0
         current_run_time = datetime.utcnow() - timedelta(days=1)
-        if es == Null:
-            if settings.es.alias == Null:
+        if not es:
+            if not settings.es.alias:
                 settings.es.alias = settings.es.index
                 temp = Q.run({
                     "from": ElasticSearch(settings.es).get_aliases(),
@@ -133,7 +133,7 @@ def setup_es(settings, es, es_comments):
             es = ElasticSearch(settings.es)
             es.set_refresh_interval(1)
 
-            if settings.es_comments.alias == Null:
+            if not settings.es_comments.alias:
                 settings.es_comments.alias = settings.es_comments.index
                 settings.es_comments.index = Q.run({
                     "from": ElasticSearch(settings.es_comments).get_aliases(),
@@ -144,22 +144,22 @@ def setup_es(settings, es, es_comments):
             es_comments = ElasticSearch(settings.es_comments)
     elif File(settings.param.last_run_time).exists:
         last_run_time = long(File(settings.param.last_run_time).read())
-        if es == Null:
+        if not es:
             es = ElasticSearch(settings.es)
             es_comments = ElasticSearch(settings.es_comments)
     else:
         last_run_time = 0
-        if es == Null:
+        if not es:
             schema = File(settings.es.schema_file).read()
             if transform_bugzilla.USE_ATTACHMENTS_DOT:
                 schema = schema.replace("attachments_", "attachments.")
 
-            if settings.es.alias == Null:
+            if not settings.es.alias:
                 settings.es.alias = settings.es.index
                 settings.es.index = settings.es.alias + CNV.datetime2string(datetime.utcnow(), "%Y%m%d_%H%M%S")
             es = ElasticSearch.create_index(settings.es, schema)
 
-            if settings.es_comments.alias == Null:
+            if not settings.es_comments.alias:
                 settings.es_comments.alias = settings.es_comments.index
                 settings.es_comments.index = settings.es_comments.alias + CNV.datetime2string(datetime.utcnow(), "%Y%m%d_%H%M%S")
             es_comments = ElasticSearch.create_index(settings.es_comments, File(settings.es_comments.schema_file).read())
@@ -167,8 +167,8 @@ def setup_es(settings, es, es_comments):
     return current_run_time, es, es_comments, last_run_time
 
 
-def main(settings, es=Null, es_comments=Null):
-    if not settings.param.allow_private_bugs and es!=Null and es_comments==Null:
+def main(settings, es=None, es_comments=None):
+    if not settings.param.allow_private_bugs and es and not es_comments:
         Log.error("Must have ES for comments")
 
     #MAKE HANDLES TO CONTAINERS
@@ -280,7 +280,7 @@ def main(settings, es=Null, es_comments=Null):
 
                 output_queue.add(Thread.STOP)
 
-        if settings.es.alias != Null:
+        if settings.es.alias:
             es.delete_all_but(settings.es.alias, settings.es.index)
 
         File(settings.param.last_run_time).write(unicode(CNV.datetime2milli(current_run_time)))

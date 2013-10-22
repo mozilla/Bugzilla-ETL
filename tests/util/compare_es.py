@@ -16,12 +16,10 @@ from bzETL.util.query import Q
 
 
 #PULL ALL BUG DOCS FROM ONE ES
-from bzETL.util.struct import Null
 from bzETL.util.timer import Timer
 
-def get_all_bug_versions(es, bug_id, max_time=Null):
-    if max_time == Null:
-        max_time = datetime.max
+def get_all_bug_versions(es, bug_id, max_time=None):
+    max_time = nvl(max_time, datetime.max)
 
     data=es.search({
         "query":{"filtered":{
@@ -77,9 +75,9 @@ def old2new(bug, max_date):
     CONVERT THE OLD ES FORMAT TO THE NEW
     THESE ARE KNOWN CHANGES THAT SHOULD BE MADE TO THE PRODUCTION VERSION
     """
-    if bug.everconfirmed != Null:
+    if bug.everconfirmed != None:
         if bug.everconfirmed=="":
-            bug.everconfirmed=Null
+            bug.everconfirmed = None
         else:
             bug.everconfirmed=int(bug.everconfirmed)
 
@@ -87,14 +85,14 @@ def old2new(bug, max_date):
 
     if bug.expires_on > max_date:
         bug.expires_on = parse_bug_history.MAX_TIME
-    if bug.votes != Null:
+    if bug.votes != None:
         bug.votes = int(bug.votes)
     bug.dupe_by = CNV.value2intlist(bug.dupe_by)
     if bug.votes == 0:
         del bug["votes"]
     # if Math.is_integer(bug.remaining_time) and int(bug.remaining_time) == 0:
     #     bug.remaining_time = 0
-    if bug.cf_due_date != Null and not Math.is_number(bug.cf_due_date):
+    if bug.cf_due_date != None and not Math.is_number(bug.cf_due_date):
         bug.cf_due_date = CNV.datetime2milli(
             CNV.string2datetime(bug.cf_due_date, "%Y-%m-%d")
         )
@@ -117,14 +115,14 @@ def old2new(bug, max_date):
 
 
     bug=transform_bugzilla.rename_attachments(bug)
-    for c in nvl(bug.changes, []):
+    for c in bug.changes:
         c.field_name=c.field_name.replace("attachments.", "attachments_")
         if c.attach_id=='':
-            c.attach_id=Null
+            c.attach_id = None
         else:
             c.attach_id=CNV.value2int(c.attach_id)
 
-    if bug.attachments != Null:
+    if bug.attachments != None:
         bug.attachments=Q.sort(bug.attachments, "attach_id")
         for a in bug.attachments:
             a.attach_id=CNV.value2int(a.attach_id)

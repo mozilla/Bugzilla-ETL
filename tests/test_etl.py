@@ -132,7 +132,7 @@ def test_public_etl(settings):
 
     """
     File(settings.param.last_run_time).delete()
-    settings.param.allow_private_bugs=Null
+    settings.param.allow_private_bugs = Null
 
     database.make_test_instance(settings.bugzilla)
     es=elasticsearch.make_test_instance("candidate", settings.test_main)
@@ -225,7 +225,7 @@ def test_recent_private_stuff_does_not_show(settings):
         private_comments = Random.sample(comments, 5)
         Log.note("The private comments are {{comments}}", {"comments": private_comments})
         for c in private_comments:
-            database.mark_comment_private(db, c.comment_id)
+            database.mark_comment_private(db, c.comment_id, isprivate=1)
 
         attachments=db.query("SELECT bug_id, attach_id FROM attachments")
         private_attachments=Random.sample(attachments, 5)
@@ -293,7 +293,7 @@ def test_private_comments_do_not_show(settings):
         """)
 
         for c in private_comments:
-            database.mark_comment_private(db, c.comment_id)
+            database.mark_comment_private(db, c.comment_id, 1)
 
     es=elasticsearch.make_test_instance("candidate", settings.test_main)
     es_c=elasticsearch.make_test_instance("candidate_comments", settings.test_comments)
@@ -366,8 +366,8 @@ def main():
         Log.start(settings.debug)
 
         with Timer("Run all tests"):
-            # test_specific_bugs(settings)
-            # test_private_etl(settings)
+            test_specific_bugs(settings)
+            test_private_etl(settings)
             test_public_etl(settings)
             test_private_bugs_do_not_show(settings)
             test_private_comments_do_not_show(settings)

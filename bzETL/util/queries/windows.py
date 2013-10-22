@@ -1,9 +1,8 @@
-from . import struct
 from .logs import Log
 from .maths import Math
-from .multiset import multiset
+from .multiset import Multiset
 from .stats import Z_moment, stats2z_moment, z_moment2stats
-from .struct import Null
+
 
 
 class AggregationFunction(object):
@@ -60,12 +59,12 @@ class Stats(WindowFunction):
 
 
     def add(self, value):
-        if value == Null:
+        if value == None:
             return
         self.total+=stats2z_moment(value)
 
     def sub(self, value):
-        if value == Null:
+        if value == None:
             return
         self.total-=stats2z_moment(value)
 
@@ -84,12 +83,12 @@ class Min(WindowFunction):
 
 
     def add(self, value):
-        if value == Null:
+        if value == None:
             return
         self.total.add(value)
 
     def sub(self, value):
-        if value == Null:
+        if value == None:
             return
         self.total.remove(value)
 
@@ -104,12 +103,12 @@ class Max(WindowFunction):
 
 
     def add(self, value):
-        if value == Null:
+        if value == None:
             return
         self.total.add(value)
 
     def sub(self, value):
-        if value == Null:
+        if value == None:
             return
         self.total.remove(value)
 
@@ -124,12 +123,12 @@ class Count(WindowFunction):
 
 
     def add(self, value):
-        if value == Null:
+        if value == None:
             return
         self.total += 1
 
     def sub(self, value):
-        if value == Null:
+        if value == None:
             return
         self.total -= 1
 
@@ -145,12 +144,12 @@ class Sum(WindowFunction):
 
 
     def add(self, value):
-        if value == Null:
+        if value == None:
             return
         self.total += value
 
     def sub(self, value):
-        if value == Null:
+        if value == None:
             return
         self.total -= value
 

@@ -12,7 +12,6 @@ import argparse
 import struct
 from .struct import listwrap
 from .cnv import CNV
-from .struct import Null
 from .logs import Log
 from .files import File
 
@@ -37,7 +36,7 @@ class startup():
         for d in listwrap(defs):
             args = d.copy()
             name = args.name
-            args.name = Null
+            args.name = None
             parser.add_argument(*listwrap(name).list, **args.dict)
         namespace=parser.parse_args()
         output={k: getattr(namespace, k) for k in vars(namespace)}
@@ -48,9 +47,9 @@ class startup():
 
 
     @staticmethod
-    def read_settings(filename=Null, defs=Null):
+    def read_settings(filename=None, defs=None):
         # READ SETTINGS
-        if filename != Null:
+        if filename:
             settings_file = File(filename)
             if not settings_file.exists:
                 Log.error("Can not file settings file {{filename}}", {
@@ -58,11 +57,10 @@ class startup():
                 })
             json = settings_file.read()
             settings = CNV.JSON2object(json, flexible=True)
-            if defs != Null:
+            if defs:
                 settings.args = startup.argparse(defs)
             return settings
-
-        if filename == Null:
+        else:
             defs=listwrap(defs)
             defs.append({
                 "name": ["--settings", "--settings-file", "--settings_file"],

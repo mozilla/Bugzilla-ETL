@@ -1,12 +1,12 @@
 from datetime import datetime
 from bzETL.util.db import DB
 from bzETL.util.logs import Log
-from bzETL.util.struct import Struct, Null
+from bzETL.util.struct import Struct
 from bzETL.util.timer import Timer
 
 
 def make_test_instance(db_settings):
-    if db_settings.filename == Null:
+    if not db_settings.filename:
         Log.note("Database schema will not be touched")
         return
 
@@ -15,7 +15,7 @@ def make_test_instance(db_settings):
             #CLEAR SCHEMA
             Log.note("Make empty {{schema}} schema", {"schema":db_settings.schema})
             no_schema=db_settings.copy()
-            no_schema.schema=Null
+            no_schema.schema = None
             with DB(no_schema) as db:
                 db.execute("DROP DATABASE IF EXISTS {{schema}}", {"schema":db.quote_column(db_settings.schema)})
                 db.execute("CREATE DATABASE {{schema}}", {"schema":db.quote_column(db_settings.schema)})
@@ -77,7 +77,7 @@ def add_bug_group(db, bug_id, group_name):
     group_id=group_exists[0].id
 
     diff(db, "bugs",
-        Struct(bug_id=bug_id, bug_group=Null),
+        Struct(bug_id=bug_id, bug_group = None),
         Struct(bug_id=bug_id, bug_group=group_name)
     )
     db.insert("bug_group_map", {"bug_id":bug_id, "group_id":group_id})

@@ -7,7 +7,7 @@
 ################################################################################
 import math
 from . import struct
-from .struct import Null
+from .struct import Null, nvl
 from .logs import Log
 from .strings import find_first
 
@@ -49,8 +49,8 @@ class Math():
             return False
 
     @staticmethod
-    def round_sci(value, decimal=Null, digits=Null):
-        if digits != Null:
+    def round_sci(value, decimal=None, digits=None):
+        if digits != None:
             m=pow(10, math.floor(math.log10(digits)))
             return round(value/m, digits)*m
 
@@ -58,12 +58,11 @@ class Math():
 
 
     @staticmethod
-    def floor(value, mod=Null):
+    def floor(value, mod=None):
         """
         x == floor(x, a) + mod(x, a)  FOR ALL a
         """
-        if mod == Null:
-            mod = 1
+        mod = nvl(mod, 1)
         v = int(math.floor(value))
         return v - (v % mod)
 
@@ -85,11 +84,11 @@ class Math():
     def min(values):
         output = Null
         for v in values:
-            if v == Null:
+            if v == None:
                 continue
             if math.isnan(v):
                 continue
-            if output == Null:
+            if output == None:
                 output = v
                 continue
             output = min(output, v)
@@ -101,11 +100,11 @@ class Math():
     def max(values):
         output = Null
         for v in values:
-            if v == Null:
+            if v == None:
                 continue
             if math.isnan(v):
                 continue
-            if output == Null:
+            if output == None:
                 output = v
                 continue
             output = max(output, v)

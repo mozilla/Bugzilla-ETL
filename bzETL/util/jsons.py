@@ -11,7 +11,7 @@ from datetime import datetime, time
 from decimal import Decimal
 import json
 import re
-from .struct import Null
+
 
 try:
     # StringBuilder IS ABOUT 2x FASTER THAN list()
@@ -75,7 +75,7 @@ else:
 def _value2json(value, appender):
     if isinstance(value, basestring):
         _string2json(value, appender)
-    elif value == Null or value is None:
+    elif value == None:
         appender("null")
     elif value is True:
         appender('true')
@@ -155,7 +155,7 @@ def json_scrub(r):
 
 
 def _scrub(r):
-    if r == Null:
+    if r == None:
         return None
     elif isinstance(r, dict):
         output = {}

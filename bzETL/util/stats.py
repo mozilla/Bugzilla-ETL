@@ -8,7 +8,6 @@
 
 from math import sqrt
 from .struct import nvl
-from .struct import Null
 from .logs import Log
 
 
@@ -140,9 +139,9 @@ class Z_moment():
 
 
     @staticmethod
-    def new_instance(values=Null):
-        if values == Null: return Z_moment()
-        values=[float(v) for v in values if v != Null]
+    def new_instance(values=None):
+        if values == None: return Z_moment()
+        values=[float(v) for v in values if v != None]
 
         return Z_moment(
             len(values),

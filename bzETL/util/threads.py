@@ -10,8 +10,6 @@ from datetime import datetime, timedelta
 import threading
 import thread
 import time
-from .struct import Null
-
 
 
 DEBUG = True
@@ -164,7 +162,7 @@ class Thread():
     def __init__(self, name, target, *args, **kwargs):
         self.name = name
         self.target = target
-        self.response = Null
+        self.response = None
         self.synch_lock=Lock()
         self.args = args
 

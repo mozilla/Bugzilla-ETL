@@ -74,7 +74,7 @@ class parse_bug_history_():
         self.aliases = Null
         self.startNewBug(struct.wrap({"bug_id":0, "modified_ts":0, "_merge_order":1}))
         self.prevActivityID = Null
-        self.prev_row=Null
+        self.prev_row = Null
         self.settings=settings
         self.output = output_queue
 
@@ -85,7 +85,7 @@ class parse_bug_history_():
         if len(row_in.items())==0: return 
         try:
             self.currBugID = row_in.bug_id
-            # if self.currBugState.created_ts == Null:
+            # if not self.currBugState.created_ts:
             #     Log.note("PROBLEM expecting a created_ts (did you install the timezone database into your MySQL instance?)")
 
             if self.settings.debug: Log.note("process row: {{row}}", {"row":row_in})
@@ -120,7 +120,7 @@ class parse_bug_history_():
                     uncertain = True
                     Log.note("PROBLEM Encountered uncertain added value.  Skipping.")
                     row_in.new_value = Null
-                elif added != Null and added.startswith("? "): # Possibly truncated value extracted from a possibly truncated field
+                elif added != None and added.startswith("? "): # Possibly truncated value extracted from a possibly truncated field
                     uncertain = True
                     row_in.new_value = added[2:]
 
@@ -128,11 +128,11 @@ class parse_bug_history_():
                     uncertain = True
                     Log.note("PROBLEM Encountered uncertain removed value.  Skipping.")
                     row_in.old_value = Null
-                elif removed != Null and removed.startswith("? "): # Possibly truncated value extracted from a possibly truncated field
+                elif removed != None and removed.startswith("? "): # Possibly truncated value extracted from a possibly truncated field
                     uncertain = True
                     row_in.old_value = removed[2:]
 
-                if uncertain and self.currBugState.uncertain == Null:
+                if uncertain and self.currBugState.uncertain == None:
                     # Process the "uncertain" flag as an activity
                     # WE ARE GOING BACKWARDS IN TIME, SO MARKUP PAST
                     Log.note("PROBLEM Setting this bug to be uncertain.")
@@ -144,13 +144,13 @@ class parse_bug_history_():
                         "old_value":"1",
                         "attach_id":Null
                     }))
-                    if row_in.new_value == Null and row_in.old_value == Null:
+                    if row_in.new_value == None and row_in.old_value == None:
                         Log.note("Nothing added or removed. Skipping update.")
                         return
 
             # Treat timestamps as int values
             new_value = CNV.value2int(row_in.new_value) if row_in.field_name.endswith("_ts") else row_in.new_value
-            if row_in.field_name=="bug_file_loc" and (row_in.new_value == Null or len(row_in.new_value)>0):
+            if row_in.field_name=="bug_file_loc" and (row_in.new_value == None or len(row_in.new_value)>0):
                 if DEBUG_STATUS: Log.note("bug_file_loc is empty")
             # Determine where we are in the bug processing workflow
             if row_in._merge_order==1:
@@ -169,7 +169,7 @@ class parse_bug_history_():
         except Exception, e:
             Log.warning("Problem processing row: {{row}}", {"row":row_in}, e)
         finally:
-            if row_in._merge_order>1 and self.currBugState.created_ts == Null:
+            if row_in._merge_order>1 and self.currBugState.created_ts == None:
                 Log.note("PROBLEM expecting a created_ts (did you install the timezone database into your MySQL instance?)")
 
             for b in self.currBugState.blocked:
@@ -179,7 +179,7 @@ class parse_bug_history_():
 
     @staticmethod
     def uid(bug_id, modified_ts):
-        if modified_ts == Null:
+        if modified_ts == None:
             Log.error("modified_ts can not be Null")
 
         return unicode(bug_id) + "_" + unicode(modified_ts)[0:-3]
@@ -249,7 +249,7 @@ class parse_bug_history_():
 
 
         att=self.currBugAttachmentsMap[unicode(row_in.attach_id)]
-        if att == Null:
+        if att == None:
             att={
                 "attach_id": row_in.attach_id,
                 "modified_ts": row_in.modified_ts,
@@ -260,7 +260,7 @@ class parse_bug_history_():
             self.currBugAttachmentsMap[unicode(row_in.attach_id)]=att
 
         att["created_ts"]=Math.min([row_in.modified_ts, att["created_ts"]])
-        if row_in.field_name=="created_ts" and row_in.new_value == Null:
+        if row_in.field_name=="created_ts" and row_in.new_value == None:
             pass
         else:
             att[row_in.field_name] = row_in.new_value
@@ -268,8 +268,8 @@ class parse_bug_history_():
             
     def processFlagsTableItem(self, row_in):
         flag = self.makeFlag(row_in.new_value, row_in.modified_ts, row_in.modified_by)
-        if row_in.attach_id != Null:
-            if self.currBugAttachmentsMap[unicode(row_in.attach_id)] == Null:
+        if row_in.attach_id != None:
+            if self.currBugAttachmentsMap[unicode(row_in.attach_id)] == None:
                 Log.note("Unable to find attachment {{attach_id}} for bug_id {{bug_id}}", {
                     "attach_id":row_in.attach_id,
                     "bug_id":self.currBugID
@@ -281,7 +281,7 @@ class parse_bug_history_():
 
 
     def processBugsActivitiesTableItem(self, row_in):
-        if self.currBugState.created_ts == Null:
+        if self.currBugState.created_ts == None:
             Log.error("must have created_ts")
 
         if row_in.field_name == "flagtypes_name":
@@ -293,7 +293,7 @@ class parse_bug_history_():
         currActivityID = parse_bug_history_.uid(self.currBugID, row_in.modified_ts)
         if currActivityID != self.prevActivityID:
             self.currActivity = self.bugVersionsMap[currActivityID]
-            if self.currActivity == Null:
+            if self.currActivity == None:
                 self.currActivity = Struct(
                     _id= currActivityID,
                     modified_ts= row_in.modified_ts,
@@ -305,9 +305,9 @@ class parse_bug_history_():
             self.prevActivityID = currActivityID
 
 
-        if row_in.attach_id != Null:
+        if row_in.attach_id != None:
             attachment = self.currBugAttachmentsMap[unicode(row_in.attach_id)]
-            if attachment == Null:
+            if attachment == None:
                 #we are going backwards in time, no need to worry about these?  maybe delete this change for public bugs
                 Log.note("PROBLEM Unable to find attachment {{attach_id}} for bug_id {{start_time}}: {{start_time}}", {
                     "attach_id":row_in.attach_id,
@@ -379,7 +379,7 @@ class parse_bug_history_():
 
         # Tracks the previous distinct value for field
         prevValues ={}
-        currVersion=Null
+        currVersion = Null
         # Prime the while loop with an empty next version so our first iteration outputs the initial bug state
         nextVersion = Struct(_id=self.currBugState._id, changes=[])
 
@@ -388,7 +388,7 @@ class parse_bug_history_():
         self.bug_version_num = 1
 
         # continue if there are more bug versions, or there is one final nextVersion
-        while len(self.bugVersions) > 0 or nextVersion != Null:
+        while len(self.bugVersions) > 0 or nextVersion != None:
             try:
                 currVersion = nextVersion
                 if len(self.bugVersions) > 0:
@@ -405,12 +405,12 @@ class parse_bug_history_():
                 # at exactly the same time as the bug itself.
                 # Effectively, we combine all the changes for a given timestamp into the last one.
                 mergeBugVersion = False
-                if nextVersion != Null and currVersion._id == nextVersion._id:
+                if nextVersion != None and currVersion._id == nextVersion._id:
                     if DEBUG_STATUS: Log.note("Merge mode: activated " + self.currBugState._id)
                     mergeBugVersion = True
 
                 # Link this version to the next one (if there is a next one)
-                if nextVersion != Null:
+                if nextVersion != None:
                     if DEBUG_STATUS: Log.note("We have a nextVersion: {{timestamp}} (ver {{next_version}})", {
                         "timestamp":nextVersion.modified_ts,
                         "next_version":self.bug_version_num + 1
@@ -438,13 +438,13 @@ class parse_bug_history_():
                         next = changes[c + 1]
                         if change.attach_id == next.attach_id and\
                             change.field_name == next.field_name and\
-                            change.old_value != Null and\
-                            next.old_value == Null:
+                            change.old_value != None and\
+                            next.old_value == None:
                             next.old_value = change.old_value
                             changes[c] = Null
                             continue
-                        if change.new_value == Null and \
-                            change.old_value == Null and \
+                        if change.new_value == None and \
+                            change.old_value == None and \
                             change.field_name!="attachment_added":
                             changes[c] = Null
                             continue
@@ -453,7 +453,7 @@ class parse_bug_history_():
                     target = self.currBugState
                     targetName = "currBugState"
                     attach_id = change.attach_id
-                    if attach_id != Null:
+                    if attach_id != None:
 
                         # Handle the special change record that signals the creation of the attachment
                         if change.field_name == "attachment_added":
@@ -466,7 +466,7 @@ class parse_bug_history_():
                             target = self.currBugAttachmentsMap[unicode(attach_id)]
                             # target.tada="test"+unicode(currVersion.modified_ts)
                             targetName = "attachment"
-                            if target == Null:
+                            if target == None:
                                 Log.warning("Encountered a change to missing attachment for bug {{version}}: {{change}}", {
                                     "version": currVersion["bug_id"],
                                     "change": change
@@ -510,7 +510,7 @@ class parse_bug_history_():
                     # that did not have a value for "expires_on").
                     if self.currBugState.modified_ts >= self.settings.start_time or self.currBugState.expires_on >= self.settings.start_time:
                         state=normalize(self.currBugState)
-                        if state.blocked != Null and len(state.blocked)==1 and "Null" in state.blocked:
+                        if state.blocked != None and len(state.blocked)==1 and "Null" in state.blocked:
                             Log.note("PROBLEM error")
                         if DEBUG_STATUS: Log.note("Bug {{bug_state.bug_id}} v{{bug_state.bug_version_num}} (id = {{bug_state.id}})" , {
                             "bug_state":state
@@ -528,7 +528,7 @@ class parse_bug_history_():
                         "bug_state":currVersion
                     })
             finally:
-                if self.currBugState.blocked == Null:
+                if self.currBugState.blocked == None:
                     Log.note("expecting a created_ts")
                 pass
             
@@ -548,7 +548,7 @@ class parse_bug_history_():
 
 
     def processFlagChange(self, target, change, modified_ts, modified_by, reverse=False):
-        if target.flags == Null:
+        if target.flags == None:
             Log.note("PROBLEM  processFlagChange called with unset 'flags'")
             target.flags = []
 
@@ -567,7 +567,7 @@ class parse_bug_history_():
             removed_flag = parse_bug_history_.makeFlag(flagStr, modified_ts, modified_by)
             existingFlag = self.findFlag(target.flags, removed_flag)
 
-            if existingFlag != Null:
+            if existingFlag != None:
                 # Carry forward some previous values:
                 existingFlag["previous_modified_ts"] = existingFlag["modified_ts"]
                 existingFlag["modified_ts"] = modified_ts
@@ -600,7 +600,7 @@ class parse_bug_history_():
             added_flag = self.makeFlag(flagStr, modified_ts, modified_by)
 
             candidates = [element for element in target.flags if
-                element["value"] == Null    #SPECIAL INDICATOR
+                element["value"] == None    #SPECIAL INDICATOR
                     and added_flag["request_type"] == element["request_type"]
                     and added_flag["request_status"] != element["previous_status"] # Skip "r?(dre@mozilla)" -> "r?(mark@mozilla)"
             ]
@@ -629,7 +629,7 @@ class parse_bug_history_():
                     # If we had no matches (or many matches), try matching on requestee.
                     matched_req = [element for element in candidates if
                         # Do case-insenitive comparison
-                        element["requestee"] != Null and
+                        element["requestee"] != None and
                             added_flag["modified_by"].lower() == element["requestee"].lower()
                     ]
                     if len(matched_req) == 1:
@@ -643,7 +643,7 @@ class parse_bug_history_():
                 # Obvious case - matched exactly one.
                 Log.note("Matched added flag " + CNV.object2JSON(added_flag) + " to removed flag " + CNV.object2JSON(chosen_one))
 
-            if chosen_one != Null:
+            if chosen_one != None:
                 for f in ["value", "request_status", "requestee"]:
                     chosen_one[f] = nvl(added_flag[f], chosen_one[f])
 
@@ -653,7 +653,7 @@ class parse_bug_history_():
 
 
     def setPrevious(self, dest, aFieldName, aValue, aChangeAway):
-        if dest["previous_values"] == Null:
+        if dest["previous_values"] == None:
             dest["previous_values"] ={}
 
         pv = dest["previous_values"]
@@ -665,7 +665,7 @@ class parse_bug_history_():
         pv[vField] = aValue
         # If we have a previous change for this field, then use the
         # change-away time as the new change-to time.
-        if pv[caField] != Null:
+        if pv[caField] != None:
             pv[ctField] = pv[caField]
         else:
             # Otherwise, this is the first change for this field, so
@@ -761,7 +761,7 @@ class parse_bug_history_():
                 flag = parse_bug_history_.makeFlag(v, 0, 0)
 
                 found=self.findFlag(total, flag)
-                if found != Null:
+                if found != None:
                     removeMe.append(found.value) #FOR SOME REASON, REMOVAL BY OBJECT DOES NOT WORK
                 else:
                     Log.note("PROBLEM Unable to find {{type}} FLAG: {{object}}.{{field_name}}: (All {{missing}}" + " not in : {{existing}})",{
@@ -822,7 +822,7 @@ class parse_bug_history_():
             if not target.uncertain:
                 for lost in diff:
                     details = self.aliases[lost.replace(".", "\.")]
-                    if details == Null:
+                    if details == None:
                         details = Struct()
                         self.aliases[lost.replace(".", "\.")] = details
                     details.last_seen = Math.max([details.last_seen, timestamp])
@@ -953,7 +953,7 @@ class parse_bug_history_():
 
     @staticmethod
     def getMultiFieldValue(name, value):
-        if value == Null:
+        if value == None:
             return set()
         if name in MULTI_FIELDS:
             if name in NUMERIC_FIELDS:
@@ -965,11 +965,11 @@ class parse_bug_history_():
 
 
     def alias(self, name):
-        if name == Null:
+        if name == None:
             return Null
         alias=self.aliases[name.replace(".", "\.")].canonical
 
-        if alias == Null and name.endswith("@formerly-netscape.com.tld"):
+        if alias == None and name.endswith("@formerly-netscape.com.tld"):
             canonical = name.replace("@formerly-netscape.com.tld", "@netscape.com")
             self.add_alias(name, canonical, 0)
             return canonical
@@ -978,7 +978,7 @@ class parse_bug_history_():
 
     def add_alias(self, lost, found, timestamp):
         found_record = self.aliases[found.replace(".", "\.")]
-        if found_record != Null:
+        if found_record != None:
             new_canonical = nvl(found_record.canonical, found)
             found_record.last_seen = Math.max([found_record.last_seen, timestamp])
         else:
@@ -987,7 +987,7 @@ class parse_bug_history_():
             self.aliases[found.replace(".", "\.")] = found_record
 
         lost_record = self.aliases[lost.replace(".", "\.")]
-        if lost_record != Null:
+        if lost_record != None:
             old_canonical = nvl(lost_record.canonical, lost)
             lost_record.canonical = new_canonical
             lost_record.last_seen = Math.max([lost_record.last_seen, timestamp])
@@ -1043,7 +1043,7 @@ def clear_winner(candidates):
     """
     RETURN THE ELEMENT THAT HAS CLEARLY MORE HITS THAN THE OTHERS
     """
-    if candidates == Null or not candidates.keys():
+    if candidates == None or not candidates.keys():
         return Null
 
     if not isinstance(candidates, Multiset):
