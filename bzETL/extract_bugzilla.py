@@ -9,7 +9,7 @@
 from bzETL.util.db import SQL
 
 from bzETL.util.logs import Log
-from bzETL.util.query import Q
+from bzETL.util.queries import Q
 from bzETL.util.struct import Struct, Null
 
 

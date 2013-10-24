@@ -11,7 +11,7 @@ from bzETL import transform_bugzilla, parse_bug_history
 from bzETL.util.struct import nvl
 from bzETL.util.cnv import CNV
 from bzETL.util.maths import Math
-from bzETL.util.query import Q
+from bzETL.util.queries import Q
 
 
 

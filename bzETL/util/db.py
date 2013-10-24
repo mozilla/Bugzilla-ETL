@@ -11,13 +11,12 @@ from datetime import datetime
 import subprocess
 from pymysql import connect
 from . import struct
-from .struct import Null
 from .maths import Math
 from .strings import expand_template
 from .struct import nvl
 from .cnv import CNV
 from .logs import Log, Except
-from .query import Q
+from .bzETL.util.queries.query import Q
 from .strings import indent
 from .strings import outdent
 from .files import File
@@ -361,9 +360,23 @@ class DB():
 
 
     def insert_list(self, table_name, records):
-        #PROBABLY CAN BE BETTER DONE WITH executeMany()
+        keys = set()
         for r in records:
-            self.insert(table_name, r)
+            keys |= set(r.keys())
+        keys = Q.sort(keys)
+
+        try:
+            command = \
+                u"INSERT INTO " + self.quote_column(table_name) + u"(" + \
+                u",".join([self.quote_column(k) for k in keys]) + \
+                u") VALUES " + ",".join([
+                    "(" + u",".join([self.quote_value(r[k]) for k in keys]) + u")"
+                    for r in records
+                ])
+            self.execute(command)
+        except Exception, e:
+            Log.error(u"problem with record: {{record}}", {u"record": records}, e)
+
 
 
     def update(self, table_name, where_slice, new_values):

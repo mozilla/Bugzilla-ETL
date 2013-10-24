@@ -1,14 +1,15 @@
 import sha
+import time
 
 import requests
-import time
+
 import struct
 from .maths import Math
-from .query import Q
+from .bzETL.util.queries.query import Q
 from .cnv import CNV
 from .logs import Log
 from .struct import nvl
-from .struct import Struct, StructList, Null
+from .struct import Struct, StructList
 
 DEBUG=False
 

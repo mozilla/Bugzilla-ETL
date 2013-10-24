@@ -12,11 +12,11 @@ from bzETL import bz_etl, extract_bugzilla
 
 from bzETL.bz_etl import etl
 from bzETL.util.cnv import CNV
-from bzETL.util.db import DB, SQL, all_db
+from bzETL.util.db import DB, all_db
 from bzETL.util.logs import Log
 from bzETL.util.elasticsearch import ElasticSearch
 from bzETL.util.files import File
-from bzETL.util.query import Q
+from bzETL.util.queries import Q
 from bzETL.util.randoms import Random
 from bzETL.util import startup
 from bzETL.util.struct import Struct, Null

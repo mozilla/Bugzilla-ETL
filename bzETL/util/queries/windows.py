@@ -1,9 +1,15 @@
-from .logs import Log
-from .maths import Math
-from .multiset import Multiset
-from .stats import Z_moment, stats2z_moment, z_moment2stats
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this file,
+# You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Author: Kyle Lahnakoski (kyle@lahnakoski.com)
+#
 
-
+from ..logs import Log
+from ..maths import Math
+from ..multiset import Multiset
+from ..stats import Z_moment, stats2z_moment, z_moment2stats
 
 class AggregationFunction(object):
     def __init__(self):
@@ -29,8 +35,6 @@ class AggregationFunction(object):
         """
         RETURN AGGREGATE
         """
-
-
 
 
 class WindowFunction(AggregationFunction):
@@ -73,7 +77,6 @@ class Stats(WindowFunction):
 
     def end(self):
         return z_moment2stats(self.total)
-
 
 
 class Min(WindowFunction):
