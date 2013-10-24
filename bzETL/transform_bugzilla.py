@@ -3,7 +3,7 @@ import re
 from bzETL.util.cnv import CNV
 from bzETL.util.elasticsearch import ElasticSearch
 from bzETL.util.logs import Log
-from bzETL.util.query import Q
+from bzETL.util.queries import Q
 
 
 USE_ATTACHMENTS_DOT = True

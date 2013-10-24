@@ -49,7 +49,7 @@ from transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS
 
 from bzETL.util.cnv import CNV
 from bzETL.util.logs import Log
-from bzETL.util.query import Q
+from bzETL.util.queries import Q
 from bzETL.util.struct import Struct, Null
 from bzETL.util.files import File
 from bzETL.util.maths import Math

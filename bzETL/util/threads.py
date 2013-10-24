@@ -195,6 +195,9 @@ class Thread():
             from .logs import Log
             Log.error("Can not start thread", e)
 
+    def stop(self):
+        self.please_stop.go()
+
     def _run(self):
         try:
             if self.target is not None:
@@ -338,7 +341,7 @@ class ThreadedQueue(Queue):
             please_stop.on_go(lambda : self.add(Thread.STOP))
 
             #output_queue IS A MULTI-THREADED QUEUE, SO THIS WILL BLOCK UNTIL THE 5K ARE READY
-            from .query import Q
+            from .bzETL.util.queries.query import Q
             for i, g in Q.groupby(self, size=size):
                 queue.extend(g)
                 if please_stop:

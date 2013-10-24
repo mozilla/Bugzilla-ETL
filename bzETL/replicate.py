@@ -13,7 +13,7 @@ from bzETL.util.timer import Timer
 import transform_bugzilla
 from bzETL.util.cnv import CNV
 from bzETL.util.logs import Log
-from bzETL.util.query import Q
+from bzETL.util.queries import Q
 from bzETL.util import startup
 from bzETL.util.files import File
 from bzETL.util.multiset import Multiset
