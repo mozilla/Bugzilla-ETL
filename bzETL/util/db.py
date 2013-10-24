@@ -16,7 +16,7 @@ from .strings import expand_template
 from .struct import nvl
 from .cnv import CNV
 from .logs import Log, Except
-from .bzETL.util.queries.query import Q
+from .queries import Q
 from .strings import indent
 from .strings import outdent
 from .files import File
