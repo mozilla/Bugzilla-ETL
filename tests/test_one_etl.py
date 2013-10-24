@@ -8,7 +8,7 @@
 
 from bzETL.util.db import all_db
 from bzETL.util.logs import Log
-from bzETL.util.startup import startup
+from bzETL.util import startup
 from test_etl import test_specific_bugs
 
 

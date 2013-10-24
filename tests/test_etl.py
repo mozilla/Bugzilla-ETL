@@ -18,7 +18,7 @@ from bzETL.util.elasticsearch import ElasticSearch
 from bzETL.util.files import File
 from bzETL.util.query import Q
 from bzETL.util.randoms import Random
-from bzETL.util.startup import startup
+from bzETL.util import startup
 from bzETL.util.struct import Struct, Null
 from bzETL.util.threads import ThreadedQueue
 from bzETL.util.timer import Timer
