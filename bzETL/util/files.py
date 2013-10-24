@@ -19,7 +19,9 @@ from .cnv import CNV
 class File():
 
     def __init__(self, filename):
-        assert filename != None
+        if filename == None:
+            from .logs import Log
+            Log.error("File must be given a filename")
         #USE UNIX STANDARD
         self._filename = "/".join(filename.split(os.sep))
 

@@ -32,13 +32,13 @@ def milli2string(db, value):
     """
     CONVERT GMT MILLI TO BUGZILLA DATETIME STRING
     """
-    return db.query("""
+    output = db.query("""
         SELECT
             CAST(CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific') AS CHAR) `value`
         """, {
             "start_time":value
     })[0].value
-
+    return output
 
 def get_bugs_table_columns(db, schema_name):
 
@@ -491,6 +491,8 @@ def get_flags(db, param):
 
 def get_comments(db, param):
     if param.allow_private_bugs:
+        return []
+    if not param.bug_list:
         return []
 
     param.comments_filter=SQL("isprivate=0")

@@ -69,6 +69,10 @@ class Queue():
             if self.keep_running:
                 self.queue.extend(values)
 
+    def __len__(self):
+        with self.lock:
+            return len(self.queue)
+
     def pop(self):
         with self.lock:
             while self.keep_running:
@@ -324,6 +328,7 @@ class Signal():
 
 class ThreadedQueue(Queue):
     """
+    TODO: Check that this queue is not dropping items at shutdown
     DISPATCH TO ANOTHER (SLOWER) queue IN BATCHES OF GIVEN size
     """
     def __init__(self, queue, size):
@@ -337,6 +342,10 @@ class ThreadedQueue(Queue):
             for i, g in Q.groupby(self, size=size):
                 queue.extend(g)
                 if please_stop:
+                    from logs import Log
+                    Log.warning("ThreadedQueue stopped early, with {{num}} items left in queue", {
+                        "num":len(self)
+                    })
                     return
         self.thread=Thread.run(push_to_queue)
 
