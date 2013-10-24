@@ -18,7 +18,7 @@ from bzETL.util.maths import Math
 from bzETL.util.timer import Timer
 
 from extract_bugzilla import get_bugs, get_dependencies, get_flags, get_new_activities, get_bug_see_also, get_attachments, get_keywords, get_cc, get_bug_groups, get_duplicates
-from parse_bug_history import parse_bug_history_
+from parse_bug_history import BugHistoryParser
 from bzETL.util import struct
 from bzETL.util.logs import Log
 from bzETL.util.struct import Struct, Null
@@ -94,7 +94,7 @@ def etl(db, output_queue, param, please_stop):
         "modified_by"
     ])
 
-    process = parse_bug_history_(param, output_queue)
+    process = BugHistoryParser(param, output_queue)
     for s in sorted:
         process.processRow(s)
     process.processRow(struct.wrap({"bug_id": parse_bug_history.STOP_BUG, "_merge_order": 1}))
