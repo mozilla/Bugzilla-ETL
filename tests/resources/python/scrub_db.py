@@ -1,6 +1,6 @@
 from bzETL.util.db import DB, SQL
 from bzETL.util.logs import Log
-from bzETL.util.startup import startup
+from bzETL.util import startup
 
 def main():
     """

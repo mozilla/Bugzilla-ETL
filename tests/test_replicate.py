@@ -1,6 +1,6 @@
 
 from bzETL import replicate
-from bzETL.util.startup import startup
+from bzETL.util import startup
 from bzETL.util.cnv import CNV
 from bzETL.util.elasticsearch import ElasticSearch
 from bzETL.util.logs import Log

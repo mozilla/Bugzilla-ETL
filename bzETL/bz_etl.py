@@ -23,7 +23,7 @@ from bzETL.util import struct
 from bzETL.util.logs import Log
 from bzETL.util.struct import Struct, Null
 from bzETL.util.files import File
-from bzETL.util.startup import startup
+from bzETL.util import startup
 from bzETL.util.threads import Queue, Thread, AllThread, Lock, ThreadedQueue
 from bzETL.util.cnv import CNV
 from bzETL.util.elasticsearch import ElasticSearch
@@ -356,12 +356,5 @@ def start():
 
 
 
-def profile_etl():
-    import profile
-    profile.run("start()")
-
-
-
 if __name__=="__main__":
-    # profile_etl()
     start()

@@ -3,7 +3,7 @@ from bzETL.util.cnv import CNV
 from bzETL.util.files import File
 from bzETL.util.logs import Log
 from bzETL.util.query import Q
-from bzETL.util.startup import startup
+from bzETL.util import startup
 
 
 def main(settings):
