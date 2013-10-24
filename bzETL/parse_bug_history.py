@@ -68,7 +68,7 @@ TRUNC_FIELDS = ["cc", "blocked", "dependson", "keywords"]
 STOP_BUG = 999999999
 MAX_TIME = 9999999999000
 
-class parse_bug_history_():
+class BugHistoryParser():
 
     def __init__(self, settings, output_queue):
         self.aliases = Null
@@ -191,7 +191,7 @@ class parse_bug_history_():
         self.currActivity = Struct()
         self.currBugAttachmentsMap = Struct()
         self.currBugState = Struct(
-            _id=parse_bug_history_.uid(row_in.bug_id, row_in.modified_ts),
+            _id=BugHistoryParser.uid(row_in.bug_id, row_in.modified_ts),
             bug_id=row_in.bug_id,
             modified_ts=row_in.modified_ts,
             modified_by=row_in.modified_by,
@@ -230,7 +230,7 @@ class parse_bug_history_():
         if row_in.attach_id==349397:
             Log.debug("")
 
-        currActivityID = parse_bug_history_.uid(self.currBugID, row_in.modified_ts)
+        currActivityID = BugHistoryParser.uid(self.currBugID, row_in.modified_ts)
         if currActivityID != self.prevActivityID:
             self.prevActivityID = currActivityID
 
@@ -290,7 +290,7 @@ class parse_bug_history_():
         multi_field_new_value = self.getMultiFieldValue(row_in.field_name, row_in.new_value)
         multi_field_old_value = self.getMultiFieldValue(row_in.field_name, row_in.old_value)
 
-        currActivityID = parse_bug_history_.uid(self.currBugID, row_in.modified_ts)
+        currActivityID = BugHistoryParser.uid(self.currBugID, row_in.modified_ts)
         if currActivityID != self.prevActivityID:
             self.currActivity = self.bugVersionsMap[currActivityID]
             if self.currActivity == None:
@@ -367,7 +367,7 @@ class parse_bug_history_():
 
     @staticmethod
     def sortDescByField(a, b, aField):
-        return -1 * parse_bug_history_.sortAscByField(a, b, aField)
+        return -1 * BugHistoryParser.sortAscByField(a, b, aField)
 
     
     def populateIntermediateVersionObjects(self):
@@ -480,8 +480,8 @@ class parse_bug_history_():
                         self.processFlagChange(target, change, currVersion.modified_ts, currVersion.modified_by)
                     elif change.field_name in MULTI_FIELDS:
                         a = target[change.field_name]
-                        multi_field_value = parse_bug_history_.getMultiFieldValue(change.field_name, change.new_value)
-                        multi_field_value_removed = parse_bug_history_.getMultiFieldValue(change.field_name, change.old_value)
+                        multi_field_value = BugHistoryParser.getMultiFieldValue(change.field_name, change.new_value)
+                        multi_field_value_removed = BugHistoryParser.getMultiFieldValue(change.field_name, change.old_value)
 
                         # This was a deletion, find and delete the value(s)
                         a = self.removeValues(a, multi_field_value_removed, "removed", change.field_name, targetName, target, currVersion.modified_ts)
@@ -552,8 +552,8 @@ class parse_bug_history_():
             Log.note("PROBLEM  processFlagChange called with unset 'flags'")
             target.flags = []
 
-        addedFlags = parse_bug_history_.getMultiFieldValue("flags", change.new_value)
-        removedFlags = parse_bug_history_.getMultiFieldValue("flags", change.old_value)
+        addedFlags = BugHistoryParser.getMultiFieldValue("flags", change.new_value)
+        removedFlags = BugHistoryParser.getMultiFieldValue("flags", change.old_value)
 
         #going in reverse when traveling through bugs backwards in time
         if reverse:
@@ -564,7 +564,7 @@ class parse_bug_history_():
             if flagStr == "":
                 continue
 
-            removed_flag = parse_bug_history_.makeFlag(flagStr, modified_ts, modified_by)
+            removed_flag = BugHistoryParser.makeFlag(flagStr, modified_ts, modified_by)
             existingFlag = self.findFlag(target.flags, removed_flag)
 
             if existingFlag != None:
@@ -706,7 +706,7 @@ class parse_bug_history_():
 #        Log.note("Adding " + valueType + " " + fieldName + " values:" + CNV.object2JSON(someValues))
         if field_name == "flags":
             for v in add:
-                total.append(parse_bug_history_.makeFlag(v, target.modified_ts, target.modified_by))
+                total.append(BugHistoryParser.makeFlag(v, target.modified_ts, target.modified_by))
             if valueType!="added":
                 self.currActivity.changes.append({
                     "field_name": field_name,
@@ -758,7 +758,7 @@ class parse_bug_history_():
         if field_name == "flags":
             removeMe=[]
             for v in remove:
-                flag = parse_bug_history_.makeFlag(v, 0, 0)
+                flag = BugHistoryParser.makeFlag(v, 0, 0)
 
                 found=self.findFlag(total, flag)
                 if found != None:
