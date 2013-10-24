@@ -118,6 +118,7 @@ def setup_es(settings, es, es_comments):
     current_run_time=datetime.utcnow()
 
     if settings.args.resume:
+        # DO NOT MAKE NEW INDEX, CONTINUE INITIAL FILL
         last_run_time = 0
         current_run_time = datetime.utcnow() - timedelta(days=1)
         if not es:
@@ -143,11 +144,13 @@ def setup_es(settings, es, es_comments):
                 })[-1]
             es_comments = ElasticSearch(settings.es_comments)
     elif File(settings.param.last_run_time).exists:
+        # INCREMENTAL UPDATE; DO NOT MAKE NEW INDEX
         last_run_time = long(File(settings.param.last_run_time).read())
         if not es:
             es = ElasticSearch(settings.es)
             es_comments = ElasticSearch(settings.es_comments)
     else:
+        # START ETL FROM BEGINNING, MAKE NEW INDEX
         last_run_time = 0
         if not es:
             schema = File(settings.es.schema_file).read()
@@ -282,11 +285,19 @@ def main(settings, es=None, es_comments=None):
 
         if settings.es.alias:
             es.delete_all_but(settings.es.alias, settings.es.index)
+            es.add_alias(settings.alias)
+
+        if settings.es_comments.alias:
+            es.delete_all_but(settings.es_comments.alias, settings.es_comments.index)
+            es_comments.add_alias(settings.alias)
 
         File(settings.param.last_run_time).write(unicode(CNV.datetime2milli(current_run_time)))
 
     finally:
-        close_db_connections()
+        try:
+            close_db_connections()
+        except Exception, e:
+            pass
         es.set_refresh_interval(1)
 
 

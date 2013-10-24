@@ -39,7 +39,7 @@ You must prepare a ```settings.json``` file to reference the resources, and it's
 
   * Set working directory to ```~/Bugzilla_ETL/```
   * Set ```PYTHONPATH=.```
-  * Exceute ```python .\bzETL\bz_etl.py --settings=settings.json``` (also see [example command line script](resources/scripts/bz_etl.bat))
+  * Exceute ```pypy .\bzETL\bz_etl.py --settings=settings.json``` (also see [example command line script](resources/scripts/bz_etl.bat))
 
 
 

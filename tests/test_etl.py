@@ -142,6 +142,14 @@ def test_public_etl(settings):
     ref=elasticsearch.open_test_instance("reference", settings.public_reference)
     compare_both(es, ref, settings, settings.param.bugs)
 
+    #DIRECT COMPARE THE FILE JSON
+    can = File(settings.test_comments.filename).read()
+    ref = File(settings.comments_reference.filename).read()
+    if can != ref:
+        Log.error("Comments do not match reference")
+
+
+
 
 def verify_no_private_bugs(es, private_bugs):
     #VERIFY BUGS ARE NOT IN OUTPUT
@@ -368,10 +376,10 @@ def main():
         with Timer("Run all tests"):
             # test_specific_bugs(settings)
             # test_private_etl(settings)
-            # test_public_etl(settings)
-            test_private_bugs_do_not_show(settings)
-            test_private_comments_do_not_show(settings)
-            test_recent_private_stuff_does_not_show(settings)
+            test_public_etl(settings)
+            # test_private_bugs_do_not_show(settings)
+            # test_private_comments_do_not_show(settings)
+            # test_recent_private_stuff_does_not_show(settings)
 
         if all_db:
             Log.error("not all db connections are closed")

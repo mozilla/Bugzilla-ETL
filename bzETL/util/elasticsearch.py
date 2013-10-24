@@ -45,7 +45,6 @@ class ElasticSearch():
         )
         time.sleep(2)
         es=ElasticSearch(settings)
-        es.add_alias(settings.alias)
         return es
 
 
@@ -88,8 +87,14 @@ class ElasticSearch():
     #DELETE ALL INDEXES WITH GIVEN PREFIX, EXCEPT name
     def delete_all_but(self, prefix, name):
         for a in self.get_aliases():
+            # MATCH <prefix>YYMMDD_HHMMSS FORMAT
             if a.index.startswith(prefix) and a.index!=name:
                 ElasticSearch.delete_index(self.settings, a.index)
+
+
+    @staticmethod
+    def index_name(prefix, timestamp):
+        return prefix + CNV.datetime2string(timestamp, "%Y%m%d_%H%M%S")
 
 
     def add_alias(self, alias):
