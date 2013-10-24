@@ -1,11 +1,11 @@
-################################################################################
-## This Source Code Form is subject to the terms of the Mozilla Public
-## License, v. 2.0. If a copy of the MPL was not distributed with this file,
-## You can obtain one at http://mozilla.org/MPL/2.0/.
-################################################################################
-## PYTHON VERSION OF https://github.com/mozilla-metrics/bugzilla_etl/blob/master/transformations/bugzilla_to_json.ktr
-## Author: Kyle Lahnakoski (kyle@lahnakoski.com)
-################################################################################
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this file,
+# You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# PYTHON VERSION OF https://github.com/mozilla-metrics/bugzilla_etl/blob/master/transformations/bugzilla_to_json.ktr
+# Author: Kyle Lahnakoski (kyle@lahnakoski.com)
+#
 from bzETL.util.db import SQL
 
 from bzETL.util.logs import Log
