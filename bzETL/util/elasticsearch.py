@@ -5,7 +5,7 @@ import requests
 
 import struct
 from .maths import Math
-from .bzETL.util.queries.query import Q
+from .queries import Q
 from .cnv import CNV
 from .logs import Log
 from .struct import nvl
