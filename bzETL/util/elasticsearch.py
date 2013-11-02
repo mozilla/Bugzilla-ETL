@@ -1,3 +1,7 @@
+# encoding: utf-8
+#
+from datetime import datetime
+import re
 import sha
 import time
 
@@ -14,7 +18,7 @@ from .struct import Struct, StructList
 DEBUG=False
 
 
-class ElasticSearch():
+class ElasticSearch(object):
 
 
 
@@ -59,9 +63,11 @@ class ElasticSearch():
             settings.host+":"+unicode(settings.port)+"/"+index,
         )
 
-    #RETURN LIST OF {"alias":a, "index":i} PAIRS
-    #ALL INDEXES INCLUDED, EVEN IF NO ALIAS {"alias":Null}
     def get_aliases(self):
+        """
+        RETURN LIST OF {"alias":a, "index":i} PAIRS
+        ALL INDEXES INCLUDED, EVEN IF NO ALIAS {"alias":Null}
+        """
         data=self.get_metadata().indices
         output=[]
         for index, desc in data.items():
@@ -70,7 +76,7 @@ class ElasticSearch():
             else:
                 for a in desc["aliases"]:
                     output.append({"index":index, "alias":a})
-        return StructList(output)
+        return struct.wrap(output)
 
 
     
@@ -85,20 +91,24 @@ class ElasticSearch():
         return self.get_metadata().indicies[self.settings.index]
 
 
+
     #DELETE ALL INDEXES WITH GIVEN PREFIX, EXCEPT name
     def delete_all_but(self, prefix, name):
         for a in self.get_aliases():
             # MATCH <prefix>YYMMDD_HHMMSS FORMAT
-            if a.index.startswith(prefix) and a.index!=name:
+            if re.match(re.escape(prefix)+"\\d{8}_\\d{6}", a.index) and a.index!=name:
                 ElasticSearch.delete_index(self.settings, a.index)
 
 
     @staticmethod
-    def index_name(prefix, timestamp):
+    def proto_name(prefix, timestamp=None):
+        if not timestamp:
+            timestamp = datetime.utcnow()
         return prefix + CNV.datetime2string(timestamp, "%Y%m%d_%H%M%S")
 
 
     def add_alias(self, alias):
+        self.metadata = None
         requests.post(
             self.settings.host+":"+unicode(self.settings.port)+"/_aliases",
             CNV.object2JSON({
@@ -107,6 +117,21 @@ class ElasticSearch():
                 ]
             })
         )
+
+    def get_proto(self, alias):
+        output=Q.sort([
+            a.index
+            for a in self.get_aliases()
+            if re.match(re.escape(alias)+"\\d{8}_\\d{6}", a.index) and not a.alias
+        ])
+        return output
+
+    def is_proto(self, index):
+        for a in self.get_aliases():
+            if a.index==index and a.alias:
+                return False
+        return True
+
 
     def delete_record(self, query):
         if isinstance(query, dict):

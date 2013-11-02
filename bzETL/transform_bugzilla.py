@@ -1,3 +1,5 @@
+# encoding: utf-8
+#
 from datetime import datetime, date
 import re
 from bzETL.util.cnv import CNV

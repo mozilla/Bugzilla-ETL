@@ -1,3 +1,5 @@
+# encoding: utf-8
+#
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
@@ -59,7 +61,7 @@ def z_moment2stats(z_moment, unbiased=True):
 
 
 
-class Stats():
+class Stats(object):
 
     def __init__(self, **args):
         if "count" not in args:
@@ -114,7 +116,7 @@ class Stats():
 
 
 
-class Z_moment():
+class Z_moment(object):
     """
     ZERO-CENTERED MOMENTS
     """

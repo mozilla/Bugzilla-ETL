@@ -1,4 +1,8 @@
+# encoding: utf-8
+#
 from datetime import datetime
+from bzETL.extract_bugzilla import milli2string, get_current_time
+from bzETL.util.cnv import CNV
 from bzETL.util.db import DB
 from bzETL.util.logs import Log
 from bzETL.util.struct import Struct
@@ -77,35 +81,51 @@ def add_bug_group(db, bug_id, group_name):
     group_id=group_exists[0].id
 
     diff(db, "bugs",
-        Struct(bug_id=bug_id, bug_group = None),
+        Struct(bug_id=bug_id, bug_group=None),
         Struct(bug_id=bug_id, bug_group=group_name)
     )
     db.insert("bug_group_map", {"bug_id":bug_id, "group_id":group_id})
+
+
+def remove_bug_group(db, bug_id, group_name):
+    group_id=db.query("SELECT id FROM groups WHERE name={{name}}", {"name": group_name})[0].id
+
+    diff(db, "bugs",
+        Struct(bug_id=bug_id, bug_group=group_name),
+        Struct(bug_id=bug_id, bug_group=None)
+    )
+    db.execute("DELETE FROM bug_group_map WHERE bug_id={{bug_id}} and group_id={{group_id}}", {
+        "bug_id":bug_id,
+        "group_id":group_id
+    })
+
+
 
 
 def diff(db, table, old_record, new_record):
     """
     UPDATE bugs_activity WITH THE CHANGES IN RECORDS
     """
-    changed=set(old_record.keys()) ^ set(new_record.keys())
-    changed |= set([k for k,v in old_record.items() if v!=new_record[k]])
+    now = milli2string(db, CNV.datetime2milli(get_current_time(db)))
+    changed = set(old_record.keys()) ^ set(new_record.keys())
+    changed |= set([k for k, v in old_record.items() if v != new_record[k]])
 
-    if table!=u"bugs":
-        prefix=table+u"."
+    if table != u"bugs":
+        prefix = table + u"."
     else:
-        prefix=u""
+        prefix = u""
 
     for c in changed:
-        activity=Struct(
+        activity = Struct(
             bug_id=old_record.bug_id,
             who=1,
-            bug_when=datetime.utcnow(),
-            fieldid=db.query("SELECT id FROM fielddefs WHERE name={{field_name}}", {"field_name":prefix+c})[0].id,
+            bug_when=now,
+            fieldid=db.query("SELECT id FROM fielddefs WHERE name={{field_name}}", {"field_name": prefix + c})[0].id,
             removed=old_record[c],
             added=new_record[c],
             attach_id=old_record.attach_id
         )
         db.insert("bugs_activity", activity)
 
-    # db.update(table, old_value, new_value)
+        # db.update(table, old_value, new_value)
 

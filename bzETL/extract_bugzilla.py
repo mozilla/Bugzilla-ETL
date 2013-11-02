@@ -1,3 +1,5 @@
+# encoding: utf-8
+#
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
@@ -6,6 +8,8 @@
 # PYTHON VERSION OF https://github.com/mozilla-metrics/bugzilla_etl/blob/master/transformations/bugzilla_to_json.ktr
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
+from bzETL.parse_bug_history import MAX_TIME
+from bzETL.util.cnv import CNV
 from bzETL.util.db import SQL
 
 from bzETL.util.logs import Log
@@ -25,13 +29,28 @@ SCREENED_FIELDDEFS=[
 
 PRIVATE_ATTACHMENT_FIELD_ID=65
 PRIVATE_COMMENTS_FIELD_ID=82
+PRIVATE_BUG_GROUP_FIELD_ID=66
 
 bugs_columns = Null
+
+
+def get_current_time(db):
+    """
+    RETURN GMT TIME
+    """
+    output = db.query("""
+        SELECT
+            UNIX_TIMESTAMP(now()) `value`
+        """)[0].value
+    return CNV.unix2datetime(output)
+
 
 def milli2string(db, value):
     """
     CONVERT GMT MILLI TO BUGZILLA DATETIME STRING
     """
+    value = max(value, 0)
+
     output = db.query("""
         SELECT
             CAST(CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific') AS CHAR) `value`
@@ -85,6 +104,31 @@ def get_private_bugs(db, param):
         Log.error("problem getting private bugs", e)
 
 
+def get_recent_private_bugs(db, param):
+    """
+    GET ONLY BUGS THAT HAVE SWITCHED PRIVACY INDICATOR
+    THIS LIST IS USED TO SIGNAL BUGS THAT NEED TOTAL RE-ETL
+    """
+    if param.allow_private_bugs:
+        return []
+
+    param.field_id=PRIVATE_BUG_GROUP_FIELD_ID
+
+    try:
+        return db.query("""
+        SELECT
+            a.bug_id
+        FROM
+            bugs_activity a
+        WHERE
+            bug_when >= {{start_time_str}} AND
+            fieldid={{field_id}}
+        """, param)
+    except Exception, e:
+        Log.error("problem getting recent private attachments", e)
+
+
+
 def get_recent_private_attachments(db, param):
     """
     GET ONLY RECENT ATTACHMENTS THAT HAVE SWITCHED PRIVACY INDICATOR
@@ -104,8 +148,7 @@ def get_recent_private_attachments(db, param):
             bugs_activity a
         WHERE
             bug_when >= {{start_time_str}} AND
-            fieldid={{field_id}} AND
-            added <> 0
+            fieldid={{field_id}}
         """, param)
     except Exception, e:
         Log.error("problem getting recent private attachments", e)
@@ -318,6 +361,42 @@ def get_cc(db, param):
         WHERE
             {{bug_filter}}
     """, param)
+
+
+def get_all_cc_changes(db, bug_list):
+    CC_FIELD_ID = 37
+
+    if not bug_list:
+        return []
+
+    return db.query("""
+            SELECT
+                bug_id,
+                CAST({{max_time}} AS signed) AS modified_ts,
+                CAST(null AS char(255)) AS new_value,
+                lower(CAST(p.login_name AS CHAR(255) CHARACTER SET utf8)) AS old_value
+            FROM
+                cc
+            LEFT JOIN
+                profiles p ON cc.who = p.userid
+            WHERE
+                {{bug_filter}}
+        UNION ALL
+            SELECT
+                a.bug_id,
+                UNIX_TIMESTAMP(CONVERT_TZ(bug_when, 'US/Pacific','UTC'))*1000 AS modified_ts,
+                lower(CAST(trim(added) AS CHAR CHARACTER SET utf8)) AS new_value,
+                lower(CAST(trim(removed) AS CHAR CHARACTER SET utf8)) AS old_value
+            FROM
+                bugs_activity a
+            WHERE
+                a.fieldid = {{cc_field_id}} AND
+                {{bug_filter}}
+    """, {
+        "max_time":MAX_TIME,
+        "cc_field_id":CC_FIELD_ID,
+        "bug_filter":db.esfilter2sqlwhere({"terms":{"bug_id":bug_list}})
+    })
 
 
 

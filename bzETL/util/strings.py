@@ -1,3 +1,5 @@
+# encoding: utf-8
+#
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
@@ -72,17 +74,19 @@ def find_first(value, find_arr, start=0):
 
 
 
-
-
-pattern=re.compile(r"(\{\{[\w_\.]+\}\})")
+pattern=re.compile(r"\{\{([\w_\.]+(\|[\w_]+)*)\}\}")
 def expand_template(template, values):
     values=struct.wrap(values)
 
     def replacer(found):
-        var=found.group(1)
+        seq=found.group(1).split("|")
+
+        var=seq[0]
         try:
-            val=values[var[2:-2]]
+            val=values[var]
             val=toString(val)
+            for filter in seq[1:]:
+                val=eval(filter+"(val)")
             return val
         except Exception, e:
             try:
@@ -91,16 +95,16 @@ def expand_template(template, values):
                     val=toString(val)
                     return val
             except Exception:
-                raise Exception(u"Can not find "+var[2:-2]+u" in template:\n"+indent(template), e)
+                raise Exception(u"Can not expand "+"|".join(seq)+u" in template:\n"+indent(template), e)
 
     return pattern.sub(replacer, template)
 
 
 def toString(val):
     if isinstance(val, Struct):
-        return json_encoder.encode(val.dict)
+        return json_encoder.encode(val.dict, pretty=True)
     elif isinstance(val, dict) or isinstance(val, list) or isinstance(val, set):
-        val=json_encoder.encode(val)
+        val=json_encoder.encode(val, pretty=True)
         return val
     return unicode(val)
 

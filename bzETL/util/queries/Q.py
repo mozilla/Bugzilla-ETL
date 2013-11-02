@@ -1,3 +1,5 @@
+# encoding: utf-8
+#
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
@@ -118,6 +120,42 @@ def unique_index(data, keys=None):
     return o
 
 
+def map(data, relation):
+    """
+    EXPECTING A dict THAT MAPS VALUES TO lists
+    THE LISTS ARE EXPECTED TO POINT TO MEMBERS OF A SET
+    A set() IS RETURNED
+    """
+    if data == None:
+        return Null
+    if isinstance(relation, Struct):
+        Log.error("Does not accept a Struct")
+
+    if isinstance(relation, dict):
+        try:
+            #relation[d] is expected to be a list
+            # return set(cod for d in data for cod in relation[d])
+            output=set()
+            for d in data:
+                for cod in relation.get(d, []):
+                    output.add(cod)
+            return output
+        except Exception, e:
+            Log.error("Expecting a dict with lists in codomain", e)
+    else:
+        try:
+            #relation[d] is expected to be a list
+            # return set(cod for d in data for cod in relation[d])
+            output=set()
+            for d in data:
+                cod=relation(d)
+                if cod == None:
+                    continue
+                output.add(cod)
+            return output
+        except Exception, e:
+            Log.error("Expecting a dict with lists in codomain", e)
+    return Null
 
 def select(data, field_name):
 #return list with values from field_name
@@ -260,9 +298,9 @@ def sort(data, fieldnames=None):
             return 0
 
         if isinstance(data, list):
-            output = sorted(data, cmp=comparer)
+            output = struct.wrap(sorted(data, cmp=comparer))
         elif hasattr(data, "__iter__"):
-            output = sorted(list(data), cmp=comparer)
+            output = struct.wrap(sorted(list(data), cmp=comparer))
         else:
             Log.error("Do not know how to handle")
 

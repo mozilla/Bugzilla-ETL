@@ -1,3 +1,5 @@
+# encoding: utf-8
+#
 from bzETL.util import struct
 from bzETL.util.cnv import CNV
 from bzETL.util.files import File
@@ -39,6 +41,9 @@ def main(settings):
     rev_clean=struct.inverse(clean)
     Log.note(CNV.object2JSON(rev_clean, pretty=True))
 
+    for k, v in rev_clean.items():
+        if len(v)>3:
+            Log.note(CNV.object2JSON({k:v}, pretty=True))
 
 
 def start():

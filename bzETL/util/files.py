@@ -1,3 +1,5 @@
+# encoding: utf-8
+#
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
@@ -16,7 +18,7 @@ from .struct import listwrap, nvl
 from .cnv import CNV
 
 
-class File():
+class File(object):
 
     def __init__(self, filename):
         if filename == None:
@@ -89,7 +91,7 @@ class File():
             if e.strerror=="The system cannot find the path specified":
                 return
             from .logs import Log
-            Log.warning("Could not remove file", e)
+            Log.error("Could not remove file", e)
 
     def backup(self):
         names=self._filename.split("/")[-1].split(".")

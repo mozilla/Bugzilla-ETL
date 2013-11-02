@@ -1,4 +1,6 @@
 
+# encoding: utf-8
+#
 from bzETL import replicate
 from bzETL.util import startup
 from bzETL.util.cnv import CNV

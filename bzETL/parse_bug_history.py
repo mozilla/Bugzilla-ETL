@@ -1,3 +1,5 @@
+# encoding: utf-8
+#
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
@@ -37,9 +39,7 @@
 # cutoff time, and build all versions.  Only index versions after start_time in ElasticSearch.
 
 
-# Used to split a flag into (type, status [,requestee])
-# Example: "review?(mreid@mozilla.com)" -> (review, ?, mreid@mozilla.com)
-# Example: "review-" -> (review, -)
+
 import re
 import math
 from bzETL.util import struct, strings
@@ -54,7 +54,9 @@ from bzETL.util.struct import Struct, Null
 from bzETL.util.files import File
 from bzETL.util.maths import Math
 
-
+# Used to split a flag into (type, status [,requestee])
+# Example: "review?(mreid@mozilla.com)" -> (review, ?, mreid@mozilla.com)
+# Example: "review-" -> (review, -)
 FLAG_PATTERN = re.compile("^(.*)([?+-])(\\([^)]*\\))?$")
 
 
@@ -79,10 +81,10 @@ class BugHistoryParser():
         self.output = output_queue
 
         self.initializeAliases()
-        
+
 
     def processRow(self, row_in):
-        if len(row_in.items())==0: return 
+        if len(row_in.items())==0: return
         try:
             self.currBugID = row_in.bug_id
             # if not self.currBugState.created_ts:
@@ -198,6 +200,9 @@ class BugHistoryParser():
             reported_by=row_in.modified_by,
             attachments=[]
         )
+
+        self.cc_list_ok = True
+
         #WE FORCE ADD ALL SETS, AND WE WILL scrub() THEM OUT LATER IF NOT USED
         for f in MULTI_FIELDS:
             self.currBugState[f]=set([])
@@ -227,9 +232,6 @@ class BugHistoryParser():
 
 
     def processAttachmentsTableItem(self, row_in):
-        if row_in.attach_id==349397:
-            Log.debug("")
-
         currActivityID = BugHistoryParser.uid(self.currBugID, row_in.modified_ts)
         if currActivityID != self.prevActivityID:
             self.prevActivityID = currActivityID
@@ -265,7 +267,7 @@ class BugHistoryParser():
         else:
             att[row_in.field_name] = row_in.new_value
 
-            
+
     def processFlagsTableItem(self, row_in):
         flag = self.makeFlag(row_in.new_value, row_in.modified_ts, row_in.modified_by)
         if row_in.attach_id != None:
@@ -274,8 +276,10 @@ class BugHistoryParser():
                     "attach_id":row_in.attach_id,
                     "bug_id":self.currBugID
                 })
-
-            self.currBugAttachmentsMap[unicode(row_in.attach_id)].flags.append(flag)
+            else:
+                if self.currBugAttachmentsMap[unicode(row_in.attach_id)].flags == None:
+                    Log.error("should never happen")
+                self.currBugAttachmentsMap[unicode(row_in.attach_id)].flags.append(flag)
         else:
             self.currBugState.flags.append(flag)
 
@@ -357,19 +361,7 @@ class BugHistoryParser():
                     "attach_id": row_in.attach_id
                 })
 
-    @staticmethod
-    def sortAscByField(a, b, aField):
-        if a[aField] > b[aField]:
-            return 1
-        if a[aField] < b[aField]:
-            return -1
-        return 0
 
-    @staticmethod
-    def sortDescByField(a, b, aField):
-        return -1 * BugHistoryParser.sortAscByField(a, b, aField)
-
-    
     def populateIntermediateVersionObjects(self):
         # Make sure the self.bugVersions are in descending order by modification time.
         # They could be mixed because of attachment activity
@@ -392,7 +384,10 @@ class BugHistoryParser():
             try:
                 currVersion = nextVersion
                 if self.bugVersions:
-                    nextVersion = self.bugVersions.pop() # Oldest version
+                    try:
+                        nextVersion = self.bugVersions.pop() # Oldest version
+                    except Exception, e:
+                        Log.error("problem", e)
                 else:
                     nextVersion = Null
 
@@ -531,7 +526,7 @@ class BugHistoryParser():
                 if self.currBugState.blocked == None:
                     Log.note("expecting a created_ts")
                 pass
-            
+
     def findFlag(self, flag_list, flag):
         for f in flag_list:
             if f.value==flag.value:
@@ -641,7 +636,10 @@ class BugHistoryParser():
                         chosen_one = Null
             else:
                 # Obvious case - matched exactly one.
-                Log.note("Matched added flag " + CNV.object2JSON(added_flag) + " to removed flag " + CNV.object2JSON(chosen_one))
+                Log.note("Matched added flag {{added}} to removed flag {{removed}}", {
+                    "added": added_flag,
+                    "removed": chosen_one
+                })
 
             if chosen_one != None:
                 for f in ["value", "request_status", "requestee"]:
@@ -654,7 +652,7 @@ class BugHistoryParser():
 
     def setPrevious(self, dest, aFieldName, aValue, aChangeAway):
         if dest["previous_values"] == None:
-            dest["previous_values"] ={}
+            dest["previous_values"] = {}
 
         pv = dest["previous_values"]
         vField = aFieldName + "_value"
@@ -714,6 +712,9 @@ class BugHistoryParser():
                     "old_value": ", ".join(Q.sort(add)),
                     "attach_id": target.attach_id
                 })
+            else:
+                Log.error("programming error")
+
             return total
             ## TODO: Some bugs (like 685605) actually have duplicate flags. Do we want to keep them?
             #/*
@@ -769,7 +770,7 @@ class BugHistoryParser():
                         "object":arrayDesc,
                         "field_name":field_name,
                         "missing":v,
-                        "existing":target[field_name]
+                        "existing":total
                     })
 
             total=[a for a in total if a.value not in removeMe]
@@ -782,8 +783,8 @@ class BugHistoryParser():
                         "old_value": Null,
                         "attach_id": target.attach_id
                     })
-                except Exception, e:
-                    Log.error("problem", e)
+                except Exception, email:
+                    Log.error("problem", email)
             return total
         elif field_name == "keywords":
             diff = remove - total
@@ -804,13 +805,13 @@ class BugHistoryParser():
                     "object":arrayDesc,
                     "field_name":field_name,
                     "missing":diff,
-                    "existing":target[field_name]
+                    "existing":total
                 })
             return output
         elif field_name == "cc":
             # MAP CANONICAL TO EXISTING (BETWEEN map_* AND self.aliases WE HAVE A BIJECTION)
-            map_total={self.alias(t):t for t in total}
-            map_remove={self.alias(r):r for r in remove}
+            map_total=struct.inverse({t:self.alias(t) for t in total})
+            map_remove=struct.inverse({r:self.alias(r) for r in remove})
             # CANONICAL VALUES
             c_total=set(map_total.keys())
             c_remove=set(map_remove.keys())
@@ -820,49 +821,20 @@ class BugHistoryParser():
             output = c_total - c_remove
 
             if not target.uncertain:
-                for lost in diff:
-                    details = self.aliases[lost.replace(".", "\.")]
-                    if details == None:
-                        details = Struct()
-                        self.aliases[lost.replace(".", "\.")] = details
-                    details.last_seen = Math.max([details.last_seen, timestamp])
+                if diff:
+                    Log.note("PROBLEM: Unable to find CC:\n{{missing|indent}} (cc_list_ok=={{is_ok}}))\nnot in:\n{{existing|indent}}\nalias info:\n{{candidates|indent}}",{
+                        "type":valueType,
+                        "object":arrayDesc,
+                        "is_ok":self.cc_list_ok,
+                        "field_name":field_name,
+                        "missing":Q.sort(Q.map(diff, map_remove)),
+                        "existing":Q.sort(total),
+                        "candidates":{d: self.aliases.get(d, None) for d in diff}
+                    })
 
-                    if not details.candidates:
-                        details.candidates = Multiset(output)
-                    else:
-                        details.candidates.extend(output)
-
-                    found = clear_winner(details.candidates)
-                    if found:
-                        Log.note("ALIAS FOUND: {{lost}} == {{found}}", {
-                            "lost":lost,
-                            "found":found
-                        })
-
-                        self.add_alias(lost, found, timestamp)
-                        new_lost=self.alias(lost)  # IN CASE THE ALIAS CHANGED
-                        removed.add(new_lost)
-                        map_total[lost]=map_total[found]
-                        if new_lost!=found:
-                            Log.error("not expected")
-                        output.discard(found)
-                    else:
-                        def shorten(emails):
-                            if len(emails)>5:
-                                return"["+str(len(target[field_name]))+" email addresses]"
-                            else:
-                                return CNV.object2JSON(emails)
-
-                        Log.note("PROBLEM: Unable to find CC: {{missing}} not in : {{existing}} (candidates={{candidates}})",{
-                            "type":valueType,
-                            "object":arrayDesc,
-                            "field_name":field_name,
-                            "missing":lost,
-                            "existing":shorten(target[field_name]),
-                            "candidates":shorten(details.candidates.keys())
-                        })
             else:
                 # PATTERN MATCH EMAIL ADDRESSES
+                self.cc_list_ok = False
                 for lost in diff:
                     best_score = 0.3
                     best = Null
@@ -870,12 +842,13 @@ class BugHistoryParser():
                         score = Math.min([
                             strings.edit_distance(found, lost),
                             strings.edit_distance(found.split("@")[0], lost.split("@")[0]),
-                            strings.edit_distance(map_total[found], lost),
-                            strings.edit_distance(map_total[found].split("@")[0], lost.split("@")[0])
+                            strings.edit_distance(map_total[found][0], lost),
+                            strings.edit_distance(map_total[found][0].split("@")[0], lost.split("@")[0])
                         ])
                         if score<best_score:
                             best_score=score
                             best=found
+
                     if best!=Null:
                         Log.note("UNCERTAIN ALIAS FOUND: {{lost}} == {{found}}", {
                             "lost":lost,
@@ -890,7 +863,7 @@ class BugHistoryParser():
                             "object":arrayDesc,
                             "field_name":field_name,
                             "missing":lost,
-                            "existing":target[field_name]
+                            "existing":total
                         })
 
             if valueType=="added":
@@ -913,17 +886,17 @@ class BugHistoryParser():
                                   "diff":diff,
                                   "output":output
                         })
-                    final_removed = [map_total[r] for r in removed]
+                    final_removed = Q.map(removed, map_total)
                     self.currActivity.changes.append({
                         "field_name": field_name,
                         "new_value": u", ".join(map(unicode, Q.sort(final_removed))),
                         "old_value": Null,
                         "attach_id": target.attach_id
                     })
-                except Exception, e:
-                    Log.error("issues", e)
+                except Exception, email:
+                    Log.error("issues", email)
 
-            return {map_total[o] for o in output}
+            return Q.map(output, map_total)
         else:
             removed = total & remove
             diff = remove - total
@@ -944,7 +917,7 @@ class BugHistoryParser():
                     "object":arrayDesc,
                     "field_name":field_name,
                     "missing":diff,
-                    "existing":target[field_name]
+                    "existing":total
                 })
 
             return output
@@ -967,46 +940,7 @@ class BugHistoryParser():
     def alias(self, name):
         if name == None:
             return Null
-        alias=self.aliases[name.replace(".", "\.")].canonical
-
-        if alias == None and name.endswith("@formerly-netscape.com.tld"):
-            canonical = name.replace("@formerly-netscape.com.tld", "@netscape.com")
-            self.add_alias(name, canonical, 0)
-            return canonical
-
-        return nvl(alias, name)
-
-    def add_alias(self, lost, found, timestamp):
-        found_record = self.aliases[found.replace(".", "\.")]
-        if found_record != None:
-            new_canonical = nvl(found_record.canonical, found)
-            found_record.last_seen = Math.max([found_record.last_seen, timestamp])
-        else:
-            new_canonical = found
-            found_record = {"last_seen": timestamp, "canonical": found}
-            self.aliases[found.replace(".", "\.")] = found_record
-
-        lost_record = self.aliases[lost.replace(".", "\.")]
-        if lost_record != None:
-            old_canonical = nvl(lost_record.canonical, lost)
-            lost_record.canonical = new_canonical
-            lost_record.last_seen = Math.max([lost_record.last_seen, timestamp])
-            lost_record.candidates = Null
-        else:
-            old_canonical = lost
-            lost_record = {"last_seen": timestamp, "canonical": new_canonical}
-            self.aliases[lost.replace(".", "\.")] = lost_record
-
-        if old_canonical != new_canonical:
-            for k, v in self.aliases.items():
-                if v.canonical == old_canonical:
-                    Log.note("ALIAS REMAPPED: {{alias}}->{{old}} to {{alias}}->{{new}}",{
-                        "alias":k,
-                        "old":old_canonical,
-                        "new":new_canonical
-                    })
-                    v.canonical = new_canonical
-
+        return nvl(self.aliases.get(name, Null).canonical, name)
 
 
     def initializeAliases(self):
@@ -1015,51 +949,12 @@ class BugHistoryParser():
                 alias_json = File(self.settings.alias_file).read()
             except Exception, e:
                 alias_json = "{}"
-            self.aliases = CNV.JSON2object(alias_json)
+            self.aliases = {k: struct.wrap(v) for k, v in CNV.JSON2object(alias_json).items()}
 
             Log.note("{{num}} aliases loaded", {"num": len(self.aliases.keys())})
 
-            for v in self.aliases.values():
-                v.candidates=CNV.dict2Multiset(v.candidates)
         except Exception, e:
             Log.error("Can not init aliases", e)
 
-    def saveAliases(self):
-        for k, v in self.aliases.items():
-            v.candidates=CNV.multiset2dict(v.candidates)
-
-        Log.note("{{num}} aliases saved", {"num": len(self.aliases.keys())})
-
-        alias_json = CNV.object2JSON(self.aliases, pretty=True)
-        file = File(self.settings.alias_file)
-        # file = File(file.backup_name())
-        file.write(alias_json)
 
 
-
-CLEARLY = 2
-
-def clear_winner(candidates):
-    """
-    RETURN THE ELEMENT THAT HAS CLEARLY MORE HITS THAN THE OTHERS
-    """
-    if candidates == None or not candidates.keys():
-        return Null
-
-    if not isinstance(candidates, Multiset):
-        Log.error("Expecting multiset")
-
-    ordered=Q.sort([{"k":k, "c":c} for k, c in candidates.dic.items()], "c")
-    best=ordered[-1]
-
-    # SOME EMAIL ADDRESSES MATCH TOO WELL
-    clearly = CLEARLY
-    # if best["k"] in ("reidr@pobox.com"):
-    #     clearly += 2
-
-    if len(ordered) == 1 and best["c"] >= clearly:
-        return ordered[-1]["k"]
-    elif len(ordered) > 1 and best["c"] >= ordered[-2]["c"] + clearly:
-        return ordered[-1]["k"]
-    else:
-        return Null

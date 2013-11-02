@@ -1,3 +1,5 @@
+# encoding: utf-8
+#
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
@@ -160,8 +162,7 @@ def main(settings):
     #USE A FILE
     if settings.source.filename != None:
         settings.destination.alias = settings.destination.index
-        settings.destination.index = settings.destination.alias + \
-            CNV.datetime2string(datetime.utcnow(), "%Y%m%d_%H%M%S")
+        settings.destination.index = ElasticSearch.proto_name(settings.destination.alias)
         schema = CNV.JSON2object(File(settings.source.schema_filename).read())
         if transform_bugzilla.USE_ATTACHMENTS_DOT:
             schema = CNV.JSON2object(CNV.object2JSON(schema).replace("attachments_", "attachments."))

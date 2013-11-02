@@ -1,3 +1,5 @@
+# encoding: utf-8
+#
 from bzETL.util.db import DB, SQL
 from bzETL.util.logs import Log
 from bzETL.util import startup
