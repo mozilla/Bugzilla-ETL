@@ -103,7 +103,8 @@ def etl(db, output_queue, param, please_stop):
 
 
 
-#MIMIC THE KETTLE GRAPHICAL PROGRAM
+
+
 def run_both_etl(db, output_queue, es_comments, param):
     comment_thread=Thread.run(etl_comments, db, es_comments, param)
     process_thread=Thread.run(etl, db, output_queue, param)
@@ -114,7 +115,7 @@ def run_both_etl(db, output_queue, es_comments, param):
 
 def setup_es(settings, db, es, es_comments):
     """
-    SETUP ES CONNECTIONS TO REFLECT IF WE ARE RESUMING, INCREMENTAL< OR STARTING OVER
+    SETUP ES CONNECTIONS TO REFLECT IF WE ARE RESUMING, INCREMENTAL, OR STARTING OVER
     """
     current_run_time=get_current_time(db)
 
@@ -205,8 +206,8 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
     #REFRESH COMMENTS WITH PRIVACY CHANGE
     private_comments = get_recent_private_comments(db, param)
     comment_list = set(Q.select(private_comments, "comment_id")) | {0}
-    changed_comments = get_comments_by_id(db, comment_list, param)
     es_comments.delete_record({"terms": {"comment_id": comment_list}})
+    changed_comments = get_comments_by_id(db, comment_list, param)
     es.add([{"id": c.comment_id, "value": c} for c in changed_comments])
 
     #GET LIST OF CHANGED BUGS
@@ -402,7 +403,7 @@ def start():
             "action": "store_true",
             "dest": "quick"
         },{
-            "name": ["--restart", "--reset"],
+            "name": ["--restart", "--reset", "--redo"],
             "help": "use this to force a reprocessing of all data",
             "action": "store_true",
             "dest": "restart"
@@ -414,7 +415,6 @@ def start():
                     File(l.filename).parent.delete()
             File(settings.param.first_run_time).delete()
             File(settings.param.last_run_time).delete()
-            File(settings.param.alias_file).delete()
 
         Log.start(settings.debug)
         main(settings)

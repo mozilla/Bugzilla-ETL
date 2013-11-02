@@ -66,7 +66,10 @@ DEBUG_STATUS = False    # SHOW CURRENT STATE OF PROCESSING
 
 # Fields that could have been truncated per bug 55161
 TRUNC_FIELDS = ["cc", "blocked", "dependson", "keywords"]
-
+KNOWN_MISSING_KEYWORDS={
+    "dogfood", "beta1", "nsbeta1", "nsbeta2", "nsbeta3", "patch", "mozilla1.0", "correctness",
+    "mozilla0.9", "mozilla0.9.9+", "nscatfood", "mozilla0.9.3", "fcc508", "nsbeta1+", "mostfreq"
+ }
 STOP_BUG = 999999999
 MAX_TIME = 9999999999000
 
@@ -201,7 +204,7 @@ class BugHistoryParser():
             attachments=[]
         )
 
-        self.cc_list_ok = True
+        # self.cc_list_ok = True
 
         #WE FORCE ADD ALL SETS, AND WE WILL scrub() THEM OUT LATER IF NOT USED
         for f in MULTI_FIELDS:
@@ -449,7 +452,6 @@ class BugHistoryParser():
                     targetName = "currBugState"
                     attach_id = change.attach_id
                     if attach_id != None:
-
                         # Handle the special change record that signals the creation of the attachment
                         if change.field_name == "attachment_added":
                             # This change only exists when the attachment has been added to the map, so no missing case needed.
@@ -459,11 +461,10 @@ class BugHistoryParser():
                         else:
                             # Attachment change
                             target = self.currBugAttachmentsMap[unicode(attach_id)]
-                            # target.tada="test"+unicode(currVersion.modified_ts)
                             targetName = "attachment"
                             if target == None:
-                                Log.warning("Encountered a change to missing attachment for bug {{version}}: {{change}}", {
-                                    "version": currVersion["bug_id"],
+                                Log.warning("Encountered a change to missing attachment for bug {{bug_id}}: {{change}}", {
+                                    "bug_id": self.currBugState["bug_id"],
                                     "change": change
                                 })
 
@@ -798,7 +799,7 @@ class BugHistoryParser():
                     "attach_id": target.attach_id
                 })
 
-            if diff:
+            if diff - KNOWN_MISSING_KEYWORDS:
                 Log.note("PROBLEM Unable to find {{type}} KEYWORD {{object}}({{bug_id}}) (adding anyway): (All {{missing}}" + " not in : {{existing}})",{
                     "bug_id":target.bug_id,
                     "type":valueType,
@@ -807,6 +808,9 @@ class BugHistoryParser():
                     "missing":diff,
                     "existing":total
                 })
+                for d in diff:
+                    KNOWN_MISSING_KEYWORDS.add(d)
+
             return output
         elif field_name == "cc":
             # MAP CANONICAL TO EXISTING (BETWEEN map_* AND self.aliases WE HAVE A BIJECTION)
@@ -822,10 +826,9 @@ class BugHistoryParser():
 
             if not target.uncertain:
                 if diff:
-                    Log.note("PROBLEM: Unable to find CC:\n{{missing|indent}} (cc_list_ok=={{is_ok}}))\nnot in:\n{{existing|indent}}\nalias info:\n{{candidates|indent}}",{
+                    Log.note("PROBLEM: Unable to find CC:\n{{missing|indent}}\nnot in:\n{{existing|indent}}\nalias info:\n{{candidates|indent}}",{
                         "type":valueType,
                         "object":arrayDesc,
-                        "is_ok":self.cc_list_ok,
                         "field_name":field_name,
                         "missing":Q.sort(Q.map(diff, map_remove)),
                         "existing":Q.sort(total),
@@ -834,7 +837,7 @@ class BugHistoryParser():
 
             else:
                 # PATTERN MATCH EMAIL ADDRESSES
-                self.cc_list_ok = False
+                # self.cc_list_ok = False
                 for lost in diff:
                     best_score = 0.3
                     best = Null
@@ -846,7 +849,7 @@ class BugHistoryParser():
                             strings.edit_distance(map_total[found][0].split("@")[0], lost.split("@")[0])
                         ])
                         if score<best_score:
-                            best_score=score
+                            # best_score=score
                             best=found
 
                     if best!=Null:

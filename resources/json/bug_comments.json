@@ -4,15 +4,15 @@
 		"index.number_of_replicas":0,
 		"index.store.throttle.type": "merge",
 		"index.store.throttle.max_bytes_per_sec": "2mb",
-        "analysis": {
-            "analyzer": {
-                "bz_text_analyzer": {
-                    "type":"standard",
-                    "filter":["lowercase", "stop"],
-                    "max_token_length":"20"
-                }
-            }
-        }
+		"analysis": {
+		    "analyzer": {
+		        "bz_text_analyzer": {
+		            "type":"standard",
+		            "filter":["lowercase", "stop"],
+		            "max_token_length":"20"
+		        }
+		    }
+		}
 	},
 	"mappings": {
 		"bug_comment": {
@@ -53,25 +53,25 @@
 					"store": "yes"
 				},
 				"comment": {
-                    "type":"multi_field",
-                    "fields":{
-                        "short_desc":{
-                            "type":"string",
-                            "index":"no",
-                            "store":"yes"
-                        },
-                        "lowercase":{
-                            "type":"string",
-                            "index":"no",
-                            "store":"yes"
-                        },
-                        "words":{
-                            "type":"string",
-                            "index":"analyzed",
-                            "analyzer":"bz_text_analyzer",
-                            "store":"no"
-                        }
-                    }
+		            "type":"multi_field",
+		            "fields":{
+		                "short_desc":{
+		                    "type":"string",
+		                    "index":"no",
+		                    "store":"yes"
+		                },
+		                "lowercase":{
+		                    "type":"string",
+		                    "index":"no",
+		                    "store":"yes"
+		                },
+		                "words":{
+		                    "type":"string",
+		                    "index":"analyzed",
+		                    "analyzer":"bz_text_analyzer",
+		                    "store":"no"
+		                }
+		            }
 				}
 			}
 		}
