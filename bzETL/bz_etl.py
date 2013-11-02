@@ -1,3 +1,5 @@
+# encoding: utf-8
+#
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
@@ -9,10 +11,10 @@
 # REPLACES THE KETTLE FLOW CONTROL PROGRAM, AND BASH SCRIPT
 
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 import gc
-from bzETL import parse_bug_history, transform_bugzilla, extract_bugzilla
-from bzETL.extract_bugzilla import get_private_bugs, get_recent_private_attachments, get_recent_private_comments, get_comments, get_comments_by_id
+from bzETL import parse_bug_history, transform_bugzilla, extract_bugzilla, alias_analysis
+from bzETL.extract_bugzilla import get_private_bugs, get_recent_private_attachments, get_recent_private_comments, get_comments, get_comments_by_id, get_recent_private_bugs, get_current_time
 from bzETL.util.struct import nvl
 from bzETL.util.maths import Math
 from bzETL.util.timer import Timer
@@ -28,7 +30,7 @@ from bzETL.util.threads import Queue, Thread, AllThread, Lock, ThreadedQueue
 from bzETL.util.cnv import CNV
 from bzETL.util.elasticsearch import ElasticSearch
 from bzETL.util.queries import Q
-from bzETL.util.db import DB, SQL
+from bzETL.util.db import DB
 
 
 db_cache_lock=Lock()
@@ -98,7 +100,7 @@ def etl(db, output_queue, param, please_stop):
     for s in sorted:
         process.processRow(s)
     process.processRow(struct.wrap({"bug_id": parse_bug_history.STOP_BUG, "_merge_order": 1}))
-    process.saveAliases()
+
 
 
 #MIMIC THE KETTLE GRAPHICAL PROGRAM
@@ -110,45 +112,39 @@ def run_both_etl(db, output_queue, es_comments, param):
     process_thread.join()
 
 
-def setup_es(settings, es, es_comments):
+def setup_es(settings, db, es, es_comments):
     """
     SETUP ES CONNECTIONS TO REFLECT IF WE ARE RESUMING, INCREMENTAL< OR STARTING OVER
     """
+    current_run_time=get_current_time(db)
 
-    current_run_time=datetime.utcnow()
-
-    if settings.args.resume:
-        # DO NOT MAKE NEW INDEX, CONTINUE INITIAL FILL
-        last_run_time = 0
-        current_run_time = datetime.utcnow() - timedelta(days=1)
-        if not es:
-            if not settings.es.alias:
-                settings.es.alias = settings.es.index
-                temp = Q.run({
-                    "from": ElasticSearch(settings.es).get_aliases(),
-                    "select": "index",
-                    "where": lambda (r): r.alias == settings.es.alias,
-                    "sort": "index"
-                })
-                settings.es.index = temp[-1]
-            es = ElasticSearch(settings.es)
-            es.set_refresh_interval(1)
-
-            if not settings.es_comments.alias:
-                settings.es_comments.alias = settings.es_comments.index
-                settings.es_comments.index = Q.run({
-                    "from": ElasticSearch(settings.es_comments).get_aliases(),
-                    "select": "index",
-                    "where": lambda (r): r.alias == settings.es_comments.alias,
-                    "sort": "index"
-                })[-1]
-            es_comments = ElasticSearch(settings.es_comments)
-    elif File(settings.param.last_run_time).exists:
+    if File(settings.param.first_run_time).exists and File(settings.param.last_run_time).exists:
         # INCREMENTAL UPDATE; DO NOT MAKE NEW INDEX
         last_run_time = long(File(settings.param.last_run_time).read())
         if not es:
             es = ElasticSearch(settings.es)
             es_comments = ElasticSearch(settings.es_comments)
+    elif File(settings.param.first_run_time).exists:
+        # DO NOT MAKE NEW INDEX, CONTINUE INITIAL FILL
+        try:
+            last_run_time = 0
+            current_run_time = long(File(settings.param.first_run_time).read())
+            if not es:
+                if not settings.es.alias:
+                    settings.es.alias = settings.es.index
+                    temp = ElasticSearch(settings.es).get_proto(settings.es.alias)
+                    settings.es.index = temp[-1]
+                es = ElasticSearch(settings.es)
+                es.set_refresh_interval(1)
+
+                if not settings.es_comments.alias:
+                    settings.es_comments.alias = settings.es_comments.index
+                    settings.es_comments.index = ElasticSearch(settings.es_comments).get_proto(settings.es_comments.alias)[-1]
+                es_comments = ElasticSearch(settings.es_comments)
+        except Exception, e:
+            Log.warning("can not resume ETL, restarting", e)
+            File(settings.param.first_run_time).delete()
+            return setup_es(settings, db, es, es_comments)
     else:
         # START ETL FROM BEGINNING, MAKE NEW INDEX
         last_run_time = 0
@@ -159,146 +155,205 @@ def setup_es(settings, es, es_comments):
 
             if not settings.es.alias:
                 settings.es.alias = settings.es.index
-                settings.es.index = settings.es.alias + CNV.datetime2string(datetime.utcnow(), "%Y%m%d_%H%M%S")
+                settings.es.index = ElasticSearch.proto_name(settings.es.alias)
             es = ElasticSearch.create_index(settings.es, schema)
 
             if not settings.es_comments.alias:
                 settings.es_comments.alias = settings.es_comments.index
-                settings.es_comments.index = settings.es_comments.alias + CNV.datetime2string(datetime.utcnow(), "%Y%m%d_%H%M%S")
+                settings.es_comments.index = ElasticSearch.proto_name(settings.es_comments.alias)
             es_comments = ElasticSearch.create_index(settings.es_comments, File(settings.es_comments.schema_file).read())
 
+        File(settings.param.first_run_time).write(unicode(CNV.datetime2milli(current_run_time)))
+
     return current_run_time, es, es_comments, last_run_time
+
+
+def incremental_etl(settings, param, db, es, es_comments, output_queue):
+    ####################################################################
+    ## ES TAKES TIME TO DELETE RECORDS, DO DELETE FIRST WITH HOPE THE
+    ## INDEX GETS A REWRITE DURING ADD OF NEW RECORDS
+    ####################################################################
+
+    #REMOVE PRIVATE BUGS
+    private_bugs=get_private_bugs(db, param)
+    es.delete_record({"terms": {"bug_id": private_bugs}})
+
+    #RECENT PUBLIC BUGS
+    possible_public_bugs=get_recent_private_bugs(db, param)
+    possible_public_bugs=set(Q.select(possible_public_bugs, "bug_id"))
+
+    #REMOVE **RECENT** PRIVATE ATTACHMENTS
+    private_attachments = get_recent_private_attachments(db, param)
+    bugs_to_refresh = set(Q.select(private_attachments, "bug_id"))
+    es.delete_record({"terms": {"bug_id": bugs_to_refresh}})
+
+    #REBUILD BUGS THAT GOT REMOVED
+    bug_list = (possible_public_bugs | bugs_to_refresh) - private_bugs # REMOVE PRIVATE BUGS
+    if bug_list:
+        refresh_param = param.copy()
+        refresh_param.bug_list = bug_list
+        refresh_param.start_time = 0
+        refresh_param.start_time_str = extract_bugzilla.milli2string(db, 0)
+
+        try:
+            etl(db, output_queue, refresh_param, please_stop=None)
+        except Exception, e:
+            Log.error("Problem with etl using parameters {{parameters}}", {
+                "parameters": refresh_param
+            }, e)
+
+    #REFRESH COMMENTS WITH PRIVACY CHANGE
+    private_comments = get_recent_private_comments(db, param)
+    comment_list = set(Q.select(private_comments, "comment_id")) | {0}
+    changed_comments = get_comments_by_id(db, comment_list, param)
+    es_comments.delete_record({"terms": {"comment_id": comment_list}})
+    es.add([{"id": c.comment_id, "value": c} for c in changed_comments])
+
+    #GET LIST OF CHANGED BUGS
+    with Timer("time to get bug list"):
+        bug_list = Q.select(db.query("""
+            SELECT
+                b.bug_id
+            FROM
+                bugs b
+            LEFT JOIN
+                bug_group_map m ON m.bug_id=b.bug_id
+            WHERE
+                delta_ts >= {{start_time_str}} AND
+                m.bug_id IS NULL
+        """, {
+            "start_time_str": param.start_time_str
+        }), u"bug_id")
+
+    if not bug_list:
+        return
+
+    with Thread.run(alias_analysis.main, settings=settings, bug_list=bug_list):
+        param.bug_list = bug_list
+        run_both_etl(**{
+            "db": db,
+            "output_queue": output_queue,
+            "es_comments": es_comments,
+            "param": param.copy()
+        })
+
+
+
+
+
+
+def full_etl(resume_from_last_run, settings, param, db, es, es_comments, output_queue):
+
+    with Thread.run(alias_analysis.main, settings=settings):
+        end = nvl(settings.param.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
+        start = nvl(settings.param.start, 0)
+        if resume_from_last_run:
+            start = nvl(settings.param.start, Math.floor(get_max_bug_id(es), settings.param.increment))
+
+        #############################################################
+        ## MAIN ETL LOOP
+        #############################################################
+
+        #TWO WORKERS IS MORE THAN ENOUGH FOR A SINGLE THREAD
+        # with Multithread([run_both_etl, run_both_etl]) as workers:
+        for b in range(start, end, settings.param.increment):
+            if settings.args.quick and b < end - settings.param.increment and b != 0:
+                #--quick ONLY DOES FIRST AND LAST BLOCKS
+                continue
+
+            # WITHOUT gc.collect() PYPY MEMORY USAGE GROWS UNTIL 2gig LIMIT IS HIT AND CRASH
+            # WITH THIS LINE IT SEEMS TO TOP OUT AT 1.2gig
+            #UPDATE 2013 OCT 30: SOMETIMES THERE IS A MEMORY EXPLOSION, SOMETIMES NOT
+            gc.collect()
+            (min, max) = (b, b + settings.param.increment)
+            try:
+                #GET LIST OF CHANGED BUGS
+                with Timer("time to get bug list"):
+                    bug_list = Q.select(db.query("""
+                        SELECT
+                            b.bug_id
+                        FROM
+                            bugs b
+                        LEFT JOIN
+                            bug_group_map m ON m.bug_id=b.bug_id
+                        WHERE
+                            delta_ts >= {{start_time_str}} AND
+                            ({{min}} <= b.bug_id AND b.bug_id < {{max}}) AND
+                            m.bug_id IS NULL
+                    """, {
+                        "min": min,
+                        "max": max,
+                        "start_time_str": param.start_time_str
+                    }), u"bug_id")
+
+                if not bug_list:
+                    continue
+
+                param.bug_list = bug_list
+                run_both_etl(**{
+                    "db": db,
+                    "output_queue": output_queue,
+                    "es_comments": es_comments,
+                    "param": param.copy()
+                })
+
+            except Exception, e:
+                Log.warning("Problem with dispatch loop in range [{{min}}, {{max}})", {
+                    "min": min,
+                    "max": max
+                }, e)
 
 
 def main(settings, es=None, es_comments=None):
     if not settings.param.allow_private_bugs and es and not es_comments:
         Log.error("Must have ES for comments")
 
+    resume_from_last_run = File(settings.param.first_run_time).exists and not File(settings.param.last_run_time).exists
+
     #MAKE HANDLES TO CONTAINERS
     try:
         with DB(settings.bugzilla) as db:
-            current_run_time, es, es_comments, last_run_time = setup_es(settings, es, es_comments)
+            current_run_time, es, es_comments, last_run_time = setup_es(settings, db, es, es_comments)
 
             with ThreadedQueue(es, size=1000) as output_queue:
                 #SETUP RUN PARAMETERS
                 param = Struct()
-                param.end_time = CNV.datetime2milli(datetime.utcnow())
-                param.start_time=last_run_time
-                param.start_time_str = extract_bugzilla.milli2string(db, last_run_time)
+                param.end_time = CNV.datetime2milli(get_current_time(db))
+                # DB WRITES ARE DELAYED, RESULTING IN UNORDERED bug_when IN bugs_activity (AS IS ASSUMED FOR bugs(delats_ts))
+                # THIS JITTER IS USUALLY NO MORE THAN ONE SECOND, BUT WE WILL GO BACK 60sec, JUST IN CASE.
+                # THERE ARE OCCASIONAL WRITES THAT ARE IN GMT, BUT SINCE THEY LOOK LIKE THE FUTURE, WE CAPTURE THEM
+                param.start_time = last_run_time - 60000
+                param.start_time_str = extract_bugzilla.milli2string(db, param.start_time)
                 param.alias_file = settings.param.alias_file
-                param.allow_private_bugs=settings.param.allow_private_bugs
-
-                private_bugs = get_private_bugs(db, param)
+                param.allow_private_bugs = settings.param.allow_private_bugs
 
                 if last_run_time > 0:
-                    ####################################################################
-                    ## ES TAKES TIME TO DELETE RECORDS, DO DELETE FIRST WITH HOPE THE
-                    ## INDEX GETS A REWRITE DURING ADD OF NEW RECORDS
-                    ####################################################################
-
-                    #REMOVE PRIVATE BUGS
-                    es.delete_record({"terms": {"bug_id": private_bugs}})
-
-                    #REMOVE **RECENT** PRIVATE ATTACHMENTS
-                    private_attachments = get_recent_private_attachments(db, param)
-                    bugs_to_refresh = set([a.bug_id for a in private_attachments])
-                    es.delete_record({"terms": {"bug_id": bugs_to_refresh}})
-
-                    #REBUILD BUGS THAT GOT REMOVED
-                    bug_list = bugs_to_refresh - private_bugs # BUT NOT PRIVATE BUGS
-                    if bug_list:
-                        refresh_param = param.copy()
-                        refresh_param.bug_list = SQL(bug_list)
-                        refresh_param.start_time = 0
-                        refresh_param.start_time_str = extract_bugzilla.milli2string(db, 0)
-
-                        try:
-                            etl(db, output_queue, refresh_param, please_stop=None)
-                        except Exception, e:
-                            Log.error("Problem with etl using parameters {{parameters}}", {
-                                "parameters": refresh_param
-                            }, e)
-
-                    #REFRESH COMMENTS WITH PRIVACY CHANGE
-                    private_comments=get_recent_private_comments(db, param)
-                    comment_list = Q.select(private_comments, "comment_id")
-                    changed_comments=get_comments_by_id(db, comment_list, param)
-                    es_comments.delete_record({"terms": {"comment_id": comment_list}})
-                    es.add([{"id":c.comment_id, "value":c} for c in changed_comments])
-
-
-
-
-                ########################################################################
-                ## MAIN ETL LOOP
-                ########################################################################
-
-                end = nvl(settings.param.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
-                start = nvl(settings.param.start, 0)
-                if settings.args.resume:
-                    start = nvl(settings.param.start, Math.floor(get_max_bug_id(es), settings.param.increment))
-
-                #TWO WORKERS IS MORE THAN ENOUGH FOR A SINGLE THREAD
-                # with Multithread([run_both_etl, run_both_etl]) as workers:
-                for b in range(start, end, settings.param.increment):
-                    # WITHOUT gc.collect() PYPYU MEMORY USAGE GROWS UNTIL 2gig LIMIT IS HIT AND CRASH
-                    # WITH THIS LINE IT SEEMS TO TOP OUT AT 1.2gig
-                    gc.collect()
-                    (min, max)=(b, b+settings.param.increment)
-                    try:
-                        with Timer("time to get bug list"):
-                            bug_list=Q.select(db.query("""
-                                SELECT
-                                    b.bug_id
-                                FROM
-                                    bugs b
-                                LEFT JOIN
-                                    bug_group_map m ON m.bug_id=b.bug_id
-                                WHERE
-                                    delta_ts >= {{start_time_str}} AND
-                                    ({{min}} <= b.bug_id AND b.bug_id < {{max}}) AND
-                                    m.bug_id IS NULL
-                                """, {
-                                    "min":min,
-                                    "max":max,
-                                    "start_time_str":param.start_time_str
-                            }), u"bug_id")
-
-                        if not bug_list:
-                            continue
-
-                        param.bug_list=bug_list
-                        run_both_etl(**{
-                            "db":db,
-                            "output_queue":output_queue,
-                            "es_comments":es_comments,
-                            "param":param.copy()
-                        })
-
-                    except Exception, e:
-                        Log.warning("Problem with dispatch loop in range [{{min}}, {{max}})", {
-                            "min":min,
-                            "max":max
-                        }, e)
+                    incremental_etl(settings, param, db, es, es_comments, output_queue)
+                else:
+                    full_etl(resume_from_last_run, settings, param, db, es, es_comments, output_queue)
 
                 output_queue.add(Thread.STOP)
 
         if settings.es.alias:
             es.delete_all_but(settings.es.alias, settings.es.index)
-            es.add_alias(settings.alias)
+            es.add_alias(settings.es.alias)
 
         if settings.es_comments.alias:
             es.delete_all_but(settings.es_comments.alias, settings.es_comments.index)
-            es_comments.add_alias(settings.alias)
+            es_comments.add_alias(settings.es_comments.alias)
 
         File(settings.param.last_run_time).write(unicode(CNV.datetime2milli(current_run_time)))
-
+    except Exception, e:
+        Log.error("Problem with main ETL loop", e)
     finally:
         try:
             close_db_connections()
         except Exception, e:
             pass
-        es.set_refresh_interval(1)
+        try:
+            es.set_refresh_interval(1)
+        except Exception, e:
+            pass
 
 
 def get_max_bug_id(es):
@@ -341,12 +396,26 @@ def close_db_connections():
 
 def start():
     try:
-        settings = startup.read_settings(defs={
-            "name": "--resume",
-            "help": "set to true to resume from incomplete previous run",
+        settings = startup.read_settings(defs=[{
+            "name": "--quick",
+            "help": "use this to process the first and last block, useful for testing the meta-etl process",
             "action": "store_true",
-            "dest": "resume"
-        })
+            "dest": "quick"
+        },{
+            "name": ["--restart", "--reset"],
+            "help": "use this to force a reprocessing of all data",
+            "action": "store_true",
+            "dest": "restart"
+        }])
+
+        if settings.args.restart:
+            for l in struct.listwrap(settings.debug.log):
+                if l.filename:
+                    File(l.filename).parent.delete()
+            File(settings.param.first_run_time).delete()
+            File(settings.param.last_run_time).delete()
+            File(settings.param.alias_file).delete()
+
         Log.start(settings.debug)
         main(settings)
     except Exception, e:

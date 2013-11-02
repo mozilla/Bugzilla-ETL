@@ -1,3 +1,5 @@
+# encoding: utf-8
+#
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
@@ -28,13 +30,17 @@ MAX_BATCH_SIZE=100
 
 all_db=[]
 
-class DB():
+class DB(object):
     """
 
     """
 
-    def __init__(self, settings, schema=None):
-        """OVERRIDE THE settings.schema WITH THE schema PARAMETER"""
+    def __init__(self, settings, schema=None, preamble=None):
+        """
+        OVERRIDE THE settings.schema WITH THE schema PARAMETER
+        preamble WILL BE USED TO ADD COMMENTS TO THE BEGINNING OF ALL SQL
+        THE INTENT IS TO HELP ADMINISTRATORS ID THE SQL RUNNING ON THE DATABASE
+        """
         all_db.append(self)
 
         if isinstance(settings, DB):
@@ -42,6 +48,12 @@ class DB():
 
         self.settings=settings.copy()
         self.settings.schema=nvl(schema, self.settings.schema)
+
+        preamble=nvl(preamble, self.settings.preamble)
+        if preamble == None:
+            self.preamble=""
+        else:
+            self.preamble=indent(preamble, "# ").strip()+"\n"
 
         self.debug=nvl(self.settings.debug, DEBUG)
         self._open()
@@ -184,8 +196,9 @@ class DB():
                 self.cursor=self.db.cursor()
 
             if param: sql=expand_template(sql, self.quote_param(param))
-            sql=outdent(sql)
-            if self.debug: Log.note(u"Execute SQL:\n{{sql}}", {u"sql":indent(sql)})
+            sql = self.preamble + outdent(sql)
+            if self.debug:
+                Log.note(u"Execute SQL:\n{{sql}}", {u"sql": indent(sql)})
 
             self.cursor.execute(sql)
 
@@ -216,9 +229,9 @@ class DB():
                 self.cursor=self.db.cursor()
 
             if param: sql=expand_template(sql,self.quote_param(param))
-            sql=outdent(sql)
-            if self.debug: Log.note(u"Execute SQL:\n{{sql}}", {u"sql":indent(sql)})
-
+            sql = self.preamble + outdent(sql)
+            if self.debug:
+                Log.note(u"Execute SQL:\n{{sql}}", {u"sql":indent(sql)})
             self.cursor.execute(sql)
 
             columns = tuple( [utf8_to_unicode(d[0]) for d in self.cursor.description] )
@@ -302,18 +315,22 @@ class DB():
             # BUG IN PYMYSQL: CAN NOT HANDLE MULTIPLE STATEMENTS
             # https://github.com/PyMySQL/PyMySQL/issues/157
             for b in backlog:
+                sql = self.preamble+b
                 try:
+                    if self.debug:
+                        Log.note(u"Execute SQL:\n{{sql|indent}}", {u"sql":sql})
                     self.cursor.execute(b)
                 except Exception, e:
-                    Log.error(u"Can not execute sql:\n{{sql}}", {u"sql":b}, e)
+                    Log.error(u"Can not execute sql:\n{{sql}}", {u"sql":sql}, e)
 
             self.cursor.close()
             self.cursor = self.db.cursor()
         else:
             for i, g in Q.groupby(backlog, size=MAX_BATCH_SIZE):
-                sql=u";\n".join(g)
+                sql=self.preamble+u";\n".join(g)
                 try:
-                    if self.debug: Log.note(u"Execute block of SQL:\n"+indent(sql))
+                    if self.debug:
+                        Log.note(u"Execute block of SQL:\n{{sql|indent}}", {u"sql":sql})
                     self.cursor.execute(sql)
                     self.cursor.close()
                     self.cursor = self.db.cursor()
@@ -564,7 +581,7 @@ def int_list_packer(term, values):
         elif v-last > 3:
             if last==curr_start:
                 singletons.add(last)
-            elif last-curr_start - len(curr_excl) < 4 or ((last-curr_start) < len(curr_excl)*3):
+            elif last-curr_start - len(curr_excl) < 6 or ((last-curr_start) < len(curr_excl)*3):
                 #small ranges are singletons, sparse ranges are singletons
                 singletons |= set(range(curr_start, last+1))
                 singletons -= curr_excl
@@ -584,10 +601,11 @@ def int_list_packer(term, values):
                 curr_excl=set()
         last=v
 
-    if last==curr_start:
-        singletons.add(last)
-    else:
+    if last > curr_start+1:
         ranges.append({"gte":curr_start, "lte":last})
+    else:
+        singletons.add(curr_start)
+        singletons.add(last)
 
 
     if ranges:

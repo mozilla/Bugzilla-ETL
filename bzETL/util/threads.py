@@ -1,3 +1,5 @@
+# encoding: utf-8
+#
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
@@ -14,7 +16,7 @@ import time
 
 DEBUG = True
 
-class Lock():
+class Lock(object):
     """
     SIMPLE LOCK (ACTUALLY, A PYTHON threadind.Condition() WITH notify() BEFORE EVERY RELEASE)
     """
@@ -42,7 +44,7 @@ class Lock():
 
 
 # SIMPLE MESSAGE QUEUE, multiprocessing.Queue REQUIRES SERIALIZATION, WHICH IS HARD TO USE JUST BETWEEN THREADS
-class Queue():
+class Queue(object):
     def __init__(self):
         self.keep_running=True
         self.lock=Lock("lock for queue")
@@ -108,7 +110,7 @@ class Queue():
 
 
 
-class AllThread():
+class AllThread(object):
     """
     RUN ALL ADDED FUNCTIONS IN PARALLEL, BE SURE TO HAVE JOINED BEFORE EXIT
     """
@@ -151,7 +153,7 @@ class AllThread():
 
 
 
-class Thread():
+class Thread(object):
     """
     join() ENHANCED TO ALLOW CAPTURE OF CTRL-C, AND RETURN POSSIBLE THREAD EXCEPTIONS
     run() ENHANCED TO CAPTURE EXCEPTIONS
@@ -271,7 +273,7 @@ class Thread():
 
 
 
-class Signal():
+class Signal(object):
     """
     SINGLE-USE THREAD SAFE SIGNAL
     """

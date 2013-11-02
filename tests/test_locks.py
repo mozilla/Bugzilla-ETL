@@ -1,3 +1,5 @@
+# encoding: utf-8
+#
 import thread
 from threading import Lock
 import sys

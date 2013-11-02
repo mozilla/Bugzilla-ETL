@@ -1,3 +1,5 @@
+# encoding: utf-8
+#
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
@@ -11,7 +13,7 @@ from .struct import Null, nvl
 from .logs import Log
 from .strings import find_first
 
-class Math():
+class Math(object):
 
     @staticmethod
     def bayesian_add(a, b):

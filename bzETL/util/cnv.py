@@ -1,3 +1,5 @@
+# encoding: utf-8
+#
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
@@ -107,6 +109,9 @@ class CNV:
 
     @staticmethod
     def multiset2dict(value):
+        """
+        CONVERT MULTISET TO dict THAT MAPS KEYS TO MAPS KEYS TO KEY-COUNT
+        """
         if value == None:
             return None
         return dict(value.dic)

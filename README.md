@@ -41,6 +41,11 @@ You must prepare a ```settings.json``` file to reference the resources, and it's
   * Set ```PYTHONPATH=.```
   * Exceute ```pypy .\bzETL\bz_etl.py --settings=settings.json``` (also see [example command line script](resources/scripts/bz_etl.bat))
 
+Bugzille-ETL keeps local run state in the form of two files: ```first_run_time``` and ```last_run_time```.  These are both parameters in the ``settings.json``` file.
+
+  * ```first_run_time``` is written only if it does not exist, and triggers a full ETL refresh.  Delete this file if you want to create a new ES index and start ETL from the beginning.
+  * ```last_run_time``` is recorded whenever there has been a successful ETL.  This file will not exist until the initial full ETL has completed successfully.  Deleteing this file should have no net effect, other than making the program work harder then it should.
+
 
 
 Running Tests

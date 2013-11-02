@@ -1,3 +1,5 @@
+# encoding: utf-8
+#
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
@@ -11,6 +13,7 @@ import pytest
 from bzETL import bz_etl, extract_bugzilla
 
 from bzETL.bz_etl import etl
+from bzETL.extract_bugzilla import get_current_time
 from bzETL.util.cnv import CNV
 from bzETL.util.db import DB, all_db
 from bzETL.util.logs import Log
@@ -43,7 +46,7 @@ def test_specific_bugs(settings):
 
         #SETUP RUN PARAMETERS
         param=Struct()
-        param.end_time=CNV.datetime2milli(datetime.utcnow())
+        param.end_time=CNV.datetime2milli(get_current_time(db))
         param.start_time=0
         param.start_time_str = extract_bugzilla.milli2string(db, 0)
 
@@ -89,7 +92,7 @@ def random_sample_of_bugs(settings):
 
             #SETUP RUN PARAMETERS
             param=Struct()
-            param.end_time=CNV.datetime2milli(datetime.utcnow())
+            param.end_time=CNV.datetime2milli(get_current_time(db))
             param.start_time=0
             param.start_time_str = extract_bugzilla.milli2string(db, 0)
             param.alias_file=settings.param.alias_file
@@ -115,6 +118,7 @@ def test_private_etl(settings):
     """
     ENSURE IDENTIFIABLE INFORMATION DOES NOT EXIST ON ANY BUGS
     """
+    File(settings.param.first_run_time).delete()
     File(settings.param.last_run_time).delete()
     settings.param.allow_private_bugs=True
 
@@ -131,6 +135,7 @@ def test_public_etl(settings):
     """
 
     """
+    File(settings.param.first_run_time).delete()
     File(settings.param.last_run_time).delete()
     settings.param.allow_private_bugs = Null
 
@@ -159,6 +164,18 @@ def verify_no_private_bugs(es, private_bugs):
             Log.error("Expecting no version for private bug {{bug_id}}", {
                 "bug_id": b
             })
+
+def verify_public_bugs(es, private_bugs):
+    #VERIFY BUGS ARE NOT IN OUTPUT
+    for b in private_bugs:
+        versions = compare_es.get_all_bug_versions(es, b)
+        if not versions:
+            Log.error("Expecting versions for public bug {{bug_id}}", {
+                "bug_id": b
+            })
+
+
+
 
 def verify_no_private_attachments(es, private_attachments):
     #VERIFY ATTACHMENTS ARE NOT IN OUTPUT
@@ -193,6 +210,7 @@ def verify_no_private_comments(es, private_comments):
 
 def test_private_bugs_do_not_show(settings):
     settings.param.allow_private_bugs=False
+    File(settings.param.first_run_time).delete()
     File(settings.param.last_run_time).delete()
 
     private_bugs = set(Random.sample(settings.param.bugs, 3))
@@ -212,8 +230,10 @@ def test_private_bugs_do_not_show(settings):
     verify_no_private_bugs(es, private_bugs)
 
 
+
 def test_recent_private_stuff_does_not_show(settings):
     settings.param.allow_private_bugs=False
+    File(settings.param.first_run_time).delete()
     File(settings.param.last_run_time).delete()
 
     database.make_test_instance(settings.bugzilla)
@@ -248,6 +268,21 @@ def test_recent_private_stuff_does_not_show(settings):
     verify_no_private_bugs(es, private_bugs)
     verify_no_private_attachments(es, private_attachments)
     verify_no_private_comments(es_c, private_comments)
+
+    #MARK SOME STUFF PUBLIC
+
+    with DB(settings.bugzilla) as db:
+        for b in private_bugs:
+            database.remove_bug_group(db, b, "super secret")
+
+    bz_etl.main(settings, es, es_c)
+
+    #VERIFY BUG IS PUBLIC, BUT PRIVATE ATTACHMENTS AND COMMENTS STILL NOT
+    verify_public_bugs(es, private_bugs)
+    verify_no_private_attachments(es, private_attachments)
+    verify_no_private_comments(es_c, private_comments)
+
+
 
 
 

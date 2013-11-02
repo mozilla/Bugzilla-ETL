@@ -1,3 +1,5 @@
+# encoding: utf-8
+#
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
@@ -84,7 +86,7 @@ class worker_thread(threading.Thread):
 
 #PASS A SET OF FUNCTIONS TO BE EXECUTED (ONE PER THREAD)
 #PASS AN (ITERATOR/LIST) OF PARAMETERS TO BE ISSUED TO NEXT AVAILABLE THREAD
-class Multithread():
+class Multithread(object):
 
 
     def __init__(self, functions):

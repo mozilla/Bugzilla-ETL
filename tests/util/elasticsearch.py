@@ -1,3 +1,5 @@
+# encoding: utf-8
+#
 from bzETL.util import struct
 from bzETL.util.cnv import CNV
 from bzETL.util.elasticsearch import ElasticSearch
