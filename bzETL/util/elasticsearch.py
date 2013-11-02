@@ -276,7 +276,7 @@ def _scrub(r):
         elif isinstance(r, basestring):
             if r == "":
                 return None
-            return r.lower()
+            return r
         elif Math.is_number(r):
             return CNV.value2number(r)
         elif isinstance(r, dict):

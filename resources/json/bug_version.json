@@ -8,11 +8,11 @@
 		"index.cache.field.type":"soft",
 		"analysis": {
 			"analyzer": {
-                "bz_text_analyzer": {
-                    "type":"standard",
-                    "filter":["lowercase", "stop"],
-                    "max_token_length":"20"
-                },
+		        "bz_text_analyzer": {
+		            "type":"standard",
+		            "filter":["lowercase", "stop"],
+		            "max_token_length":"20"
+		        },
 				"whiteboard_words": {
 					"type": "custom",
 					"tokenizer": "whiteboard_words_pattern",
@@ -331,26 +331,26 @@
 					"index_name": "platform",
 					"type": "string"
 				},
-                "short_desc": {
-                    "type":"multi_field",
-                    "fields":{
-                        "short_desc":{
-                            "type":"string",
-                            "index":"no",
-                            "store":"yes"
-                        },
-                        "lowercase":{
-                            "type":"string",
-                            "index":"no",
-                            "store":"yes"
-                        },
-                        "words":{
-                            "type":"string",
-                            "index":"analyzed",
-                            "analyzer":"bz_text_analyzer"
-                        }
-                    }
-                },
+		        "short_desc": {
+		            "type":"multi_field",
+		            "fields":{
+		                "short_desc":{
+		                    "type":"string",
+		                    "index":"no",
+		                    "store":"yes"
+		                },
+		                "lowercase":{
+		                    "type":"string",
+		                    "index":"no",
+		                    "store":"yes"
+		                },
+		                "words":{
+		                    "type":"string",
+		                    "index":"analyzed",
+		                    "analyzer":"bz_text_analyzer"
+		                }
+		            }
+		        },
 				"status_whiteboard": {
 					"type": "multi_field",
 					"fields": {

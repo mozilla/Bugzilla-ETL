@@ -20,6 +20,9 @@ def main(settings, bug_list=None, please_stop=None, restart=False):
     OVER THE LIFETIME OF THE BUGZILLA DATA.  'PERSON' IS ABSTRACT, AND SIMPLY
     ASSIGNED A CANONICAL EMAIL ADDRESS TO FACILITATE IDENTIFICATION
     """
+    if settings.args.quick:
+        Log.note("Alias analysis skipped (--quick was used)")
+        return
 
     if not restart:
         loadAliases(settings)
