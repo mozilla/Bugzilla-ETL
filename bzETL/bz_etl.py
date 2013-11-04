@@ -11,7 +11,6 @@
 # REPLACES THE KETTLE FLOW CONTROL PROGRAM, AND BASH SCRIPT
 
 
-from datetime import timedelta
 import gc
 from bzETL import parse_bug_history, transform_bugzilla, extract_bugzilla, alias_analysis
 from bzETL.extract_bugzilla import get_private_bugs, get_recent_private_attachments, get_recent_private_comments, get_comments, get_comments_by_id, get_recent_private_bugs, get_current_time
@@ -61,7 +60,10 @@ def etl_comments(db, es, param, please_stop):
             comment_db_cache.append(DB(db))
 
     with comment_db_cache_lock:
+        Log.note("Read comments from database")
         comments=get_comments(comment_db_cache[0], param)
+
+    Log.note("Write comments to ElasticSearch")
     es.add([{"id":c.comment_id, "value":c} for c in comments])
 
 
@@ -106,8 +108,8 @@ def etl(db, output_queue, param, please_stop):
 
 
 def run_both_etl(db, output_queue, es_comments, param):
-    comment_thread=Thread.run(etl_comments, db, es_comments, param)
-    process_thread=Thread.run(etl, db, output_queue, param)
+    comment_thread=Thread.run("etl comments", etl_comments, db, es_comments, param)
+    process_thread=Thread.run("etl", etl, db, output_queue, param)
 
     comment_thread.join()
     process_thread.join()
@@ -229,7 +231,7 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
     if not bug_list:
         return
 
-    with Thread.run(alias_analysis.main, settings=settings, bug_list=bug_list):
+    with Thread.run("alias analysis", alias_analysis.main, settings=settings, bug_list=bug_list):
         param.bug_list = bug_list
         run_both_etl(**{
             "db": db,
@@ -245,7 +247,7 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
 
 def full_etl(resume_from_last_run, settings, param, db, es, es_comments, output_queue):
 
-    with Thread.run(alias_analysis.main, settings=settings):
+    with Thread.run("alias_analysis", alias_analysis.main, settings=settings):
         end = nvl(settings.param.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
         start = nvl(settings.param.start, 0)
         if resume_from_last_run:

@@ -470,9 +470,6 @@ class DB(object):
             Log.error(u"problem quoting SQL", e)
 
     def quote_column(self, column_name, table=None):
-
-
-
         if isinstance(column_name, basestring):
             if table:
                 column_name = table + "." + column_name
@@ -495,39 +492,50 @@ class DB(object):
     def _filter2where(self, esfilter):
         esfilter=struct.wrap(esfilter)
 
-        if esfilter[u"and"] != None:
+        if esfilter[u"and"]:
             return u"("+u" AND ".join([self._filter2where(a) for a in esfilter[u"and"]])+u")"
-        elif esfilter[u"or"] != None:
+        elif esfilter[u"or"]:
             return u"("+u" OR ".join([self._filter2where(a) for a in esfilter[u"or"]])+u")"
         elif esfilter[u"not"]:
             return u"NOT ("+self._filter2where(esfilter[u"not"])+u")"
-        elif esfilter.term != None:
+        elif esfilter.term:
             return u"("+u" AND ".join([self.quote_column(col)+u"="+self.quote_value(val) for col, val in esfilter.term.items()])+u")"
         elif esfilter.terms:
             for col, v in esfilter.terms.items():
                 try:
                     int_list=CNV.value2intlist(v)
-                    filter=int_list_packer(col, int_list)
+                    filter = int_list_packer(col, int_list)
                     return self._filter2where(filter)
                 except Exception, e:
-                    return self.quote_column(col)+u" in ("+", ".join([self.quote_value(val) for val in v])+")"
-        elif esfilter.script != None:
+                    if not hasattr(e, "contains") or not e.contains("no packing possible"):
+                        Log.warning("WARNING: Not an int-list: {{list}}", {"list":v}, e)
+                return self.quote_column(col)+u" in ("+", ".join([self.quote_value(val) for val in v])+")"
+        elif esfilter.script:
             return u"("+esfilter.script+u")"
-        elif esfilter.range != None:
+        elif esfilter.range:
             name2sign={
                 u"gt": u">",
                 u"gte": u">=",
                 u"lte": u"<=",
                 u"lt": u"<"
             }
+
+            def single(col, r):
+                min=nvl(r["gte"], r[">="])
+                max=nvl(r["lte"], r["<="])
+                if min and max:
+                    #SPECIAL CASE (BETWEEN)
+                    return u"("+self.quote_column(col)+u" BETWEEN "+self.quote_value(min)+u" AND "+self.quote_value(max)+u")"
+                else:
+                    return " AND ".join([
+                        self.quote_column(col) + name2sign[sign] + self.quote_value(value)
+                        for sign, value in r.items()
+                    ])
+
             return u"(" + u" AND ".join([
-                " AND ".join([
-                    self.quote_column(col) + name2sign[sign] + self.quote_value(value)
-                    for sign, value in ranges.items()
-                ])
-                for col, ranges in esfilter.range.items()
+                single(col, ranges) for col, ranges in esfilter.range.items()
             ]) + u")"
-        elif esfilter.exists != None:
+        elif esfilter.exists:
             if isinstance(esfilter.exists, basestring):
                 return u"("+self.quote_column(esfilter.exists)+u" IS NOT Null)"
             else:
@@ -564,6 +572,8 @@ def int_list_packer(term, values):
     """
     return singletons, ranges and exclusions
     """
+    DENSITY=10  #a range can have holes, this is inverse of the hole density
+    MIN_RANGE=100  #min members before a range is allowed to be used
 
     singletons=set()
     ranges=[]
@@ -579,19 +589,22 @@ def int_list_packer(term, values):
         if v<=last+1:
             pass
         elif v-last > 3:
+            #big step, how do we deal with it?
             if last==curr_start:
+                #not a range yet, so just add as singlton
                 singletons.add(last)
-            elif last-curr_start - len(curr_excl) < 6 or ((last-curr_start) < len(curr_excl)*3):
+            elif last-curr_start - len(curr_excl) < MIN_RANGE or ((last-curr_start) < len(curr_excl)*DENSITY):
                 #small ranges are singletons, sparse ranges are singletons
                 singletons |= set(range(curr_start, last+1))
                 singletons -= curr_excl
             else:
+                #big enough, and dense enough range
                 ranges.append({"gte":curr_start, "lte":last})
                 exclude |= curr_excl
             curr_start=v
             curr_excl=set()
         else:
-            if v-curr_start >= len(curr_excl)*3:
+            if v-curr_start >= len(curr_excl)*DENSITY:
                 add_me = set(range(last + 1, v))
                 curr_excl |= add_me
             else:
