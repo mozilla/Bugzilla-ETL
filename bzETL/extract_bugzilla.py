@@ -183,31 +183,34 @@ def get_recent_private_comments(db, param):
 
 
 def get_bugs(db, param):
-    if not bugs_columns:
-        columns=get_bugs_table_columns(db, db.settings.schema)
-        globals()["bugs_columns"] = Q.select(columns, "column_name")
-
-    #TODO: CF_LAST_RESOLVED IS IN PDT, FIX IT
-
-    param.bugs_columns=bugs_columns
-    param.bugs_columns_SQL = db.quote_column(bugs_columns)
-    param.bug_filter = db.esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
-
-
-    if param.allow_private_bugs:
-        param.sensitive_columns=SQL("""
-            '<screened>' short_desc,
-            '<screened>' bug_file_loc
-        """)
-    else:
-        param.sensitive_columns=SQL("""
-            short_desc,
-            bug_file_loc
-        """)
-
-
-
     try:
+        if not bugs_columns:
+            columns=get_bugs_table_columns(db, db.settings.schema)
+            globals()["bugs_columns"] = columns
+
+        #TODO: CF_LAST_RESOLVED IS IN PDT, FIX IT
+        def lower(col):
+            if col.column_type.startswith("varchar"):
+                return "lower("+db.quote_column(col.column_name)+") "+db.quote_column(col.column_name)
+            else:
+                return db.quote_column(col.column_name)
+
+        param.bugs_columns=Q.select(bugs_columns, "column_name")
+        param.bugs_columns_SQL = SQL(",\n".join([lower(c) for c in bugs_columns]))
+        param.bug_filter = db.esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
+
+
+        if param.allow_private_bugs:
+            param.sensitive_columns=SQL("""
+                '<screened>' short_desc,
+                '<screened>' bug_file_loc
+            """)
+        else:
+            param.sensitive_columns=SQL("""
+                short_desc,
+                bug_file_loc
+            """)
+
         bugs=db.query("""
             SELECT
                 bug_id,
