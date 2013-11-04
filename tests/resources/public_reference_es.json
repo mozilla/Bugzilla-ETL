@@ -1,7 +1,7 @@
 {
     "1045_1224662603": {
         "assigned_to": "beard@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec537.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec537.htm",
         "bug_id": 1045,
         "bug_severity": "normal",
         "bug_status": "verified",
@@ -87,7 +87,7 @@
     },
     "1045_1232648263": {
         "assigned_to": "beard@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec537.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec537.htm",
         "bug_id": 1045,
         "bug_severity": "normal",
         "bug_status": "verified",
@@ -178,7 +178,7 @@
     },
     "1045_907979377": {
         "assigned_to": "kipp@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec537.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec537.htm",
         "bug_id": 1045,
         "bug_severity": "enhancement",
         "bug_status": "new",
@@ -213,7 +213,7 @@
     },
     "1045_907981303": {
         "assigned_to": "kipp@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec537.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec537.htm",
         "bug_id": 1045,
         "bug_severity": "enhancement",
         "bug_status": "assigned",
@@ -261,7 +261,7 @@
     },
     "1045_909513392": {
         "assigned_to": "kipp@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec537.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec537.htm",
         "bug_id": 1045,
         "bug_severity": "enhancement",
         "bug_status": "assigned",
@@ -313,7 +313,7 @@
     },
     "1045_915675392": {
         "assigned_to": "kipp@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec537.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec537.htm",
         "bug_id": 1045,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -369,7 +369,7 @@
     },
     "1045_921638187": {
         "assigned_to": "troy@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec537.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec537.htm",
         "bug_id": 1045,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -434,7 +434,7 @@
     },
     "1045_921778606": {
         "assigned_to": "troy@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec537.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec537.htm",
         "bug_id": 1045,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -498,7 +498,7 @@
     },
     "1045_922235479": {
         "assigned_to": "troy@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec537.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec537.htm",
         "bug_id": 1045,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -562,7 +562,7 @@
     },
     "1045_923077960": {
         "assigned_to": "troy@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec537.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec537.htm",
         "bug_id": 1045,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -630,7 +630,7 @@
     },
     "1045_923078388": {
         "assigned_to": "troy@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec537.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec537.htm",
         "bug_id": 1045,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -698,7 +698,7 @@
     },
     "1045_925009940": {
         "assigned_to": "beard@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec537.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec537.htm",
         "bug_id": 1045,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -780,7 +780,7 @@
     },
     "1045_925075615": {
         "assigned_to": "michaelp@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec537.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec537.htm",
         "bug_id": 1045,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -852,7 +852,7 @@
     },
     "1045_925075733": {
         "assigned_to": "kmcclusk@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec537.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec537.htm",
         "bug_id": 1045,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -924,7 +924,7 @@
     },
     "1045_925246799": {
         "assigned_to": "kmcclusk@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec537.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec537.htm",
         "bug_id": 1045,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -996,7 +996,7 @@
     },
     "1045_925842478": {
         "assigned_to": "kmcclusk@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec537.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec537.htm",
         "bug_id": 1045,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -1073,7 +1073,7 @@
     },
     "1045_927040416": {
         "assigned_to": "kmcclusk@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec537.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec537.htm",
         "bug_id": 1045,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -1145,7 +1145,7 @@
     },
     "1045_927224100": {
         "assigned_to": "beard@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec537.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec537.htm",
         "bug_id": 1045,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -1222,7 +1222,7 @@
     },
     "1045_927314968": {
         "assigned_to": "beard@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec537.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec537.htm",
         "bug_id": 1045,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -1294,7 +1294,7 @@
     },
     "1045_929167858": {
         "assigned_to": "beard@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec537.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec537.htm",
         "bug_id": 1045,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -1366,7 +1366,7 @@
     },
     "1045_933814283": {
         "assigned_to": "beard@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec537.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec537.htm",
         "bug_id": 1045,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -1438,7 +1438,7 @@
     },
     "1045_937695432": {
         "assigned_to": "beard@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec537.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec537.htm",
         "bug_id": 1045,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -1510,7 +1510,7 @@
     },
     "1045_938437817": {
         "assigned_to": "beard@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec537.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec537.htm",
         "bug_id": 1045,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -1585,7 +1585,7 @@
     },
     "1045_947807893": {
         "assigned_to": "beard@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec537.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec537.htm",
         "bug_id": 1045,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -1663,7 +1663,7 @@
     },
     "1045_949808535": {
         "assigned_to": "beard@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec537.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec537.htm",
         "bug_id": 1045,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -1742,7 +1742,7 @@
     },
     "1045_950129220": {
         "assigned_to": "beard@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec537.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec537.htm",
         "bug_id": 1045,
         "bug_severity": "normal",
         "bug_status": "resolved",
@@ -1837,7 +1837,7 @@
     },
     "1045_951178294": {
         "assigned_to": "beard@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec537.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec537.htm",
         "bug_id": 1045,
         "bug_severity": "normal",
         "bug_status": "resolved",
@@ -1924,7 +1924,7 @@
     },
     "1045_951179713": {
         "assigned_to": "beard@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec537.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec537.htm",
         "bug_id": 1045,
         "bug_severity": "normal",
         "bug_status": "verified",
@@ -2012,7 +2012,7 @@
     },
     "1046_907979665": {
         "assigned_to": "kipp@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "enhancement",
         "bug_status": "new",
@@ -2040,7 +2040,7 @@
     },
     "1046_908429090": {
         "assigned_to": "kipp@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "enhancement",
         "bug_status": "assigned",
@@ -2081,7 +2081,7 @@
     },
     "1046_909513575": {
         "assigned_to": "peterl@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "enhancement",
         "bug_status": "new",
@@ -2131,7 +2131,7 @@
     },
     "1046_911416603": {
         "assigned_to": "peterl@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "enhancement",
         "bug_status": "assigned",
@@ -2176,7 +2176,7 @@
     },
     "1046_923093933": {
         "assigned_to": "peterl@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "enhancement",
         "bug_status": "assigned",
@@ -2224,7 +2224,7 @@
     },
     "1046_926282177": {
         "assigned_to": "peterl@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "enhancement",
         "bug_status": "assigned",
@@ -2277,7 +2277,7 @@
     },
     "1046_927307531": {
         "assigned_to": "peterl@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "enhancement",
         "bug_status": "assigned",
@@ -2334,7 +2334,7 @@
     },
     "1046_933875761": {
         "assigned_to": "peterl@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "enhancement",
         "bug_status": "assigned",
@@ -2392,7 +2392,7 @@
     },
     "1046_940976968": {
         "assigned_to": "peterl@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "enhancement",
         "bug_status": "assigned",
@@ -2453,7 +2453,7 @@
     },
     "1046_947807895": {
         "assigned_to": "peterl@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "enhancement",
         "bug_status": "assigned",
@@ -2517,7 +2517,7 @@
     },
     "1046_949822817": {
         "assigned_to": "peterl@netscape.com",
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "enhancement",
         "bug_status": "assigned",
@@ -2594,7 +2594,7 @@
                 "modified_ts": 954194745000
             }
         ],
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "enhancement",
         "bug_status": "assigned",
@@ -2670,7 +2670,7 @@
                 "modified_ts": 954194745000
             }
         ],
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "enhancement",
         "bug_status": "assigned",
@@ -2747,7 +2747,7 @@
                 "modified_ts": 954194745000
             }
         ],
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "enhancement",
         "bug_status": "assigned",
@@ -2824,7 +2824,7 @@
                 "modified_ts": 954194745000
             }
         ],
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "enhancement",
         "bug_status": "assigned",
@@ -2901,7 +2901,7 @@
                 "modified_ts": 954194745000
             }
         ],
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "enhancement",
         "bug_status": "assigned",
@@ -2989,7 +2989,7 @@
                 "modified_ts": 961046381000
             }
         ],
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "enhancement",
         "bug_status": "assigned",
@@ -3077,7 +3077,7 @@
                 "modified_ts": 961046381000
             }
         ],
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "enhancement",
         "bug_status": "new",
@@ -3200,7 +3200,7 @@
                 "modified_ts": 961148933000
             }
         ],
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "enhancement",
         "bug_status": "new",
@@ -3299,7 +3299,7 @@
                 "modified_ts": 961148933000
             }
         ],
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "enhancement",
         "bug_status": "assigned",
@@ -3399,7 +3399,7 @@
                 "modified_ts": 961148933000
             }
         ],
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "enhancement",
         "bug_status": "assigned",
@@ -3499,7 +3499,7 @@
                 "modified_ts": 961148933000
             }
         ],
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "enhancement",
         "bug_status": "assigned",
@@ -3599,7 +3599,7 @@
                 "modified_ts": 961148933000
             }
         ],
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "enhancement",
         "bug_status": "assigned",
@@ -3706,7 +3706,7 @@
                 "modified_ts": 961148933000
             }
         ],
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -3818,7 +3818,7 @@
                 "modified_ts": 961148933000
             }
         ],
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -3925,7 +3925,7 @@
                 "modified_ts": 961148933000
             }
         ],
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -4047,7 +4047,7 @@
                 "modified_ts": 961148933000
             }
         ],
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -4169,7 +4169,7 @@
                 "modified_ts": 961148933000
             }
         ],
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -4282,7 +4282,7 @@
                 "modified_ts": 961148933000
             }
         ],
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -4395,7 +4395,7 @@
                 "modified_ts": 961148933000
             }
         ],
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -4523,7 +4523,7 @@
                 "modified_ts": 961148933000
             }
         ],
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -4636,7 +4636,7 @@
                 "modified_ts": 961148933000
             }
         ],
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -4752,7 +4752,7 @@
                 "modified_ts": 961148933000
             }
         ],
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -4864,7 +4864,7 @@
                 "modified_ts": 961148933000
             }
         ],
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -4976,7 +4976,7 @@
                 "modified_ts": 961148933000
             }
         ],
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "normal",
         "bug_status": "resolved",
@@ -5104,7 +5104,7 @@
                 "modified_ts": 961148933000
             }
         ],
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "normal",
         "bug_status": "resolved",
@@ -5224,7 +5224,7 @@
                 "modified_ts": 961148933000
             }
         ],
-        "bug_file_loc": "http://www.w3.org/style/css/test/current/sec541.htm",
+        "bug_file_loc": "http://www.w3.org/Style/CSS/Test/current/sec541.htm",
         "bug_id": 1046,
         "bug_severity": "normal",
         "bug_status": "verified",
@@ -30283,7 +30283,7 @@
         "product": "core",
         "rep_platform": "x86",
         "reported_by": "angus@formerly-netscape.com.tld",
-        "short_desc": "css om changes to line-height do not work",
+        "short_desc": "CSS OM changes to line-height do not work",
         "version": "trunk"
     },
     "1108_908562678": {
@@ -30322,7 +30322,7 @@
         "product": "core",
         "rep_platform": "x86",
         "reported_by": "angus@formerly-netscape.com.tld",
-        "short_desc": "css om changes to line-height do not work",
+        "short_desc": "CSS OM changes to line-height do not work",
         "version": "trunk"
     },
     "1108_908645059": {
@@ -30365,7 +30365,7 @@
         "product": "core",
         "rep_platform": "x86",
         "reported_by": "angus@formerly-netscape.com.tld",
-        "short_desc": "css om changes to line-height do not work",
+        "short_desc": "CSS OM changes to line-height do not work",
         "version": "trunk"
     },
     "1108_910310965": {
@@ -30424,7 +30424,7 @@
         "rep_platform": "x86",
         "reported_by": "angus@formerly-netscape.com.tld",
         "resolution": "worksforme",
-        "short_desc": "css om changes to line-height do not work",
+        "short_desc": "CSS OM changes to line-height do not work",
         "version": "trunk"
     },
     "1108_932594323": {
@@ -30475,7 +30475,7 @@
         "rep_platform": "x86",
         "reported_by": "angus@formerly-netscape.com.tld",
         "resolution": "worksforme",
-        "short_desc": "css om changes to line-height do not work",
+        "short_desc": "CSS OM changes to line-height do not work",
         "version": "trunk"
     },
     "1157_908863328": {
@@ -31558,7 +31558,7 @@
         "qa_contact": "tever@formerly-netscape.com.tld",
         "rep_platform": "all",
         "reported_by": "darin.moz@gmail.com",
-        "short_desc": "nshttpchannel should own a nsstandardurl instead of a generic nsiuri",
+        "short_desc": "nsHttpChannel should own a nsStandardURL instead of a generic nsIURI",
         "target_milestone": "---",
         "version": "trunk"
     },
@@ -31629,7 +31629,7 @@
         "qa_contact": "tever@formerly-netscape.com.tld",
         "rep_platform": "all",
         "reported_by": "darin.moz@gmail.com",
-        "short_desc": "nshttpchannel should own a nsstandardurl instead of a generic nsiuri",
+        "short_desc": "nsHttpChannel should own a nsStandardURL instead of a generic nsIURI",
         "target_milestone": "mozilla0.9.9",
         "version": "trunk"
     },
@@ -31681,7 +31681,7 @@
         "qa_contact": "tever@formerly-netscape.com.tld",
         "rep_platform": "all",
         "reported_by": "darin.moz@gmail.com",
-        "short_desc": "nshttpchannel should own a nsstandardurl instead of a generic nsiuri",
+        "short_desc": "nsHttpChannel should own a nsStandardURL instead of a generic nsIURI",
         "target_milestone": "future",
         "version": "trunk"
     },
@@ -31735,7 +31735,7 @@
         "qa_contact": "tever@formerly-netscape.com.tld",
         "rep_platform": "all",
         "reported_by": "darin.moz@gmail.com",
-        "short_desc": "nshttpchannel should own a nsstandardurl instead of a generic nsiuri",
+        "short_desc": "nsHttpChannel should own a nsStandardURL instead of a generic nsIURI",
         "target_milestone": "future",
         "version": "trunk"
     },
@@ -31790,7 +31790,7 @@
         "qa_contact": "tever@formerly-netscape.com.tld",
         "rep_platform": "all",
         "reported_by": "darin.moz@gmail.com",
-        "short_desc": "nshttpchannel should own a nsstandardurl instead of a generic nsiuri",
+        "short_desc": "nsHttpChannel should own a nsStandardURL instead of a generic nsIURI",
         "target_milestone": "future",
         "version": "trunk"
     },
@@ -31878,7 +31878,7 @@
         "qa_contact": "networking@core.bugs",
         "rep_platform": "all",
         "reported_by": "darin.moz@gmail.com",
-        "short_desc": "nshttpchannel should own a nsstandardurl instead of a generic nsiuri",
+        "short_desc": "nsHttpChannel should own a nsStandardURL instead of a generic nsIURI",
         "target_milestone": "---",
         "version": "trunk"
     },
@@ -65495,7 +65495,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -65595,7 +65595,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -65696,7 +65696,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -65809,7 +65809,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -65927,7 +65927,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -66040,7 +66040,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -66154,7 +66154,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "resolved",
@@ -66285,7 +66285,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "verified",
@@ -66408,7 +66408,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "verified",
@@ -66498,7 +66498,7 @@
     },
     "3140_918859853": {
         "assigned_to": "vidur@netscape.com",
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -66530,7 +66530,7 @@
     },
     "3140_918862106": {
         "assigned_to": "joki@netscape.com",
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -66575,7 +66575,7 @@
     },
     "3140_918880316": {
         "assigned_to": "joki@netscape.com",
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -66624,7 +66624,7 @@
     },
     "3140_924038829": {
         "assigned_to": "joki@netscape.com",
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -66685,7 +66685,7 @@
     },
     "3140_928803667": {
         "assigned_to": "joki@netscape.com",
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -66743,7 +66743,7 @@
     },
     "3140_933035294": {
         "assigned_to": "joki@netscape.com",
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -66816,7 +66816,7 @@
                 "modified_ts": 933079799000
             }
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -66889,7 +66889,7 @@
                 "modified_ts": 933079799000
             }
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -66964,7 +66964,7 @@
                 "modified_ts": 933079799000
             }
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -67051,7 +67051,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -67132,7 +67132,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -67214,7 +67214,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -67298,7 +67298,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -67383,7 +67383,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -67472,7 +67472,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -67561,7 +67561,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -67650,7 +67650,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -67745,7 +67745,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -67835,7 +67835,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -67925,7 +67925,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -68015,7 +68015,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -68110,7 +68110,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -68201,7 +68201,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "assigned",
@@ -68290,7 +68290,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -68385,7 +68385,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -68475,7 +68475,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -68565,7 +68565,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -68656,7 +68656,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -68752,7 +68752,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -68853,7 +68853,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -68949,7 +68949,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -69046,7 +69046,7 @@
         "blocked": [
             10702
         ],
-        "bug_file_loc": "http://webfx.eae.net/dom/testbodynodeandevent.html",
+        "bug_file_loc": "http://webfx.eae.net/dom/testBodyNodeAndEvent.html",
         "bug_id": 3140,
         "bug_severity": "normal",
         "bug_status": "new",
@@ -69144,7 +69144,7 @@
         "product": "thunderbird",
         "rep_platform": "x86",
         "reported_by": "geert.poels@skynet.be",
-        "short_desc": "re-install after mailbox disappearance still won't show accounts of profile",
+        "short_desc": "Re-install after mailbox disappearance still won't show accounts of profile",
         "version": "unspecified"
     },
     "367518_1169572759": {
@@ -69201,7 +69201,7 @@
         "rep_platform": "x86",
         "reported_by": "geert.poels@skynet.be",
         "resolution": "worksforme",
-        "short_desc": "re-install after mailbox disappearance still won't show accounts of profile",
+        "short_desc": "Re-install after mailbox disappearance still won't show accounts of profile",
         "version": "unspecified"
     },
     "367518_1169752562": {
@@ -69246,7 +69246,7 @@
         "rep_platform": "x86",
         "reported_by": "geert.poels@skynet.be",
         "resolution": "worksforme",
-        "short_desc": "re-install after mailbox disappearance still won't show accounts of profile",
+        "short_desc": "Re-install after mailbox disappearance still won't show accounts of profile",
         "version": "unspecified"
     },
     "384_1000543884": {
@@ -69625,7 +69625,7 @@
         "product": "firefox",
         "rep_platform": "x86",
         "reported_by": "jrundruud@yahoo.com",
-        "short_desc": "anchor-element wrapped outside <li>-element gets duplicated inside it",
+        "short_desc": "Anchor-element wrapped outside <li>-element gets duplicated inside it",
         "version": "unspecified"
     },
     "457765_1241349260": {
@@ -69678,7 +69678,7 @@
         "rep_platform": "x86",
         "reported_by": "jrundruud@yahoo.com",
         "resolution": "duplicate",
-        "short_desc": "anchor-element wrapped outside <li>-element gets duplicated inside it",
+        "short_desc": "Anchor-element wrapped outside <li>-element gets duplicated inside it",
         "version": "unspecified"
     },
     "458397_1223051639": {
@@ -69730,7 +69730,7 @@
         "product": "core",
         "rep_platform": "pc",
         "reported_by": "cbook@mozilla.com",
-        "short_desc": "memory leak during topsite test on http://www.grono.net",
+        "short_desc": "Memory leak during TopSite Test on http://www.grono.net",
         "target_milestone": "---",
         "version": "1.9.0 branch"
     },
@@ -69784,7 +69784,7 @@
         "product": "core",
         "rep_platform": "pc",
         "reported_by": "cbook@mozilla.com",
-        "short_desc": "memory leak during topsite test on http://www.grono.net",
+        "short_desc": "Memory leak during TopSite Test on http://www.grono.net",
         "target_milestone": "---",
         "version": "1.9.0 branch"
     },
@@ -69848,7 +69848,7 @@
         "product": "core",
         "rep_platform": "pc",
         "reported_by": "cbook@mozilla.com",
-        "short_desc": "memory leak during topsite test on http://www.grono.net",
+        "short_desc": "Memory leak during TopSite Test on http://www.grono.net",
         "target_milestone": "---",
         "version": "1.9.0 branch"
     },
@@ -69921,7 +69921,7 @@
         "product": "core",
         "rep_platform": "pc",
         "reported_by": "cbook@mozilla.com",
-        "short_desc": "memory leak during topsite test on http://www.grono.net",
+        "short_desc": "Memory leak during TopSite Test on http://www.grono.net",
         "target_milestone": "---",
         "version": "1.9.0 branch"
     },
@@ -70004,7 +70004,7 @@
         "product": "core",
         "rep_platform": "pc",
         "reported_by": "cbook@mozilla.com",
-        "short_desc": "memory leak during topsite test on http://www.grono.net",
+        "short_desc": "Memory leak during TopSite Test on http://www.grono.net",
         "status_whiteboard": "[window leak]",
         "target_milestone": "---",
         "version": "1.9.0 branch"
@@ -70086,7 +70086,7 @@
         "product": "core",
         "rep_platform": "pc",
         "reported_by": "cbook@mozilla.com",
-        "short_desc": "memory leak during topsite test on http://www.grono.net",
+        "short_desc": "Memory leak during TopSite Test on http://www.grono.net",
         "status_whiteboard": "[window leak (85 if them)]",
         "target_milestone": "---",
         "version": "1.9.0 branch"
@@ -70168,7 +70168,7 @@
         "product": "core",
         "rep_platform": "pc",
         "reported_by": "cbook@mozilla.com",
-        "short_desc": "memory leak during topsite test on http://www.grono.net",
+        "short_desc": "Memory leak during TopSite Test on http://www.grono.net",
         "status_whiteboard": "[window leak (85 of them)]",
         "target_milestone": "---",
         "version": "1.9.0 branch"
@@ -70273,7 +70273,7 @@
         "product": "core",
         "rep_platform": "pc",
         "reported_by": "cbook@mozilla.com",
-        "short_desc": "memory leak during topsite test on http://www.grono.net",
+        "short_desc": "Memory leak during TopSite Test on http://www.grono.net",
         "status_whiteboard": "[window leak (85 of them)]",
         "target_milestone": "---",
         "version": "1.9.0 branch"
@@ -70413,7 +70413,7 @@
         "product": "core",
         "rep_platform": "all",
         "reported_by": "cbook@mozilla.com",
-        "short_desc": "memory leak during topsite test on http://www.grono.net",
+        "short_desc": "Memory leak during TopSite Test on http://www.grono.net",
         "status_whiteboard": "[window leak (85 of them)]",
         "target_milestone": "mozilla1.9.1",
         "version": "trunk"
@@ -70560,7 +70560,7 @@
         "product": "core",
         "rep_platform": "all",
         "reported_by": "cbook@mozilla.com",
-        "short_desc": "memory leak during topsite test on http://www.grono.net",
+        "short_desc": "Memory leak during TopSite Test on http://www.grono.net",
         "status_whiteboard": "[window leak (85 of them)]",
         "target_milestone": "mozilla1.9.1",
         "version": "trunk"
@@ -70709,7 +70709,7 @@
         "product": "core",
         "rep_platform": "all",
         "reported_by": "cbook@mozilla.com",
-        "short_desc": "memory leak during topsite test on http://www.grono.net",
+        "short_desc": "Memory leak during TopSite Test on http://www.grono.net",
         "status_whiteboard": "[window leak (85 of them)]",
         "target_milestone": "mozilla1.9.1",
         "version": "trunk"
@@ -70863,7 +70863,7 @@
         "product": "core",
         "rep_platform": "all",
         "reported_by": "cbook@mozilla.com",
-        "short_desc": "memory leak during topsite test on http://www.grono.net",
+        "short_desc": "Memory leak during TopSite Test on http://www.grono.net",
         "status_whiteboard": "[window leak (85 of them)]",
         "target_milestone": "mozilla1.9.1",
         "version": "trunk"
@@ -71042,7 +71042,7 @@
         "rep_platform": "all",
         "reported_by": "cbook@mozilla.com",
         "resolution": "fixed",
-        "short_desc": "memory leak during topsite test on http://www.grono.net",
+        "short_desc": "Memory leak during TopSite Test on http://www.grono.net",
         "status_whiteboard": "[window leak (85 of them)]",
         "target_milestone": "mozilla1.9.1b3",
         "version": "trunk"
@@ -71204,7 +71204,7 @@
         "rep_platform": "all",
         "reported_by": "cbook@mozilla.com",
         "resolution": "fixed",
-        "short_desc": "memory leak during topsite test on http://www.grono.net",
+        "short_desc": "Memory leak during TopSite Test on http://www.grono.net",
         "status_whiteboard": "[window leak (85 of them)]",
         "target_milestone": "mozilla1.9.1b3",
         "version": "trunk"
@@ -71370,7 +71370,7 @@
         "rep_platform": "all",
         "reported_by": "cbook@mozilla.com",
         "resolution": "fixed",
-        "short_desc": "memory leak during topsite test on http://www.grono.net",
+        "short_desc": "Memory leak during TopSite Test on http://www.grono.net",
         "status_whiteboard": "[window leak (85 of them)]",
         "target_milestone": "mozilla1.9.1b3",
         "version": "trunk"
@@ -71397,7 +71397,7 @@
         "product": "mozilla.org",
         "rep_platform": "x86",
         "reported_by": "bhearsum@mozilla.com",
-        "short_desc": "upload en-us release builds",
+        "short_desc": "upload en-US release builds",
         "version": "other"
     },
     "471427_1230578354": {
@@ -71455,7 +71455,7 @@
         "product": "mozilla.org",
         "rep_platform": "x86",
         "reported_by": "bhearsum@mozilla.com",
-        "short_desc": "upload en-us release builds",
+        "short_desc": "upload en-US release builds",
         "version": "other"
     },
     "471427_1230578662": {
@@ -71540,7 +71540,7 @@
         "product": "mozilla.org",
         "rep_platform": "x86",
         "reported_by": "bhearsum@mozilla.com",
-        "short_desc": "upload en-us release builds",
+        "short_desc": "upload en-US release builds",
         "version": "other"
     },
     "471427_1230578742": {
@@ -71652,7 +71652,7 @@
         "product": "mozilla.org",
         "rep_platform": "x86",
         "reported_by": "bhearsum@mozilla.com",
-        "short_desc": "upload en-us release builds",
+        "short_desc": "upload en-US release builds",
         "version": "other"
     },
     "471427_1230579340": {
@@ -71766,7 +71766,7 @@
         "product": "mozilla.org",
         "rep_platform": "x86",
         "reported_by": "bhearsum@mozilla.com",
-        "short_desc": "upload en-us release builds",
+        "short_desc": "upload en-US release builds",
         "version": "other"
     },
     "471427_1230579433": {
@@ -71885,7 +71885,7 @@
         "product": "mozilla.org",
         "rep_platform": "x86",
         "reported_by": "bhearsum@mozilla.com",
-        "short_desc": "upload en-us release builds",
+        "short_desc": "upload en-US release builds",
         "version": "other"
     },
     "471427_1230594340": {
@@ -72025,7 +72025,7 @@
         "product": "mozilla.org",
         "rep_platform": "all",
         "reported_by": "bhearsum@mozilla.com",
-        "short_desc": "upload en-us release builds",
+        "short_desc": "upload en-US release builds",
         "version": "other"
     },
     "471427_1230662265": {
@@ -72162,7 +72162,7 @@
         "product": "mozilla.org",
         "rep_platform": "all",
         "reported_by": "bhearsum@mozilla.com",
-        "short_desc": "upload en-us release builds",
+        "short_desc": "upload en-US release builds",
         "version": "other"
     },
     "471427_1230671559": {
@@ -72329,7 +72329,7 @@
         "product": "mozilla.org",
         "rep_platform": "all",
         "reported_by": "bhearsum@mozilla.com",
-        "short_desc": "upload en-us release builds",
+        "short_desc": "upload en-US release builds",
         "version": "other"
     },
     "471427_1230672116": {
@@ -72498,7 +72498,7 @@
         "product": "mozilla.org",
         "rep_platform": "all",
         "reported_by": "bhearsum@mozilla.com",
-        "short_desc": "upload en-us release builds",
+        "short_desc": "upload en-US release builds",
         "version": "other"
     },
     "471427_1230672519": {
@@ -72659,7 +72659,7 @@
         "product": "mozilla.org",
         "rep_platform": "all",
         "reported_by": "bhearsum@mozilla.com",
-        "short_desc": "upload en-us release builds",
+        "short_desc": "upload en-US release builds",
         "version": "other"
     },
     "471427_1230672566": {
@@ -72820,7 +72820,7 @@
         "product": "mozilla.org",
         "rep_platform": "all",
         "reported_by": "bhearsum@mozilla.com",
-        "short_desc": "upload en-us release builds",
+        "short_desc": "upload en-US release builds",
         "version": "other"
     },
     "471427_1230672981": {
@@ -72981,7 +72981,7 @@
         "product": "mozilla.org",
         "rep_platform": "all",
         "reported_by": "bhearsum@mozilla.com",
-        "short_desc": "upload en-us release builds",
+        "short_desc": "upload en-US release builds",
         "version": "other"
     },
     "471427_1231264043": {
@@ -73169,7 +73169,7 @@
         "rep_platform": "all",
         "reported_by": "bhearsum@mozilla.com",
         "resolution": "fixed",
-        "short_desc": "upload en-us release builds",
+        "short_desc": "upload en-US release builds",
         "version": "other"
     },
     "544327_1265315747": {
@@ -73192,7 +73192,7 @@
         "qa_contact": "session.restore@firefox.bugs",
         "rep_platform": "all",
         "reported_by": "anthony.s.hughes@gmail.com",
-        "short_desc": "[mozmill] create a mozmill script for \"[sessionstore] normal exit without saving session\" test case",
+        "short_desc": "[mozmill] Create a Mozmill script for \"[sessionstore] Normal exit without saving session\" test case",
         "version": "unspecified"
     },
     "544327_1265315768": {
@@ -73237,7 +73237,7 @@
         "qa_contact": "session.restore@firefox.bugs",
         "rep_platform": "all",
         "reported_by": "anthony.s.hughes@gmail.com",
-        "short_desc": "[mozmill] create a mozmill script for \"[sessionstore] normal exit without saving session\" test case",
+        "short_desc": "[mozmill] Create a Mozmill script for \"[sessionstore] Normal exit without saving session\" test case",
         "version": "unspecified"
     },
     "544327_1274398841": {
@@ -73279,7 +73279,7 @@
         "qa_contact": "session.restore@firefox.bugs",
         "rep_platform": "all",
         "reported_by": "anthony.s.hughes@gmail.com",
-        "short_desc": "[mozmill] create a mozmill script for \"[sessionstore] normal exit without saving session\" test case",
+        "short_desc": "[mozmill] Create a Mozmill script for \"[sessionstore] Normal exit without saving session\" test case",
         "version": "unspecified"
     },
     "544327_1290199663": {
@@ -73344,7 +73344,7 @@
         "qa_contact": "mozmill-tests@mozilla-qa.bugs",
         "rep_platform": "all",
         "reported_by": "anthony.s.hughes@gmail.com",
-        "short_desc": "[mozmill] create a mozmill script for \"[sessionstore] normal exit without saving session\" test case",
+        "short_desc": "[mozmill] Create a Mozmill script for \"[sessionstore] Normal exit without saving session\" test case",
         "version": "unspecified"
     },
     "547727_1266853657": {
@@ -73365,7 +73365,7 @@
         "product": "core",
         "rep_platform": "x86",
         "reported_by": "j@mailb.org",
-        "short_desc": "firebug causes nsixmlhttprequests in firefogg to hang forever",
+        "short_desc": "Firebug causes nsIXMLHttpRequests in Firefogg to hang forever",
         "version": "unspecified"
     },
     "643420_1300720377": {
@@ -73395,7 +73395,7 @@
         "remaining_time": 0.1,
         "rep_platform": "x86",
         "reported_by": "mbeltzner@gmail.com",
-        "short_desc": "redirect /firefox/comingsoon to /firefox for firefox 4 launch",
+        "short_desc": "redirect /firefox/comingsoon to /firefox for Firefox 4 launch",
         "version": "unspecified"
     },
     "643420_1300720824": {
@@ -73462,7 +73462,7 @@
         "rep_platform": "x86",
         "reported_by": "mbeltzner@gmail.com",
         "resolution": "fixed",
-        "short_desc": "redirect /firefox/comingsoon to /firefox for firefox 4 launch",
+        "short_desc": "redirect /firefox/comingsoon to /firefox for Firefox 4 launch",
         "version": "unspecified"
     },
     "643420_1335194130": {
@@ -73525,7 +73525,7 @@
         "rep_platform": "x86",
         "reported_by": "mbeltzner@gmail.com",
         "resolution": "fixed",
-        "short_desc": "redirect /firefox/comingsoon to /firefox for firefox 4 launch",
+        "short_desc": "redirect /firefox/comingsoon to /firefox for Firefox 4 launch",
         "version": "unspecified"
     },
     "643420_1345706167": {
@@ -73592,7 +73592,7 @@
         "rep_platform": "x86",
         "reported_by": "mbeltzner@gmail.com",
         "resolution": "fixed",
-        "short_desc": "redirect /firefox/comingsoon to /firefox for firefox 4 launch",
+        "short_desc": "redirect /firefox/comingsoon to /firefox for Firefox 4 launch",
         "version": "unspecified"
     },
     "67742_1110355451": {
@@ -73743,7 +73743,7 @@
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
         "resolution": "fixed",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "2.0",
         "version": "2.0"
     },
@@ -73890,7 +73890,7 @@
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
         "resolution": "fixed",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "2.0",
         "version": "1.0 branch"
     },
@@ -73918,7 +73918,7 @@
         "qa_contact": "junruh@formerly-netscape.com.tld",
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "---",
         "uncertain": 1,
         "version": "other"
@@ -73956,7 +73956,7 @@
         "qa_contact": "junruh@formerly-netscape.com.tld",
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "---",
         "uncertain": 1,
         "version": "other"
@@ -74018,7 +74018,7 @@
         "qa_contact": "junruh@formerly-netscape.com.tld",
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "---",
         "uncertain": 1,
         "version": "other"
@@ -74071,7 +74071,7 @@
         "qa_contact": "junruh@formerly-netscape.com.tld",
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "---",
         "uncertain": 1,
         "version": "other"
@@ -74125,7 +74125,7 @@
         "qa_contact": "junruh@formerly-netscape.com.tld",
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "---",
         "uncertain": 1,
         "version": "other"
@@ -74180,7 +74180,7 @@
         "qa_contact": "junruh@formerly-netscape.com.tld",
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "---",
         "uncertain": 1,
         "version": "other"
@@ -74236,7 +74236,7 @@
         "qa_contact": "junruh@formerly-netscape.com.tld",
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "---",
         "uncertain": 1,
         "version": "other"
@@ -74293,7 +74293,7 @@
         "qa_contact": "junruh@formerly-netscape.com.tld",
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "---",
         "uncertain": 1,
         "version": "other"
@@ -74362,7 +74362,7 @@
         "qa_contact": "junruh@formerly-netscape.com.tld",
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "---",
         "uncertain": 1,
         "version": "other"
@@ -74432,7 +74432,7 @@
         "qa_contact": "junruh@formerly-netscape.com.tld",
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "---",
         "uncertain": 1,
         "version": "other"
@@ -74503,7 +74503,7 @@
         "qa_contact": "junruh@formerly-netscape.com.tld",
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "---",
         "uncertain": 1,
         "version": "other"
@@ -74575,7 +74575,7 @@
         "qa_contact": "junruh@formerly-netscape.com.tld",
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "---",
         "uncertain": 1,
         "version": "other"
@@ -74648,7 +74648,7 @@
         "qa_contact": "junruh@formerly-netscape.com.tld",
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "---",
         "uncertain": 1,
         "version": "other"
@@ -74731,7 +74731,7 @@
         "qa_contact": "junruh@formerly-netscape.com.tld",
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "---",
         "uncertain": 1,
         "version": "other"
@@ -74824,7 +74824,7 @@
         "qa_contact": "junruh@formerly-netscape.com.tld",
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "---",
         "uncertain": 1,
         "version": "other"
@@ -74927,7 +74927,7 @@
         "qa_contact": "junruh@formerly-netscape.com.tld",
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "---",
         "uncertain": 1,
         "version": "other"
@@ -75035,7 +75035,7 @@
         "qa_contact": "junruh@formerly-netscape.com.tld",
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "---",
         "uncertain": 1,
         "version": "other"
@@ -75143,7 +75143,7 @@
         "qa_contact": "junruh@formerly-netscape.com.tld",
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "---",
         "uncertain": 1,
         "version": "other"
@@ -75251,7 +75251,7 @@
         "qa_contact": "junruh@formerly-netscape.com.tld",
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "---",
         "uncertain": 1,
         "version": "other"
@@ -75373,7 +75373,7 @@
         "qa_contact": "junruh@formerly-netscape.com.tld",
         "rep_platform": "pc",
         "reported_by": "calvin_g_smith@yahoo.com",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "---",
         "uncertain": 1,
         "version": "other"
@@ -75495,7 +75495,7 @@
         "qa_contact": "junruh@formerly-netscape.com.tld",
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "---",
         "uncertain": 1,
         "version": "other"
@@ -75630,7 +75630,7 @@
         "qa_contact": "junruh@formerly-netscape.com.tld",
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "---",
         "uncertain": 1,
         "version": "2.0"
@@ -75773,7 +75773,7 @@
         "qa_contact": "junruh@formerly-netscape.com.tld",
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "2.0",
         "uncertain": 1,
         "version": "2.0"
@@ -75906,7 +75906,7 @@
         "qa_contact": "junruh@formerly-netscape.com.tld",
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "2.0",
         "uncertain": 1,
         "version": "2.0"
@@ -76041,7 +76041,7 @@
         "qa_contact": "junruh@formerly-netscape.com.tld",
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "2.0",
         "uncertain": 1,
         "version": "2.0"
@@ -76185,7 +76185,7 @@
         "qa_contact": "junruh@formerly-netscape.com.tld",
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "2.0",
         "version": "2.0"
     },
@@ -76340,7 +76340,7 @@
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
         "resolution": "fixed",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "2.0",
         "version": "2.0"
     },
@@ -76487,7 +76487,7 @@
         "rep_platform": "sun",
         "reported_by": "calvin_g_smith@yahoo.com",
         "resolution": "fixed",
-        "short_desc": "psm not in solaris nightlies",
+        "short_desc": "PSM not in Solaris nightlies",
         "target_milestone": "2.0",
         "version": "2.0"
     },
@@ -80350,7 +80350,7 @@
         "qa_contact": "general@firefox.bugs",
         "rep_platform": "x86",
         "reported_by": "ltsnow@mchsi.com",
-        "short_desc": "latest hourlies of firefox nightly are using \"default\" as the update channel",
+        "short_desc": "Latest hourlies of Firefox nightly are using \"default\" as the update channel",
         "version": "10 branch"
     },
     "692436_1317911435": {
@@ -80441,7 +80441,7 @@
         "qa_contact": "build.config@firefox.bugs",
         "rep_platform": "x86",
         "reported_by": "ltsnow@mchsi.com",
-        "short_desc": "latest hourlies of firefox nightly are using \"default\" as the update channel",
+        "short_desc": "Latest hourlies of Firefox nightly are using \"default\" as the update channel",
         "version": "10 branch"
     },
     "692436_1317911618": {
@@ -80532,7 +80532,7 @@
         "qa_contact": "release@mozilla-org.bugs",
         "rep_platform": "x86",
         "reported_by": "ltsnow@mchsi.com",
-        "short_desc": "latest hourlies of firefox nightly are using \"default\" as the update channel",
+        "short_desc": "Latest hourlies of Firefox nightly are using \"default\" as the update channel",
         "version": "other"
     },
     "692436_1317911809": {
@@ -80608,7 +80608,7 @@
         "qa_contact": "release@mozilla-org.bugs",
         "rep_platform": "x86",
         "reported_by": "ltsnow@mchsi.com",
-        "short_desc": "latest hourlies of firefox nightly are using \"default\" as the update channel",
+        "short_desc": "Latest hourlies of Firefox nightly are using \"default\" as the update channel",
         "version": "other"
     },
     "692436_1317911993": {
@@ -80685,7 +80685,7 @@
         "qa_contact": "release@mozilla-org.bugs",
         "rep_platform": "x86",
         "reported_by": "ltsnow@mchsi.com",
-        "short_desc": "latest hourlies of firefox nightly are using \"default\" as the update channel",
+        "short_desc": "Latest hourlies of Firefox nightly are using \"default\" as the update channel",
         "version": "other"
     },
     "692436_1317915070": {
@@ -80763,7 +80763,7 @@
         "qa_contact": "release@mozilla-org.bugs",
         "rep_platform": "x86",
         "reported_by": "ltsnow@mchsi.com",
-        "short_desc": "latest hourlies of firefox nightly are using \"default\" as the update channel",
+        "short_desc": "Latest hourlies of Firefox nightly are using \"default\" as the update channel",
         "version": "other"
     },
     "692436_1317943319": {
@@ -80842,7 +80842,7 @@
         "qa_contact": "release@mozilla-org.bugs",
         "rep_platform": "x86",
         "reported_by": "ltsnow@mchsi.com",
-        "short_desc": "latest hourlies of firefox nightly are using \"default\" as the update channel",
+        "short_desc": "Latest hourlies of Firefox nightly are using \"default\" as the update channel",
         "version": "other"
     },
     "692436_1317969641": {
@@ -80922,7 +80922,7 @@
         "qa_contact": "release@mozilla-org.bugs",
         "rep_platform": "x86",
         "reported_by": "ltsnow@mchsi.com",
-        "short_desc": "latest hourlies of firefox nightly are using \"default\" as the update channel",
+        "short_desc": "Latest hourlies of Firefox nightly are using \"default\" as the update channel",
         "version": "other"
     },
     "692436_1318537734": {
@@ -81010,7 +81010,7 @@
         "qa_contact": "release@mozilla-org.bugs",
         "rep_platform": "x86",
         "reported_by": "ltsnow@mchsi.com",
-        "short_desc": "latest hourlies of firefox nightly are using \"default\" as the update channel",
+        "short_desc": "Latest hourlies of Firefox nightly are using \"default\" as the update channel",
         "version": "other"
     },
     "692436_1318610745": {
@@ -81097,7 +81097,7 @@
         "qa_contact": "release@mozilla-org.bugs",
         "rep_platform": "x86",
         "reported_by": "ltsnow@mchsi.com",
-        "short_desc": "latest hourlies of firefox nightly are using \"default\" as the update channel",
+        "short_desc": "Latest hourlies of Firefox nightly are using \"default\" as the update channel",
         "version": "other"
     },
     "692436_1319141382": {
@@ -81219,7 +81219,7 @@
         "qa_contact": "release@mozilla-org.bugs",
         "rep_platform": "all",
         "reported_by": "ltsnow@mchsi.com",
-        "short_desc": "latest hourlies of firefox nightly are using \"default\" as the update channel",
+        "short_desc": "Latest hourlies of Firefox nightly are using \"default\" as the update channel",
         "status_whiteboard": "[updates]",
         "version": "other"
     },
@@ -81331,7 +81331,7 @@
         "qa_contact": "release@mozilla-org.bugs",
         "rep_platform": "all",
         "reported_by": "ltsnow@mchsi.com",
-        "short_desc": "latest hourlies of firefox nightly are using \"default\" as the update channel",
+        "short_desc": "Latest hourlies of Firefox nightly are using \"default\" as the update channel",
         "status_whiteboard": "[updates]",
         "version": "other"
     },
@@ -81440,7 +81440,7 @@
         "qa_contact": "release@mozilla-org.bugs",
         "rep_platform": "all",
         "reported_by": "ltsnow@mchsi.com",
-        "short_desc": "latest hourlies of firefox nightly are using \"default\" as the update channel",
+        "short_desc": "Latest hourlies of Firefox nightly are using \"default\" as the update channel",
         "status_whiteboard": "[updates]",
         "version": "other"
     },
@@ -81550,7 +81550,7 @@
         "qa_contact": "release@mozilla-org.bugs",
         "rep_platform": "all",
         "reported_by": "ltsnow@mchsi.com",
-        "short_desc": "latest hourlies of firefox nightly are using \"default\" as the update channel",
+        "short_desc": "Latest hourlies of Firefox nightly are using \"default\" as the update channel",
         "status_whiteboard": "[updates]",
         "version": "other"
     },
@@ -81661,7 +81661,7 @@
         "qa_contact": "release@mozilla-org.bugs",
         "rep_platform": "all",
         "reported_by": "ltsnow@mchsi.com",
-        "short_desc": "latest hourlies of firefox nightly are using \"default\" as the update channel",
+        "short_desc": "Latest hourlies of Firefox nightly are using \"default\" as the update channel",
         "status_whiteboard": "[updates]",
         "version": "other"
     },
@@ -81773,7 +81773,7 @@
         "qa_contact": "release@mozilla-org.bugs",
         "rep_platform": "all",
         "reported_by": "ltsnow@mchsi.com",
-        "short_desc": "latest hourlies of firefox nightly are using \"default\" as the update channel",
+        "short_desc": "Latest hourlies of Firefox nightly are using \"default\" as the update channel",
         "status_whiteboard": "[updates]",
         "version": "other"
     },
@@ -81797,7 +81797,7 @@
         "product": "mozilla reps",
         "rep_platform": "x86",
         "reported_by": "majken@gmail.com",
-        "short_desc": "community it request checklist",
+        "short_desc": "Community IT request checklist",
         "version": "unspecified"
     },
     "726635_1331658557": {
@@ -81831,7 +81831,7 @@
         "product": "mozilla reps",
         "rep_platform": "x86",
         "reported_by": "majken@gmail.com",
-        "short_desc": "community it request checklist",
+        "short_desc": "Community IT request checklist",
         "status_whiteboard": "[meeting scheduled]",
         "version": "unspecified"
     },
@@ -81869,7 +81869,7 @@
         "product": "mozilla reps",
         "rep_platform": "x86",
         "reported_by": "majken@gmail.com",
-        "short_desc": "community it request checklist",
+        "short_desc": "Community IT request checklist",
         "status_whiteboard": "[meeting scheduled]",
         "version": "unspecified"
     },
@@ -81908,7 +81908,7 @@
         "product": "mozilla reps",
         "rep_platform": "x86",
         "reported_by": "majken@gmail.com",
-        "short_desc": "community it request checklist",
+        "short_desc": "Community IT request checklist",
         "status_whiteboard": "[meeting scheduled]",
         "version": "unspecified"
     },
@@ -81949,7 +81949,7 @@
         "product": "mozilla reps",
         "rep_platform": "x86",
         "reported_by": "majken@gmail.com",
-        "short_desc": "community it request checklist",
+        "short_desc": "Community IT request checklist",
         "status_whiteboard": "[needs council]",
         "version": "unspecified"
     },
@@ -81994,7 +81994,7 @@
         "product": "mozilla reps",
         "rep_platform": "x86",
         "reported_by": "majken@gmail.com",
-        "short_desc": "community it request checklist",
+        "short_desc": "Community IT request checklist",
         "status_whiteboard": "[needs council]",
         "version": "unspecified"
     },
@@ -82048,7 +82048,7 @@
         "product": "mozilla reps",
         "rep_platform": "x86",
         "reported_by": "majken@gmail.com",
-        "short_desc": "community it request checklist",
+        "short_desc": "Community IT request checklist",
         "status_whiteboard": "[needs council]",
         "version": "unspecified"
     },
@@ -82100,7 +82100,7 @@
         "product": "mozilla reps",
         "rep_platform": "x86",
         "reported_by": "majken@gmail.com",
-        "short_desc": "community it request checklist",
+        "short_desc": "Community IT request checklist",
         "status_whiteboard": "[needs council]",
         "version": "unspecified"
     },
@@ -82153,7 +82153,7 @@
         "product": "mozilla reps",
         "rep_platform": "x86",
         "reported_by": "majken@gmail.com",
-        "short_desc": "community it request checklist",
+        "short_desc": "Community IT request checklist",
         "status_whiteboard": "[needs council]",
         "version": "unspecified"
     },
@@ -82207,7 +82207,7 @@
         "product": "mozilla reps",
         "rep_platform": "x86",
         "reported_by": "majken@gmail.com",
-        "short_desc": "community it request checklist",
+        "short_desc": "Community IT request checklist",
         "status_whiteboard": "[new sop]",
         "version": "unspecified"
     },
@@ -82264,7 +82264,7 @@
         "product": "mozilla reps",
         "rep_platform": "x86",
         "reported_by": "majken@gmail.com",
-        "short_desc": "community it request checklist",
+        "short_desc": "Community IT request checklist",
         "status_whiteboard": "[new sop]",
         "version": "unspecified"
     },
@@ -82322,7 +82322,7 @@
         "product": "mozilla reps",
         "rep_platform": "x86",
         "reported_by": "majken@gmail.com",
-        "short_desc": "community it request checklist",
+        "short_desc": "Community IT request checklist",
         "status_whiteboard": "[new sop]",
         "version": "unspecified"
     },
@@ -82385,7 +82385,7 @@
         "product": "mozilla reps",
         "rep_platform": "x86",
         "reported_by": "majken@gmail.com",
-        "short_desc": "community it request checklist",
+        "short_desc": "Community IT request checklist",
         "status_whiteboard": "[new sop]",
         "version": "unspecified"
     },
@@ -82463,7 +82463,7 @@
         "product": "mozilla reps",
         "rep_platform": "x86",
         "reported_by": "majken@gmail.com",
-        "short_desc": "community it request checklist",
+        "short_desc": "Community IT request checklist",
         "status_whiteboard": "[new sop] needs feedback",
         "version": "unspecified"
     },
@@ -82531,7 +82531,7 @@
         "product": "mozilla reps",
         "rep_platform": "x86",
         "reported_by": "majken@gmail.com",
-        "short_desc": "community it request checklist",
+        "short_desc": "Community IT request checklist",
         "status_whiteboard": "u=rep c=planning p=1",
         "version": "unspecified"
     },
@@ -82599,7 +82599,7 @@
         "product": "mozilla reps",
         "rep_platform": "x86",
         "reported_by": "majken@gmail.com",
-        "short_desc": "community it request checklist",
+        "short_desc": "Community IT request checklist",
         "status_whiteboard": "u=rep c=planning p=1",
         "version": "unspecified"
     },
@@ -82666,7 +82666,7 @@
         "product": "mozilla reps",
         "rep_platform": "x86",
         "reported_by": "majken@gmail.com",
-        "short_desc": "community it request checklist",
+        "short_desc": "Community IT request checklist",
         "status_whiteboard": "u=rep c=planning p=1",
         "version": "unspecified"
     },
@@ -82763,7 +82763,7 @@
         "rep_platform": "x86",
         "reported_by": "majken@gmail.com",
         "resolution": "fixed",
-        "short_desc": "community it request checklist",
+        "short_desc": "Community IT request checklist",
         "status_whiteboard": "u=rep c=planning p=1",
         "version": "unspecified"
     },
@@ -82793,7 +82793,7 @@
         "product": "testing",
         "rep_platform": "all",
         "reported_by": "emorley@mozilla.com",
-        "short_desc": "checkforcrashes() should output the top frame of a crash in a tbpl-parsable format",
+        "short_desc": "checkForCrashes() should output the top frame of a crash in a TBPL-parsable format",
         "target_milestone": "---",
         "version": "trunk"
     },
@@ -82830,7 +82830,7 @@
         "product": "testing",
         "rep_platform": "all",
         "reported_by": "emorley@mozilla.com",
-        "short_desc": "checkforcrashes() should output the top frame of a crash in a tbpl-parsable format",
+        "short_desc": "checkForCrashes() should output the top frame of a crash in a TBPL-parsable format",
         "target_milestone": "---",
         "version": "trunk"
     },
@@ -82901,7 +82901,7 @@
         "product": "testing",
         "rep_platform": "all",
         "reported_by": "emorley@mozilla.com",
-        "short_desc": "checkforcrashes() should output the top frame of a crash in a tbpl-parsable format",
+        "short_desc": "checkForCrashes() should output the top frame of a crash in a TBPL-parsable format",
         "target_milestone": "---",
         "version": "trunk"
     },
@@ -82989,7 +82989,7 @@
         "product": "testing",
         "rep_platform": "all",
         "reported_by": "emorley@mozilla.com",
-        "short_desc": "checkforcrashes() should output the top frame of a crash in a tbpl-parsable format",
+        "short_desc": "checkForCrashes() should output the top frame of a crash in a TBPL-parsable format",
         "target_milestone": "---",
         "version": "trunk"
     },
@@ -83080,7 +83080,7 @@
         "product": "testing",
         "rep_platform": "all",
         "reported_by": "emorley@mozilla.com",
-        "short_desc": "checkforcrashes() should output the top frame of a crash in a tbpl-parsable format",
+        "short_desc": "checkForCrashes() should output the top frame of a crash in a TBPL-parsable format",
         "target_milestone": "---",
         "version": "trunk"
     },
@@ -83187,7 +83187,7 @@
         "product": "testing",
         "rep_platform": "all",
         "reported_by": "emorley@mozilla.com",
-        "short_desc": "checkforcrashes() should output the top frame of a crash in a tbpl-parsable format",
+        "short_desc": "checkForCrashes() should output the top frame of a crash in a TBPL-parsable format",
         "target_milestone": "---",
         "version": "trunk"
     },
@@ -83301,7 +83301,7 @@
         "product": "testing",
         "rep_platform": "all",
         "reported_by": "emorley@mozilla.com",
-        "short_desc": "checkforcrashes() should output the top frame of a crash in a tbpl-parsable format",
+        "short_desc": "checkForCrashes() should output the top frame of a crash in a TBPL-parsable format",
         "target_milestone": "---",
         "version": "trunk"
     },
@@ -83420,7 +83420,7 @@
         "product": "testing",
         "rep_platform": "all",
         "reported_by": "emorley@mozilla.com",
-        "short_desc": "checkforcrashes() should output the top frame of a crash in a tbpl-parsable format",
+        "short_desc": "checkForCrashes() should output the top frame of a crash in a TBPL-parsable format",
         "target_milestone": "---",
         "version": "trunk"
     },
@@ -83544,7 +83544,7 @@
         "product": "testing",
         "rep_platform": "all",
         "reported_by": "emorley@mozilla.com",
-        "short_desc": "checkforcrashes() should output the top frame of a crash in a tbpl-parsable format",
+        "short_desc": "checkForCrashes() should output the top frame of a crash in a TBPL-parsable format",
         "target_milestone": "---",
         "version": "trunk"
     },
@@ -83701,7 +83701,7 @@
         "product": "testing",
         "rep_platform": "all",
         "reported_by": "emorley@mozilla.com",
-        "short_desc": "checkforcrashes() should output the top frame of a crash in a tbpl-parsable format",
+        "short_desc": "checkForCrashes() should output the top frame of a crash in a TBPL-parsable format",
         "target_milestone": "---",
         "version": "trunk"
     },
@@ -83877,7 +83877,7 @@
         "product": "testing",
         "rep_platform": "all",
         "reported_by": "emorley@mozilla.com",
-        "short_desc": "checkforcrashes() should output the top frame of a crash in a tbpl-parsable format",
+        "short_desc": "checkForCrashes() should output the top frame of a crash in a TBPL-parsable format",
         "target_milestone": "---",
         "version": "trunk"
     },
@@ -84053,7 +84053,7 @@
         "product": "testing",
         "rep_platform": "all",
         "reported_by": "emorley@mozilla.com",
-        "short_desc": "checkforcrashes() should output the top frame of a crash in a tbpl-parsable format",
+        "short_desc": "checkForCrashes() should output the top frame of a crash in a TBPL-parsable format",
         "target_milestone": "---",
         "version": "trunk"
     },
@@ -84229,7 +84229,7 @@
         "product": "testing",
         "rep_platform": "all",
         "reported_by": "emorley@mozilla.com",
-        "short_desc": "checkforcrashes() should output the top frame of a crash in a tbpl-parsable format",
+        "short_desc": "checkForCrashes() should output the top frame of a crash in a TBPL-parsable format",
         "target_milestone": "---",
         "version": "trunk"
     },
@@ -84412,7 +84412,7 @@
         "product": "testing",
         "rep_platform": "all",
         "reported_by": "emorley@mozilla.com",
-        "short_desc": "checkforcrashes() should output the top frame of a crash in a tbpl-parsable format",
+        "short_desc": "checkForCrashes() should output the top frame of a crash in a TBPL-parsable format",
         "target_milestone": "---",
         "version": "trunk"
     },
@@ -84627,7 +84627,7 @@
         "product": "testing",
         "rep_platform": "all",
         "reported_by": "emorley@mozilla.com",
-        "short_desc": "checkforcrashes() should output the top frame of a crash in a tbpl-parsable format",
+        "short_desc": "checkForCrashes() should output the top frame of a crash in a TBPL-parsable format",
         "target_milestone": "mozilla20",
         "version": "trunk"
     },
@@ -84829,7 +84829,7 @@
         "product": "testing",
         "rep_platform": "all",
         "reported_by": "emorley@mozilla.com",
-        "short_desc": "checkforcrashes() should output the top frame of a crash in a tbpl-parsable format",
+        "short_desc": "checkForCrashes() should output the top frame of a crash in a TBPL-parsable format",
         "target_milestone": "mozilla20",
         "version": "trunk"
     },
@@ -85052,7 +85052,7 @@
         "rep_platform": "all",
         "reported_by": "emorley@mozilla.com",
         "resolution": "fixed",
-        "short_desc": "checkforcrashes() should output the top frame of a crash in a tbpl-parsable format",
+        "short_desc": "checkForCrashes() should output the top frame of a crash in a TBPL-parsable format",
         "target_milestone": "mozilla20",
         "version": "trunk"
     },
@@ -85267,7 +85267,7 @@
         "rep_platform": "all",
         "reported_by": "emorley@mozilla.com",
         "resolution": "fixed",
-        "short_desc": "checkforcrashes() should output the top frame of a crash in a tbpl-parsable format",
+        "short_desc": "checkForCrashes() should output the top frame of a crash in a TBPL-parsable format",
         "target_milestone": "mozilla20",
         "version": "trunk"
     },
@@ -85509,7 +85509,7 @@
         "rep_platform": "all",
         "reported_by": "emorley@mozilla.com",
         "resolution": "fixed",
-        "short_desc": "checkforcrashes() should output the top frame of a crash in a tbpl-parsable format",
+        "short_desc": "checkForCrashes() should output the top frame of a crash in a TBPL-parsable format",
         "target_milestone": "mozilla20",
         "version": "trunk"
     },
@@ -85732,7 +85732,7 @@
         "rep_platform": "all",
         "reported_by": "emorley@mozilla.com",
         "resolution": "fixed",
-        "short_desc": "checkforcrashes() should output the top frame of a crash in a tbpl-parsable format",
+        "short_desc": "checkForCrashes() should output the top frame of a crash in a TBPL-parsable format",
         "target_milestone": "mozilla20",
         "version": "trunk"
     },
@@ -85956,7 +85956,7 @@
         "rep_platform": "all",
         "reported_by": "emorley@mozilla.com",
         "resolution": "fixed",
-        "short_desc": "checkforcrashes() should output the top frame of a crash in a tbpl-parsable format",
+        "short_desc": "checkForCrashes() should output the top frame of a crash in a TBPL-parsable format",
         "target_milestone": "mozilla20",
         "version": "trunk"
     },
@@ -86181,7 +86181,7 @@
         "rep_platform": "all",
         "reported_by": "emorley@mozilla.com",
         "resolution": "fixed",
-        "short_desc": "checkforcrashes() should output the top frame of a crash in a tbpl-parsable format",
+        "short_desc": "checkForCrashes() should output the top frame of a crash in a TBPL-parsable format",
         "target_milestone": "mozilla20",
         "version": "trunk"
     },
@@ -86405,7 +86405,7 @@
         "rep_platform": "all",
         "reported_by": "emorley@mozilla.com",
         "resolution": "fixed",
-        "short_desc": "checkforcrashes() should output the top frame of a crash in a tbpl-parsable format",
+        "short_desc": "checkForCrashes() should output the top frame of a crash in a TBPL-parsable format",
         "target_milestone": "mozilla20",
         "version": "trunk"
     },
@@ -86630,7 +86630,7 @@
         "rep_platform": "all",
         "reported_by": "emorley@mozilla.com",
         "resolution": "fixed",
-        "short_desc": "checkforcrashes() should output the top frame of a crash in a tbpl-parsable format",
+        "short_desc": "checkForCrashes() should output the top frame of a crash in a TBPL-parsable format",
         "target_milestone": "mozilla20",
         "version": "trunk"
     },
@@ -86658,7 +86658,7 @@
         "qa_contact": "phillip@formerly-netscape.com.tld",
         "rep_platform": "all",
         "reported_by": "trudelle@acm.org",
-        "short_desc": "sched: incoming drags need to generate proper gecko events",
+        "short_desc": "sched: Incoming drags need to generate proper Gecko events",
         "target_milestone": "m9",
         "version": "trunk"
     },
@@ -86695,7 +86695,7 @@
         "qa_contact": "phillip@formerly-netscape.com.tld",
         "rep_platform": "all",
         "reported_by": "trudelle@acm.org",
-        "short_desc": "sched: incoming drags need to generate proper gecko events",
+        "short_desc": "sched: Incoming drags need to generate proper Gecko events",
         "target_milestone": "m9",
         "version": "trunk"
     },
@@ -86755,7 +86755,7 @@
         "rep_platform": "all",
         "reported_by": "trudelle@acm.org",
         "resolution": "fixed",
-        "short_desc": "sched: incoming drags need to generate proper gecko events",
+        "short_desc": "sched: Incoming drags need to generate proper Gecko events",
         "target_milestone": "m9",
         "version": "trunk"
     },
@@ -86809,7 +86809,7 @@
         "rep_platform": "all",
         "reported_by": "trudelle@acm.org",
         "resolution": "fixed",
-        "short_desc": "sched: incoming drags need to generate proper gecko events",
+        "short_desc": "sched: Incoming drags need to generate proper Gecko events",
         "status_whiteboard": "[1999.07.26]waiting for developer",
         "target_milestone": "m9",
         "version": "trunk"
@@ -86865,7 +86865,7 @@
         "rep_platform": "all",
         "reported_by": "trudelle@acm.org",
         "resolution": "fixed",
-        "short_desc": "sched: incoming drags need to generate proper gecko events",
+        "short_desc": "sched: Incoming drags need to generate proper Gecko events",
         "status_whiteboard": "[1999.07.26]waiting for developer",
         "target_milestone": "m9",
         "version": "trunk"
@@ -86921,7 +86921,7 @@
         "rep_platform": "all",
         "reported_by": "trudelle@acm.org",
         "resolution": "fixed",
-        "short_desc": "sched: incoming drags need to generate proper gecko events",
+        "short_desc": "sched: Incoming drags need to generate proper Gecko events",
         "target_milestone": "m9",
         "version": "trunk"
     },
@@ -86986,7 +86986,7 @@
         "rep_platform": "all",
         "reported_by": "le-mig_g@epita.fr",
         "resolution": "duplicate",
-        "short_desc": "[news] add shortcut to \"mark thread as read\"",
+        "short_desc": "[news] Add shortcut to \"Mark thread as read\"",
         "version": "trunk"
     },
     "96421_998490993": {
@@ -87012,7 +87012,7 @@
         "qa_contact": "esther@formerly-netscape.com.tld",
         "rep_platform": "pc",
         "reported_by": "le-mig_g@epita.fr",
-        "short_desc": "[news] add shortcut to \"mark thread as read\"",
+        "short_desc": "[news] Add shortcut to \"Mark thread as read\"",
         "version": "trunk"
     },
     "96421_998495435": {
@@ -87079,7 +87079,7 @@
         "qa_contact": "esther@formerly-netscape.com.tld",
         "rep_platform": "all",
         "reported_by": "le-mig_g@epita.fr",
-        "short_desc": "[news] add shortcut to \"mark thread as read\"",
+        "short_desc": "[news] Add shortcut to \"Mark thread as read\"",
         "version": "trunk"
     },
     "96421_998495609": {
@@ -87147,7 +87147,7 @@
         "rep_platform": "all",
         "reported_by": "le-mig_g@epita.fr",
         "resolution": "duplicate",
-        "short_desc": "[news] add shortcut to \"mark thread as read\"",
+        "short_desc": "[news] Add shortcut to \"Mark thread as read\"",
         "version": "trunk"
     },
     "96421_998496510": {
@@ -87207,7 +87207,7 @@
         "rep_platform": "all",
         "reported_by": "le-mig_g@epita.fr",
         "resolution": "duplicate",
-        "short_desc": "[news] add shortcut to \"mark thread as read\"",
+        "short_desc": "[news] Add shortcut to \"Mark thread as read\"",
         "version": "trunk"
     }
 }
