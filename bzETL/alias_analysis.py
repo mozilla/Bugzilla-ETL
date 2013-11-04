@@ -31,7 +31,7 @@ def main(settings, bug_list=None, please_stop=None, restart=False):
         with DB(settings.bugzilla) as db:
             data = get_all_cc_changes(db, bug_list)
             aggregator(data)
-            analysis(True, please_stop)
+            analysis(settings, True, please_stop)
         return
 
 
@@ -89,7 +89,7 @@ def analysis(settings, last_run, please_stop):
         DIFF=4      #ONCE WE HAVE ALL THE DATA IN WE CAN BE LESS DISCRIMINATING
     try_again = True
 
-    while try_again:
+    while try_again and not please_stop:
         #FIND EMAIL MOST NEEDING REPLACEMENT
         problem_agg=Multiset(allow_negative=True)
         for bug_id, agg in bugs.iteritems():

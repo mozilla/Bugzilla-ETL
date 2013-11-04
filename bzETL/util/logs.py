@@ -101,10 +101,14 @@ class Log(object):
             cause=params
             params = None
 
-        if cause and not isinstance(cause, Except):
-            cause=[Except(ERROR, unicode(cause), trace=format_trace(traceback.extract_tb(sys.exc_info()[2]), offset))]
+        if cause == None:
+            cause = []
+        elif isinstance(cause, list):
+            pass
+        elif isinstance(cause, Except):
+            cause = [cause]
         else:
-            cause=listwrap(cause)
+            cause = [Except(ERROR, unicode(cause), trace=format_trace(traceback.extract_tb(sys.exc_info()[2]), offset))]
 
         trace=format_trace(traceback.extract_stack(), 1+offset)
         e=Except(ERROR, template, params, cause, trace)
@@ -170,8 +174,16 @@ class Except(Exception):
     def message(self):
         return unicode(self)
 
+    def contains(self, value):
+        if self.type==value:
+            return True
+        for c in self.cause:
+            if c.contains(value):
+                return True
+        return False
+
     def __str__(self):
-        output=self.template
+        output=self.type+": "+self.template
         if self.params: output=expand_template(output, self.params)
 
         if self.trace:

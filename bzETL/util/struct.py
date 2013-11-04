@@ -240,9 +240,7 @@ class StructList(list):
         self.list[i]=unwrap(y)
 
     def __iter__(self):
-        i=self.list.__iter__()
-        while True:
-            yield wrap(i.next())
+        return (wrap(v) for v in self.list)
 
     def append(self, val):
         self.list.append(unwrap(val))
