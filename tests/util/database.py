@@ -123,7 +123,8 @@ def diff(db, table, old_record, new_record):
             fieldid=db.query("SELECT id FROM fielddefs WHERE name={{field_name}}", {"field_name": prefix + c})[0].id,
             removed=old_record[c],
             added=new_record[c],
-            attach_id=old_record.attach_id
+            attach_id=old_record.attach_id,
+            comment_id=old_record.comment_id
         )
         db.insert("bugs_activity", activity)
 
