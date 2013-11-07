@@ -18,6 +18,7 @@ from bzETL.util.struct import Struct, Null
 
 
 SCREENED_FIELDDEFS=[
+    19, #bug_file_loc
     24, #short_desc
     42, #longdesc
     45, #attachments.description
@@ -25,6 +26,11 @@ SCREENED_FIELDDEFS=[
     64, #attachments.filename
     74, #content
     83, #attach_data.thedata
+]
+
+MIXED_CASE=[
+    19, #bug_file_loc
+    24  #short_desc
 ]
 
 PRIVATE_ATTACHMENT_FIELD_ID=65
@@ -96,7 +102,7 @@ def get_bugs_table_columns(db, schema_name):
 def get_private_bugs(db, param):
     if param.allow_private_bugs:
         return {0}
-    
+
     try:
         private_bugs=db.query("SELECT DISTINCT bug_id FROM bug_group_map")
         return set(Q.select(private_bugs, "bug_id")) | {0}
@@ -500,6 +506,7 @@ def get_bug_see_also(db, param):
 
 
 def get_new_activities(db, param):
+
     if param.allow_private_bugs:
         param.screened_fields=SQL(SCREENED_FIELDDEFS)
     else:
@@ -507,7 +514,7 @@ def get_new_activities(db, param):
 
     #TODO: CF_LAST_RESOLVED IS IN PDT, FIX IT
     param.bug_filter=db.esfilter2sqlwhere({"terms":{"a.bug_id":param.bug_list}})
-
+    param.mixed_case_fields=SQL(MIXED_CASE)
 
     return db.query("""
         SELECT
@@ -515,20 +522,22 @@ def get_new_activities(db, param):
             UNIX_TIMESTAMP(CONVERT_TZ(bug_when, 'US/Pacific','UTC'))*1000 AS modified_ts,
             lower(login_name) AS modified_by,
             replace(field.`name`, '.', '_') AS field_name,
-            lower(CAST(
+            CAST(
                 CASE
                 WHEN a.fieldid IN {{screened_fields}} THEN '<screened>'
+                WHEN a.fieldid IN {{mixed_case_fields}} THEN trim(added)
                 WHEN trim(added)='' THEN NULL
-                ELSE trim(added)
-                END AS CHAR CHARACTER SET utf8
-            )) AS new_value,
-            lower(CAST(
+                ELSE lower(trim(added))
+                END
+            AS CHAR CHARACTER SET utf8) AS new_value,
+            CAST(
                 CASE
                 WHEN a.fieldid IN {{screened_fields}} THEN '<screened>'
+                WHEN a.fieldid IN {{mixed_case_fields}} THEN trim(removed)
                 WHEN trim(removed)='' THEN NULL
-                ELSE trim(removed)
-                END AS CHAR CHARACTER SET utf8
-            )) AS old_value,
+                ELSE lower(trim(removed))
+                END
+            AS CHAR CHARACTER SET utf8) AS old_value,
             attach_id,
             9 AS _merge_order
         FROM
