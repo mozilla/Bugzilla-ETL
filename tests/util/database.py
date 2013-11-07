@@ -56,7 +56,7 @@ def mark_attachment_private(db, attach_id, isprivate):
     new_attach.isprivate=isprivate
 
     diff(db, "attachments", old_attach, new_attach)
-    db.update("attachments", old_attach, new_attach)
+    db.update("attachments", {"attach_id":old_attach.attach_id}, new_attach)
 
 
 def mark_comment_private(db, comment_id, isprivate):
