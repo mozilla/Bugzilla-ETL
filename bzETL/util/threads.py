@@ -175,9 +175,9 @@ class Thread(object):
         #ENSURE THERE IS A SHARED please_stop SIGNAL
         self.kwargs = kwargs.copy()
         self.kwargs["please_stop"]=self.kwargs.get("please_stop", Signal())
-        self.please_stop=self.kwargs["please_stop"]
+        self.please_stop = self.kwargs["please_stop"]
 
-        self.stopped=Signal()
+        self.stopped = Signal()
 
 
     def __enter__(self):
@@ -189,6 +189,9 @@ class Thread(object):
 
         # TODO: AFTER A WHILE START KILLING THREAD
         self.join()
+        self.args = None
+        self.kwargs = None
+
 
     def start(self):
         try:
@@ -325,7 +328,6 @@ class Signal(object):
 
 
 
-
 class ThreadedQueue(Queue):
     """
     TODO: Check that this queue is not dropping items at shutdown
@@ -340,14 +342,19 @@ class ThreadedQueue(Queue):
             #output_queue IS A MULTI-THREADED QUEUE, SO THIS WILL BLOCK UNTIL THE 5K ARE READY
             from .queries import Q
             for i, g in Q.groupby(self, size=size):
-                queue.extend(g)
-                if please_stop:
+                try:
+                    queue.extend(g)
+                    if please_stop:
+                        from logs import Log
+                        Log.warning("ThreadedQueue stopped early, with {{num}} items left in queue", {
+                            "num":len(self)
+                        })
+                        return
+                except Exception, e:
                     from logs import Log
-                    Log.warning("ThreadedQueue stopped early, with {{num}} items left in queue", {
-                        "num":len(self)
-                    })
-                    return
-        self.thread=Thread.run("threaded queue", push_to_queue)
+                    Log.warning("Can not push data to given queue", e)
+
+        self.thread = Thread.run("threaded queue", push_to_queue)
 
 
     def __enter__(self):

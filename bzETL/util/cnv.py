@@ -170,6 +170,11 @@ class CNV:
         return ord(char)
 
     @staticmethod
+    def latin12hex(value):
+        return value.encode("hex")
+
+
+    @staticmethod
     def int2hex(value, size):
         return (("0"*size)+hex(value)[2:])[-size:]
 

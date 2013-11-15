@@ -9,6 +9,7 @@
 #
 
 import sys
+import __builtin__
 from ..logs import Log
 from ..struct import nvl, listwrap
 from .. import struct
@@ -616,6 +617,18 @@ class Index(object):
     def intersect(self, other):
         return self.__and__(other)
 
+
+def range(_min, _max=None, size=1):
+    """
+    RETURN (min, max) PAIRS OF GIVEN SIZE, WHICH COVER THE _min, _max RANGE
+    THE LAST PAIR BE SMALLER
+    """
+    if _max == None:
+        _max = _min
+        _min = 0
+
+    output = ((x, min(x + size, _max)) for x in __builtin__.range(_min, _max, size))
+    return output
 
 
 

@@ -6,6 +6,7 @@ import sha
 import time
 
 import requests
+from bzETL.util.threads import ThreadedQueue
 
 import struct
 from .maths import Math
@@ -32,7 +33,7 @@ class ElasticSearch(object):
         if not settings.port: settings.port=9200
         self.debug=nvl(settings.debug, DEBUG)
         globals()["DEBUG"]=DEBUG or self.debug
-        
+
         self.settings=settings
         self.path=settings.host+":"+unicode(settings.port)+"/"+settings.index+"/"+settings.type
 
@@ -79,7 +80,7 @@ class ElasticSearch(object):
         return struct.wrap(output)
 
 
-    
+
     def get_metadata(self):
         if not self.metadata:
             response=self.get(self.settings.host+":"+unicode(self.settings.port)+"/_cluster/state")
@@ -119,6 +120,10 @@ class ElasticSearch(object):
         )
 
     def get_proto(self, alias):
+        """
+        RETURN ALL INDEXES THAT ARE INTENDED TO BE GIVEN alias, BUT HAVE NO
+        ALIAS YET BECAUSE INCOMPLETE
+        """
         output=Q.sort([
             a.index
             for a in self.get_aliases()
@@ -127,6 +132,9 @@ class ElasticSearch(object):
         return output
 
     def is_proto(self, index):
+        """
+        RETURN True IF THIS INDEX HAS NOT BEEN ASSIGNED IT'S ALIAS
+        """
         for a in self.get_aliases():
             if a.index==index and a.alias:
                 return False
@@ -213,7 +221,7 @@ class ElasticSearch(object):
             Log.error("Problem with search", e)
 
     def threaded_queue(self, size):
-        return Threaded_Queue(self, size)
+        return ThreadedQueue(self, size)
 
     @staticmethod
     def post(*list, **args):

@@ -55,21 +55,16 @@
 				"comment": {
 		            "type":"multi_field",
 		            "fields":{
-		                "short_desc":{
+		                "comment":{
 		                    "type":"string",
 		                    "index":"no",
-		                    "store":"yes"
+		                    "store":"no"
 		                },
 		                "lowercase":{
 		                    "type":"string",
-		                    "index":"no",
-		                    "store":"yes"
-		                },
-		                "words":{
-		                    "type":"string",
-		                    "index":"analyzed",
-		                    "analyzer":"bz_text_analyzer",
-		                    "store":"no"
+                            "index": "analyzed",
+		                    "store":"no",
+		                    "analyzer":"bz_text_analyzer"
 		                }
 		            }
 				}

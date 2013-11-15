@@ -12,7 +12,6 @@ from .strings import expand_template
 from .logs import Log
 
 
-
 class Timer:
     """
     USAGE:
