@@ -88,7 +88,7 @@ class Log(object):
         e = Except(WARNING, template, params, cause, format_trace(traceback.extract_stack(), 1))
         Log.note(unicode(e))
 
-        
+
     #raise an exception with a trace for the cause too
     @staticmethod
     def error(

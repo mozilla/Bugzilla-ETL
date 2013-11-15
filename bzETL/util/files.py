@@ -72,13 +72,32 @@ class File(object):
             for d in listwrap(data):
                 file.write(d)
 
-    def iter(self):
-        return codecs.open(self._filename, "r")
+    def __iter__(self):
+        #NOT SURE HOW TO MAXIMIZE FILE READ SPEED
+        #http://stackoverflow.com/questions/8009882/how-to-read-large-file-line-by-line-in-python
+        def output():
+            with codecs.open(self._filename, "r", encoding="utf-8") as f:
+                for line in f:
+                    yield line
+        return output()
 
     def append(self, content):
-        if not self.parent.exists: self.parent.create()
+        if not self.parent.exists:
+            self.parent.create()
         with open(self._filename, "a") as output_file:
             output_file.write(content)
+
+    def add(self, content):
+        return self.append(content)
+
+    def extend(self, content):
+        if not self.parent.exists:
+            self.parent.create()
+        with open(self._filename, "a") as output_file:
+            for c in content:
+                output_file.write(c)
+
+
 
     def delete(self):
         try:

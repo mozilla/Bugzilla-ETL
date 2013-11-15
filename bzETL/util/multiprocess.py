@@ -1,5 +1,11 @@
 # encoding: utf-8
 #
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this file,
+# You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Author: Kyle Lahnakoski (kyle@lahnakoski.com)
+#
 from multiprocessing.queues import Queue
 from .logs import Log
 
@@ -19,6 +25,10 @@ class Log_usingInterProcessQueue(Log):
 
 
 class Multiprocess(object):
+    # THE COMPLICATION HERE IS CONNECTING THE DISPARATE LOGGING TO
+    # A CENTRAL POINT
+
+
     def __init__(self, functions):
         self.outbound = Queue()
         self.inbound = Queue()

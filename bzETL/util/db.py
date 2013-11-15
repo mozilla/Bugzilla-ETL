@@ -105,6 +105,12 @@ class DB(object):
             self.close()
 
 
+    def transaction(self):
+        """
+        return not-started transaction (for with statement)
+        """
+        return Transaction(self)
+
     def begin(self):
         if self.transaction_level==0: self.cursor=self.db.cursor()
         self.transaction_level+=1
@@ -253,15 +259,17 @@ class DB(object):
 
     
     def execute(self, sql, param=None):
-        if self.transaction_level==0: Log.error(u"Expecting transaction to be started before issuing queries")
+        if self.transaction_level == 0:
+            Log.error(u"Expecting transaction to be started before issuing queries")
 
-        if param: sql=expand_template(sql, self.quote_param(param))
-        sql=outdent(sql)
+        if param:
+            sql = expand_template(sql, self.quote_param(param))
+        sql = outdent(sql)
         self.backlog.append(sql)
-        if len(self.backlog)>=MAX_BATCH_SIZE:
+        if len(self.backlog) >= MAX_BATCH_SIZE:
             self._execute_backlog()
 
-        
+
     def execute_file(self, filename, param=None):
         content=File(filename).read()
         self.execute(content, param)
@@ -657,3 +665,16 @@ def int_list_packer(term, values):
 
 
 
+class Transaction(object):
+    def __init__(self, db):
+        self.db = db
+
+    def __enter__(self):
+        self.db.begin()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if isinstance(exc_val, Exception):
+            self.db.rollback()
+        else:
+            self.db.commit()

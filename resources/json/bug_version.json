@@ -335,19 +335,15 @@
 		            "type":"multi_field",
 		            "fields":{
 		                "short_desc":{
-		                    "type":"string",
-		                    "index":"no",
-		                    "store":"yes"
+                            "type":"string",
+                            "index":"no",
+                            "store":"yes"
 		                },
 		                "lowercase":{
 		                    "type":"string",
-		                    "index":"no",
-		                    "store":"yes"
-		                },
-		                "words":{
-		                    "type":"string",
-		                    "index":"analyzed",
-		                    "analyzer":"bz_text_analyzer"
+                            "index": "analyzed",
+                            "store":"no",
+                            "analyzer":"bz_text_analyzer"
 		                }
 		            }
 		        },
