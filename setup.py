@@ -13,8 +13,8 @@ except Exception:
     print "Missing README.txt"
 
 setup(
-    name='bzETL',
-    version='0.3.0',
+    name='Bugzilla-ETL',
+    version="0.3.13326",
     description='Mozilla Bugzilla Bug Version ETL',
     long_description=long_desc,
     author='Kyle Lahnakoski',

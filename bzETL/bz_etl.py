@@ -63,8 +63,8 @@ def etl_comments(db, es, param, please_stop):
         Log.note("Read comments from database")
         comments=get_comments(comment_db_cache[0], param)
 
-    Log.note("Write comments to ElasticSearch")
-    es.add([{"id":c.comment_id, "value":c} for c in comments])
+    Log.note("Write {{num}} comments to ElasticSearch", {"num":len(comments)})
+    es.extend({"id":c.comment_id, "value":c} for c in comments)
 
 
 
@@ -210,7 +210,7 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
     comment_list = set(Q.select(private_comments, "comment_id")) | {0}
     es_comments.delete_record({"terms": {"comment_id": comment_list}})
     changed_comments = get_comments_by_id(db, comment_list, param)
-    es.add([{"id": c.comment_id, "value": c} for c in changed_comments])
+    es.extend({"id": c.comment_id, "value": c} for c in changed_comments)
 
     #GET LIST OF CHANGED BUGS
     with Timer("time to get bug list"):
