@@ -421,6 +421,7 @@ def start():
         Log.start(settings.debug)
         main(settings)
     except Exception, e:
+        Log.note("Done ETL")
         Log.error("Can not start", e)
     finally:
         Log.stop()
