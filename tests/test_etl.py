@@ -10,6 +10,7 @@
 
 from datetime import datetime
 import pytest
+import sys
 from bzETL import bz_etl, extract_bugzilla
 
 from bzETL.bz_etl import etl
@@ -421,28 +422,10 @@ def main():
 
         Log.note("All tests pass!  Success!!")
     finally:
+        sys.stdout.write("prepare to stop logging")
         Log.stop()
 
 
-
-def profile_etl():
-    import profile
-    import pstats
-    filename="profile_stats.txt"
-
-    profile.run("""
-try:
-    main()
-except Exception, e:
-    pass
-    """, filename)
-    p = pstats.Stats(filename)
-    p.strip_dirs().sort_stats("tottime").print_stats(40)
-
-
-
-
 if __name__=="__main__":
-    # profile_etl()
     main()
 

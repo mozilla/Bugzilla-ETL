@@ -115,12 +115,19 @@ def diff(db, table, old_record, new_record):
     else:
         prefix = u""
 
+
+
     for c in changed:
+        fieldid=db.query("SELECT id FROM fielddefs WHERE name={{field_name}}", {"field_name": prefix + c})[0].id
+
+        if fieldid == None:
+            Log.error("Expecting a valid field name")
+
         activity = Struct(
             bug_id=old_record.bug_id,
             who=1,
             bug_when=now,
-            fieldid=db.query("SELECT id FROM fielddefs WHERE name={{field_name}}", {"field_name": prefix + c})[0].id,
+            fieldid=fieldid,
             removed=old_record[c],
             added=new_record[c],
             attach_id=old_record.attach_id,

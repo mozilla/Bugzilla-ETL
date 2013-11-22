@@ -51,6 +51,9 @@ class Struct(dict):
         return dict.__str__(object.__getattribute__(self, "__dict__"))
 
     def __getitem__(self, key):
+        if not isinstance(key, str):
+            key = key.encode("utf-8")
+
         d = object.__getattribute__(self, "__dict__")
 
         if key.find(".") >= 0:
@@ -66,6 +69,9 @@ class Struct(dict):
         Struct.__setitem__(self, key, value)
 
     def __setitem__(self, key, value):
+        if not isinstance(key, str):
+            key = key.encode("utf-8")
+
         try:
             d = object.__getattribute__(self, "__dict__")
             value = unwrap(value)
@@ -89,6 +95,9 @@ class Struct(dict):
             raise e
 
     def __getattribute__(self, key):
+        if not isinstance(key, str):
+            key = key.encode("utf-8")
+
         d = object.__getattribute__(self, "__dict__")
         if key not in SPECIAL:
             return wrap(getdefault(d, key))
@@ -127,6 +136,9 @@ class Struct(dict):
 
 
     def __delitem__(self, key):
+        if not isinstance(key, str):
+            key = key.encode("utf-8")
+
         d = object.__getattribute__(self, "__dict__")
 
         if key.find(".") == -1:
@@ -213,13 +225,13 @@ class NullStruct(object):
         return False
 
     def __eq__(self, other):
-        return other is Null or other is None
+        return other is None or isinstance(other, NullStruct)
 
     def __ne__(self, other):
-        return other is not Null and other is not None
+        return other is not None and not isinstance(other, NullStruct)
 
     def __getitem__(self, key):
-        return self
+        return NullStruct(self, key)
 
     def __len__(self):
         return 0
@@ -272,7 +284,6 @@ class NullStruct(object):
             key = key.replace("\.", "\a")
             seq = [k.replace("\a", ".") for k in key.split(".")]
             d = _assign(self, seq[0], {}, False)
-            #A LITTLE DUMB, BUILDS A LIST OF NullStruct, THEN USES THEM TO MAKE A CHAIN OF DICTS
             for k in seq[1:-1]:
                 o = {}
                 d[k] = o

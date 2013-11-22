@@ -9,6 +9,7 @@
 #
 
 from math import sqrt
+from dz2es.util.cnv import CNV
 from .struct import nvl
 from .logs import Log
 
@@ -154,9 +155,16 @@ class Z_moment(object):
         )
 
 
-
 def add(a,b):
     return nvl(a, 0)+nvl(b,0)
 
 def sub(a,b):
     return nvl(a, 0)-nvl(b,0)
+
+
+def z_moment2dict(z):
+    #RETURN HASH OF SUMS
+    return {"s" + unicode(i): m for i, m in enumerate(z.S)}
+
+
+setattr(CNV, "z_moment2dict", staticmethod(z_moment2dict))

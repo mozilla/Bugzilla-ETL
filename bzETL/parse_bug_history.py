@@ -394,9 +394,6 @@ class BugHistoryParser():
                 else:
                     nextVersion = Null
 
-                # if nextVersion.modified_ts==933875761000:
-                #     Log.println("")
-
                 if DEBUG_STATUS: Log.note("Populating JSON for version {{id}}", {"id":currVersion._id})
                 # Decide whether to merge this bug activity into the current state (without emitting
                 # a separate JSON document). This addresses the case where an attachment is created
@@ -623,10 +620,11 @@ class BugHistoryParser():
                 else:
                     Log.note("Matching on modified_ts left us with {{num}} matches", {"num":len(matched_ts)})
                     # If we had no matches (or many matches), try matching on requestee.
-                    matched_req = [element for element in candidates if
+                    matched_req = [
+                        element
+                        for element in candidates
                         # Do case-insenitive comparison
-                        element["requestee"] != None and
-                            added_flag["modified_by"].lower() == element["requestee"].lower()
+                        if element["requestee"] != None and added_flag["modified_by"].lower() == element["requestee"].lower()
                     ]
                     if len(matched_req) == 1:
                         Log.note("Matching on requestee fixed it")
@@ -791,7 +789,7 @@ class BugHistoryParser():
             diff = remove - total
             output = total - remove
 
-            if valueType=="added":
+            if valueType=="added" and remove:
                 self.currActivity.changes.append({
                     "field_name": field_name,
                     "new_value": u", ".join(map(unicode, Q.sort(remove))),
@@ -890,12 +888,13 @@ class BugHistoryParser():
                                   "output":output
                         })
                     final_removed = Q.map(removed, map_total)
-                    self.currActivity.changes.append({
-                        "field_name": field_name,
-                        "new_value": u", ".join(map(unicode, Q.sort(final_removed))),
-                        "old_value": Null,
-                        "attach_id": target.attach_id
-                    })
+                    if final_removed:
+                        self.currActivity.changes.append({
+                            "field_name": field_name,
+                            "new_value": u", ".join(map(unicode, Q.sort(final_removed))),
+                            "old_value": Null,
+                            "attach_id": target.attach_id
+                        })
                 except Exception, email:
                     Log.error("issues", email)
 
@@ -905,7 +904,7 @@ class BugHistoryParser():
             diff = remove - total
             output = total - remove
 
-            if valueType=="added":
+            if valueType=="added" and removed:
                 self.currActivity.changes.append({
                     "field_name": field_name,
                     "new_value": u", ".join(map(unicode, Q.sort(removed))),
