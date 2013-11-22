@@ -41,9 +41,9 @@ Bugzille-ETL keeps local run state in the form of two files: ```first_run_time``
 Does it Work?
 --------------
 
-The initial ETL will take over two hours.  If you want a quicker test to confirm your configuration is correct, use "--quick" argument on the command line.   This will limit ETL to the first 1000, and last 1000 bugs.
+The initial ETL will take over two hours.  If you want a quicker test to confirm your configuration is correct, use "--reset --quick" arguments on the command line.   This will limit ETL to the first 1000, and last 1000 bugs.
 
-    ```pypy .\bzETL\bz_etl.py --settings=settings.json --quick```
+    ```pypy .\bzETL\bz_etl.py --settings=settings.json --reset --quick```
 
 
 Developer Installation

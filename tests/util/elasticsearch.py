@@ -47,9 +47,6 @@ class Fake_ES():
         """
         JUST SO WE MODEL A Queue
         """
-        return self.add(records)
-
-    def add(self, records):
         records={v["id"]:v["value"] for v in records}
 
         self.data.dict.update(records)
@@ -57,6 +54,11 @@ class Fake_ES():
         data_as_json=CNV.object2JSON(self.data, pretty=True)
         File(self.filename).write(data_as_json)
         Log.note("{{num}} items added", {"num":len(records)})
+
+    def add(self, record):
+        if isinstance(record, list):
+            Log.error("no longer accepting lists, use extend()")
+        return self.extend([record])
 
     def delete_record(self, filter):
         f = parse_filter(filter)

@@ -422,8 +422,8 @@ def main():
 
         Log.note("All tests pass!  Success!!")
     finally:
-        sys.stdout.write("prepare to stop logging")
         Log.stop()
+        sys.stdout.write("logging stopped")
 
 
 if __name__=="__main__":

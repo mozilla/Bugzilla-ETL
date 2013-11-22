@@ -9,3 +9,7 @@ bzETL/util/.svn/*
 bzETL/util/.svn
 .idea
 *.iml
+*.eg-info
+build
+dist
+
