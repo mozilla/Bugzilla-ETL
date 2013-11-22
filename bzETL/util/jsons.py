@@ -30,7 +30,7 @@ except Exception, e:
         def build(self):
             return "".join(self)
 
-
+append = StringBuilder.append
 
 class PyPyJSONEncoder(object):
     """
@@ -44,7 +44,7 @@ class PyPyJSONEncoder(object):
             return json.dumps(json_scrub(value), indent=4, sort_keys=True, separators=(',', ': '))
 
         _buffer = StringBuilder(1024)
-        _value2json(value, _buffer.append)
+        _value2json(value, _buffer)
         output = _buffer.build()
         return output
 
@@ -75,55 +75,55 @@ else:
 
 
 
-def _value2json(value, appender):
+def _value2json(value, _buffer):
     if isinstance(value, basestring):
-        _string2json(value, appender)
+        _string2json(value, _buffer)
     elif value == None:
-        appender("null")
+        append(_buffer, "null")
     elif value is True:
-        appender('true')
+        append(_buffer, 'true')
     elif value is False:
-        appender('false')
+        append(_buffer, 'false')
     elif isinstance(value, (int, long, Decimal)):
-        appender(str(value))
+        append(_buffer, str(value))
     elif isinstance(value, float):
-        appender(repr(value))
+        append(_buffer, repr(value))
     elif isinstance(value, datetime):
-        appender(unicode(long(time.mktime(value.timetuple())*1000)))
+        append(_buffer, unicode(long(time.mktime(value.timetuple())*1000)))
     elif isinstance(value, dict):
-        _dict2json(value, appender)
+        _dict2json(value, _buffer)
     elif hasattr(value, '__iter__'):
-        _list2json(value, appender)
+        _list2json(value, _buffer)
     else:
         raise Exception(repr(value)+" is not JSON serializable")
 
 
-def _list2json(value, appender):
-    appender("[")
+def _list2json(value, _buffer):
+    append(_buffer, "[")
     first = True
     for v in value:
         if first:
             first = False
         else:
-            appender(", ")
-        _value2json(v, appender)
-    appender("]")
+            append(_buffer, ", ")
+        _value2json(v, _buffer)
+    append(_buffer, "]")
 
 
-def _dict2json(value, appender):
+def _dict2json(value, _buffer):
     items = value.iteritems()
 
-    appender("{")
+    append(_buffer, "{")
     first = True
     for k, v in value.iteritems():
         if first:
             first = False
         else:
-            appender(", ")
-        _string2json(unicode(k), appender)
-        appender(": ")
-        _value2json(v, appender)
-    appender("}")
+            append(_buffer, ", ")
+        _string2json(unicode(k), _buffer)
+        append(_buffer, ": ")
+        _value2json(v, _buffer)
+    append(_buffer, "}")
 
 
 special_find = u"\\\"\t\n\r".find
@@ -143,12 +143,12 @@ for i in range(0x20):
     ESCAPE_DCT.setdefault(chr(i), '\\u{0:04x}'.format(i))
 
 
-def _string2json(value, appender):
+def _string2json(value, _buffer):
     def replace(match):
         return ESCAPE_DCT[match.group(0)]
-    appender("\"")
-    appender(ESCAPE.sub(replace, value))
-    appender("\"")
+    append(_buffer, "\"")
+    append(_buffer, ESCAPE.sub(replace, value))
+    append(_buffer, "\"")
 
 
 

@@ -51,11 +51,11 @@ class worker_thread(threading.Thread):
                 if DEBUG and hasattr(self.function, "func_name"):
                     Log.note("run {{function}}", {"function": self.function.func_name})
                 result = self.function(**request)
-                if self.out_queue:
+                if self.out_queue != None:
                     self.out_queue.add({"response": result})
             except Exception, e:
                 Log.warning("Can not execute with params={{params}}", {"params": request}, e)
-                if self.out_queue:
+                if self.out_queue != None:
                     self.out_queue.add({"exception": e})
             finally:
                 self.num_runs += 1

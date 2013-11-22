@@ -140,7 +140,7 @@ class DB(object):
             except Exception:
                 pass
             Log.error(u"Error while processing backlog", e)
-            
+
         if self.transaction_level==0:
             Log.error(u"No transaction has begun")
         elif self.transaction_level==1:
@@ -225,7 +225,7 @@ class DB(object):
                 Log.error(u"Did you close the db connection?", e)
             Log.error(u"Problem executing SQL:\n"+indent(sql.strip()), e, offset=1)
 
-            
+
     # EXECUTE GIVEN METHOD FOR ALL ROWS RETURNED
     def execute(self, sql, param=None, execute=None):
         assert execute
@@ -257,7 +257,7 @@ class DB(object):
 
         return num
 
-    
+
     def execute(self, sql, param=None):
         if self.transaction_level == 0:
             Log.error(u"Expecting transaction to be started before issuing queries")
@@ -281,7 +281,7 @@ class DB(object):
         if param:
             with DB(settings) as temp:
                 sql=expand_template(sql, temp.quote_param(param))
-        
+
         # MWe have no way to execute an entire SQL file in bulk, so we
         # have to shell out to the commandline client.
         args = [
@@ -388,6 +388,9 @@ class DB(object):
 
 
     def insert_list(self, table_name, records):
+        if not records:
+            return
+
         keys = set()
         for r in records:
             keys |= set(r.keys())
@@ -569,7 +572,7 @@ def utf8_to_unicode(v):
     except Exception, e:
         Log.error(u"not expected", e)
 
-        
+
 #ACTUAL SQL, DO NOT QUOTE THIS STRING
 class SQL(unicode):
 

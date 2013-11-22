@@ -5634,11 +5634,6 @@
         "bug_severity": "normal",
         "bug_status": "new",
         "bug_version_num": 5,
-        "changes": [
-            {
-                "field_name": "dependson"
-            }
-        ],
         "component": "xpapps",
         "created_by": "chofmann@gmail.com",
         "created_ts": 933081979000,
@@ -5862,11 +5857,6 @@
         "bug_severity": "normal",
         "bug_status": "new",
         "bug_version_num": 8,
-        "changes": [
-            {
-                "field_name": "dependson"
-            }
-        ],
         "component": "xpapps",
         "created_by": "chofmann@gmail.com",
         "created_ts": 933081979000,
@@ -7197,11 +7187,6 @@
         "bug_severity": "normal",
         "bug_status": "new",
         "bug_version_num": 24,
-        "changes": [
-            {
-                "field_name": "dependson"
-            }
-        ],
         "component": "xpapps",
         "created_by": "chofmann@gmail.com",
         "created_ts": 933081979000,
@@ -7287,11 +7272,6 @@
         "bug_severity": "normal",
         "bug_status": "new",
         "bug_version_num": 25,
-        "changes": [
-            {
-                "field_name": "dependson"
-            }
-        ],
         "component": "xpapps",
         "created_by": "chofmann@gmail.com",
         "created_ts": 933081979000,
@@ -7469,11 +7449,6 @@
         "bug_severity": "normal",
         "bug_status": "new",
         "bug_version_num": 27,
-        "changes": [
-            {
-                "field_name": "dependson"
-            }
-        ],
         "component": "xpapps",
         "created_by": "chofmann@gmail.com",
         "created_ts": 933081979000,
@@ -7560,11 +7535,6 @@
         "bug_severity": "normal",
         "bug_status": "new",
         "bug_version_num": 28,
-        "changes": [
-            {
-                "field_name": "dependson"
-            }
-        ],
         "component": "xpapps",
         "created_by": "chofmann@gmail.com",
         "created_ts": 933081979000,
@@ -7926,11 +7896,6 @@
         "bug_severity": "normal",
         "bug_status": "new",
         "bug_version_num": 32,
-        "changes": [
-            {
-                "field_name": "dependson"
-            }
-        ],
         "component": "xpapps",
         "created_by": "chofmann@gmail.com",
         "created_ts": 933081979000,
@@ -8568,11 +8533,6 @@
         "bug_severity": "normal",
         "bug_status": "new",
         "bug_version_num": 39,
-        "changes": [
-            {
-                "field_name": "dependson"
-            }
-        ],
         "component": "xpapps",
         "created_by": "chofmann@gmail.com",
         "created_ts": 933081979000,
@@ -8658,11 +8618,6 @@
         "bug_severity": "normal",
         "bug_status": "new",
         "bug_version_num": 40,
-        "changes": [
-            {
-                "field_name": "dependson"
-            }
-        ],
         "component": "xpapps",
         "created_by": "chofmann@gmail.com",
         "created_ts": 933081979000,
@@ -8748,11 +8703,6 @@
         "bug_severity": "normal",
         "bug_status": "new",
         "bug_version_num": 41,
-        "changes": [
-            {
-                "field_name": "dependson"
-            }
-        ],
         "component": "xpapps",
         "created_by": "chofmann@gmail.com",
         "created_ts": 933081979000,
@@ -12752,11 +12702,6 @@
             "svl-bmo@juima.org",
             "uri@mivzak.com"
         ],
-        "changes": [
-            {
-                "field_name": "cc"
-            }
-        ],
         "component": "filters",
         "created_by": "sspitzer@mozilla.org",
         "created_ts": 933539465000,
@@ -15859,11 +15804,6 @@
             "uri@mivzak.com",
             "vhaarr+bmo@gmail.com"
         ],
-        "changes": [
-            {
-                "field_name": "cc"
-            }
-        ],
         "component": "filters",
         "created_by": "sspitzer@mozilla.org",
         "created_ts": 933539465000,
@@ -17585,11 +17525,6 @@
             "uri@mivzak.com",
             "vhaarr+bmo@gmail.com",
             "xanthor+bz@nuinet.com"
-        ],
-        "changes": [
-            {
-                "field_name": "cc"
-            }
         ],
         "component": "filters",
         "created_by": "sspitzer@mozilla.org",

@@ -6,7 +6,7 @@ import sha
 import time
 
 import requests
-from bzETL.util.threads import ThreadedQueue
+from .threads import ThreadedQueue
 
 import struct
 from .maths import Math
@@ -153,11 +153,6 @@ class ElasticSearch(object):
             )
 
     def extend(self, records):
-        self.add(records)
-
-    # RECORDS MUST HAVE id AND json AS A STRING OR
-    # HAVE id AND value AS AN OBJECT
-    def add(self, records):
         # ADD LINE WITH COMMAND
         lines=[]
         for r in records:
@@ -192,6 +187,14 @@ class ElasticSearch(object):
 
         if self.debug:
             Log.note("{{num}} items added", {"num":len(lines)/2})
+
+
+    # RECORDS MUST HAVE id AND json AS A STRING OR
+    # HAVE id AND value AS AN OBJECT
+    def add(self, record):
+        if isinstance(record, list):
+            Log.error("add() has changed to only accept one record, no lists")
+        self.extend([record])
 
 
 
