@@ -167,7 +167,7 @@ class ElasticSearch(object):
             if id == None:
                 id = sha.new(json).hexdigest()
 
-            lines.append('{"index":{"_id":'+CNV.object2JSON(id)+'}}')
+            lines.append(u'{"index":{"_id":'+CNV.object2JSON(id)+'}}')
             lines.append(json)
 
         if not lines: return

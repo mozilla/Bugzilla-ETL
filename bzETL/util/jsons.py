@@ -28,7 +28,7 @@ except Exception, e:
             list.__init__(self)
 
         def build(self):
-            return "".join(self)
+            return u"".join(self)
 
 append = StringBuilder.append
 
@@ -41,7 +41,7 @@ class PyPyJSONEncoder(object):
 
     def encode(self, value, pretty=False):
         if pretty:
-            return json.dumps(json_scrub(value), indent=4, sort_keys=True, separators=(',', ': '))
+            return unicode(json.dumps(json_scrub(value), indent=4, sort_keys=True, separators=(',', ': ')))
 
         _buffer = StringBuilder(1024)
         _value2json(value, _buffer)
@@ -55,9 +55,9 @@ class cPythonJSONEncoder(object):
 
     def encode(self, value, pretty=False):
         if pretty:
-            return json.dumps(json_scrub(value), indent=4, sort_keys=True, separators=(',', ': '))
+            return unicode(json.dumps(json_scrub(value), indent=4, sort_keys=True, separators=(',', ': ')))
 
-        return json.dumps(json_scrub(value))
+        return unicode(json.dumps(json_scrub(value)))
 
 
 # OH HUM, cPython with uJSON, OR pypy WITH BUILTIN JSON?
