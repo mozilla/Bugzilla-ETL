@@ -25,7 +25,7 @@ class Struct(dict):
     AND DOES NOT LOOK AT FIELD-DOES-NOT-EXIST-IN-THIS-CONTEXT (Database Null)
 
 
-    This is a common pattern in many frameworks:
+    This is a common pattern in many frameworks (I am still working on this list)
 
     jinja2.environment.Environment.getattr()
     argparse.Environment() - code performs setattr(e, name, value) on instances of Environment

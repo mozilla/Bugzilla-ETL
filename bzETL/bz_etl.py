@@ -63,8 +63,8 @@ def etl_comments(db, es, param, please_stop):
         Log.note("Read comments from database")
         comments=get_comments(comment_db_cache[0], param)
 
-    Log.note("Write {{num}} comments to ElasticSearch", {"num":len(comments)})
-    es.extend({"id":c.comment_id, "value":c} for c in comments)
+    with Timer("Write {{num}} comments to ElasticSearch", {"num":len(comments)}):
+        es.extend({"id":c.comment_id, "value":c} for c in comments)
 
 
 
@@ -267,6 +267,9 @@ def full_etl(resume_from_last_run, settings, param, db, es, es_comments, output_
             # WITHOUT gc.collect() PYPY MEMORY USAGE GROWS UNTIL 2gig LIMIT IS HIT AND CRASH
             # WITH THIS LINE IT SEEMS TO TOP OUT AT 1.2gig
             #UPDATE 2013 OCT 30: SOMETIMES THERE IS A MEMORY EXPLOSION, SOMETIMES NOT
+            #UPDATE 2013 NOV 25: THE MEMORY PROBLEM MAY BE THAT THE DATA SINK (ES) IS NOT FAST ENOUGH
+            #                    TO ACCEPT THE RECORDS GENERATED.  (MAYBE INDEXING IS ON?)
+            #                    MITIGATED WITH Thread(max=) TO SLOW DOWN DATA SOURCE
             gc.collect()
             (min, max) = (b, b + settings.param.increment)
             try:
