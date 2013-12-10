@@ -9,7 +9,7 @@
 #
 
 from math import sqrt
-from dz2es.util.cnv import CNV
+from .cnv import CNV
 from .struct import nvl
 from .logs import Log
 
