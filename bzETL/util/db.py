@@ -227,8 +227,8 @@ class DB(object):
 
 
     # EXECUTE GIVEN METHOD FOR ALL ROWS RETURNED
-    def execute(self, sql, param=None, execute=None):
-        assert execute
+    def forall(self, sql, param=None, _execute=None):
+        assert _execute
         num=0
 
         self._execute_backlog()
@@ -246,7 +246,7 @@ class DB(object):
             columns = tuple( [utf8_to_unicode(d[0]) for d in self.cursor.description] )
             for r in self.cursor:
                 num+=1
-                execute(struct.wrap(dict(zip(columns, [utf8_to_unicode(c) for c in r]))))
+                _execute(struct.wrap(dict(zip(columns, [utf8_to_unicode(c) for c in r]))))
 
             if not old_cursor:   #CLEANUP AFTER NON-TRANSACTIONAL READS
                 self.cursor.close()
