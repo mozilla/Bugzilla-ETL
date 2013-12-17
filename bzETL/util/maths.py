@@ -112,4 +112,6 @@ class Math(object):
             output = max(output, v)
         return output
 
-
+    @staticmethod
+    def ceiling(value):
+        return math.ceil(value)
