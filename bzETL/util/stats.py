@@ -10,7 +10,7 @@
 
 from math import sqrt
 from .cnv import CNV
-from .struct import nvl
+from .struct import nvl, Struct, Null
 from .logs import Log
 
 
@@ -62,9 +62,10 @@ def z_moment2stats(z_moment, unbiased=True):
 
 
 
-class Stats(object):
+class Stats(Struct):
 
     def __init__(self, **args):
+        Struct.__init__(self)
         if "count" not in args:
             self.count=0
             self.mean=0
@@ -106,7 +107,6 @@ class Stats(object):
             args["unbiased"] if "unbiased" in args else \
             not args["biased"] if "biased" in args else \
             False
-
 
 
     @property
@@ -168,3 +168,18 @@ def z_moment2dict(z):
 
 
 setattr(CNV, "z_moment2dict", staticmethod(z_moment2dict))
+
+
+def median(values):
+    try:
+        if not values:
+            return Null
+
+        l = len(values)
+        _sorted = sorted(values)
+        if l % 2 == 0:
+            return (_sorted[l / 2 - 1] + _sorted[l / 2]) / 2
+        else:
+            return _sorted[l / 2]
+    except Exception, e:
+        Log.error("problem with median", e)

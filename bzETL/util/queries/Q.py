@@ -7,9 +7,12 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
+import collections
 
 import sys
 import __builtin__
+from ..maths import Math
+from ..cnv import CNV
 from ..logs import Log
 from ..struct import nvl, listwrap
 from .. import struct
@@ -47,9 +50,7 @@ def run(query):
     if query.select != None:
         _from = select(_from, query.select)
 
-
     return _from
-
 
 
 def groupby(data, keys=None, size=None, min_size=None, max_size=None):
@@ -63,7 +64,7 @@ def groupby(data, keys=None, size=None, min_size=None, max_size=None):
     try:
         def keys2string(x):
             #REACH INTO dict TO GET PROPERTY VALUE
-            return "|".join([unicode(x[k]) for k in keys])
+            return u"|".join([unicode(x[k]) for k in keys])
 
         def get_keys(d):
             return struct.wrap({k: d[k] for k in keys})
@@ -83,7 +84,6 @@ def groupby(data, keys=None, size=None, min_size=None, max_size=None):
         Log.error("Problem grouping", e)
 
 
-
 def index(data, keys=None):
 #return dict that uses keys to index data
     keys = struct.unwrap(listwrap(keys))
@@ -98,7 +98,6 @@ def index(data, keys=None):
         o = o.get(v, list())
         o.append(d)
     return output
-
 
 
 def unique_index(data, keys=None):
@@ -136,7 +135,7 @@ def map(data, relation):
         try:
             #relation[d] is expected to be a list
             # return set(cod for d in data for cod in relation[d])
-            output=set()
+            output = set()
             for d in data:
                 for cod in relation.get(d, []):
                     output.add(cod)
@@ -147,9 +146,9 @@ def map(data, relation):
         try:
             #relation[d] is expected to be a list
             # return set(cod for d in data for cod in relation[d])
-            output=set()
+            output = set()
             for d in data:
-                cod=relation(d)
+                cod = relation(d)
                 if cod == None:
                     continue
                 output.add(cod)
@@ -158,6 +157,7 @@ def map(data, relation):
             Log.error("Expecting a dict with lists in codomain", e)
     return Null
 
+
 def select(data, field_name):
 #return list with values from field_name
     if isinstance(data, Cube): Log.error("Do not know how to deal with cubes yet")
@@ -165,7 +165,6 @@ def select(data, field_name):
         return [d[field_name] for d in data]
 
     return [dict([(k, v) for k, v in x.items() if k in field_name]) for x in data]
-
 
 
 def get_columns(data):
@@ -179,7 +178,6 @@ def get_columns(data):
                 # IT WOULD BE NICE TO ADD DOMAIN ANALYSIS HERE
 
     return [{"name": n} for n in output]
-
 
 
 def stack(data, name=None, value_column=None, columns=None):
@@ -241,13 +239,12 @@ def unstack(data, keys=None, column=None, value=None):
     return StructList(output)
 
 
-
 def normalize_sort(fieldnames):
     """
     CONVERT SORT PARAMETERS TO A NORMAL FORM SO EASIER TO USE
     """
     if fieldnames == None:
-        return []
+        return StructList()
 
     formal = []
     for f in listwrap(fieldnames):
@@ -255,8 +252,7 @@ def normalize_sort(fieldnames):
             f = {"field": f, "sort": 1}
         formal.append(f)
 
-    return formal
-
+    return struct.wrap(formal)
 
 
 def sort(data, fieldnames=None):
@@ -268,7 +264,7 @@ def sort(data, fieldnames=None):
             return Null
 
         if fieldnames == None:
-            return sorted(data)
+            return struct.wrap(sorted(data))
 
         if not isinstance(fieldnames, list):
             #SPECIAL CASE, ONLY ONE FIELD TO SORT BY
@@ -276,14 +272,14 @@ def sort(data, fieldnames=None):
                 def comparer(left, right):
                     return cmp(nvl(left, Struct())[fieldnames], nvl(right, Struct())[fieldnames])
 
-                return sorted(data, cmp=comparer)
+                return struct.wrap(sorted(data, cmp=comparer))
             else:
                 #EXPECTING {"field":f, "sort":i} FORMAT
                 def comparer(left, right):
                     return fieldnames["sort"] * cmp(nvl(left, Struct())[fieldnames["field"]],
                                                     nvl(right, Struct())[fieldnames["field"]])
 
-                return sorted(data, cmp=comparer)
+                return struct.wrap(sorted(data, cmp=comparer))
 
         formal = normalize_sort(fieldnames)
 
@@ -310,7 +306,6 @@ def sort(data, fieldnames=None):
         Log.error("Problem sorting\n{{data}}", {"data": data}, e)
 
 
-
 def add(*values):
     total = Null
     for v in values:
@@ -322,13 +317,78 @@ def add(*values):
     return total
 
 
-
 def filter(data, where):
     """
-    where  - a function that accepts (record, rownum, rows) and return s boolean
+    where  - a function that accepts (record, rownum, rows) and returns boolean
     """
-    where = wrap_function(where)
+    if isinstance(where, collections.Callable):
+        where = wrap_function(where)
+    elif len(data) < 10000:
+        # WITH SMALL NUMBERS, WE WILL SIMPLY READ THE FILTER SPEC DIRECTLY WHILE ITERATING THROUGH DATA
+        return [d for i, d in enumerate(data) if _filter(struct.wrap(where), d, i, data)]
+    else:
+        # THIS COMPILES PYTHON TO MAKE A FUNCTION
+        where = CNV.esfilter2where(where)
+
     return [d for i, d in enumerate(data) if where(d, i, data)]
+
+
+def _filter(esfilter, row, rownum, rows):
+    if esfilter[u"and"]:
+        for a in esfilter[u"and"]:
+            if not _filter(a, row, rownum, rows):
+                return False
+        return True
+    elif esfilter[u"or"]:
+        for a in esfilter[u"and"]:
+            if _filter(a, row, rownum, rows):
+                return True
+        return False
+    elif esfilter[u"not"]:
+        return not _filter(esfilter[u"not"], row, rownum, rows)
+    elif esfilter.term:
+        for col, val in esfilter.term.items():
+            if row[col] != val:
+                return False
+        return True
+    elif esfilter.terms:
+        for col, vals in esfilter.terms.items:
+            if not row[col] in vals:
+                return False
+        return True
+    elif esfilter.range:
+        for col, ranges in esfilter.range.items:
+            for sign, val in ranges:
+                if sign in ("gt", ">") and row[col] <= val:
+                    return False
+                if sign == "gte" and row[col] < val:
+                    return False
+                if sign == "lte" and row[col] > val:
+                    return False
+                if sign == "lt" and row[col] >= val:
+                    return False
+        return True
+    elif esfilter.missing:
+        if isinstance(esfilter.missing, basestring):
+            field = esfilter.missing
+        else:
+            field = esfilter.missing.field
+
+        if row[field] == None:
+            return True
+        return False
+
+    elif esfilter.exists:
+        if isinstance(esfilter.missing, basestring):
+            field = esfilter.missing
+        else:
+            field = esfilter.missing.field
+
+        if row[field] != None:
+            return True
+        return False
+    else:
+        Log.error(u"Can not convert esfilter to SQL: {{esfilter}}", {u"esfilter": esfilter})
 
 
 def wrap_function(func):
@@ -339,33 +399,35 @@ def wrap_function(func):
     if numarg == 0:
         def temp(row, rownum, rows):
             return func()
+
         return temp
     elif numarg == 1:
         def temp(row, rownum, rows):
             return func(row)
+
         return temp
     elif numarg == 2:
         def temp(row, rownum, rows):
             return func(row, rownum)
+
         return temp
     elif numarg == 3:
         return func
 
 
-
 def window(data, param):
     """
-    MAYBE WE CAN DO THIS WITH NUMPY??
+    MAYBE WE CAN DO THIS WITH NUMPY (no, the edges of windows are not graceful with numpy??
     data - list of records
     """
     name = param.name            # column to assign window function result
     edges = param.edges          # columns to gourp by
-    sort = param.sort            # columns to sort by
+    sortColumns = param.sort            # columns to sort by
     value = wrap_function(param.value) # function that takes a record and returns a value (for aggregation)
     aggregate = param.aggregate  # WindowFunction to apply
     _range = param.range          # of form {"min":-10, "max":0} to specify the size and relative position of window
 
-    if aggregate == None and sort == None and edges == None:
+    if aggregate == None and sortColumns == None and edges == None:
         #SIMPLE CALCULATED VALUE
         for rownum, r in enumerate(data):
             r[name] = value(r, rownum, data)
@@ -379,7 +441,7 @@ def window(data, param):
         if not values:
             continue     # CAN DO NOTHING WITH THIS ZERO-SAMPLE
 
-        sequence = struct.wrap(sort(values, sort))
+        sequence = sort(values, sortColumns)
         head = nvl(_range.max, _range.stop)
         tail = nvl(_range.min, _range.start)
 
@@ -395,7 +457,7 @@ def window(data, param):
             total.sub(sequence[i + tail].__temp__)
 
     for r in data:
-        r["__temp__"] = Null  #CLEANUP
+        r["__temp__"] = None  #CLEANUP
 
 
 def groupby_size(data, size):
@@ -459,16 +521,17 @@ def groupby_min_max_size(data, min_size=0, max_size=None, ):
 
     if hasattr(data, "__iter__"):
         def _iter():
-            g=0
-            out=[]
+            g = 0
+            out = []
             for i, d in enumerate(data):
                 out.append(d)
-                if (i+1)%max_size==0:
+                if (i + 1) % max_size == 0:
                     yield g, out
-                    g+=1
-                    out=[]
+                    g += 1
+                    out = []
             if out:
                 yield g, out
+
         return _iter()
     elif not isinstance(data, Multiset):
         return groupby_size(data, max_size)
@@ -518,7 +581,7 @@ class Domain():
 class Index(object):
     def __init__(self, keys):
         self._data = {}
-        self._keys = keys
+        self._keys = struct.unwrap(keys)
         self.count = 0
 
         #THIS ONLY DEPENDS ON THE len(keys), SO WE COULD SHARED lookup
@@ -567,7 +630,8 @@ class Index(object):
 
 
     def add(self, val):
-        if not isinstance(val, dict): val = {(self._keys[0], val)}
+        if not isinstance(val, dict):
+            val = {(self._keys[0], val)}
         d = self._data
         for k in self._keys[0:-1]:
             v = val[k]
@@ -593,7 +657,8 @@ class Index(object):
     def __sub__(self, other):
         output = Index(self._keys)
         for v in self:
-            if v not in other: output.add(v)
+            if v not in other:
+                output.add(v)
         return output
 
     def __and__(self, other):
@@ -626,6 +691,7 @@ def range(_min, _max=None, size=1):
     if _max == None:
         _max = _min
         _min = 0
+    _max = int(Math.ceiling(_max))
 
     output = ((x, min(x + size, _max)) for x in __builtin__.range(_min, _max, size))
     return output

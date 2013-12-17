@@ -24,11 +24,11 @@ from .strings import outdent
 from .files import File
 
 
-
 DEBUG = False
-MAX_BATCH_SIZE=100
+MAX_BATCH_SIZE = 100
 
-all_db=[]
+all_db = []
+
 
 class DB(object):
     """
@@ -47,24 +47,24 @@ class DB(object):
         all_db.append(self)
 
         if isinstance(settings, DB):
-            settings=settings.settings
+            settings = settings.settings
 
         self.settings=settings.copy()
-        self.settings.schema=nvl(schema, self.settings.schema)
+        self.settings.schema=nvl(schema, self.settings.schema, self.settings.database)
 
-        preamble=nvl(preamble, self.settings.preamble)
+        preamble = nvl(preamble, self.settings.preamble)
         if preamble == None:
-            self.preamble=""
+            self.preamble = ""
         else:
-            self.preamble=indent(preamble, "# ").strip()+"\n"
+            self.preamble = indent(preamble, "# ").strip() + "\n"
 
-        self.debug=nvl(self.settings.debug, DEBUG)
+        self.debug = nvl(self.settings.debug, DEBUG)
         self._open()
 
     def _open(self):
         """ DO NOT USE THIS UNLESS YOU close() FIRST"""
         try:
-            self.db=connect(
+            self.db = connect(
                 host=self.settings.host,
                 port=self.settings.port,
                 user=nvl(self.settings.username, self.settings.user),
@@ -76,9 +76,9 @@ class DB(object):
         except Exception, e:
             Log.error(u"Failure to connect", e)
         self.cursor = None
-        self.partial_rollback=False
-        self.transaction_level=0
-        self.backlog=[]     #accumulate the write commands so they are sent at once
+        self.partial_rollback = False
+        self.transaction_level = 0
+        self.backlog = []     #accumulate the write commands so they are sent at once
 
 
     def __enter__(self):
@@ -112,19 +112,19 @@ class DB(object):
         return Transaction(self)
 
     def begin(self):
-        if self.transaction_level==0: self.cursor=self.db.cursor()
-        self.transaction_level+=1
+        if self.transaction_level == 0: self.cursor = self.db.cursor()
+        self.transaction_level += 1
         self.execute("SET TIME_ZONE='+00:00'")
 
 
     def close(self):
-        if self.transaction_level>0:
+        if self.transaction_level > 0:
             Log.error(u"expecting commit() or rollback() before close")
         self.cursor = None  #NOT NEEDED
         try:
             self.db.close()
         except Exception, e:
-            if e.message.find("Already closed")>=0:
+            if e.message.find("Already closed") >= 0:
                 return
 
             Log.warning(u"can not close()", e)
@@ -141,9 +141,9 @@ class DB(object):
                 pass
             Log.error(u"Error while processing backlog", e)
 
-        if self.transaction_level==0:
+        if self.transaction_level == 0:
             Log.error(u"No transaction has begun")
-        elif self.transaction_level==1:
+        elif self.transaction_level == 1:
             if self.partial_rollback:
                 try:
                     self.rollback()
@@ -155,7 +155,7 @@ class DB(object):
                 self.cursor = None
                 self.db.commit()
 
-        self.transaction_level-=1
+        self.transaction_level -= 1
 
     def flush(self):
         try:
@@ -170,41 +170,40 @@ class DB(object):
 
 
     def rollback(self):
-        self.backlog=[]     #YAY! FREE!
-        if self.transaction_level==0:
+        self.backlog = []     #YAY! FREE!
+        if self.transaction_level == 0:
             Log.error(u"No transaction has begun")
-        elif self.transaction_level==1:
-            self.transaction_level-=1
-            if self.cursor!=None:
+        elif self.transaction_level == 1:
+            self.transaction_level -= 1
+            if self.cursor != None:
                 self.cursor.close()
             self.cursor = None
             self.db.rollback()
         else:
-            self.transaction_level-=1
-            self.partial_rollback=True
+            self.transaction_level -= 1
+            self.partial_rollback = True
             Log.warning(u"Can not perform partial rollback!")
-
 
 
     def call(self, proc_name, params):
         self._execute_backlog()
+        params = [struct.unwrap(v) for v in params]
         try:
             self.cursor.callproc(proc_name, params)
             self.cursor.close()
-            self.cursor=self.db.cursor()
+            self.cursor = self.db.cursor()
         except Exception, e:
-            Log.error(u"Problem calling procedure "+proc_name, e)
-
+            Log.error(u"Problem calling procedure " + proc_name, e)
 
 
     def query(self, sql, param=None):
         self._execute_backlog()
         try:
-            old_cursor=self.cursor
+            old_cursor = self.cursor
             if not old_cursor: #ALLOW NON-TRANSACTIONAL READS
-                self.cursor=self.db.cursor()
+                self.cursor = self.db.cursor()
 
-            if param: sql=expand_template(sql, self.quote_param(param))
+            if param: sql = expand_template(sql, self.quote_param(param))
             sql = self.preamble + outdent(sql)
             if self.debug:
                 Log.note(u"Execute SQL:\n{{sql}}", {u"sql": indent(sql)})
@@ -212,8 +211,8 @@ class DB(object):
             self.cursor.execute(sql)
 
             columns = [utf8_to_unicode(d[0]) for d in nvl(self.cursor.description, [])]
-            fixed=[[utf8_to_unicode(c) for c in row] for row in self.cursor]
-            result=CNV.table2list(columns, fixed)
+            fixed = [[utf8_to_unicode(c) for c in row] for row in self.cursor]
+            result = CNV.table2list(columns, fixed)
 
             if not old_cursor:   #CLEANUP AFTER NON-TRANSACTIONAL READS
                 self.cursor.close()
@@ -223,29 +222,29 @@ class DB(object):
         except Exception, e:
             if e.message.find("InterfaceError") >= 0:
                 Log.error(u"Did you close the db connection?", e)
-            Log.error(u"Problem executing SQL:\n"+indent(sql.strip()), e, offset=1)
+            Log.error(u"Problem executing SQL:\n" + indent(sql.strip()), e, offset=1)
 
 
     # EXECUTE GIVEN METHOD FOR ALL ROWS RETURNED
     def forall(self, sql, param=None, _execute=None):
         assert _execute
-        num=0
+        num = 0
 
         self._execute_backlog()
         try:
-            old_cursor=self.cursor
+            old_cursor = self.cursor
             if not old_cursor: #ALLOW NON-TRANSACTIONAL READS
-                self.cursor=self.db.cursor()
+                self.cursor = self.db.cursor()
 
-            if param: sql=expand_template(sql,self.quote_param(param))
+            if param: sql = expand_template(sql, self.quote_param(param))
             sql = self.preamble + outdent(sql)
             if self.debug:
-                Log.note(u"Execute SQL:\n{{sql}}", {u"sql":indent(sql)})
+                Log.note(u"Execute SQL:\n{{sql}}", {u"sql": indent(sql)})
             self.cursor.execute(sql)
 
-            columns = tuple( [utf8_to_unicode(d[0]) for d in self.cursor.description] )
+            columns = tuple([utf8_to_unicode(d[0]) for d in self.cursor.description])
             for r in self.cursor:
-                num+=1
+                num += 1
                 _execute(struct.wrap(dict(zip(columns, [utf8_to_unicode(c) for c in r]))))
 
             if not old_cursor:   #CLEANUP AFTER NON-TRANSACTIONAL READS
@@ -253,7 +252,7 @@ class DB(object):
                 self.cursor = None
 
         except Exception, e:
-            Log.error(u"Problem executing SQL:\n"+indent(sql.strip()), e, offset=1)
+            Log.error(u"Problem executing SQL:\n" + indent(sql.strip()), e, offset=1)
 
         return num
 
@@ -266,12 +265,12 @@ class DB(object):
             sql = expand_template(sql, self.quote_param(param))
         sql = outdent(sql)
         self.backlog.append(sql)
-        if len(self.backlog) >= MAX_BATCH_SIZE:
+        if self.debug or len(self.backlog) >= MAX_BATCH_SIZE:
             self._execute_backlog()
 
 
     def execute_file(self, filename, param=None):
-        content=File(filename).read()
+        content = File(filename).read()
         self.execute(content, param)
 
     @staticmethod
@@ -280,7 +279,7 @@ class DB(object):
 
         if param:
             with DB(settings) as temp:
-                sql=expand_template(sql, temp.quote_param(param))
+                sql = expand_template(sql, temp.quote_param(param))
 
         # MWe have no way to execute an entire SQL file in bulk, so we
         # have to shell out to the commandline client.
@@ -302,53 +301,51 @@ class DB(object):
         (output, _) = proc.communicate(sql)
 
         if proc.returncode:
-            if len(sql)>10000:
-                sql=u"<"+unicode(len(sql))+u" bytes of sql>"
+            if len(sql) > 10000:
+                sql = u"<" + unicode(len(sql)) + u" bytes of sql>"
             Log.error(u"Unable to execute sql: return code {{return_code}}, {{output}}:\n {{sql}}\n", {
-                u"sql":indent(sql),
-                u"return_code":proc.returncode,
-                u"output":output
+                u"sql": indent(sql),
+                u"return_code": proc.returncode,
+                u"output": output
             })
 
     @staticmethod
     def execute_file(settings, filename, param=None):
         # MySQLdb provides no way to execute an entire SQL file in bulk, so we
         # have to shell out to the commandline client.
-        sql=File(filename).read()
+        sql = File(filename).read()
         DB.execute_sql(settings, sql, param)
 
 
     def _execute_backlog(self):
         if not self.backlog: return
 
-        (backlog, self.backlog)=(self.backlog, [])
+        (backlog, self.backlog) = (self.backlog, [])
         if self.db.__module__.startswith(u"pymysql"):
             # BUG IN PYMYSQL: CAN NOT HANDLE MULTIPLE STATEMENTS
             # https://github.com/PyMySQL/PyMySQL/issues/157
             for b in backlog:
-                sql = self.preamble+b
+                sql = self.preamble + b
                 try:
                     if self.debug:
-                        Log.note(u"Execute SQL:\n{{sql|indent}}", {u"sql":sql})
+                        Log.note(u"Execute SQL:\n{{sql|indent}}", {u"sql": sql})
                     self.cursor.execute(b)
                 except Exception, e:
-                    Log.error(u"Can not execute sql:\n{{sql}}", {u"sql":sql}, e)
+                    Log.error(u"Can not execute sql:\n{{sql}}", {u"sql": sql}, e)
 
             self.cursor.close()
             self.cursor = self.db.cursor()
         else:
             for i, g in Q.groupby(backlog, size=MAX_BATCH_SIZE):
-                sql=self.preamble+u";\n".join(g)
+                sql = self.preamble + u";\n".join(g)
                 try:
                     if self.debug:
-                        Log.note(u"Execute block of SQL:\n{{sql|indent}}", {u"sql":sql})
+                        Log.note(u"Execute block of SQL:\n{{sql|indent}}", {u"sql": sql})
                     self.cursor.execute(sql)
                     self.cursor.close()
                     self.cursor = self.db.cursor()
                 except Exception, e:
-                    Log.error(u"Problem executing SQL:\n{{sql}}", {u"sql":indent(sql.strip())}, e, offset=1)
-
-
+                    Log.error(u"Problem executing SQL:\n{{sql}}", {u"sql": indent(sql.strip())}, e, offset=1)
 
 
     ## Insert dictionary of values into table
@@ -369,15 +366,15 @@ class DB(object):
     # candidate_key IS LIST OF COLUMNS THAT CAN BE USED AS UID (USUALLY PRIMARY KEY)
     # ONLY INSERT IF THE candidate_key DOES NOT EXIST YET
     def insert_new(self, table_name, candidate_key, new_record):
-        candidate_key=struct.listwrap(candidate_key)
+        candidate_key = struct.listwrap(candidate_key)
 
-        condition=u" AND\n".join([self.quote_column(k)+u"="+self.quote_value(new_record[k]) if new_record[k] != None else self.quote_column(k)+u" IS Null"  for k in candidate_key])
-        command=u"INSERT INTO "+self.quote_column(table_name)+u" ("+\
-                u",".join([self.quote_column(k) for k in new_record.keys()])+\
-                u")\n"+\
-                u"SELECT a.* FROM (SELECT "+u",".join([self.quote_value(v)+u" "+self.quote_column(k) for k,v in new_record.items()])+u" FROM DUAL) a\n"+\
-                u"LEFT JOIN "+\
-                u"(SELECT 'dummy' exist FROM "+self.quote_column(table_name)+u" WHERE "+condition+u" LIMIT 1) b ON 1=1 WHERE exist IS Null"
+        condition = u" AND\n".join([self.quote_column(k) + u"=" + self.quote_value(new_record[k]) if new_record[k] != None else self.quote_column(k) + u" IS Null" for k in candidate_key])
+        command = u"INSERT INTO " + self.quote_column(table_name) + u" (" + \
+                  u",".join([self.quote_column(k) for k in new_record.keys()]) + \
+                  u")\n" + \
+                  u"SELECT a.* FROM (SELECT " + u",".join([self.quote_value(v) + u" " + self.quote_column(k) for k, v in new_record.items()]) + u" FROM DUAL) a\n" + \
+                  u"LEFT JOIN " + \
+                  u"(SELECT 'dummy' exist FROM " + self.quote_column(table_name) + u" WHERE " + condition + u" LIMIT 1) b ON 1=1 WHERE exist IS Null"
         self.execute(command, {})
 
 
@@ -409,7 +406,6 @@ class DB(object):
             Log.error(u"problem with record: {{record}}", {u"record": records}, e)
 
 
-
     def update(self, table_name, where_slice, new_values):
         """
         where_slice IS A Struct WHICH WILL BE USED TO MATCH ALL IN table
@@ -421,16 +417,16 @@ class DB(object):
             for k, v in where_slice.items()]
         )
 
-        command=u"UPDATE "+self.quote_column(table_name)+u"\n"+\
-                u"SET "+\
-                u",\n".join([self.quote_column(k)+u"="+v for k,v in new_values.items()])+u"\n"+\
-                u"WHERE "+\
-                where_clause
+        command = u"UPDATE " + self.quote_column(table_name) + u"\n" + \
+                  u"SET " + \
+                  u",\n".join([self.quote_column(k) + u"=" + v for k, v in new_values.items()]) + u"\n" + \
+                  u"WHERE " + \
+                  where_clause
         self.execute(command, {})
 
 
     def quote_param(self, param):
-        return {k:self.quote_value(v) for k, v in param.items()}
+        return {k: self.quote_value(v) for k, v in param.items()}
 
     def quote_value(self, value):
         """
@@ -449,7 +445,7 @@ class DB(object):
             elif isinstance(value, basestring):
                 return self.db.literal(value)
             elif isinstance(value, datetime):
-                return u"str_to_date('"+value.strftime(u"%Y%m%d%H%M%S")+u"', '%Y%m%d%H%i%s')"
+                return u"str_to_date('" + value.strftime(u"%Y%m%d%H%M%S") + u"', '%Y%m%d%H%i%s')"
             elif hasattr(value, '__iter__'):
                 return self.db.literal(CNV.object2JSON(value))
             elif isinstance(value, dict):
@@ -505,35 +501,49 @@ class DB(object):
 
     def isolate(self, separator, list):
         if len(list) > 1:
-            return u"(\n" + indent((" "+separator+"\n").join(list)) + u"\n)"
+            return u"(\n" + indent((" " + separator + "\n").join(list)) + u"\n)"
         else:
             return list[0]
 
     def _filter2where(self, esfilter):
-        esfilter=struct.wrap(esfilter)
+        esfilter = struct.wrap(esfilter)
 
         if esfilter[u"and"]:
             return self.isolate("AND", [self._filter2where(a) for a in esfilter[u"and"]])
         elif esfilter[u"or"]:
             return self.isolate("OR", [self._filter2where(a) for a in esfilter[u"or"]])
         elif esfilter[u"not"]:
-            return u"NOT ("+self._filter2where(esfilter[u"not"])+u")"
+            return u"NOT (" + self._filter2where(esfilter[u"not"]) + u")"
         elif esfilter.term:
-            return self.isolate("AND", [self.quote_column(col)+u"="+self.quote_value(val) for col, val in esfilter.term.items()])
+            return self.isolate("AND", [self.quote_column(col) + u"=" + self.quote_value(val) for col, val in esfilter.term.items()])
         elif esfilter.terms:
             for col, v in esfilter.terms.items():
                 try:
-                    int_list=CNV.value2intlist(v)
-                    filter = int_list_packer(col, int_list)
-                    return self._filter2where(filter)
+                    int_list = CNV.value2intlist(v)
+                    has_null = False
+                    for vv in v:
+                        if vv == None:
+                            has_null = True
+                            break
+                    if int_list:
+                        filter = int_list_packer(col, int_list)
+                        if has_null:
+                            return self._filter2where({"or": [{"missing": col}, filter]})
+                        else:
+                            return self._filter2where(filter)
+                    else:
+                        if has_null:
+                            return self._filter2where({"missing": col})
+                        else:
+                            return "false"
                 except Exception, e:
                     if not hasattr(e, "contains") or not e.contains("no packing possible"):
-                        Log.warning("WARNING: Not an int-list: {{list}}", {"list":v}, e)
-                return self.quote_column(col)+u" in ("+", ".join([self.quote_value(val) for val in v])+")"
+                        Log.warning("Not an int-list: {{list}}", {"list": v}, e)
+                return self.quote_column(col) + u" in (" + ", ".join([self.quote_value(val) for val in v]) + ")"
         elif esfilter.script:
-            return u"("+esfilter.script+u")"
+            return u"(" + esfilter.script + u")"
         elif esfilter.range:
-            name2sign={
+            name2sign = {
                 u"gt": u">",
                 u"gte": u">=",
                 u"lte": u"<=",
@@ -541,11 +551,11 @@ class DB(object):
             }
 
             def single(col, r):
-                min=nvl(r["gte"], r[">="])
-                max=nvl(r["lte"], r["<="])
+                min = nvl(r["gte"], r[">="])
+                max = nvl(r["lte"], r["<="])
                 if min and max:
                     #SPECIAL CASE (BETWEEN)
-                    return self.quote_column(col)+u" BETWEEN "+self.quote_value(min)+u" AND "+self.quote_value(max)
+                    return self.quote_column(col) + u" BETWEEN " + self.quote_value(min) + u" AND " + self.quote_value(max)
                 else:
                     return " AND ".join(
                         self.quote_column(col) + name2sign[sign] + self.quote_value(value)
@@ -554,13 +564,18 @@ class DB(object):
 
             output = self.isolate("AND", [single(col, ranges) for col, ranges in esfilter.range.items()])
             return output
+        elif esfilter.missing:
+            if isinstance(esfilter.missing, basestring):
+                return u"(" + self.quote_column(esfilter.missing) + u" IS Null)"
+            else:
+                return u"(" + self.quote_column(esfilter.missing.field) + u" IS Null)"
         elif esfilter.exists:
             if isinstance(esfilter.exists, basestring):
-                return u"("+self.quote_column(esfilter.exists)+u" IS NOT Null)"
+                return u"(" + self.quote_column(esfilter.exists) + u" IS NOT Null)"
             else:
-                return u"("+self.quote_column(esfilter.exists.field)+u" IS NOT Null)"
+                return u"(" + self.quote_column(esfilter.exists.field) + u" IS NOT Null)"
         else:
-            Log.error(u"Can not convert esfilter to SQL: {{esfilter}}", {u"esfilter":esfilter})
+            Log.error(u"Can not convert esfilter to SQL: {{esfilter}}", {u"esfilter": esfilter})
 
 
 def utf8_to_unicode(v):
@@ -575,12 +590,10 @@ def utf8_to_unicode(v):
 
 #ACTUAL SQL, DO NOT QUOTE THIS STRING
 class SQL(unicode):
-
-
     def __init__(self, template='', param=None):
         unicode.__init__(self)
-        self.template=template
-        self.param=param
+        self.template = template
+        self.param = param
 
     def __str__(self):
         Log.error(u"do not do this")
@@ -665,7 +678,6 @@ def int_list_packer(term, values):
             return r
     else:
         raise Except("no packing possible")
-
 
 
 class Transaction(object):

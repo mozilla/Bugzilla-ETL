@@ -355,6 +355,30 @@ class StructList(list):
     def pop(self):
         return self.list.pop()
 
+    def __add__(self, value):
+        output = list(self.list)
+        output.extend(value)
+        return StructList(vals=output)
+
+    def __or__(self, value):
+        output = list(self.list)
+        output.append(value)
+        return StructList(vals=output)
+
+    def right(self, num=None):
+        if num == None:
+            return StructList(vals=[self.list[-1]])
+        if num == 0:
+            return StructList()
+        return StructList(vals=self.list[-num])
+
+
+    def last(self):
+        """
+        RETURN LAST ELEMENT IN StructList
+        """
+        return self.list[-1]
+
 
 def wrap(v):
     if v is None:

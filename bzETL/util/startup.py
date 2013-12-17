@@ -37,8 +37,8 @@ def _argparse(defs):
         name = args.name
         args.name = None
         parser.add_argument(*listwrap(name).list, **args.dict)
-    namespace=parser.parse_args()
-    output={k: getattr(namespace, k) for k in vars(namespace)}
+    namespace = parser.parse_args()
+    output = {k: getattr(namespace, k) for k in vars(namespace)}
     return struct.wrap(output)
 
 
@@ -56,7 +56,7 @@ def read_settings(filename=None, defs=None):
             settings.args = _argparse(defs)
         return settings
     else:
-        defs=listwrap(defs)
+        defs = listwrap(defs)
         defs.append({
             "name": ["--settings", "--settings-file", "--settings_file"],
             "help": "path to JSON file with settings",

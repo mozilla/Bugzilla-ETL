@@ -153,6 +153,10 @@ def setup_es(settings, db, es, es_comments):
         last_run_time = 0
         if not es:
             schema = File(settings.es.schema_file).read()
+            #TODO: ADD SWITCH TO ENABLE SINGLE SHARD MODE
+            # schema.index.number_of_shards=1
+            # schema.index.number_of_replicas=0
+
             if transform_bugzilla.USE_ATTACHMENTS_DOT:
                 schema = schema.replace("attachments_", "attachments.")
 

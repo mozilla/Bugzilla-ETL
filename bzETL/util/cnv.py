@@ -17,10 +17,8 @@ from .multiset import Multiset
 from .jsons import json_decoder, json_encoder
 from .logs import Log
 import struct
-from .strings import expand_template
+from .strings import expand_template, indent
 from .struct import StructList, Null
-
-
 
 
 class CNV:
@@ -33,23 +31,24 @@ class CNV:
         try:
             return json_encoder.encode(obj, pretty=pretty)
         except Exception, e:
-            Log.error("Can not encode into JSON: {{value}}", {"value":repr(obj)}, e)
+            Log.error("Can not encode into JSON: {{value}}", {"value": repr(obj)}, e)
 
     @staticmethod
     def JSON2object(json_string, params=None, flexible=False):
         try:
             #REMOVE """COMMENTS""", #COMMENTS, //COMMENTS, AND \n \r
-            if flexible: json_string=re.sub(r"\"\"\".*?\"\"\"|\s+//.*\n|#.*?\n|\n|\r", r" ", json_string)  #DERIVED FROM https://github.com/jeads/datasource/blob/master/datasource/bases/BaseHub.py#L58
+            if flexible: json_string = re.sub(r"\"\"\".*?\"\"\"|\s+//.*\n|#.*?\n|\n|\r", r" ",
+                                              json_string)  #DERIVED FROM https://github.com/jeads/datasource/blob/master/datasource/bases/BaseHub.py#L58
 
             if params:
-                params=dict([(k,CNV.value2quote(v)) for k,v in params.items()])
-                json_string=expand_template(json_string, params)
+                params = dict([(k, CNV.value2quote(v)) for k, v in params.items()])
+                json_string = expand_template(json_string, params)
 
-            obj=json_decoder.decode(json_string)
+            obj = json_decoder.decode(json_string)
             if isinstance(obj, list): return StructList(obj)
             return struct.wrap(obj)
         except Exception, e:
-            Log.error("Can not decode JSON:\n\t"+json_string, e)
+            Log.error("Can not decode JSON:\n\t" + json_string, e)
 
 
     @staticmethod
@@ -58,7 +57,7 @@ class CNV:
         try:
             return datetime.datetime.strptime(value, format)
         except Exception, e:
-            Log.error("Can not format {{value}} with {{format}}", {"value":value, "format":format}, e)
+            Log.error("Can not format {{value}} with {{format}}", {"value": value, "format": format}, e)
 
 
     @staticmethod
@@ -66,8 +65,7 @@ class CNV:
         try:
             return value.strftime(format)
         except Exception, e:
-            Log.error("Can not format {{value}} with {{format}}", {"value":value, "format":format}, e)
-
+            Log.error("Can not format {{value}} with {{format}}", {"value": value, "format": format}, e)
 
 
     @staticmethod
@@ -81,7 +79,7 @@ class CNV:
     def datetime2milli(d):
         try:
             epoch = datetime.datetime(1970, 1, 1)
-            diff = d-epoch
+            diff = d - epoch
             return (diff.days * 86400000) + \
                    (diff.seconds * 1000) + \
                    (diff.microseconds / 1000)  # 86400000=24*3600*1000
@@ -94,8 +92,7 @@ class CNV:
 
     @staticmethod
     def milli2datetime(u):
-        return datetime.datetime.utcfromtimestamp(u/1000)
-
+        return datetime.datetime.utcfromtimestamp(u / 1000)
 
 
     @staticmethod
@@ -119,8 +116,8 @@ class CNV:
 
     @staticmethod
     def table2list(
-        column_names, #tuple of columns names
-        rows          #list of tuples
+            column_names, #tuple of columns names
+            rows          #list of tuples
     ):
         return StructList([dict(zip(column_names, r)) for r in rows])
 
@@ -144,7 +141,7 @@ class CNV:
     @staticmethod
     def string2quote(value):
         # return repr(value)
-        return "\""+value.replace("\\", "\\\\").replace("\"", "\\\"")+"\""
+        return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 
     #RETURN PYTHON CODE FOR THE SAME
     @staticmethod
@@ -176,16 +173,16 @@ class CNV:
 
     @staticmethod
     def int2hex(value, size):
-        return (("0"*size)+hex(value)[2:])[-size:]
+        return (("0" * size) + hex(value)[2:])[-size:]
 
     @staticmethod
     def value2intlist(value):
         if value == None:
             return None
         elif hasattr(value, '__iter__'):
-            output=[int(d) for d in value if d!=""]
+            output = [int(d) for d in value if d != "" and d != None]
             return output
-        elif value.strip()=="":
+        elif value.strip() == "":
             return None
         else:
             return [int(value)]
@@ -202,20 +199,99 @@ class CNV:
     @staticmethod
     def value2number(v):
         try:
-            if isinstance(v, float) and round(v,0)!=v:
+            if isinstance(v, float) and round(v, 0) != v:
                 return v
-            #IF LOOKS LIKE AN INT, RETURN AN INT
+                #IF LOOKS LIKE AN INT, RETURN AN INT
             return int(v)
         except Exception:
             try:
                 return float(v)
             except Exception, e:
-                Log.error("Not a number ({{value}})", {"value":v}, e)
+                Log.error("Not a number ({{value}})", {"value": v}, e)
 
     @staticmethod
     def utf82unicode(value):
         return unicode(value.decode('utf8'))
 
     @staticmethod
+    def unicode2utf8(value):
+        return value.encode('utf8')
+
+    @staticmethod
     def latin12unicode(value):
         return unicode(value.decode('iso-8859-1'))
+
+    @staticmethod
+    def esfilter2where(esfilter):
+        """
+        WILL ADD row, rownum, AND rows AS CONTEXT VARIABLES FOR {"script":} IF NEEDED
+        """
+        output = None
+        condition = CNV._esfilter2where(esfilter)
+        exec \
+            "def result(row, rownum, rows):\n" + \
+            "    if " + condition + ":\n" + \
+            "        return True\n" + \
+            "    return False" + \
+            "output = result"
+        return output
+
+    @staticmethod
+    def _esfilter2where(esfilter):
+        def isolate(separator, list):
+            if len(list) > 1:
+                return u"(\n" + indent((" " + separator + " \\\n").join(list)) + u"\n)"
+            else:
+                return list[0]
+
+        esfilter = struct.wrap(esfilter)
+
+        if esfilter[u"and"]:
+            return isolate(u"and", [CNV._esfilter2where(a) for a in esfilter[u"and"]])
+        elif esfilter[u"or"]:
+            return isolate(u"or", [CNV._esfilter2where(a) for a in esfilter[u"or"]])
+        elif esfilter[u"not"]:
+            return u"not (" + CNV._esfilter2where(esfilter[u"not"]) + u")"
+        elif esfilter.term:
+            return isolate(u"and", [u"row." + col + u" == " + CNV.value2quote(val) for col, val in esfilter.term.items()])
+        elif esfilter.terms:
+            def single(col, vals):
+                has_null = False
+                for val in vals:
+                    if val == None:
+                        has_null = True
+                        break
+
+                if has_null:
+                    return u"(row." + col + u" == None or row." + col + u" in " + CNV.value2quote(v for v in vals if v != None)
+                else:
+                    return u"row." + col + u" in " + CNV.value2quote(vals)
+
+            return isolate(u"and", [single(col, vals) for col, vals in esfilter.terms])
+        elif esfilter.script:
+            return u"(" + esfilter.script + u")"
+        elif esfilter.range:
+            name2sign = {
+                u"gt": u">",
+                u"gte": u">=",
+                u"lte": u"<=",
+                u"lt": u"<"
+            }
+
+            def single(col, ranges):
+                return u" and ".join(u"row." + col + name2sign[sign] + CNV.value2quote(value) for sign, value in ranges.items())
+
+            output = isolate(u"and", [single(col, ranges) for col, ranges in esfilter.range.items()])
+            return output
+        elif esfilter.missing:
+            if isinstance(esfilter.missing, basestring):
+                return esfilter.missing + u" == None"
+            else:
+                return esfilter.missing.field + u" == None"
+        elif esfilter.exists:
+            if isinstance(esfilter.exists, basestring):
+                return esfilter.exists + u" != None"
+            else:
+                return esfilter.exists.field + u" != None"
+        else:
+            Log.error(u"Can not convert esfilter to SQL: {{esfilter}}", {u"esfilter": esfilter})

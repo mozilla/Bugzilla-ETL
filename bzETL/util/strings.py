@@ -11,19 +11,19 @@
 import re
 from .jsons import json_encoder
 import struct
-
 from .struct import Struct
 
-import sys
-reload(sys)
-sys.setdefaultencoding("utf-8")
 
-
+def newline(value):
+    """
+    ADD NEWLINE, IF SOMETHING
+    """
+    return "\n"+value.lstrip("\n")
 
 def indent(value, prefix=u"\t", indent=None):
     if indent != None:
         prefix=prefix*indent
-        
+
     try:
         content=value.rstrip()
         suffix=value[len(content):]
