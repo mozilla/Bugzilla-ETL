@@ -10,10 +10,9 @@
 
 from datetime import datetime
 import unittest
-import pytest
-import sys
-from bzETL import bz_etl, extract_bugzilla
 
+import sys
+from bzETL import extract_bugzilla, bz_etl
 from bzETL.bz_etl import etl
 from bzETL.extract_bugzilla import get_current_time
 from bzETL.util.cnv import CNV
@@ -75,6 +74,9 @@ class TestETL(unittest.TestCase):
 
             #CLOSE THE CACHED DB CONNECTIONS
             bz_etl.close_db_connections()
+
+        if all_db:
+            Log.error("not all db connections are closed")
 
 
     def random_sample_of_bugs(self):
@@ -458,3 +460,17 @@ def compare_both(candidate, reference, settings, some_bugs):
 
 
 
+if __name__=="__main__":
+    tester=TestETL()
+    tester.setUp()
+
+    tester.test_specific_bugs()
+    tester.test_private_etl()
+    tester.test_public_etl()
+    tester.test_private_attachments_do_not_show()
+    tester.test_private_bugs_do_not_show()
+    tester.test_private_comments_do_not_show()
+    tester.test_recent_private_stuff_does_not_show()
+    tester.test_changes_to_private_bugs_still_have_bug_group()
+
+    tester.tearDown()
