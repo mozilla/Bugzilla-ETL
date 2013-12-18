@@ -18,13 +18,13 @@ import re
 
 try:
     # StringBuilder IS ABOUT 2x FASTER THAN list()
-    from __pypy__.builders import StringBuilder
+    from __pypy__.builders import UnicodeBuilder
 
     use_pypy = True
 except Exception, e:
     use_pypy = False
 
-    class StringBuilder(list):
+    class UnicodeBuilder(list):
         def __init__(self, length=None):
             list.__init__(self)
 
@@ -33,7 +33,7 @@ except Exception, e:
 
 use_pypy = True
 
-append = StringBuilder.append
+append = UnicodeBuilder.append
 
 
 class PyPyJSONEncoder(object):
@@ -48,7 +48,7 @@ class PyPyJSONEncoder(object):
         if pretty:
             return unicode(json.dumps(json_scrub(value), indent=4, sort_keys=True, separators=(',', ': ')))
 
-        _buffer = StringBuilder(1024)
+        _buffer = UnicodeBuilder(1024)
         _value2json(value, _buffer)
         output = _buffer.build()
         return output
@@ -92,16 +92,20 @@ def _value2json(value, _buffer):
         _dict2json(value, _buffer)
     elif type is str:
         append(_buffer, u"\"")
-        append(_buffer, ESCAPE.sub(replace, value.decode("utf-8")))  # ASSUME ALREADY utf-8 ENCODED
+        v = value.decode("utf-8")
+        v = ESCAPE.sub(replace, v)
+        append(_buffer, v)  # ASSUME ALREADY utf-8 ENCODED
         append(_buffer, u"\"")
     elif type is unicode:
         try:
             append(_buffer, u"\"")
-            append(_buffer, ESCAPE.sub(replace, value))
+            v = ESCAPE.sub(replace, value)
+            append(_buffer, v)
             append(_buffer, u"\"")
         except Exception, e:
             from util.logs import Log
-            Log.error(value)
+
+            Log.error(value, e)
     elif type in (int, long, Decimal):
         append(_buffer, unicode(value))
     elif type is float:
@@ -142,7 +146,7 @@ def _dict2json(value, _buffer):
     append(_buffer, u"}")
 
 
-ESCAPE = re.compile(r'[\x00-\x1f\\"\b\f\n\r\t]')
+ESCAPE = re.compile(ur'[\x00-\x1f\\"\b\f\n\r\t]')
 ESCAPE_DCT = {
     u"\\": u"\\\\",
     u"\"": u"\\\"",
@@ -153,14 +157,11 @@ ESCAPE_DCT = {
     u"\t": u"\\t",
 }
 for i in range(0x20):
-    ESCAPE_DCT.setdefault(chr(i), '\\u{0:04x}'.format(i))
+    ESCAPE_DCT.setdefault(chr(i), u'\\u{0:04x}'.format(i))
 
 
 def replace(match):
     return ESCAPE_DCT[match.group(0)]
-
-
-
 
 
 #REMOVE VALUES THAT CAN NOT BE JSON-IZED

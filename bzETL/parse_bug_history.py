@@ -508,9 +508,10 @@ class BugHistoryParser():
                             })
 
                 else:
-                    Log.note("Merging a change with the same timestamp = {{bug_state._id}}: {{bug_state}}",{
-                        "bug_state":currVersion
-                    })
+                    if DEBUG_STATUS:
+                        Log.note("Merging a change with the same timestamp = {{bug_state._id}}: {{bug_state}}",{
+                            "bug_state":currVersion
+                        })
             finally:
                 if self.currBugState.blocked == None:
                     Log.note("expecting a created_ts")
@@ -597,10 +598,11 @@ class BugHistoryParser():
             chosen_one = candidates[0]
             if len(candidates) > 1:
                 # Multiple matches - use the best one.
-                Log.note("Matched added flag {{flag}} to multiple removed flags {{candidates}}.  Using the best.", {
-                    "flag":added_flag,
-                    "candidates":candidates
-                })
+                if DEBUG_STATUS:
+                    Log.note("Matched added flag {{flag}} to multiple removed flags {{candidates}}.  Using the best.", {
+                        "flag":added_flag,
+                        "candidates":candidates
+                    })
                 matched_ts = [element for element in candidates if
                     added_flag.modified_ts == element.modified_ts
                 ]
@@ -626,10 +628,11 @@ class BugHistoryParser():
                         chosen_one = Null
             else:
                 # Obvious case - matched exactly one.
-                Log.note("Matched added flag {{added}} to removed flag {{removed}}", {
-                    "added": added_flag,
-                    "removed": chosen_one
-                })
+                if DEBUG_STATUS:
+                    Log.note("Matched added flag {{added}} to removed flag {{removed}}", {
+                        "added": added_flag,
+                        "removed": chosen_one
+                    })
 
             if chosen_one != None:
                 for f in ["value", "request_status", "requestee"]:
