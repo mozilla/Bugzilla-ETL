@@ -214,7 +214,7 @@ def get_bugs(db, param):
         bugs = db.query("""
             SELECT
                 bug_id,
-                UNIX_TIMESTAMP(CONVERT_TZ(b.creation_ts, 'US/Pacific','UTC'))*1000 AS modified_ts,
+                CAST({{end_time}} AS signed) AS modified_ts,
                 lower(pr.login_name) AS modified_by,
                 UNIX_TIMESTAMP(CONVERT_TZ(b.creation_ts, 'US/Pacific','UTC'))*1000 AS created_ts,
                 lower(pr.login_name) AS created_by,
@@ -403,13 +403,10 @@ def get_tracking_flags(db, param):
     return db.query("""
         SELECT
             bug_id,
-            NULL AS modified_ts,
-            NULL AS modified_by,
+            CAST({{end_time}} AS signed) AS modified_ts,
             lower(f.name) AS field_name,
             lower(t.value) AS new_value,
-            NULL AS old_value,
-            NULL AS attach_id,
-            2 AS _merge_order
+            1 AS _merge_order
         FROM
             tracking_flags_bugs t
         JOIN

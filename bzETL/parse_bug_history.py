@@ -90,20 +90,7 @@ class BugHistoryParser():
         if len(row_in.items())==0: return
         try:
             self.currBugID = row_in.bug_id
-            # if not self.currBugState.created_ts:
-            #     Log.note("PROBLEM expecting a created_ts (did you install the timezone database into your MySQL instance?)")
-
             if self.settings.debug: Log.note("process row: {{row}}", {"row":row_in})
-
-            # For debugging purposes:
-            # WE CAN NO LONGER DO THIS!  WE DO NOT CAPTURE TRACKING FLAGS, EXCEPT USING THE
-            # CHANGE HISTORY.
-            if self.settings.end_time > 0 and row_in.modified_ts > self.settings.end_time:
-                Log.note("Skipping change {{modified_ts|datetime}} > end_time={{end_time|datetime}}", {
-                    "end_time":self.settings.end_time,
-                    "modified_ts": row_in.modified_ts
-                })
-                return
 
             # If we have switched to a new bug
             if self.prevBugID < self.currBugID:

@@ -22,7 +22,7 @@ from bzETL.util.elasticsearch import ElasticSearch
 from bzETL.util.files import File
 from bzETL.util.queries import Q
 from bzETL.util.randoms import Random
-from bzETL.util import startup
+from bzETL.util import startup, struct
 from bzETL.util.struct import Struct, Null
 from bzETL.util.threads import ThreadedQueue
 from bzETL.util.timer import Timer
@@ -359,6 +359,42 @@ class TestETL(unittest.TestCase):
                     "bug_id": bug_id,
                     "bug_group": BUG_GROUP_FOR_TESTING
                 })
+
+    def test_incremental_etl_catches_tracking_flags(self):
+        database.make_test_instance(self.settings.bugzilla)
+
+        with DB(self.settings.bugzilla) as db:
+            es = elasticsearch.make_test_instance("candidate", self.settings.candidate)
+
+            #SETUP RUN PARAMETERS
+            param = Struct()
+            param.end_time = CNV.datetime2milli(get_current_time(db))
+            # FLAGS ADDED 18/12/2012 2:38:08 AM (PDT), SO START AT SOME LATER TIME
+            param.start_time = CNV.datetime2milli(CNV.string2datetime("02/01/2013 10:09:15", "%d/%m/%Y %H:%M:%S"))
+            param.start_time_str = extract_bugzilla.milli2string(db, param.start_time)
+
+            param.alias_file = self.settings.param.alias_file
+            param.bug_list = struct.wrap([813650])
+            param.allow_private_bugs = self.settings.param.allow_private_bugs
+
+            with ThreadedQueue(es, size=1000) as output:
+                etl(db, output, param, please_stop=None)
+
+            versions = get_all_bug_versions(es, 813650)
+
+            flags=["cf_status_firefox18", "cf_status_firefox19", "cf_status_firefox_esr17", "cf_status_b2g18"]
+            for v in versions:
+                for f in flags:
+                    if v[f]!="fixed":
+                        Log.error("813650 should have {{flag}}=='fixed'", {"flag":f})
+
+            #CLOSE THE CACHED DB CONNECTIONS
+            bz_etl.close_db_connections()
+
+        if all_db:
+            Log.error("not all db connections are closed")
+
+
 
 def verify_no_private_bugs(es, private_bugs):
     #VERIFY BUGS ARE NOT IN OUTPUT
