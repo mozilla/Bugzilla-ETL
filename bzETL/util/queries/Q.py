@@ -544,26 +544,21 @@ class Index(object):
 
     def __getitem__(self, key):
         try:
-            if not isinstance(key, dict):
-                #WE WILL BE FORGIVING IF THE KEY IS NOT IN A LIST
-                if len(self._keys) > 1:
-                    Log.error("Must be given an array of keys")
-                key = {self._keys[0]: key}
+            if isinstance(key, dict):
+                key=struct.unwrap(key)
+                key = [key.get(k, None) for k in self._keys]
+            elif not isinstance(key, list):
+                key=[key]
 
             d = self._data
-            for k in self._keys:
-                v = key[k]
+            for i, v in enumerate(key):
                 if v == None:
-                    Log.error("can not handle when {{key}} == None", {"key": k})
+                    Log.error("can not handle when {{key}} == None", {"key": self._keys[i]})
                 if v not in d:
                     return Null
                 d = d[v]
 
-            if len(key) != len(self._keys):
-                #NOT A COMPLETE INDEXING, SO RETURN THE PARTIAL INDEX
-                output = Index(self._keys[-len(key):])
-                output._data = d
-                return output
+            return d
         except Exception, e:
             Log.error("something went wrong", e)
 
