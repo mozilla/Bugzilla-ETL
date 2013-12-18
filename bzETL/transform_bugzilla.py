@@ -64,7 +64,8 @@ def normalize(bug):
 
     if bug.changes != None:
         if USE_ATTACHMENTS_DOT:
-            bug.changes=CNV.JSON2object(CNV.object2JSON(bug.changes).replace("attachments_", "attachments."))
+            json = CNV.object2JSON(bug.changes).replace("attachments_", "attachments.")
+            bug.changes=CNV.JSON2object(json)
         bug.changes = Q.sort(bug.changes, ["attach_id", "field_name"])
 
     #bug IS CONVERTED TO A 'CLEAN' COPY

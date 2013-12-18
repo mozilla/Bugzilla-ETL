@@ -440,8 +440,8 @@ def close_db_connections():
 def start():
     try:
         settings = startup.read_settings(defs=[{
-            "name": "--quick",
-            "help": "use this to process the first and last block, useful for testing the meta-etl process",
+            "name": ["--quick", "--fast"],
+            "help": "use this to process the first and last block, useful for testing the config settings before doing a full run",
             "action": "store_true",
             "dest": "quick"
         },{
