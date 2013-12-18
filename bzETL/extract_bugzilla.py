@@ -44,7 +44,7 @@ def get_current_time(db):
     """
     RETURN GMT TIME
     """
-    output = db.query("""
+    output = db.query(u"""
         SELECT
             UNIX_TIMESTAMP(now()) `value`
         """)[0].value
@@ -57,7 +57,7 @@ def milli2string(db, value):
     """
     value = max(value, 0)
 
-    output = db.query("""
+    output = db.query(u"""
         SELECT
             CAST(CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific') AS CHAR) `value`
         """, {
@@ -516,7 +516,10 @@ def get_new_activities(db, param):
     param.bug_filter=db.esfilter2sqlwhere({"terms":{"a.bug_id":param.bug_list}})
     param.mixed_case_fields=SQL(MIXED_CASE)
 
-    return db.query("""
+    if param.start_time>0:
+        Log.debug()
+
+    output = db.query("""
         SELECT
             a.bug_id,
             UNIX_TIMESTAMP(CONVERT_TZ(bug_when, 'US/Pacific','UTC'))*1000 AS modified_ts,
@@ -555,6 +558,7 @@ def get_new_activities(db, param):
             attach_id
     """, param)
 
+    return output
 
 def get_flags(db, param):
     param.bug_filter=db.esfilter2sqlwhere({"terms":{"bug_id":param.bug_list}})

@@ -78,7 +78,10 @@ def etl(db, output_queue, param, please_stop):
     # CONNECTIONS ARE EXPENSIVE, CACHE HERE
     with db_cache_lock:
         if not db_cache:
-            db_cache.extend([DB(db) for f in get_stuff_from_bugzilla])
+            for f in get_stuff_from_bugzilla:
+                db = DB(db)
+                db.begin()
+                db_cache.append(db)
 
     db_results=Queue()
     with db_cache_lock:
@@ -214,23 +217,35 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
     comment_list = set(Q.select(private_comments, "comment_id")) | {0}
     es_comments.delete_record({"terms": {"comment_id": comment_list}})
     changed_comments = get_comments_by_id(db, comment_list, param)
-    es.extend({"id": c.comment_id, "value": c} for c in changed_comments)
+    es_comments.extend({"id": c.comment_id, "value": c} for c in changed_comments)
 
     #GET LIST OF CHANGED BUGS
     with Timer("time to get bug list"):
-        bug_list = Q.select(db.query("""
-            SELECT
-                b.bug_id
-            FROM
-                bugs b
-            LEFT JOIN
-                bug_group_map m ON m.bug_id=b.bug_id
-            WHERE
-                delta_ts >= {{start_time_str}} AND
-                m.bug_id IS NULL
-        """, {
-            "start_time_str": param.start_time_str
-        }), u"bug_id")
+        if param.allow_private_bugs:
+            bug_list = Q.select(db.query("""
+                SELECT
+                    b.bug_id
+                FROM
+                    bugs b
+                WHERE
+                    delta_ts >= {{start_time_str}}
+            """, {
+                "start_time_str": param.start_time_str
+            }), u"bug_id")
+        else:
+            bug_list = Q.select(db.query("""
+                SELECT
+                    b.bug_id
+                FROM
+                    bugs b
+                LEFT JOIN
+                    bug_group_map m ON m.bug_id=b.bug_id
+                WHERE
+                    delta_ts >= {{start_time_str}} AND
+                    m.bug_id IS NULL
+            """, {
+                "start_time_str": param.start_time_str
+            }), u"bug_id")
 
     if not bug_list:
         return
@@ -279,22 +294,37 @@ def full_etl(resume_from_last_run, settings, param, db, es, es_comments, output_
             try:
                 #GET LIST OF CHANGED BUGS
                 with Timer("time to get bug list"):
-                    bug_list = Q.select(db.query("""
-                        SELECT
-                            b.bug_id
-                        FROM
-                            bugs b
-                        LEFT JOIN
-                            bug_group_map m ON m.bug_id=b.bug_id
-                        WHERE
-                            delta_ts >= {{start_time_str}} AND
-                            ({{min}} <= b.bug_id AND b.bug_id < {{max}}) AND
-                            m.bug_id IS NULL
-                    """, {
-                        "min": min,
-                        "max": max,
-                        "start_time_str": param.start_time_str
-                    }), u"bug_id")
+                    if param.allow_private_bugs:
+                        bug_list = Q.select(db.query("""
+                            SELECT
+                                b.bug_id
+                            FROM
+                                bugs b
+                            WHERE
+                                delta_ts >= {{start_time_str}} AND
+                                ({{min}} <= b.bug_id AND b.bug_id < {{max}})
+                        """, {
+                            "min": min,
+                            "max": max,
+                            "start_time_str": param.start_time_str
+                        }), u"bug_id")
+                    else:
+                        bug_list = Q.select(db.query("""
+                            SELECT
+                                b.bug_id
+                            FROM
+                                bugs b
+                            LEFT JOIN
+                                bug_group_map m ON m.bug_id=b.bug_id
+                            WHERE
+                                delta_ts >= {{start_time_str}} AND
+                                ({{min}} <= b.bug_id AND b.bug_id < {{max}}) AND
+                                m.bug_id IS NULL
+                        """, {
+                            "min": min,
+                            "max": max,
+                            "start_time_str": param.start_time_str
+                        }), u"bug_id")
 
                 if not bug_list:
                     continue
@@ -396,10 +426,12 @@ def get_max_bug_id(es):
 def close_db_connections():
     (globals()["db_cache"], temp)=([], db_cache)
     for db in temp:
+        db.commit()
         db.close()
 
     (globals()["comment_db_cache"], temp)=([], comment_db_cache)
     for db in temp:
+        db.commit()
         db.close()
 
 

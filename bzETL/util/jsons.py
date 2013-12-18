@@ -9,7 +9,7 @@
 #
 
 
-from datetime import datetime
+from datetime import datetime, date
 import time
 from decimal import Decimal
 import json
@@ -88,6 +88,8 @@ def _value2json(value, _buffer):
         append(_buffer, str(value))
     elif isinstance(value, float):
         append(_buffer, repr(value))
+    elif isinstance(value, date):
+        append(_buffer, unicode(long(time.mktime(value.timetuple())*1000)))
     elif isinstance(value, datetime):
         append(_buffer, unicode(long(time.mktime(value.timetuple())*1000)))
     elif isinstance(value, dict):
@@ -160,6 +162,8 @@ def json_scrub(value):
 def _scrub(value):
     if value == None:
         return None
+    elif isinstance(value, date):
+        return long(time.mktime(value.timetuple())*1000)
     elif isinstance(value, datetime):
         return long(time.mktime(value.timetuple())*1000)
     elif isinstance(value, dict):
