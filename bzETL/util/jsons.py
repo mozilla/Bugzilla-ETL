@@ -29,7 +29,7 @@ except Exception, e:
             list.__init__(self)
 
         def build(self):
-            return "".join(self)
+            return u"".join(self)
 
 use_pypy = True
 
@@ -78,28 +78,27 @@ else:
 
 def _value2json(value, _buffer):
     if value == None:
-        append(_buffer, "null")
+        append(_buffer, u"null")
         return
     elif value is True:
-        append(_buffer, "true")
+        append(_buffer, u"true")
         return
     elif value is False:
-        append(_buffer, "false")
+        append(_buffer, u"false")
         return
-
 
     type = value.__class__
     if type is dict:
         _dict2json(value, _buffer)
     elif type is str:
-        append(_buffer, "\"")
-        append(_buffer, ESCAPE.sub(replace, value))  # ASSUME ALREADY utf-8 ENCODED
-        append(_buffer, "\"")
+        append(_buffer, u"\"")
+        append(_buffer, ESCAPE.sub(replace, value.decode("utf-8")))  # ASSUME ALREADY utf-8 ENCODED
+        append(_buffer, u"\"")
     elif type is unicode:
         try:
-            append(_buffer, "\"")
-            append(_buffer, ESCAPE.sub(replace, value.encode("utf-8")))
-            append(_buffer, "\"")
+            append(_buffer, u"\"")
+            append(_buffer, ESCAPE.sub(replace, value))
+            append(_buffer, u"\"")
         except Exception, e:
             from util.logs import Log
             Log.error(value)
@@ -118,43 +117,40 @@ def _value2json(value, _buffer):
 
 
 def _list2json(value, _buffer):
-    append(_buffer, "[")
+    append(_buffer, u"[")
     first = True
     for v in value:
         if first:
             first = False
         else:
-            append(_buffer, ", ")
+            append(_buffer, u", ")
         _value2json(v, _buffer)
-    append(_buffer, "]")
+    append(_buffer, u"]")
 
 
 def _dict2json(value, _buffer):
-    append(_buffer, "{")
-    prefix = "\""
+    append(_buffer, u"{")
+    prefix = u"\""
     for k, v in value.iteritems():
         append(_buffer, prefix)
-        prefix = ", \""
-        if isinstance(k, unicode):
-            k = unicode(k.encode("utf-8"))
+        prefix = u", \""
+        if isinstance(k, str):
+            k = unicode(k.decode("utf-8"))
         append(_buffer, ESCAPE.sub(replace, k))
-        append(_buffer, "\": ")
+        append(_buffer, u"\": ")
         _value2json(v, _buffer)
-    append(_buffer, "}")
+    append(_buffer, u"}")
 
-
-special_find = "\\\"\t\n\r".find
-replacement = ["\\\\", "\\\"", "\\t", "\\n", "\\r"]
 
 ESCAPE = re.compile(r'[\x00-\x1f\\"\b\f\n\r\t]')
 ESCAPE_DCT = {
-    '\\': '\\\\',
-    '"': '\\"',
-    '\b': '\\b',
-    '\f': '\\f',
-    '\n': '\\n',
-    '\r': '\\r',
-    '\t': '\\t',
+    u"\\": u"\\\\",
+    u"\"": u"\\\"",
+    u"\b": u"\\b",
+    u"\f": u"\\f",
+    u"\n": u"\\n",
+    u"\r": u"\\r",
+    u"\t": u"\\t",
 }
 for i in range(0x20):
     ESCAPE_DCT.setdefault(chr(i), '\\u{0:04x}'.format(i))
@@ -181,8 +177,8 @@ def _scrub(value):
         return long(time.mktime(value.timetuple()) * 1000)
     elif type is datetime:
         return long(time.mktime(value.timetuple()) * 1000)
-    elif type is unicode:
-        return value.encode("utf-8")
+    elif type is str:
+        return unicode(value.decode("utf-8"))
     elif type is dict:
         output = {}
         for k, v in value.iteritems():
