@@ -14,7 +14,7 @@ except Exception:
 
 setup(
     name='Bugzilla-ETL',
-    version="0.3.13326",
+    version="0.3.13352",
     description='Mozilla Bugzilla Bug Version ETL',
     long_description=long_desc,
     author='Kyle Lahnakoski',
