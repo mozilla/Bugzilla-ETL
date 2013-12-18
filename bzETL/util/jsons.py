@@ -23,19 +23,24 @@ try:
     use_pypy = True
 except Exception, e:
     use_pypy = False
+
     class StringBuilder(list):
         def __init__(self, length=None):
             list.__init__(self)
 
         def build(self):
-            return u"".join(self)
+            return "".join(self)
+
+use_pypy = True
 
 append = StringBuilder.append
+
 
 class PyPyJSONEncoder(object):
     """
     pypy DOES NOT OPTIMIZE GENERATOR CODE WELL
     """
+
     def __init__(self):
         object.__init__(self)
 
@@ -71,33 +76,45 @@ else:
     json_decoder = json._default_decoder
 
 
-
-
-
-
 def _value2json(value, _buffer):
-    if isinstance(value, basestring):
-        _string2json(value, _buffer)
-    elif value == None:
+    if value == None:
         append(_buffer, "null")
+        return
     elif value is True:
-        append(_buffer, 'true')
+        append(_buffer, "true")
+        return
     elif value is False:
-        append(_buffer, 'false')
-    elif isinstance(value, (int, long, Decimal)):
-        append(_buffer, str(value))
-    elif isinstance(value, float):
-        append(_buffer, repr(value))
-    elif isinstance(value, date):
-        append(_buffer, unicode(long(time.mktime(value.timetuple())*1000)))
-    elif isinstance(value, datetime):
-        append(_buffer, unicode(long(time.mktime(value.timetuple())*1000)))
-    elif isinstance(value, dict):
+        append(_buffer, "false")
+        return
+
+
+    type = value.__class__
+    if type is dict:
         _dict2json(value, _buffer)
+    elif type is str:
+        append(_buffer, "\"")
+        append(_buffer, ESCAPE.sub(replace, value))  # ASSUME ALREADY utf-8 ENCODED
+        append(_buffer, "\"")
+    elif type is unicode:
+        try:
+            append(_buffer, "\"")
+            append(_buffer, ESCAPE.sub(replace, value.encode("utf-8")))
+            append(_buffer, "\"")
+        except Exception, e:
+            from util.logs import Log
+            Log.error(value)
+    elif type in (int, long, Decimal):
+        append(_buffer, unicode(value))
+    elif type is float:
+        append(_buffer, unicode(repr(value)))
+    elif type is date:
+        append(_buffer, unicode(long(time.mktime(value.timetuple()) * 1000)))
+    elif type is datetime:
+        append(_buffer, unicode(long(time.mktime(value.timetuple()) * 1000)))
     elif hasattr(value, '__iter__'):
         _list2json(value, _buffer)
     else:
-        raise Exception(repr(value)+" is not JSON serializable")
+        raise Exception(repr(value) + " is not JSON serializable")
 
 
 def _list2json(value, _buffer):
@@ -113,23 +130,21 @@ def _list2json(value, _buffer):
 
 
 def _dict2json(value, _buffer):
-    items = value.iteritems()
-
     append(_buffer, "{")
-    first = True
+    prefix = "\""
     for k, v in value.iteritems():
-        if first:
-            first = False
-        else:
-            append(_buffer, ", ")
-        _string2json(unicode(k), _buffer)
-        append(_buffer, ": ")
+        append(_buffer, prefix)
+        prefix = ", \""
+        if isinstance(k, unicode):
+            k = unicode(k.encode("utf-8"))
+        append(_buffer, ESCAPE.sub(replace, k))
+        append(_buffer, "\": ")
         _value2json(v, _buffer)
     append(_buffer, "}")
 
 
-special_find = u"\\\"\t\n\r".find
-replacement = [u"\\\\", u"\\\"", u"\\t", u"\\n", u"\\r"]
+special_find = "\\\"\t\n\r".find
+replacement = ["\\\\", "\\\"", "\\t", "\\n", "\\r"]
 
 ESCAPE = re.compile(r'[\x00-\x1f\\"\b\f\n\r\t]')
 ESCAPE_DCT = {
@@ -145,12 +160,10 @@ for i in range(0x20):
     ESCAPE_DCT.setdefault(chr(i), '\\u{0:04x}'.format(i))
 
 
-def _string2json(value, _buffer):
-    def replace(match):
-        return ESCAPE_DCT[match.group(0)]
-    append(_buffer, "\"")
-    append(_buffer, ESCAPE.sub(replace, value))
-    append(_buffer, "\"")
+def replace(match):
+    return ESCAPE_DCT[match.group(0)]
+
+
 
 
 
@@ -162,24 +175,28 @@ def json_scrub(value):
 def _scrub(value):
     if value == None:
         return None
-    elif isinstance(value, date):
-        return long(time.mktime(value.timetuple())*1000)
-    elif isinstance(value, datetime):
-        return long(time.mktime(value.timetuple())*1000)
-    elif isinstance(value, dict):
+
+    type = value.__class__
+    if type is date:
+        return long(time.mktime(value.timetuple()) * 1000)
+    elif type is datetime:
+        return long(time.mktime(value.timetuple()) * 1000)
+    elif type is unicode:
+        return value.encode("utf-8")
+    elif type is dict:
         output = {}
         for k, v in value.iteritems():
             v = _scrub(v)
             output[k] = v
         return output
+    elif type is Decimal:
+        return float(value)
     elif hasattr(value, '__iter__'):
         output = []
         for v in value:
             v = _scrub(v)
             output.append(v)
         return output
-    elif isinstance(value, Decimal):
-        return float(value)
     else:
         return value
 

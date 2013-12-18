@@ -98,12 +98,12 @@ class BugHistoryParser():
             # For debugging purposes:
             # WE CAN NO LONGER DO THIS!  WE DO NOT CAPTURE TRACKING FLAGS, EXCEPT USING THE
             # CHANGE HISTORY.
-            # if self.settings.end_time > 0 and row_in.modified_ts > self.settings.end_time:
-            #     Log.note("Skipping change {{modified_ts|datetime}} > end_time={{end_time|datetime}}", {
-            #         "end_time":self.settings.end_time,
-            #         "modified_ts": row_in.modified_ts
-            #     })
-            #     return
+            if self.settings.end_time > 0 and row_in.modified_ts > self.settings.end_time:
+                Log.note("Skipping change {{modified_ts|datetime}} > end_time={{end_time|datetime}}", {
+                    "end_time":self.settings.end_time,
+                    "modified_ts": row_in.modified_ts
+                })
+                return
 
             # If we have switched to a new bug
             if self.prevBugID < self.currBugID:

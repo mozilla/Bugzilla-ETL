@@ -350,9 +350,11 @@ class TestETL(unittest.TestCase):
         for bug_id in private_bugs:
             if latest_bugs_index[bug_id] == None:
                 Log.error("Expecting to find the private bug {{bug_id}}", {"bug_id": bug_id})
-            if latest_bugs_index[bug_id].bug_group == None:
+
+            bug_group = latest_bugs_index[bug_id].bug_group
+            if not bug_group:
                 Log.error("Expecting private bug ({{bug_id}}) to have a bug group", {"bug_id": bug_id})
-            if BUG_GROUP_FOR_TESTING not in latest_bugs_index[bug_id].bug_group:
+            if BUG_GROUP_FOR_TESTING not in bug_group:
                 Log.error("Expecting private bug ({{bug_id}}) to have a \"{{bug_group}}\" bug group", {
                     "bug_id": bug_id,
                     "bug_group": BUG_GROUP_FOR_TESTING
@@ -461,16 +463,4 @@ def compare_both(candidate, reference, settings, some_bugs):
 
 
 if __name__=="__main__":
-    tester=TestETL()
-    tester.setUp()
-
-    tester.test_specific_bugs()
-    tester.test_private_etl()
-    tester.test_public_etl()
-    tester.test_private_attachments_do_not_show()
-    tester.test_private_bugs_do_not_show()
-    tester.test_private_comments_do_not_show()
-    tester.test_recent_private_stuff_does_not_show()
-    tester.test_changes_to_private_bugs_still_have_bug_group()
-
-    tester.tearDown()
+    unittest.main()
