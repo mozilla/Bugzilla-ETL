@@ -31,8 +31,6 @@ except Exception, e:
         def build(self):
             return u"".join(self)
 
-use_pypy = True
-
 append = UnicodeBuilder.append
 
 
