@@ -11,7 +11,7 @@
 
 from datetime import datetime
 import subprocess
-from pymysql import connect
+from pymysql import connect, InterfaceError
 from . import struct
 from .maths import Math
 from .strings import expand_template
@@ -112,7 +112,8 @@ class DB(object):
         return Transaction(self)
 
     def begin(self):
-        if self.transaction_level == 0: self.cursor = self.db.cursor()
+        if self.transaction_level == 0:
+            self.cursor = self.db.cursor()
         self.transaction_level += 1
         self.execute("SET TIME_ZONE='+00:00'")
 
@@ -202,13 +203,28 @@ class DB(object):
             old_cursor = self.cursor
             if not old_cursor: #ALLOW NON-TRANSACTIONAL READS
                 self.cursor = self.db.cursor()
+                self.cursor.execute("SET TIME_ZONE='+00:00'")
+                self.cursor.close()
+                self.cursor = self.db.cursor()
+
 
             if param: sql = expand_template(sql, self.quote_param(param))
             sql = self.preamble + outdent(sql)
             if self.debug:
                 Log.note(u"Execute SQL:\n{{sql}}", {u"sql": indent(sql)})
 
-            self.cursor.execute(sql)
+            # if isinstance(sql, unicode):
+            #     sql=sql.encode("utf-8")
+            # try:
+                self.cursor.execute(sql)
+            # except InterfaceError, e:
+            #     if not old_cursor:
+            #         Log.error("Problem with query, did you forget to use an open db?", e)
+            #     else:
+            #         Log.error("Problem with query", e)
+            # except Exception, e:
+            #     Log.error("Problem with query", e)
+
 
             columns = [utf8_to_unicode(d[0]) for d in nvl(self.cursor.description, [])]
             fixed = [[utf8_to_unicode(c) for c in row] for row in self.cursor]
@@ -220,7 +236,7 @@ class DB(object):
 
             return result
         except Exception, e:
-            if e.message.find("InterfaceError") >= 0:
+            if isinstance(e, InterfaceError) or e.message.find("InterfaceError") >= 0:
                 Log.error(u"Did you close the db connection?", e)
             Log.error(u"Problem executing SQL:\n" + indent(sql.strip()), e, offset=1)
 
@@ -298,6 +314,8 @@ class DB(object):
             stderr=subprocess.STDOUT,
             bufsize=-1
         )
+        if isinstance(sql, unicode):
+            sql=sql.encode("utf-8")
         (output, _) = proc.communicate(sql)
 
         if proc.returncode:

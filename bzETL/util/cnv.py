@@ -224,74 +224,69 @@ class CNV:
     @staticmethod
     def esfilter2where(esfilter):
         """
+        CONVERT esfilter TO FUNCTION THAT WILL PERFORM THE FILTER
         WILL ADD row, rownum, AND rows AS CONTEXT VARIABLES FOR {"script":} IF NEEDED
         """
-        output = None
-        condition = CNV._esfilter2where(esfilter)
-        exec \
-            "def result(row, rownum, rows):\n" + \
-            "    if " + condition + ":\n" + \
-            "        return True\n" + \
-            "    return False" + \
-            "output = result"
+        def output(row, rownum=None, rows=None):
+            return _filter(esfilter, row, rownum, rows)
         return output
 
-    @staticmethod
-    def _esfilter2where(esfilter):
-        def isolate(separator, list):
-            if len(list) > 1:
-                return u"(\n" + indent((" " + separator + " \\\n").join(list)) + u"\n)"
-            else:
-                return list[0]
+def _filter(esfilter, row, rownum, rows):
+    esfilter=struct.wrap(esfilter)
 
-        esfilter = struct.wrap(esfilter)
-
-        if esfilter[u"and"]:
-            return isolate(u"and", [CNV._esfilter2where(a) for a in esfilter[u"and"]])
-        elif esfilter[u"or"]:
-            return isolate(u"or", [CNV._esfilter2where(a) for a in esfilter[u"or"]])
-        elif esfilter[u"not"]:
-            return u"not (" + CNV._esfilter2where(esfilter[u"not"]) + u")"
-        elif esfilter.term:
-            return isolate(u"and", [u"row." + col + u" == " + CNV.value2quote(val) for col, val in esfilter.term.items()])
-        elif esfilter.terms:
-            def single(col, vals):
-                has_null = False
-                for val in vals:
-                    if val == None:
-                        has_null = True
-                        break
-
-                if has_null:
-                    return u"(row." + col + u" == None or row." + col + u" in " + CNV.value2quote(v for v in vals if v != None)
-                else:
-                    return u"row." + col + u" in " + CNV.value2quote(vals)
-
-            return isolate(u"and", [single(col, vals) for col, vals in esfilter.terms])
-        elif esfilter.script:
-            return u"(" + esfilter.script + u")"
-        elif esfilter.range:
-            name2sign = {
-                u"gt": u">",
-                u"gte": u">=",
-                u"lte": u"<=",
-                u"lt": u"<"
-            }
-
-            def single(col, ranges):
-                return u" and ".join(u"row." + col + name2sign[sign] + CNV.value2quote(value) for sign, value in ranges.items())
-
-            output = isolate(u"and", [single(col, ranges) for col, ranges in esfilter.range.items()])
-            return output
-        elif esfilter.missing:
-            if isinstance(esfilter.missing, basestring):
-                return esfilter.missing + u" == None"
-            else:
-                return esfilter.missing.field + u" == None"
-        elif esfilter.exists:
-            if isinstance(esfilter.exists, basestring):
-                return esfilter.exists + u" != None"
-            else:
-                return esfilter.exists.field + u" != None"
+    if esfilter[u"and"]:
+        for a in esfilter[u"and"]:
+            if not _filter(a, row, rownum, rows):
+                return False
+        return True
+    elif esfilter[u"or"]:
+        for a in esfilter[u"and"]:
+            if _filter(a, row, rownum, rows):
+                return True
+        return False
+    elif esfilter[u"not"]:
+        return not _filter(esfilter[u"not"], row, rownum, rows)
+    elif esfilter.term:
+        for col, val in esfilter.term.items():
+            if row[col] != val:
+                return False
+        return True
+    elif esfilter.terms:
+        for col, vals in esfilter.terms.items():
+            if not row[col] in vals:
+                return False
+        return True
+    elif esfilter.range:
+        for col, ranges in esfilter.range.items():
+            for sign, val in ranges.items():
+                if sign in ("gt", ">") and row[col] <= val:
+                    return False
+                if sign == "gte" and row[col] < val:
+                    return False
+                if sign == "lte" and row[col] > val:
+                    return False
+                if sign == "lt" and row[col] >= val:
+                    return False
+        return True
+    elif esfilter.missing:
+        if isinstance(esfilter.missing, basestring):
+            field = esfilter.missing
         else:
-            Log.error(u"Can not convert esfilter to SQL: {{esfilter}}", {u"esfilter": esfilter})
+            field = esfilter.missing.field
+
+        if row[field] == None:
+            return True
+        return False
+
+    elif esfilter.exists:
+        if isinstance(esfilter.missing, basestring):
+            field = esfilter.missing
+        else:
+            field = esfilter.missing.field
+
+        if row[field] != None:
+            return True
+        return False
+    else:
+        Log.error(u"Can not convert esfilter to SQL: {{esfilter}}", {u"esfilter": esfilter})
+

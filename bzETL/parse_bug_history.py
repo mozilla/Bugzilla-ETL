@@ -96,12 +96,14 @@ class BugHistoryParser():
             if self.settings.debug: Log.note("process row: {{row}}", {"row":row_in})
 
             # For debugging purposes:
-            if self.settings.end_time > 0 and row_in.modified_ts > self.settings.end_time:
-                Log.note("Skipping change {{modified_ts}} > end_time={{end_time}}", {
-                    "end_time":self.settings.end_time,
-                    "modified_ts": row_in.modified_ts
-                })
-                return
+            # WE CAN NO LONGER DO THIS!  WE DO NOT CAPTURE TRACKING FLAGS, EXCEPT USING THE
+            # CHANGE HISTORY.
+            # if self.settings.end_time > 0 and row_in.modified_ts > self.settings.end_time:
+            #     Log.note("Skipping change {{modified_ts|datetime}} > end_time={{end_time|datetime}}", {
+            #         "end_time":self.settings.end_time,
+            #         "modified_ts": row_in.modified_ts
+            #     })
+            #     return
 
             # If we have switched to a new bug
             if self.prevBugID < self.currBugID:
@@ -501,20 +503,22 @@ class BugHistoryParser():
                     # Output this version if either it was modified after start_time, or if it
                     # expired after start_time (the latter will update the last known version of the bug
                     # that did not have a value for "expires_on").
-                    if self.currBugState.modified_ts >= self.settings.start_time or self.currBugState.expires_on >= self.settings.start_time:
+                    if self.currBugState.expires_on >= self.settings.start_time:
                         state=normalize(self.currBugState)
                         if state.blocked != None and len(state.blocked)==1 and "Null" in state.blocked:
-                            Log.note("PROBLEM error")
-                        if DEBUG_STATUS: Log.note("Bug {{bug_state.bug_id}} v{{bug_state.bug_version_num}} (id = {{bug_state.id}})" , {
-                            "bug_state":state
-                        })
+                            Log.note("ERROR: state.blocked has 'Null'!  Programming error!")
+                        if DEBUG_STATUS:
+                            Log.note("Bug {{bug_state.bug_id}} v{{bug_state.bug_version_num}} (id = {{bug_state.id}})" , {
+                                "bug_state":state
+                            })
                         self.output.add({"id": state.id, "value": state})  #ES EXPECTED FORMAT
 
                     else:
-                        Log.note("PROBLEM Not outputting {{_id}} - it is before self.start_time ({{start_time}})", {
-                            "_id":self.currBugState._id,
-                            "start_time":self.settings.start_time
-                        })
+                        if DEBUG_STATUS:
+                            Log.note("Not outputting {{_id}} - it is before self.start_time ({{start_time|datetime}})", {
+                                "_id":self.currBugState._id,
+                                "start_time":self.settings.start_time
+                            })
 
                 else:
                     Log.note("Merging a change with the same timestamp = {{bug_state._id}}: {{bug_state}}",{

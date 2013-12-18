@@ -333,64 +333,6 @@ def filter(data, where):
     return [d for i, d in enumerate(data) if where(d, i, data)]
 
 
-def _filter(esfilter, row, rownum, rows):
-    if esfilter[u"and"]:
-        for a in esfilter[u"and"]:
-            if not _filter(a, row, rownum, rows):
-                return False
-        return True
-    elif esfilter[u"or"]:
-        for a in esfilter[u"and"]:
-            if _filter(a, row, rownum, rows):
-                return True
-        return False
-    elif esfilter[u"not"]:
-        return not _filter(esfilter[u"not"], row, rownum, rows)
-    elif esfilter.term:
-        for col, val in esfilter.term.items():
-            if row[col] != val:
-                return False
-        return True
-    elif esfilter.terms:
-        for col, vals in esfilter.terms.items:
-            if not row[col] in vals:
-                return False
-        return True
-    elif esfilter.range:
-        for col, ranges in esfilter.range.items:
-            for sign, val in ranges:
-                if sign in ("gt", ">") and row[col] <= val:
-                    return False
-                if sign == "gte" and row[col] < val:
-                    return False
-                if sign == "lte" and row[col] > val:
-                    return False
-                if sign == "lt" and row[col] >= val:
-                    return False
-        return True
-    elif esfilter.missing:
-        if isinstance(esfilter.missing, basestring):
-            field = esfilter.missing
-        else:
-            field = esfilter.missing.field
-
-        if row[field] == None:
-            return True
-        return False
-
-    elif esfilter.exists:
-        if isinstance(esfilter.missing, basestring):
-            field = esfilter.missing
-        else:
-            field = esfilter.missing.field
-
-        if row[field] != None:
-            return True
-        return False
-    else:
-        Log.error(u"Can not convert esfilter to SQL: {{esfilter}}", {u"esfilter": esfilter})
-
-
 def wrap_function(func):
     """
     RETURN A THREE-PARAMETER WINDOW FUNCTION TO MATCH

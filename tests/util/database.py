@@ -115,8 +115,6 @@ def diff(db, table, old_record, new_record):
     else:
         prefix = u""
 
-
-
     for c in changed:
         fieldid=db.query("SELECT id FROM fielddefs WHERE name={{field_name}}", {"field_name": prefix + c})[0].id
 
@@ -135,5 +133,8 @@ def diff(db, table, old_record, new_record):
         )
         db.insert("bugs_activity", activity)
 
-        # db.update(table, old_value, new_value)
+    db.execute("UPDATE bugs SET delta_ts={{now}} WHERE {{where}}", {
+        "now":now,
+        "where":db.esfilter2sqlwhere({"term":{"bug_id":old_record.bug_id}})
+    })
 
