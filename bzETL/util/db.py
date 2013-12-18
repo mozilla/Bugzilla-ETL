@@ -555,8 +555,7 @@ class DB(object):
                         else:
                             return "false"
                 except Exception, e:
-                    if not hasattr(e, "contains") or not e.contains("no packing possible"):
-                        Log.warning("Not an int-list: {{list}}", {"list": v}, e)
+                    pass
                 return self.quote_column(col) + u" in (" + ", ".join([self.quote_value(val) for val in v]) + ")"
         elif esfilter.script:
             return u"(" + esfilter.script + u")"

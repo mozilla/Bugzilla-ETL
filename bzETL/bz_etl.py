@@ -57,7 +57,9 @@ def etl_comments(db, es, param, please_stop):
     # CONNECTIONS ARE EXPENSIVE, CACHE HERE
     with comment_db_cache_lock:
         if not comment_db_cache:
-            comment_db_cache.append(DB(db))
+            comment_db = DB(db)
+            comment_db.begin()
+            comment_db_cache.append(comment_db)
 
     with comment_db_cache_lock:
         Log.note("Read comments from database")
