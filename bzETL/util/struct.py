@@ -7,7 +7,7 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-SPECIAL = ["keys", "values", "items", "iteritems", "dict", "copy"]
+SPECIAL = ["keys", "values", "items", "iteritems", "dict", "copy", "__class__"]
 
 
 class Struct(dict):
@@ -134,6 +134,7 @@ class Struct(dict):
 
             return output
 
+        return dict.__getattribute__(d, key)
 
     def __delitem__(self, key):
         if not isinstance(key, str):
@@ -329,6 +330,9 @@ class StructList(list):
 
     def __iter__(self):
         return (wrap(v) for v in self.list)
+
+    def __contains__(self, item):
+        return list.__contains__(self.list, item)
 
     def append(self, val):
         self.list.append(unwrap(val))

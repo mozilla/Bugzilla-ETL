@@ -12,17 +12,11 @@
 
 
 import gc
-from bzETL import parse_bug_history, transform_bugzilla, extract_bugzilla, alias_analysis
-from bzETL.extract_bugzilla import get_private_bugs, get_recent_private_attachments, get_recent_private_comments, get_comments, get_comments_by_id, get_recent_private_bugs, get_current_time
-from bzETL.util.struct import nvl
 from bzETL.util.maths import Math
 from bzETL.util.timer import Timer
-
-from extract_bugzilla import get_bugs, get_dependencies, get_flags, get_new_activities, get_bug_see_also, get_attachments, get_keywords, get_cc, get_bug_groups, get_duplicates
-from parse_bug_history import BugHistoryParser
 from bzETL.util import struct
 from bzETL.util.logs import Log
-from bzETL.util.struct import Struct
+from bzETL.util.struct import Struct, nvl
 from bzETL.util.files import File
 from bzETL.util import startup
 from bzETL.util.threads import Queue, Thread, AllThread, Lock, ThreadedQueue
@@ -30,6 +24,10 @@ from bzETL.util.cnv import CNV
 from bzETL.util.elasticsearch import ElasticSearch
 from bzETL.util.queries import Q
 from bzETL.util.db import DB
+
+from bzETL import parse_bug_history, transform_bugzilla, extract_bugzilla, alias_analysis
+from extract_bugzilla import get_private_bugs, get_recent_private_attachments, get_recent_private_comments, get_comments, get_comments_by_id, get_recent_private_bugs, get_current_time, get_bugs, get_dependencies, get_flags, get_new_activities, get_bug_see_also, get_attachments, get_tracking_flags, get_keywords, get_cc, get_bug_groups, get_duplicates
+from parse_bug_history import BugHistoryParser
 
 
 db_cache_lock=Lock()
@@ -45,6 +43,7 @@ get_stuff_from_bugzilla = [
     get_new_activities,
     get_bug_see_also,
     get_attachments,
+    get_tracking_flags,
     get_keywords,
     get_cc,
     get_bug_groups,
