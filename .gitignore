@@ -9,7 +9,7 @@ bzETL/util/.svn/*
 bzETL/util/.svn
 .idea
 *.iml
-*.eg-info
+*.egg-info
 build
 dist
 

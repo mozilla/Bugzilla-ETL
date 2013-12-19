@@ -7,7 +7,7 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-SPECIAL = ["keys", "values", "items", "iteritems", "dict", "copy"]
+SPECIAL = ["keys", "values", "items", "iteritems", "dict", "copy", "__class__"]
 
 
 class Struct(dict):
@@ -25,7 +25,7 @@ class Struct(dict):
     AND DOES NOT LOOK AT FIELD-DOES-NOT-EXIST-IN-THIS-CONTEXT (Database Null)
 
 
-    This is a common pattern in many frameworks:
+    This is a common pattern in many frameworks (I am still working on this list)
 
     jinja2.environment.Environment.getattr()
     argparse.Environment() - code performs setattr(e, name, value) on instances of Environment
@@ -134,6 +134,7 @@ class Struct(dict):
 
             return output
 
+        return dict.__getattribute__(d, key)
 
     def __delitem__(self, key):
         if not isinstance(key, str):
@@ -330,6 +331,9 @@ class StructList(list):
     def __iter__(self):
         return (wrap(v) for v in self.list)
 
+    def __contains__(self, item):
+        return list.__contains__(self.list, item)
+
     def append(self, val):
         self.list.append(unwrap(val))
         return self
@@ -354,6 +358,30 @@ class StructList(list):
 
     def pop(self):
         return self.list.pop()
+
+    def __add__(self, value):
+        output = list(self.list)
+        output.extend(value)
+        return StructList(vals=output)
+
+    def __or__(self, value):
+        output = list(self.list)
+        output.append(value)
+        return StructList(vals=output)
+
+    def right(self, num=None):
+        if num == None:
+            return StructList(vals=[self.list[-1]])
+        if num == 0:
+            return StructList()
+        return StructList(vals=self.list[-num])
+
+
+    def last(self):
+        """
+        RETURN LAST ELEMENT IN StructList
+        """
+        return self.list[-1]
 
 
 def wrap(v):

@@ -5,9 +5,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# PYTHON VERISON OF ../resources/javascript/parse_bug_history.js
-#
-
 
 
 # Workflow:
@@ -90,18 +87,7 @@ class BugHistoryParser():
         if len(row_in.items())==0: return
         try:
             self.currBugID = row_in.bug_id
-            # if not self.currBugState.created_ts:
-            #     Log.note("PROBLEM expecting a created_ts (did you install the timezone database into your MySQL instance?)")
-
             if self.settings.debug: Log.note("process row: {{row}}", {"row":row_in})
-
-            # For debugging purposes:
-            if self.settings.end_time > 0 and row_in.modified_ts > self.settings.end_time:
-                Log.note("Skipping change {{modified_ts}} > end_time={{end_time}}", {
-                    "end_time":self.settings.end_time,
-                    "modified_ts": row_in.modified_ts
-                })
-                return
 
             # If we have switched to a new bug
             if self.prevBugID < self.currBugID:
@@ -501,25 +487,28 @@ class BugHistoryParser():
                     # Output this version if either it was modified after start_time, or if it
                     # expired after start_time (the latter will update the last known version of the bug
                     # that did not have a value for "expires_on").
-                    if self.currBugState.modified_ts >= self.settings.start_time or self.currBugState.expires_on >= self.settings.start_time:
+                    if self.currBugState.expires_on >= self.settings.start_time:
                         state=normalize(self.currBugState)
                         if state.blocked != None and len(state.blocked)==1 and "Null" in state.blocked:
-                            Log.note("PROBLEM error")
-                        if DEBUG_STATUS: Log.note("Bug {{bug_state.bug_id}} v{{bug_state.bug_version_num}} (id = {{bug_state.id}})" , {
-                            "bug_state":state
-                        })
+                            Log.note("ERROR: state.blocked has 'Null'!  Programming error!")
+                        if DEBUG_STATUS:
+                            Log.note("Bug {{bug_state.bug_id}} v{{bug_state.bug_version_num}} (id = {{bug_state.id}})" , {
+                                "bug_state":state
+                            })
                         self.output.add({"id": state.id, "value": state})  #ES EXPECTED FORMAT
 
                     else:
-                        Log.note("PROBLEM Not outputting {{_id}} - it is before self.start_time ({{start_time}})", {
-                            "_id":self.currBugState._id,
-                            "start_time":self.settings.start_time
-                        })
+                        if DEBUG_STATUS:
+                            Log.note("Not outputting {{_id}} - it is before self.start_time ({{start_time|datetime}})", {
+                                "_id":self.currBugState._id,
+                                "start_time":self.settings.start_time
+                            })
 
                 else:
-                    Log.note("Merging a change with the same timestamp = {{bug_state._id}}: {{bug_state}}",{
-                        "bug_state":currVersion
-                    })
+                    if DEBUG_STATUS:
+                        Log.note("Merging a change with the same timestamp = {{bug_state._id}}: {{bug_state}}",{
+                            "bug_state":currVersion
+                        })
             finally:
                 if self.currBugState.blocked == None:
                     Log.note("expecting a created_ts")
@@ -606,10 +595,11 @@ class BugHistoryParser():
             chosen_one = candidates[0]
             if len(candidates) > 1:
                 # Multiple matches - use the best one.
-                Log.note("Matched added flag {{flag}} to multiple removed flags {{candidates}}.  Using the best.", {
-                    "flag":added_flag,
-                    "candidates":candidates
-                })
+                if DEBUG_STATUS:
+                    Log.note("Matched added flag {{flag}} to multiple removed flags {{candidates}}.  Using the best.", {
+                        "flag":added_flag,
+                        "candidates":candidates
+                    })
                 matched_ts = [element for element in candidates if
                     added_flag.modified_ts == element.modified_ts
                 ]
@@ -635,10 +625,11 @@ class BugHistoryParser():
                         chosen_one = Null
             else:
                 # Obvious case - matched exactly one.
-                Log.note("Matched added flag {{added}} to removed flag {{removed}}", {
-                    "added": added_flag,
-                    "removed": chosen_one
-                })
+                if DEBUG_STATUS:
+                    Log.note("Matched added flag {{added}} to removed flag {{removed}}", {
+                        "added": added_flag,
+                        "removed": chosen_one
+                    })
 
             if chosen_one != None:
                 for f in ["value", "request_status", "requestee"]:

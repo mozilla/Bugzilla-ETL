@@ -12,6 +12,7 @@
 
 import codecs
 from datetime import datetime
+import io
 import os
 import shutil
 from .struct import listwrap, nvl
@@ -19,13 +20,14 @@ from .cnv import CNV
 
 
 class File(object):
-
-    def __init__(self, filename):
+    def __init__(self, filename, buffering=2 ** 14):
         if filename == None:
             from .logs import Log
             Log.error("File must be given a filename")
+
         #USE UNIX STANDARD
         self._filename = "/".join(filename.split(os.sep))
+        self.buffering = buffering
 
 
     @property
@@ -75,10 +77,12 @@ class File(object):
     def __iter__(self):
         #NOT SURE HOW TO MAXIMIZE FILE READ SPEED
         #http://stackoverflow.com/questions/8009882/how-to-read-large-file-line-by-line-in-python
+        #http://effbot.org/zone/wide-finder.htm
         def output():
-            with codecs.open(self._filename, "r", encoding="utf-8") as f:
+            with io.open(self._filename, "rb") as f:
                 for line in f:
-                    yield line
+                    yield line.decode("utf-8")
+
         return output()
 
     def append(self, content):

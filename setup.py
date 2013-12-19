@@ -1,7 +1,6 @@
 # encoding: utf-8
 #
 import os
-
 from setuptools import setup
 
 root = os.path.abspath(os.path.dirname(__file__))
@@ -12,9 +11,28 @@ except Exception:
     long_desc = "<Missing README.txt>"
     print "Missing README.txt"
 
+
+
+
+def get_resources(source, destination):
+    # RETURN list OF PAIRS, EACH OF FORM (<dir name>, list(<files>))
+    # SEE http://docs.python.org/2/distutils/setupscript.html#installing-additional-files
+    output = []
+    files = []
+    for name in os.listdir(source):
+        source_child = "/".join([source, name])
+        dest_child = "/".join([destination, name])
+        if os.path.isdir(source_child):
+            output.extend(get_resources(source=source_child, destination=dest_child))
+        elif os.path.isfile(source_child):
+            files.append(source_child)
+    output.append((destination, files))
+    return output
+
+
 setup(
     name='Bugzilla-ETL',
-    version="0.3.13326",
+    version="0.3.13353",
     description='Mozilla Bugzilla Bug Version ETL',
     long_description=long_desc,
     author='Kyle Lahnakoski',
@@ -35,7 +53,6 @@ setup(
         "Development Status :: 4 - Beta",
         "Topic :: Utilities",
         "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
-    ]
-
-
+    ],
+    data_files=get_resources(source="resources", destination="resources")
 )

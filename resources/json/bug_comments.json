@@ -1,7 +1,5 @@
 {
 	"settings":{
-		"index.number_of_shards":1,
-		"index.number_of_replicas":0,
 		"index.store.throttle.type": "merge",
 		"index.store.throttle.max_bytes_per_sec": "2mb",
 		"analysis": {
