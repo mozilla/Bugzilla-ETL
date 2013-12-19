@@ -143,7 +143,7 @@ def format_trace(tbs, trim=0):
     tbs.reverse()
     list = []
     for filename, lineno, name, line in tbs[trim:]:
-        item = 'at %s:%d (%s)\n' % (filename,lineno,name)
+        item = 'at File "%s", line %d, in %s\n' % (filename.replace("\\", "/"), lineno, name)
         list.append(item)
     return "".join(list)
 

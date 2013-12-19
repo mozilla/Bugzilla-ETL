@@ -12,17 +12,11 @@
 
 
 import gc
-from bzETL import parse_bug_history, transform_bugzilla, extract_bugzilla, alias_analysis
-from bzETL.extract_bugzilla import get_private_bugs, get_recent_private_attachments, get_recent_private_comments, get_comments, get_comments_by_id, get_recent_private_bugs, get_current_time
-from bzETL.util.struct import nvl
 from bzETL.util.maths import Math
 from bzETL.util.timer import Timer
-
-from extract_bugzilla import get_bugs, get_dependencies, get_flags, get_new_activities, get_bug_see_also, get_attachments, get_keywords, get_cc, get_bug_groups, get_duplicates
-from parse_bug_history import BugHistoryParser
 from bzETL.util import struct
 from bzETL.util.logs import Log
-from bzETL.util.struct import Struct
+from bzETL.util.struct import Struct, nvl
 from bzETL.util.files import File
 from bzETL.util import startup
 from bzETL.util.threads import Queue, Thread, AllThread, Lock, ThreadedQueue
@@ -30,6 +24,10 @@ from bzETL.util.cnv import CNV
 from bzETL.util.elasticsearch import ElasticSearch
 from bzETL.util.queries import Q
 from bzETL.util.db import DB
+
+from bzETL import parse_bug_history, transform_bugzilla, extract_bugzilla, alias_analysis
+from extract_bugzilla import get_private_bugs, get_recent_private_attachments, get_recent_private_comments, get_comments, get_comments_by_id, get_recent_private_bugs, get_current_time, get_bugs, get_dependencies, get_flags, get_new_activities, get_bug_see_also, get_attachments, get_tracking_flags, get_keywords, get_cc, get_bug_groups, get_duplicates
+from parse_bug_history import BugHistoryParser
 
 
 db_cache_lock=Lock()
@@ -45,6 +43,7 @@ get_stuff_from_bugzilla = [
     get_new_activities,
     get_bug_see_also,
     get_attachments,
+    get_tracking_flags,
     get_keywords,
     get_cc,
     get_bug_groups,
@@ -57,14 +56,16 @@ def etl_comments(db, es, param, please_stop):
     # CONNECTIONS ARE EXPENSIVE, CACHE HERE
     with comment_db_cache_lock:
         if not comment_db_cache:
-            comment_db_cache.append(DB(db))
+            comment_db = DB(db)
+            comment_db.begin()
+            comment_db_cache.append(comment_db)
 
     with comment_db_cache_lock:
         Log.note("Read comments from database")
         comments=get_comments(comment_db_cache[0], param)
 
-    Log.note("Write {{num}} comments to ElasticSearch", {"num":len(comments)})
-    es.extend({"id":c.comment_id, "value":c} for c in comments)
+    with Timer("Write {{num}} comments to ElasticSearch", {"num":len(comments)}):
+        es.extend({"id":c.comment_id, "value":c} for c in comments)
 
 
 
@@ -78,7 +79,10 @@ def etl(db, output_queue, param, please_stop):
     # CONNECTIONS ARE EXPENSIVE, CACHE HERE
     with db_cache_lock:
         if not db_cache:
-            db_cache.extend([DB(db) for f in get_stuff_from_bugzilla])
+            for f in get_stuff_from_bugzilla:
+                db = DB(db)
+                db.begin()
+                db_cache.append(db)
 
     db_results=Queue()
     with db_cache_lock:
@@ -153,6 +157,10 @@ def setup_es(settings, db, es, es_comments):
         last_run_time = 0
         if not es:
             schema = File(settings.es.schema_file).read()
+            #TODO: ADD SWITCH TO ENABLE SINGLE SHARD MODE
+            # schema.index.number_of_shards=1
+            # schema.index.number_of_replicas=0
+
             if transform_bugzilla.USE_ATTACHMENTS_DOT:
                 schema = schema.replace("attachments_", "attachments.")
 
@@ -210,23 +218,35 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
     comment_list = set(Q.select(private_comments, "comment_id")) | {0}
     es_comments.delete_record({"terms": {"comment_id": comment_list}})
     changed_comments = get_comments_by_id(db, comment_list, param)
-    es.extend({"id": c.comment_id, "value": c} for c in changed_comments)
+    es_comments.extend({"id": c.comment_id, "value": c} for c in changed_comments)
 
     #GET LIST OF CHANGED BUGS
     with Timer("time to get bug list"):
-        bug_list = Q.select(db.query("""
-            SELECT
-                b.bug_id
-            FROM
-                bugs b
-            LEFT JOIN
-                bug_group_map m ON m.bug_id=b.bug_id
-            WHERE
-                delta_ts >= {{start_time_str}} AND
-                m.bug_id IS NULL
-        """, {
-            "start_time_str": param.start_time_str
-        }), u"bug_id")
+        if param.allow_private_bugs:
+            bug_list = Q.select(db.query("""
+                SELECT
+                    b.bug_id
+                FROM
+                    bugs b
+                WHERE
+                    delta_ts >= {{start_time_str}}
+            """, {
+                "start_time_str": param.start_time_str
+            }), u"bug_id")
+        else:
+            bug_list = Q.select(db.query("""
+                SELECT
+                    b.bug_id
+                FROM
+                    bugs b
+                LEFT JOIN
+                    bug_group_map m ON m.bug_id=b.bug_id
+                WHERE
+                    delta_ts >= {{start_time_str}} AND
+                    m.bug_id IS NULL
+            """, {
+                "start_time_str": param.start_time_str
+            }), u"bug_id")
 
     if not bug_list:
         return
@@ -267,27 +287,45 @@ def full_etl(resume_from_last_run, settings, param, db, es, es_comments, output_
             # WITHOUT gc.collect() PYPY MEMORY USAGE GROWS UNTIL 2gig LIMIT IS HIT AND CRASH
             # WITH THIS LINE IT SEEMS TO TOP OUT AT 1.2gig
             #UPDATE 2013 OCT 30: SOMETIMES THERE IS A MEMORY EXPLOSION, SOMETIMES NOT
+            #UPDATE 2013 NOV 25: THE MEMORY PROBLEM MAY BE THAT THE DATA SINK (ES) IS NOT FAST ENOUGH
+            #                    TO ACCEPT THE RECORDS GENERATED.  (MAYBE INDEXING IS ON?)
+            #                    MITIGATED WITH Thread(max=) TO SLOW DOWN DATA SOURCE
             gc.collect()
             (min, max) = (b, b + settings.param.increment)
             try:
                 #GET LIST OF CHANGED BUGS
                 with Timer("time to get bug list"):
-                    bug_list = Q.select(db.query("""
-                        SELECT
-                            b.bug_id
-                        FROM
-                            bugs b
-                        LEFT JOIN
-                            bug_group_map m ON m.bug_id=b.bug_id
-                        WHERE
-                            delta_ts >= {{start_time_str}} AND
-                            ({{min}} <= b.bug_id AND b.bug_id < {{max}}) AND
-                            m.bug_id IS NULL
-                    """, {
-                        "min": min,
-                        "max": max,
-                        "start_time_str": param.start_time_str
-                    }), u"bug_id")
+                    if param.allow_private_bugs:
+                        bug_list = Q.select(db.query("""
+                            SELECT
+                                b.bug_id
+                            FROM
+                                bugs b
+                            WHERE
+                                delta_ts >= {{start_time_str}} AND
+                                ({{min}} <= b.bug_id AND b.bug_id < {{max}})
+                        """, {
+                            "min": min,
+                            "max": max,
+                            "start_time_str": param.start_time_str
+                        }), u"bug_id")
+                    else:
+                        bug_list = Q.select(db.query("""
+                            SELECT
+                                b.bug_id
+                            FROM
+                                bugs b
+                            LEFT JOIN
+                                bug_group_map m ON m.bug_id=b.bug_id
+                            WHERE
+                                delta_ts >= {{start_time_str}} AND
+                                ({{min}} <= b.bug_id AND b.bug_id < {{max}}) AND
+                                m.bug_id IS NULL
+                        """, {
+                            "min": min,
+                            "max": max,
+                            "start_time_str": param.start_time_str
+                        }), u"bug_id")
 
                 if not bug_list:
                     continue
@@ -389,41 +427,46 @@ def get_max_bug_id(es):
 def close_db_connections():
     (globals()["db_cache"], temp)=([], db_cache)
     for db in temp:
+        db.commit()
         db.close()
 
     (globals()["comment_db_cache"], temp)=([], comment_db_cache)
     for db in temp:
+        db.commit()
         db.close()
 
 
 
+
 def start():
-    try:
-        settings = startup.read_settings(defs=[{
-            "name": "--quick",
-            "help": "use this to process the first and last block, useful for testing the meta-etl process",
-            "action": "store_true",
-            "dest": "quick"
-        },{
-            "name": ["--restart", "--reset", "--redo"],
-            "help": "use this to force a reprocessing of all data",
-            "action": "store_true",
-            "dest": "restart"
-        }])
+    with startup.SingleInstance():
+        try:
+            settings = startup.read_settings(defs=[{
+                "name": ["--quick", "--fast"],
+                "help": "use this to process the first and last block, useful for testing the config settings before doing a full run",
+                "action": "store_true",
+                "dest": "quick"
+            },{
+                "name": ["--restart", "--reset", "--redo"],
+                "help": "use this to force a reprocessing of all data",
+                "action": "store_true",
+                "dest": "restart"
+            }])
 
-        if settings.args.restart:
-            for l in struct.listwrap(settings.debug.log):
-                if l.filename:
-                    File(l.filename).parent.delete()
-            File(settings.param.first_run_time).delete()
-            File(settings.param.last_run_time).delete()
+            if settings.args.restart:
+                for l in struct.listwrap(settings.debug.log):
+                    if l.filename:
+                        File(l.filename).parent.delete()
+                File(settings.param.first_run_time).delete()
+                File(settings.param.last_run_time).delete()
 
-        Log.start(settings.debug)
-        main(settings)
-    except Exception, e:
-        Log.error("Can not start", e)
-    finally:
-        Log.stop()
+            Log.start(settings.debug)
+            main(settings)
+        except Exception, e:
+            Log.note("Done ETL")
+            Log.error("Can not start", e)
+        finally:
+            Log.stop()
 
 
 

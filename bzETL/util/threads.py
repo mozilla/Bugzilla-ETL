@@ -65,7 +65,7 @@ class Queue(object):
                     yield value
             except Exception, e:
                 from .logs import Log
-                Log.warning("Tell me about what happend here", e)
+                Log.warning("Tell me about what happened here", e)
 
     def add(self, value):
         with self.lock:
@@ -345,12 +345,16 @@ class ThreadedQueue(Queue):
     DISPATCH TO ANOTHER (SLOWER) queue IN BATCHES OF GIVEN size
     """
     def __init__(self, queue, size, max=None):
+        if max == None:
+            #REASONABLE DEFAULT
+            max = size*2
+
         Queue.__init__(self, max=max)
 
         def size_pusher(please_stop):
-            please_stop.on_go(lambda : self.add(Thread.STOP))
+            please_stop.on_go(lambda: self.add(Thread.STOP))
 
-            #output_queue IS A MULTI-THREADED QUEUE, SO THIS WILL BLOCK UNTIL THE 5K ARE READY
+            #queue IS A MULTI-THREADED QUEUE, SO THIS WILL BLOCK UNTIL THE size ARE READY
             from .queries import Q
             for i, g in Q.groupby(self, size=size):
                 try:

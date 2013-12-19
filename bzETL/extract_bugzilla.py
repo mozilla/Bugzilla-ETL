@@ -17,7 +17,7 @@ from bzETL.util.queries import Q
 from bzETL.util.struct import Struct, Null
 
 
-SCREENED_FIELDDEFS=[
+SCREENED_FIELDDEFS = [
     19, #bug_file_loc
     24, #short_desc
     42, #longdesc
@@ -28,14 +28,14 @@ SCREENED_FIELDDEFS=[
     83, #attach_data.thedata
 ]
 
-MIXED_CASE=[
+MIXED_CASE = [
     19, #bug_file_loc
     24  #short_desc
 ]
 
-PRIVATE_ATTACHMENT_FIELD_ID=65
-PRIVATE_COMMENTS_FIELD_ID=82
-PRIVATE_BUG_GROUP_FIELD_ID=66
+PRIVATE_ATTACHMENT_FIELD_ID = 65
+PRIVATE_COMMENTS_FIELD_ID = 82
+PRIVATE_BUG_GROUP_FIELD_ID = 66
 
 bugs_columns = Null
 
@@ -44,7 +44,7 @@ def get_current_time(db):
     """
     RETURN GMT TIME
     """
-    output = db.query("""
+    output = db.query(u"""
         SELECT
             UNIX_TIMESTAMP(now()) `value`
         """)[0].value
@@ -57,16 +57,16 @@ def milli2string(db, value):
     """
     value = max(value, 0)
 
-    output = db.query("""
+    output = db.query(u"""
         SELECT
             CAST(CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific') AS CHAR) `value`
         """, {
-            "start_time":value
+        "start_time": value
     })[0].value
     return output
 
-def get_bugs_table_columns(db, schema_name):
 
+def get_bugs_table_columns(db, schema_name):
     return db.query("""
         SELECT
             column_name,
@@ -94,9 +94,7 @@ def get_bugs_table_columns(db, schema_name):
                 'estimated_time'       #NOT NEEDED
 
             )
-    """, {"schema":schema_name})
-
-
+    """, {"schema": schema_name})
 
 
 def get_private_bugs(db, param):
@@ -104,7 +102,7 @@ def get_private_bugs(db, param):
         return {0}
 
     try:
-        private_bugs=db.query("SELECT DISTINCT bug_id FROM bug_group_map")
+        private_bugs = db.query("SELECT DISTINCT bug_id FROM bug_group_map")
         return set(Q.select(private_bugs, "bug_id")) | {0}
     except Exception, e:
         Log.error("problem getting private bugs", e)
@@ -118,7 +116,7 @@ def get_recent_private_bugs(db, param):
     if param.allow_private_bugs:
         return []
 
-    param.field_id=PRIVATE_BUG_GROUP_FIELD_ID
+    param.field_id = PRIVATE_BUG_GROUP_FIELD_ID
 
     try:
         return db.query("""
@@ -134,7 +132,6 @@ def get_recent_private_bugs(db, param):
         Log.error("problem getting recent private attachments", e)
 
 
-
 def get_recent_private_attachments(db, param):
     """
     GET ONLY RECENT ATTACHMENTS THAT HAVE SWITCHED PRIVACY INDICATOR
@@ -143,7 +140,7 @@ def get_recent_private_attachments(db, param):
     if param.allow_private_bugs:
         return []
 
-    param.field_id=PRIVATE_ATTACHMENT_FIELD_ID
+    param.field_id = PRIVATE_ATTACHMENT_FIELD_ID
 
     try:
         return db.query("""
@@ -167,10 +164,10 @@ def get_recent_private_comments(db, param):
     if param.allow_private_bugs:
         return []
 
-    param.field_id=PRIVATE_COMMENTS_FIELD_ID
+    param.field_id = PRIVATE_COMMENTS_FIELD_ID
 
     try:
-        comments=db.query("""
+        comments = db.query("""
             SELECT
                 a.comment_id,
                 a.bug_id
@@ -186,38 +183,35 @@ def get_recent_private_comments(db, param):
         Log.error("problem getting recent private attachments", e)
 
 
-
-
 def get_bugs(db, param):
     try:
         if not bugs_columns:
-            columns=get_bugs_table_columns(db, db.settings.schema)
+            columns = get_bugs_table_columns(db, db.settings.schema)
             globals()["bugs_columns"] = columns
 
         #TODO: CF_LAST_RESOLVED IS IN PDT, FIX IT
         def lower(col):
             if col.column_type.startswith("varchar"):
-                return "lower("+db.quote_column(col.column_name)+") "+db.quote_column(col.column_name)
+                return "lower(" + db.quote_column(col.column_name) + ") " + db.quote_column(col.column_name)
             else:
                 return db.quote_column(col.column_name)
 
-        param.bugs_columns=Q.select(bugs_columns, "column_name")
+        param.bugs_columns = Q.select(bugs_columns, "column_name")
         param.bugs_columns_SQL = SQL(",\n".join([lower(c) for c in bugs_columns]))
         param.bug_filter = db.esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
 
-
         if param.allow_private_bugs:
-            param.sensitive_columns=SQL("""
+            param.sensitive_columns = SQL("""
                 '<screened>' short_desc,
                 '<screened>' bug_file_loc
             """)
         else:
-            param.sensitive_columns=SQL("""
+            param.sensitive_columns = SQL("""
                 short_desc,
                 bug_file_loc
             """)
 
-        bugs=db.query("""
+        bugs = db.query("""
             SELECT
                 bug_id,
                 UNIX_TIMESTAMP(CONVERT_TZ(b.creation_ts, 'US/Pacific','UTC'))*1000 AS modified_ts,
@@ -241,7 +235,7 @@ def get_bugs(db, param):
             """, param)
 
         #bugs IS LIST OF BUGS WHICH MUST BE CONVERTED TO THE DELTA RECORDS FOR ALL FIELDS
-        output=[]
+        output = []
         for r in bugs:
             flatten_bugs_record(r, output)
 
@@ -253,23 +247,19 @@ def get_bugs(db, param):
 def flatten_bugs_record(r, output):
     for field_name, value in r.items():
         if value != "---":
-            newRow=Struct()
-            newRow.bug_id=r.bug_id
-            newRow.modified_ts=r.modified_ts
-            newRow.modified_by=r.modified_by
-            newRow.field_name=field_name
-            newRow.new_value=value
-            newRow._merge_order=1
+            newRow = Struct()
+            newRow.bug_id = r.bug_id
+            newRow.modified_ts = r.modified_ts
+            newRow.modified_by = r.modified_by
+            newRow.field_name = field_name
+            newRow.new_value = value
+            newRow._merge_order = 1
             output.append(newRow)
 
 
-
-
-
-
 def get_dependencies(db, param):
-    param.blocks_filter=db.esfilter2sqlwhere({"terms":{"blocked":param.bug_list}})
-    param.dependson_filter=db.esfilter2sqlwhere({"terms":{"dependson":param.bug_list}})
+    param.blocks_filter = db.esfilter2sqlwhere({"terms": {"blocked": param.bug_list}})
+    param.dependson_filter = db.esfilter2sqlwhere({"terms": {"dependson": param.bug_list}})
 
     return db.query("""
         SELECT blocked AS bug_id
@@ -300,8 +290,8 @@ def get_dependencies(db, param):
 
 
 def get_duplicates(db, param):
-    param.dupe_filter=db.esfilter2sqlwhere({"terms":{"dupe":param.bug_list}})
-    param.dupe_of_filter=db.esfilter2sqlwhere({"terms":{"dupe_of":param.bug_list}})
+    param.dupe_filter = db.esfilter2sqlwhere({"terms": {"dupe": param.bug_list}})
+    param.dupe_of_filter = db.esfilter2sqlwhere({"terms": {"dupe_of": param.bug_list}})
 
     return db.query("""
         SELECT dupe AS bug_id
@@ -332,7 +322,7 @@ def get_duplicates(db, param):
 
 
 def get_bug_groups(db, param):
-    param.bug_filter=db.esfilter2sqlwhere({"terms":{"bug_id":param.bug_list}})
+    param.bug_filter = db.esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
 
     return db.query("""
         SELECT bug_id
@@ -350,9 +340,8 @@ def get_bug_groups(db, param):
     """, param)
 
 
-
 def get_cc(db, param):
-    param.bug_filter=db.esfilter2sqlwhere({"terms":{"bug_id":param.bug_list}})
+    param.bug_filter = db.esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
 
     return db.query("""
         SELECT bug_id
@@ -402,15 +391,35 @@ def get_all_cc_changes(db, bug_list):
                 a.fieldid = {{cc_field_id}} AND
                 {{bug_filter}}
     """, {
-        "max_time":MAX_TIME,
-        "cc_field_id":CC_FIELD_ID,
-        "bug_filter":db.esfilter2sqlwhere({"terms":{"bug_id":bug_list}})
+        "max_time": MAX_TIME,
+        "cc_field_id": CC_FIELD_ID,
+        "bug_filter": db.esfilter2sqlwhere({"terms": {"bug_id": bug_list}})
     })
 
 
+def get_tracking_flags(db, param):
+    param.bug_filter = db.esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
+
+    return db.query("""
+        SELECT
+            bug_id,
+            CAST({{start_time}} AS signed) AS modified_ts,
+            lower(f.name) AS field_name,
+            lower(t.value) AS new_value,
+            1 AS _merge_order
+        FROM
+            tracking_flags_bugs t
+        JOIN
+            tracking_flags f on f.id=t.tracking_flag_id
+        WHERE
+            {{bug_filter}}
+        ORDER BY
+            bug_id
+    """, param)
+
 
 def get_keywords(db, param):
-    param.bug_filter=db.esfilter2sqlwhere({"terms":{"bug_id":param.bug_list}})
+    param.bug_filter = db.esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
 
     return db.query("""
         SELECT bug_id
@@ -434,14 +443,13 @@ def get_attachments(db, param):
     GET ALL CURRENT ATTACHMENTS
     """
     if param.allow_private_bugs:
-        param.attachments_filter=SQL("1=1")  #ALWAYS TRUE, ALLOWS ALL ATTACHMENTS
+        param.attachments_filter = SQL("1=1")  #ALWAYS TRUE, ALLOWS ALL ATTACHMENTS
     else:
-        param.attachments_filter=SQL("isprivate=0")
+        param.attachments_filter = SQL("isprivate=0")
 
-    param.bug_filter=db.esfilter2sqlwhere({"terms":{"bug_id":param.bug_list}})
+    param.bug_filter = db.esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
 
-
-    output=db.query("""
+    output = db.query("""
         SELECT bug_id
             , UNIX_TIMESTAMP(CONVERT_TZ(a.creation_ts, 'US/Pacific','UTC'))*1000 AS modified_ts
             , lower(login_name) AS modified_by
@@ -469,7 +477,7 @@ attachments_fields = ["created_ts", "created_by", "attachments_ispatch", "attach
 
 
 def flatten_attachments(data):
-    output=[]
+    output = []
     for r in data:
         for a in attachments_fields:
             output.append(Struct(
@@ -477,7 +485,7 @@ def flatten_attachments(data):
                 modified_ts=r.modified_ts,
                 modified_by=r.modified_by,
                 field_name=a,
-                new_value=r[a],  #THESE NAMES HAVE DOTS IN THEM
+                new_value=r[a], #THESE NAMES HAVE DOTS IN THEM
                 attach_id=r.attach_id,
                 _merge_order=7
             ))
@@ -485,8 +493,7 @@ def flatten_attachments(data):
 
 
 def get_bug_see_also(db, param):
-    param.bug_filter=db.esfilter2sqlwhere({"terms":{"bug_id":param.bug_list}})
-
+    param.bug_filter = db.esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
 
     return db.query("""
         SELECT bug_id
@@ -504,19 +511,20 @@ def get_bug_see_also(db, param):
     """, param)
 
 
-
 def get_new_activities(db, param):
-
     if param.allow_private_bugs:
-        param.screened_fields=SQL(SCREENED_FIELDDEFS)
+        param.screened_fields = SQL(SCREENED_FIELDDEFS)
     else:
-        param.screened_fields=SQL([-1])
+        param.screened_fields = SQL([-1])
 
     #TODO: CF_LAST_RESOLVED IS IN PDT, FIX IT
-    param.bug_filter=db.esfilter2sqlwhere({"terms":{"a.bug_id":param.bug_list}})
-    param.mixed_case_fields=SQL(MIXED_CASE)
+    param.bug_filter = db.esfilter2sqlwhere({"terms": {"a.bug_id": param.bug_list}})
+    param.mixed_case_fields = SQL(MIXED_CASE)
 
-    return db.query("""
+    if param.start_time > 0:
+        Log.debug()
+
+    output = db.query("""
         SELECT
             a.bug_id,
             UNIX_TIMESTAMP(CONVERT_TZ(bug_when, 'US/Pacific','UTC'))*1000 AS modified_ts,
@@ -555,9 +563,11 @@ def get_new_activities(db, param):
             attach_id
     """, param)
 
+    return output
+
 
 def get_flags(db, param):
-    param.bug_filter=db.esfilter2sqlwhere({"terms":{"bug_id":param.bug_list}})
+    param.bug_filter = db.esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
 
     return db.query("""
         SELECT bug_id
@@ -586,11 +596,11 @@ def get_comments(db, param):
     if not param.bug_list:
         return []
 
-    param.comments_filter=SQL("isprivate=0")
-    param.bug_filter=db.esfilter2sqlwhere({"terms":{"bug_id":param.bug_list}})
+    param.comments_filter = SQL("isprivate=0")
+    param.bug_filter = db.esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
 
     try:
-        comments=db.query("""
+        comments = db.query("""
             SELECT
                 c.comment_id,
                 c.bug_id,
@@ -612,6 +622,7 @@ def get_comments(db, param):
     except Exception, e:
         Log.error("can not get comment data", e)
 
+
 def get_comments_by_id(db, comments, param):
     """
     GET SPECIFIC COMMENTS
@@ -619,13 +630,13 @@ def get_comments_by_id(db, comments, param):
     if param.allow_private_bugs:
         return []
 
-    param.comments_filter=db.esfilter2sqlwhere({"and":[
-        {"term":{"isprivate":0}},
-        {"terms":{"c.comment_id":comments}}
+    param.comments_filter = db.esfilter2sqlwhere({"and": [
+        {"term": {"isprivate": 0}},
+        {"terms": {"c.comment_id": comments}}
     ]})
 
     try:
-        comments=db.query("""
+        comments = db.query("""
             SELECT
                 c.comment_id,
                 c.bug_id,

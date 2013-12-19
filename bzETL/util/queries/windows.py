@@ -13,6 +13,7 @@ from ..maths import Math
 from ..multiset import Multiset
 from ..stats import Z_moment, stats2z_moment, z_moment2stats
 
+
 class AggregationFunction(object):
     def __init__(self):
         """
@@ -39,8 +40,25 @@ class AggregationFunction(object):
         """
 
 
-class WindowFunction(AggregationFunction):
+class Exists(AggregationFunction):
+    def __init__(self):
+        object.__init__(self)
+        self.total = False
 
+    def add(self, value):
+        if value == None:
+            return
+        self.total = True
+
+    def merge(self, agg):
+        if agg.total:
+            self.total = True
+
+    def end(self):
+        return self.total
+
+
+class WindowFunction(AggregationFunction):
     def __init__(self):
         """
         RETURN A ZERO-STATE AGGREGATE
@@ -55,27 +73,24 @@ class WindowFunction(AggregationFunction):
         Log.error("not implemented yet")
 
 
-
-
 class Stats(WindowFunction):
-
     def __init__(self):
         object.__init__(self)
-        self.total=Z_moment(0,0,0)
+        self.total = Z_moment(0, 0, 0)
 
 
     def add(self, value):
         if value == None:
             return
-        self.total+=stats2z_moment(value)
+        self.total += stats2z_moment(value)
 
     def sub(self, value):
         if value == None:
             return
-        self.total-=stats2z_moment(value)
+        self.total -= stats2z_moment(value)
 
     def merge(self, agg):
-        self.total+=agg.total
+        self.total += agg.total
 
     def end(self):
         return z_moment2stats(self.total)
@@ -142,7 +157,6 @@ class Count(WindowFunction):
 
 
 class Sum(WindowFunction):
-
     def __init__(self):
         object.__init__(self)
         self.total = 0
@@ -160,3 +174,5 @@ class Sum(WindowFunction):
 
     def end(self):
         return self.total
+
+
