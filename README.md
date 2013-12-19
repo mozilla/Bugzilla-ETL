@@ -24,13 +24,12 @@ PyPy and SetupTools are required.  It is best you install on Linux, but if you d
 
     git clone https://github.com/klahnakoski/Bugzilla-ETL.git
 
-Install requirements:
+then install requirements:
 
     cd Bugzilla-ETL
     pip install -r requirements.txt
 
 **WARNING: ```pip install Bugzilla-ETL``` does not work** - I have been unable to get Pip to install resource files consistently across platforms and Python versions.
-
 
 Setup
 -----
@@ -48,7 +47,7 @@ Running bz_etl.py
 Asuming your ```settings.json``` file is in ```~/Bugzilla_ETL```:
 
     cd ~/Bugzilla_ETL
-    bzetl --settings=settings.json
+    pypy bzETL\bz_etl.py --settings=settings.json
 
 Use ```--help``` for more options, and see [example command line script](resources/scripts/bz_etl.bat)
 
@@ -69,6 +68,15 @@ The Git clone will include test code.  You can run those tests, but you must...
   * Have timezone database installed ([instructions](./tests/resources/mySQL/README.md))
   * A complete ```test_settings.json``` file to point to the resources ([example](./resources/settings/test_settings_example.json))
   * Use pypy for 4x the speed: ```pypy .\tests\test_etl.py --settings=test_settings.json```
+
+Upgrades
+--------
+
+There may be enhancements from time to time.  To get them
+
+    cd ~/Bugzilla-ETL
+    git pull origin
+    pip install -r requirements.txt
 
 
 More on ElasticSearch
