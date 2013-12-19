@@ -437,37 +437,38 @@ def close_db_connections():
 
 
 
+
 def start():
-    try:
-        settings = startup.read_settings(defs=[{
-            "name": ["--quick", "--fast"],
-            "help": "use this to process the first and last block, useful for testing the config settings before doing a full run",
-            "action": "store_true",
-            "dest": "quick"
-        },{
-            "name": ["--restart", "--reset", "--redo"],
-            "help": "use this to force a reprocessing of all data",
-            "action": "store_true",
-            "dest": "restart"
-        }])
+    with startup.SingleInstance():
+        try:
+            settings = startup.read_settings(defs=[{
+                "name": ["--quick", "--fast"],
+                "help": "use this to process the first and last block, useful for testing the config settings before doing a full run",
+                "action": "store_true",
+                "dest": "quick"
+            },{
+                "name": ["--restart", "--reset", "--redo"],
+                "help": "use this to force a reprocessing of all data",
+                "action": "store_true",
+                "dest": "restart"
+            }])
 
-        if settings.args.restart:
-            for l in struct.listwrap(settings.debug.log):
-                if l.filename:
-                    File(l.filename).parent.delete()
-            File(settings.param.first_run_time).delete()
-            File(settings.param.last_run_time).delete()
+            if settings.args.restart:
+                for l in struct.listwrap(settings.debug.log):
+                    if l.filename:
+                        File(l.filename).parent.delete()
+                File(settings.param.first_run_time).delete()
+                File(settings.param.last_run_time).delete()
 
-        Log.start(settings.debug)
-        main(settings)
-    except Exception, e:
-        Log.note("Done ETL")
-        Log.error("Can not start", e)
-    finally:
-        Log.stop()
+            Log.start(settings.debug)
+            main(settings)
+        except Exception, e:
+            Log.note("Done ETL")
+            Log.error("Can not start", e)
+        finally:
+            Log.stop()
 
 
 
 if __name__=="__main__":
-    with startup.SingleInstance():
-        start()
+    start()
