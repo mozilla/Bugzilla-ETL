@@ -26,7 +26,8 @@ PyPy and SetupTools are required.  It is best you install on Linux, but if you d
 
 Install requirements:
 
-    pip install -r requirments.txt
+    cd Bugzilla-ETL
+    pip install -r requirements.txt
 
 **WARNING: ```pip install Bugzilla-ETL``` does not work** - I have been unable to get Pip to install resource files consistently across platforms and Python versions.
 
