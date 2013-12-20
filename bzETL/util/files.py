@@ -70,7 +70,7 @@ class File(object):
 
     def write(self, data):
         if not self.parent.exists: self.parent.create()
-        with open(self._filename, "w") as file:
+        with open(self._filename, "wb") as file:
             for d in listwrap(data):
                 file.write(d)
 

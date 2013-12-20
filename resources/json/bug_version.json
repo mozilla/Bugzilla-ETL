@@ -188,18 +188,42 @@
 							"index_name": "is_private",
 							"type": "boolean"
 						},
-						"attachments_description": {
-							"enabled": false,
-							"type": "string"
-						},
-						"attachments_mimetype": {
-							"enabled": false,
-							"type": "string"
-						},
-						"attachments_filename": {
-							"enabled": false,
-							"type": "string"
-						},
+                        "attachments_description": {
+                            "enabled": false,
+                            "type": "string"
+                        },
+                        "attachments_mimetype": {
+                            "enabled": false,
+                            "type": "string"
+                        },
+                        "attachments_filename": {
+                            "enabled": false,
+                            "type": "string"
+                        },
+                        "ispatch": {
+                            "index_name": "is_patch",
+                            "type": "boolean"
+                        },
+                        "isobsolete": {
+                            "index_name": "is_obsolete",
+                            "type": "boolean"
+                        },
+                        "isprivate": {
+                            "index_name": "is_private",
+                            "type": "boolean"
+                        },
+                        "description": {
+                            "enabled": false,
+                            "type": "string"
+                        },
+                        "mimetype": {
+                            "enabled": false,
+                            "type": "string"
+                        },
+                        "filename": {
+                            "enabled": false,
+                            "type": "string"
+                        },
 						"previous_values": {
 							"type": "object"
 						}

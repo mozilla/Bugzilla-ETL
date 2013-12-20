@@ -188,10 +188,20 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
     #REMOVE PRIVATE BUGS
     private_bugs=get_private_bugs(db, param)
     es.delete_record({"terms": {"bug_id": private_bugs}})
+    Log.note("Ensure {{num}} private bugs not in index", {"num": len(private_bugs)})
 
     #RECENT PUBLIC BUGS
     possible_public_bugs=get_recent_private_bugs(db, param)
     possible_public_bugs=set(Q.select(possible_public_bugs, "bug_id"))
+    if param.allow_private_bugs:
+        #PRIVVATE BUGS
+        #    A CHANGE IN PRIVACY INDICATOR MEANS THE WHITEBOARD IS AFFECTED, REDO
+        es.delete_record({"terms": {"bug_id": possible_public_bugs}})
+    else:
+        #PUBLIC BUGS
+        #    IF ADDING GROUP THEN private_bugs ALREADY DID THIS
+        #    IF REMOVING GROUP THEN NO RECORDS TO DELETE
+        pass
 
     #REMOVE **RECENT** PRIVATE ATTACHMENTS
     private_attachments = get_recent_private_attachments(db, param)

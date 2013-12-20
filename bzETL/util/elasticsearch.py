@@ -37,7 +37,7 @@ class ElasticSearch(object):
         if not settings.port:
             settings.port = 9200
         self.debug = nvl(settings.debug, DEBUG)
-        globals()["DEBUG"] = DEBUG or self.debug
+        globals()["DEBUG"] = True if DEBUG or self.debug else False
 
         self.settings = settings
         self.path = settings.host + ":" + unicode(settings.port) + "/" + settings.index + "/" + settings.type

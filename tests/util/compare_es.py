@@ -124,13 +124,15 @@ def old2new(bug, max_date):
         else:
             c.attach_id=CNV.value2int(c.attach_id)
 
-    if bug.attachments != None:
-        bug.attachments=Q.sort(bug.attachments, "attach_id")
-        for a in bug.attachments:
-            a.attach_id=CNV.value2int(a.attach_id)
-            for k,v in list(a.items()):
-                if k.endswith("isobsolete") or k.endswith("ispatch") or k.endswith("isprivate"):
-                    a.dict[k]=CNV.value2int(a.dict[k])  # .dict REQUIRED TO  HANDLE DOT (.) IN k
+    bug.attachments=Q.sort(bug.attachments, "attach_id")
+    for a in bug.attachments:
+        a.attach_id=CNV.value2int(a.attach_id)
+        for k,v in list(a.items()):
+            if k.endswith("isobsolete") or k.endswith("ispatch") or k.endswith("isprivate"):
+                a.dict[k]=CNV.value2int(v)
+                a[k.split(".")[-1].split("_")[-1]]=CNV.value2int(v)
+
+
 
     bug=transform_bugzilla.normalize(bug)
     return bug

@@ -20,6 +20,7 @@ from bzETL.util.db import DB, all_db
 from bzETL.util.logs import Log
 from bzETL.util.elasticsearch import ElasticSearch
 from bzETL.util.files import File
+from bzETL.util.maths import Math
 from bzETL.util.queries import Q
 from bzETL.util.randoms import Random
 from bzETL.util import startup, struct
@@ -163,7 +164,12 @@ class TestETL(unittest.TestCase):
         can = File(self.settings.test_comments.filename).read()
         ref = File(self.settings.comments_reference.filename).read()
         if can != ref:
-            Log.error("Comments do not match reference")
+            for i, c in enumerate(can):
+                found = -1
+                if can[i]!=ref[i]:
+                    found = i
+                    break
+            Log.error("Comments do not match reference\n{{sample}}", {"sample":can[Math.min([0, found-100]):found+100]})
 
 
     def test_private_bugs_do_not_show(self):
@@ -369,7 +375,7 @@ class TestETL(unittest.TestCase):
             #SETUP RUN PARAMETERS
             param = Struct()
             param.end_time = CNV.datetime2milli(get_current_time(db))
-            # FLAGS ADDED 18/12/2012 2:38:08 AM (PDT), SO START AT SOME LATER TIME
+            # FLAGS ADDED TO BUG 813650 ON 18/12/2012 2:38:08 AM (PDT), SO START AT SOME LATER TIME
             param.start_time = CNV.datetime2milli(CNV.string2datetime("02/01/2013 10:09:15", "%d/%m/%Y %H:%M:%S"))
             param.start_time_str = extract_bugzilla.milli2string(db, param.start_time)
 
