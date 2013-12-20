@@ -17,6 +17,7 @@ from bzETL.util.queries import Q
 from bzETL.util.struct import Struct, Null
 
 
+#ALL BUGS IN PRIVATE ETL HAVE SCREENED FIELDS
 SCREENED_FIELDDEFS = [
     19, #bug_file_loc
     24, #short_desc
@@ -28,6 +29,28 @@ SCREENED_FIELDDEFS = [
     83, #attach_data.thedata
 ]
 
+#CERTAIN GROUPS IN PRIVATE ETL HAVE HAVE WHITEBOARD SCREENED
+SCREENED_WHITEBOARD_BUG_GROUPS = [
+    "mozilla-corporation-confidential",
+    "mozilla-confidential",
+    "legal",
+    "netscapeconfidential",
+    "netscapeconfidential?",
+    "consulting",
+    "finance",
+    "marketing-private",
+    "partner-confidential",
+    "mozillaorgconfidential",
+    "qualcomm-confidential",
+    "pr-private",
+    "mozillacomconfidential",
+    "mozilla-messaging-confidential",
+    "marketing private",
+    "mozillaorgconfidential?",
+    "hr"
+]
+
+
 MIXED_CASE = [
     19, #bug_file_loc
     24  #short_desc
@@ -37,7 +60,8 @@ PRIVATE_ATTACHMENT_FIELD_ID = 65
 PRIVATE_COMMENTS_FIELD_ID = 82
 PRIVATE_BUG_GROUP_FIELD_ID = 66
 
-bugs_columns = Null
+bugs_columns = None
+SCREENED_BUG_GROUP_IDS = None
 
 
 def get_current_time(db):
@@ -66,35 +90,47 @@ def milli2string(db, value):
     return output
 
 
-def get_bugs_table_columns(db, schema_name):
-    return db.query("""
-        SELECT
-            column_name,
-            column_type
-        FROM
-            information_schema.columns
-        WHERE
-            table_schema={{schema}} AND
-            table_name='bugs' AND
-            column_name NOT IN (
-                'bug_id',       #EXPLICIT
-                'delta_ts',     #NOT NEEDED
-                'lastdiffed',   #NOT NEEDED
-                'creation_ts',  #EXPLICIT
-                'reporter',     #EXPLICIT
-                'assigned_to',  #EXPLICIT
-                'qa_contact',   #EXPLICIT
-                'product_id',   #EXPLICIT
-                'component_id', #EXPLICIT
-                'cclist_accessible',    #NOT NEEDED
-                'reporter_accessible',  #NOT NEEDED
-                'short_desc',           #NOT ALLOWED
-                'bug_file_loc',         #NOT ALLOWED
-                'deadline',             #NOT NEEDED
-                'estimated_time'       #NOT NEEDED
+def get_screened_whiteboard(db):
+    if not SCREENED_BUG_GROUP_IDS:
+        groups = db.query("SELECT id FROM groups WHERE {{where}}", {
+            "where":db.esfilter2sqlwhere({"terms":{"name": SCREENED_WHITEBOARD_BUG_GROUPS}})
+        })
+        globals()["SCREENED_BUG_GROUP_IDS"] =  Q.select(groups, "id")
 
-            )
-    """, {"schema": schema_name})
+
+def get_bugs_table_columns(db, schema_name):
+    if not bugs_columns:
+        columns = db.query("""
+            SELECT
+                column_name,
+                column_type
+            FROM
+                information_schema.columns
+            WHERE
+                table_schema={{schema}} AND
+                table_name='bugs' AND
+                column_name NOT IN (
+                    'bug_id',               #EXPLICIT
+                    'creation_ts',          #EXPLICIT
+                    'reporter',             #EXPLICIT
+                    'assigned_to',          #EXPLICIT
+                    'qa_contact',           #EXPLICIT
+                    'product_id',           #EXPLICIT
+                    'component_id',         #EXPLICIT
+                    'short_desc',           #EXPLICIT
+                    'bug_file_loc',         #EXPLICIT
+                    'status_whiteboard',    #EXPLICIT
+                    'deadline',             #NOT NEEDED
+                    'estimated_time',       #NOT NEEDED
+                    'delta_ts',             #NOT NEEDED
+                    'lastdiffed',           #NOT NEEDED
+                    'cclist_accessible',    #NOT NEEDED
+                    'reporter_accessible'   #NOT NEEDED
+
+                )
+        """, {"schema": schema_name})
+        globals()["bugs_columns"] = columns
+
 
 
 def get_private_bugs(db, param):
@@ -113,9 +149,6 @@ def get_recent_private_bugs(db, param):
     GET ONLY BUGS THAT HAVE SWITCHED PRIVACY INDICATOR
     THIS LIST IS USED TO SIGNAL BUGS THAT NEED TOTAL RE-ETL
     """
-    if param.allow_private_bugs:
-        return []
-
     param.field_id = PRIVATE_BUG_GROUP_FIELD_ID
 
     try:
@@ -185,9 +218,8 @@ def get_recent_private_comments(db, param):
 
 def get_bugs(db, param):
     try:
-        if not bugs_columns:
-            columns = get_bugs_table_columns(db, db.settings.schema)
-            globals()["bugs_columns"] = columns
+        get_bugs_table_columns(db, db.settings.schema)
+        get_screened_whiteboard(db)
 
         #TODO: CF_LAST_RESOLVED IS IN PDT, FIX IT
         def lower(col):
@@ -198,12 +230,16 @@ def get_bugs(db, param):
 
         param.bugs_columns = Q.select(bugs_columns, "column_name")
         param.bugs_columns_SQL = SQL(",\n".join([lower(c) for c in bugs_columns]))
-        param.bug_filter = db.esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
+        param.bug_filter = db.esfilter2sqlwhere({"terms": {"b.bug_id": param.bug_list}})
+        param.screened_whiteboard = db.esfilter2sqlwhere({"and":[
+            {"exists":"m.bug_id"},
+            {"terms":{"m.group_id": SCREENED_BUG_GROUP_IDS}}
+        ]})
 
         if param.allow_private_bugs:
             param.sensitive_columns = SQL("""
-                '<screened>' short_desc,
-                '<screened>' bug_file_loc
+                '[screened]' short_desc,
+                '[screened]' bug_file_loc
             """)
         else:
             param.sensitive_columns = SQL("""
@@ -213,7 +249,7 @@ def get_bugs(db, param):
 
         bugs = db.query("""
             SELECT
-                bug_id,
+                b.bug_id,
                 UNIX_TIMESTAMP(CONVERT_TZ(b.creation_ts, 'US/Pacific','UTC'))*1000 AS modified_ts,
                 lower(pr.login_name) AS modified_by,
                 UNIX_TIMESTAMP(CONVERT_TZ(b.creation_ts, 'US/Pacific','UTC'))*1000 AS created_ts,
@@ -222,14 +258,23 @@ def get_bugs(db, param):
                 lower(pq.login_name) AS qa_contact,
                 lower(prod.`name`) AS product,
                 lower(comp.`name`) AS component,
+                CASE WHEN {{screened_whiteboard}} AND b.status_whiteboard IS NOT NULL AND trim(b.status_whiteboard)<>'' THEN '[screened]' ELSE trim(lower(b.status_whiteboard)) END status_whiteboard,
                 {{sensitive_columns}},
                 {{bugs_columns_SQL}}
-            FROM bugs b
-                LEFT JOIN profiles pr ON b.reporter = pr.userid
-                LEFT JOIN profiles pa ON b.assigned_to = pa.userid
-                LEFT JOIN profiles pq ON b.qa_contact = pq.userid
-                LEFT JOIN products prod ON prod.id = product_id
-                LEFT JOIN components comp ON comp.id = component_id
+            FROM
+                bugs b
+            LEFT JOIN
+                profiles pr ON b.reporter = pr.userid
+            LEFT JOIN
+                profiles pa ON b.assigned_to = pa.userid
+            LEFT JOIN
+                profiles pq ON b.qa_contact = pq.userid
+            LEFT JOIN
+                products prod ON prod.id = product_id
+            LEFT JOIN
+                components comp ON comp.id = component_id
+            LEFT JOIN
+                bug_group_map m ON m.bug_id = b.bug_id
             WHERE
                 {{bug_filter}}
             """, param)
@@ -512,6 +557,8 @@ def get_bug_see_also(db, param):
 
 
 def get_new_activities(db, param):
+    get_screened_whiteboard(db)
+
     if param.allow_private_bugs:
         param.screened_fields = SQL(SCREENED_FIELDDEFS)
     else:
@@ -520,9 +567,10 @@ def get_new_activities(db, param):
     #TODO: CF_LAST_RESOLVED IS IN PDT, FIX IT
     param.bug_filter = db.esfilter2sqlwhere({"terms": {"a.bug_id": param.bug_list}})
     param.mixed_case_fields = SQL(MIXED_CASE)
-
-    if param.start_time > 0:
-        Log.debug()
+    param.screened_whiteboard = db.esfilter2sqlwhere({"and":[
+        {"exists":"m.bug_id"},
+        {"terms":{"m.group_id": SCREENED_BUG_GROUP_IDS}}
+    ]})
 
     output = db.query("""
         SELECT
@@ -532,7 +580,8 @@ def get_new_activities(db, param):
             replace(field.`name`, '.', '_') AS field_name,
             CAST(
                 CASE
-                WHEN a.fieldid IN {{screened_fields}} THEN '<screened>'
+                WHEN a.fieldid IN {{screened_fields}} THEN '[screened]'
+                WHEN {{screened_whiteboard}} THEN '[screened]'
                 WHEN a.fieldid IN {{mixed_case_fields}} THEN trim(added)
                 WHEN trim(added)='' THEN NULL
                 ELSE lower(trim(added))
@@ -540,7 +589,8 @@ def get_new_activities(db, param):
             AS CHAR CHARACTER SET utf8) AS new_value,
             CAST(
                 CASE
-                WHEN a.fieldid IN {{screened_fields}} THEN '<screened>'
+                WHEN a.fieldid IN {{screened_fields}} THEN '[screened]'
+                WHEN {{screened_whiteboard}} THEN '[screened]'
                 WHEN a.fieldid IN {{mixed_case_fields}} THEN trim(removed)
                 WHEN trim(removed)='' THEN NULL
                 ELSE lower(trim(removed))
@@ -554,6 +604,8 @@ def get_new_activities(db, param):
             profiles p ON a.who = p.userid
         JOIN
             fielddefs field ON a.fieldid = field.`id`
+        LEFT JOIN
+            bug_group_map m on m.bug_id=a.bug_id
         WHERE
             {{bug_filter}} AND
             bug_when >= {{start_time_str}}

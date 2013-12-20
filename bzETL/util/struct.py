@@ -372,7 +372,7 @@ class StructList(list):
     def right(self, num=None):
         if num == None:
             return StructList(vals=[self.list[-1]])
-        if num == 0:
+        if num <= 0:
             return StructList()
         return StructList(vals=self.list[-num])
 
@@ -456,3 +456,14 @@ def listwrap(value):
         return wrap(value)
     else:
         return wrap([value])
+
+
+def chain(field):
+    """
+    RETURN field AS ARRAY OF DOT-SEPARATED FIELDS
+    """
+    if field.find(".") >= 0:
+        field = field.replace("\.", "\a")
+        return [k.replace("\a", "\.") for k in field.split(".")]
+    else:
+        return [field]

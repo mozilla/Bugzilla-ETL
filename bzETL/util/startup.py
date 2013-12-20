@@ -103,7 +103,7 @@ class SingleInstance:
 
 
     def __enter__(self):
-        Log.debug("SingleInstance lockfile: " + self.lockfile)
+        Log.note("SingleInstance lockfile: " + self.lockfile)
         if sys.platform == 'win32':
             try:
                 # file already exists, we try to remove (in case previous execution was interrupted)

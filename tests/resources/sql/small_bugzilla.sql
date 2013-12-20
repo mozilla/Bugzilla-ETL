@@ -2717,7 +2717,7 @@ UNLOCK TABLES;
 /*!50001 SET collation_connection      = utf8_general_ci */;
 /*!50001 CREATE ALGORITHM=UNDEFINED */
 /*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */
-/*!50001 VIEW `sanitized_bugs_activity` AS select `bugs_activity`.`bug_id` AS `bug_id`,`bugs_activity`.`who` AS `who`,`bugs_activity`.`bug_when` AS `bug_when`,`bugs_activity`.`fieldid` AS `fieldid`,`bugs_activity`.`attach_id` AS `attach_id`,(case when (`bugs_activity`.`fieldid` in (24,42,45,56,64,74,83)) then '<Screened>' else `bugs_activity`.`removed` end) AS `removed`,(case when (`bugs_activity`.`fieldid` in (24,42,45,56,64,74,83)) then '<Screened>' else `bugs_activity`.`added` end) AS `added` from `bugs_activity` */;
+/*!50001 VIEW `sanitized_bugs_activity` AS select `bugs_activity`.`bug_id` AS `bug_id`,`bugs_activity`.`who` AS `who`,`bugs_activity`.`bug_when` AS `bug_when`,`bugs_activity`.`fieldid` AS `fieldid`,`bugs_activity`.`attach_id` AS `attach_id`,(case when (`bugs_activity`.`fieldid` in (24,42,45,56,64,74,83)) then '[screened]' else `bugs_activity`.`removed` end) AS `removed`,(case when (`bugs_activity`.`fieldid` in (24,42,45,56,64,74,83)) then '[screened]' else `bugs_activity`.`added` end) AS `added` from `bugs_activity` */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
 /*!50001 SET collation_connection      = @saved_col_connection */;

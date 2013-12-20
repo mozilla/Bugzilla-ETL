@@ -6,7 +6,7 @@ from bzETL.util.elasticsearch import ElasticSearch
 from bzETL.util.logs import Log
 from bzETL.util.files import File
 from bzETL.util.queries import Q
-from bzETL.util.struct import Struct
+from bzETL.util.struct import Struct, nvl
 
 
 def make_test_instance(name, settings):
@@ -27,6 +27,36 @@ def open_test_instance(name, settings):
             "type": name
         })
         return ElasticSearch(settings)
+
+def get(es, esfilter, fields=None, limit=None):
+
+    if fields:
+        results = es.search({
+            "query":{"filtered":{
+                "query":{"match_all":{}},
+                "filter":esfilter
+            }},
+            "from":0,
+            "size":nvl(limit, 200000),
+            "sort":[],
+            "facets":{},
+            "fields":fields
+        })
+
+        return Q.select(results.hits.hits, "fields")
+    else:
+        results = es.search({
+            "query":{"filtered":{
+                "query":{"match_all":{}},
+                "filter":esfilter
+            }},
+            "from":0,
+            "size":200000,
+            "sort":[],
+            "facets":{}
+        })
+
+        return Q.select(results.hits.hits, "_source")
 
 
 class Fake_ES():
@@ -53,6 +83,7 @@ class Fake_ES():
         self.data.dict.update(records)
 
         data_as_json=CNV.object2JSON(self.data, pretty=True)
+
         File(self.filename).write(data_as_json)
         Log.note("{{num}} items added", {"num":len(records)})
 

@@ -47,18 +47,19 @@ def normalize(bug):
     # Do some processing to make sure that diffing between runs stays as similar as possible.
     bug.flags=Q.sort(bug.flags, "value")
 
-    if bug.attachments != None:
+    if bug.attachments:
         if USE_ATTACHMENTS_DOT:
             bug.attachments=CNV.JSON2object(CNV.object2JSON(bug.attachments).replace("attachments_", "attachments."))
         bug.attachments = Q.sort(bug.attachments, "attach_id")
         for a in bug.attachments:
-            for k,v in a.items():
+            for k,v in list(a.items()):
                 if \
                     k.endswith("isobsolete") or \
                     k.endswith("ispatch") or \
                     k.endswith("isprivate")\
                 :
                     a[k.replace(".", "\.")]=CNV.value2int(v)
+                    a[k.split(".")[-1].split("_")[-1]]=CNV.value2int(v)
 
             a.flags = Q.sort(a.flags, ["modified_ts", "value"])
 
