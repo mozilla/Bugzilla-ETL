@@ -201,15 +201,12 @@
                             "type": "string"
                         },
                         "ispatch": {
-                            "index_name": "is_patch",
                             "type": "boolean"
                         },
                         "isobsolete": {
-                            "index_name": "is_obsolete",
                             "type": "boolean"
                         },
                         "isprivate": {
-                            "index_name": "is_private",
                             "type": "boolean"
                         },
                         "description": {

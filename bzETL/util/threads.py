@@ -7,6 +7,8 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
+
+from __future__ import unicode_literals
 from datetime import datetime, timedelta
 
 import threading
@@ -367,7 +369,7 @@ class ThreadedQueue(Queue):
                         return
                 except Exception, e:
                     from logs import Log
-                    Log.warning("Can not push data to given queue", e)
+                    Log.warning("Can not push {{num}} records to given queue.", {"num":len(g)}, e)
 
         self.thread = Thread.run("threaded queue", size_pusher)
 

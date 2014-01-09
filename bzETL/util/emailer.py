@@ -8,8 +8,7 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-
-
+from __future__ import unicode_literals
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
@@ -21,7 +20,7 @@ class Emailer:
 
     def __init__(self, settings):
         self.settings=settings
-        
+
 
     def send_email(self,
         from_address = None,

@@ -1,6 +1,5 @@
 # encoding: utf-8
 #
-#
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -8,7 +7,7 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-
+from __future__ import unicode_literals
 import StringIO
 import datetime
 import re
@@ -17,8 +16,7 @@ from .multiset import Multiset
 from .jsons import json_decoder, json_encoder
 from .logs import Log
 import struct
-from .strings import expand_template, indent
-from .struct import StructList, Null
+from .strings import expand_template
 
 
 class CNV:
@@ -37,16 +35,15 @@ class CNV:
     def JSON2object(json_string, params=None, flexible=False):
         try:
             #REMOVE """COMMENTS""", #COMMENTS, //COMMENTS, AND \n \r
-            if flexible: json_string = re.sub(r"\"\"\".*?\"\"\"|\s+//.*\n|#.*?\n|\n|\r", r" ",
-                                              json_string)  #DERIVED FROM https://github.com/jeads/datasource/blob/master/datasource/bases/BaseHub.py#L58
+            if flexible:
+                #DERIVED FROM https://github.com/jeads/datasource/blob/master/datasource/bases/BaseHub.py#L58
+                json_string = re.sub(r"\"\"\".*?\"\"\"|\s+//.*\n|#.*?\n|\n|\r", r" ", json_string)
 
             if params:
                 params = dict([(k, CNV.value2quote(v)) for k, v in params.items()])
                 json_string = expand_template(json_string, params)
 
-            obj = json_decoder.decode(json_string)
-            if isinstance(obj, list): return StructList(obj)
-            return struct.wrap(obj)
+            return struct.wrap(json_decoder.decode(json_string))
         except Exception, e:
             Log.error("Can not decode JSON:\n\t" + json_string, e)
 
@@ -78,17 +75,26 @@ class CNV:
     @staticmethod
     def datetime2milli(d):
         try:
-            epoch = datetime.datetime(1970, 1, 1)
+            if isinstance(d, datetime.datetime):
+                epoch = datetime.datetime(1970, 1, 1)
+            elif isinstance(d, datetime.date):
+                epoch = datetime.date(1970, 1, 1)
+            else:
+                Log.error("Can not convert {{value}} of type {{type}}", {"value": d, "type":d.__class__})
+
             diff = d - epoch
-            return (diff.days * 86400000) + \
-                   (diff.seconds * 1000) + \
-                   (diff.microseconds / 1000)  # 86400000=24*3600*1000
+            return long(diff.total_seconds()) * 1000L + long(diff.microseconds / 1000)
         except Exception, e:
-            Log.error("Can not convert {{value}}", {"value": d})
+            Log.error("Can not convert {{value}}", {"value": d}, e)
 
     @staticmethod
     def unix2datetime(u):
-        return datetime.datetime.utcfromtimestamp(u)
+        try:
+            if u == None:
+                return None
+            return datetime.datetime.utcfromtimestamp(u)
+        except Exception, e:
+            Log.error("Can not convert {{value}} to datetime", {"value": u}, e)
 
     @staticmethod
     def milli2datetime(u):
@@ -119,7 +125,7 @@ class CNV:
             column_names, #tuple of columns names
             rows          #list of tuples
     ):
-        return StructList([dict(zip(column_names, r)) for r in rows])
+        return struct.wrap([dict(zip(column_names, r)) for r in rows])
 
 
     #PROPER NULL HANDLING
@@ -227,12 +233,15 @@ class CNV:
         CONVERT esfilter TO FUNCTION THAT WILL PERFORM THE FILTER
         WILL ADD row, rownum, AND rows AS CONTEXT VARIABLES FOR {"script":} IF NEEDED
         """
+
         def output(row, rownum=None, rows=None):
             return _filter(esfilter, row, rownum, rows)
+
         return output
 
+
 def _filter(esfilter, row, rownum, rows):
-    esfilter=struct.wrap(esfilter)
+    esfilter = struct.wrap(esfilter)
 
     if esfilter[u"and"]:
         for a in esfilter[u"and"]:

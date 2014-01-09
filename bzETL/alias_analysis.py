@@ -8,8 +8,8 @@ from bzETL.util.multiset import Multiset
 from bzETL.util.queries import Q
 from bzETL.util.struct import nvl, Struct, Null
 
-bugs={}
-aliases={}
+bugs = {}
+aliases = {}
 
 
 def main(settings, bug_list=None, please_stop=None, restart=False):
@@ -34,7 +34,6 @@ def main(settings, bug_list=None, please_stop=None, restart=False):
             analysis(settings, True, please_stop)
         return
 
-
     with DB(settings.bugzilla) as db:
         start = nvl(settings.param.start, 0)
         end = nvl(settings.param.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
@@ -51,7 +50,7 @@ def main(settings, bug_list=None, please_stop=None, restart=False):
                 break
             aggregator(data)
 
-            analysis(settings, e>=end, please_stop)
+            analysis(settings, e >= end, please_stop)
 
 
 def split_email(value):
@@ -60,7 +59,7 @@ def split_email(value):
 
     if value.startswith("?") or value.endswith("?"):
         return set()
-    return set([s.strip() for s in value.split(",") if s.strip()!=""])
+    return set([s.strip() for s in value.split(",") if s.strip() != ""])
 
 
 def aggregator(data):
@@ -70,12 +69,12 @@ def aggregator(data):
     NEGATIVE MEANS THERE WAS AN ADD WITHOUT A REMOVE (AND NOT IN CURRENT LIST)
     """
     for d in data:
-        new_emails=Q.map(split_email(d.new_value), alias)
-        old_emails=Q.map(split_email(d.old_value), alias)
+        new_emails = Q.map2set(split_email(d.new_value), alias)
+        old_emails = Q.map2set(split_email(d.old_value), alias)
 
         for e in new_emails | old_emails:
-            details=aliases.get(e, Struct())
-            aliases[e]=details
+            details = aliases.get(e, Struct())
+            aliases[e] = details
 
         agg = bugs.get(d.bug_id, Multiset(allow_negative=True))
         agg = agg - new_emails
@@ -84,18 +83,18 @@ def aggregator(data):
 
 
 def analysis(settings, last_run, please_stop):
-    DIFF=7
+    DIFF = 7
     if last_run:
-        DIFF=4      #ONCE WE HAVE ALL THE DATA IN WE CAN BE LESS DISCRIMINATING
+        DIFF = 4      #ONCE WE HAVE ALL THE DATA IN WE CAN BE LESS DISCRIMINATING
     try_again = True
 
     while try_again and not please_stop:
         #FIND EMAIL MOST NEEDING REPLACEMENT
-        problem_agg=Multiset(allow_negative=True)
+        problem_agg = Multiset(allow_negative=True)
         for bug_id, agg in bugs.iteritems():
             #ONLY COUNT NEGATIVE EMAILS
             for email, count in agg.dic.iteritems():
-                if count<0:
+                if count < 0:
                     problem_agg.add(alias(email), amount=count)
 
         problems = Q.sort([
@@ -104,33 +103,33 @@ def analysis(settings, last_run, please_stop):
             if not aliases.get(e, Null).ignore and (c <= -(DIFF / 2) or last_run)
         ], ["count", "email"])
 
-        try_again=False
+        try_again = False
         for problem in problems:
             if please_stop:
                 break
 
             #FIND MOST LIKELY MATCH
-            solution_agg=Multiset(allow_negative=True)
+            solution_agg = Multiset(allow_negative=True)
             for bug_id, agg in bugs.iteritems():
-                if agg.dic.get(problem.email, 0)<0:  #ONLY BUGS THAT ARE EXPERIENCING THIS problem
+                if agg.dic.get(problem.email, 0) < 0:  #ONLY BUGS THAT ARE EXPERIENCING THIS problem
                     solution_agg += agg
-            solutions = Q.sort([{"email": e, "count": c} for e, c in solution_agg.dic.iteritems()], [{"field":"count", "sort":-1}, "email"])
+            solutions = Q.sort([{"email": e, "count": c} for e, c in solution_agg.dic.iteritems()], [{"field": "count", "sort": -1}, "email"])
 
-            if last_run and len(solutions)==2 and solutions[0].count==-solutions[1].count:
+            if last_run and len(solutions) == 2 and solutions[0].count == -solutions[1].count:
                 #exact match
                 pass
-            elif len(solutions)<=1 or (solutions[1].count+DIFF>=solutions[0].count):
+            elif len(solutions) <= 1 or (solutions[1].count + DIFF >= solutions[0].count):
                 #not distinctive enough
                 continue
 
-            best_solution=solutions[0]
-            Log.note("{{problem}} ({{score}}) -> {{solution}} {{matches}}",{
-                "problem":problem.email,
-                "score":problem.count,
-                "solution":best_solution.email,
-                "matches":CNV.object2JSON(Q.select(solutions, "count")[:10])
+            best_solution = solutions[0]
+            Log.note("{{problem}} ({{score}}) -> {{solution}} {{matches}}", {
+                "problem": problem.email,
+                "score": problem.count,
+                "solution": best_solution.email,
+                "matches": CNV.object2JSON(Q.select(solutions, "count")[:10])
             })
-            try_again=True
+            try_again = True
             add_alias(problem.email, best_solution.email)
 
     saveAliases(settings)
@@ -149,12 +148,12 @@ def add_alias(lost, found):
     old_canonical = nvl(lost_record.canonical, lost)
     lost_record.canonical = new_canonical
 
-    delete_list=[]
+    delete_list = []
 
     #FOLD bugs ON lost=found
     for bug_id, agg in bugs.iteritems():
-        v=agg.dic.get(lost, 0)
-        if v!=0:
+        v = agg.dic.get(lost, 0)
+        if v != 0:
             agg.add(lost, -v)
             agg.add(found, v)
 
@@ -162,10 +161,10 @@ def add_alias(lost, found):
             delete_list.append(bug_id)
 
     #FOLD bugs ON old_canonical=new_canonical
-    if old_canonical!=lost:
+    if old_canonical != lost:
         for bug_id, agg in bugs.iteritems():
-            v=agg.dic.get(old_canonical, 0)
-            if v!=0:
+            v = agg.dic.get(old_canonical, 0)
+            if v != 0:
                 agg.add(old_canonical, -v)
                 agg.add(new_canonical, v)
 
@@ -178,12 +177,13 @@ def add_alias(lost, found):
     #FOLD ALIASES
     for k, v in aliases.iteritems():
         if v.canonical == old_canonical:
-            Log.note("ALIAS REMAPPED: {{alias}}->{{old}} to {{alias}}->{{new}}",{
-                "alias":k,
-                "old":old_canonical,
-                "new":found
+            Log.note("ALIAS REMAPPED: {{alias}}->{{old}} to {{alias}}->{{new}}", {
+                "alias": k,
+                "old": old_canonical,
+                "new": found
             })
             v.canonical = found
+
 
 def loadAliases(settings):
     try:
@@ -191,9 +191,9 @@ def loadAliases(settings):
             alias_json = File(settings.param.alias_file).read()
         except Exception, e:
             alias_json = "{}"
-        #self.aliases IS A dict POINTING TO structs
+            #self.aliases IS A dict POINTING TO structs
         for k, v in CNV.JSON2object(alias_json).iteritems():
-            aliases[k]=struct.wrap(v)
+            aliases[k] = struct.wrap(v)
 
         Log.note("{{num}} aliases loaded", {"num": len(aliases.keys())})
     except Exception, e:
@@ -201,7 +201,6 @@ def loadAliases(settings):
 
 
 def saveAliases(settings):
-
     compressed = {
         email: details
         for email, details in aliases.iteritems()
@@ -213,15 +212,15 @@ def saveAliases(settings):
         old_alias_json = File(settings.param.alias_file).read()
     except Exception, e:
         old_alias_json = "{}"
-    old_aliases={}
+    old_aliases = {}
     for k, v in CNV.JSON2object(old_alias_json).iteritems():
-        old_aliases[k]=struct.wrap(v)
+        old_aliases[k] = struct.wrap(v)
 
     added = set(compressed.keys()) - set(old_aliases.keys())
     removed = set(old_aliases.keys()) - set(compressed.keys())
     common = set(compressed.keys()) & set(old_aliases.keys())
 
-    changed=set()
+    changed = set()
     for c in common:
         if CNV.object2JSON(compressed[c], pretty=True) != CNV.object2JSON(old_aliases[c], pretty=True):
             changed.add(c)
@@ -248,6 +247,5 @@ def start():
         Log.stop()
 
 
-
-if __name__=="__main__":
+if __name__ == "__main__":
     start()

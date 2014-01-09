@@ -90,7 +90,7 @@ def normalize(bug):
         v = bug[dateField]
         if v == None: continue
         try:
-            if isinstance(v, datetime) or isinstance(v, date):
+            if isinstance(v, date):
                 bug[dateField] = CNV.datetime2milli(v)
             elif isinstance(v, long) and len(unicode(v)) in [12, 13]:
                 bug[dateField] = v

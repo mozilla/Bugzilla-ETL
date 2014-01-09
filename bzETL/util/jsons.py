@@ -8,21 +8,34 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
+# THIS FILE EXISTS TO SERVE AS A FAST REPLACMENT FOR JSON ENCODING
+# THE DEFAULT JSON ENCODERS CAN NOT HANDLE A DIVERSITY OF TYPES *AND* BE FAST
+#
+# 1) WHEN USING CPython, WE HAVE NO COMPILER OPTIMIZATIONS: THE BEST STRATEGY IS TO
+#    CONVERT THE MEMORY STRUCTURE TO STANDARD TYPES AND SEND TO THE INSANELY FAST
+#    DEFAULT JSON ENCODER
+# 2) WHEN USING PYPY, WE USE CLEAR AND SIMPLE PROGRAMMING SO THE OPTIMIZER CAN DO
+#    ITS JOB.  ALONG WITH THE UnicodeBuilder WE GET NEAR C SPEEDS
 
-from datetime import datetime, date
-import time
-from decimal import Decimal
+
+from __future__ import unicode_literals
 import json
 import re
+import time
+from datetime import datetime, date
+from decimal import Decimal
+import sys
 
-
+use_pypy = False
 try:
-    # StringBuilder IS ABOUT 2x FASTER THAN list()
+    # UnicodeBuilder IS ABOUT 2x FASTER THAN list()
+    # use_pypy = True
     from __pypy__.builders import UnicodeBuilder
 
     use_pypy = True
 except Exception, e:
-    use_pypy = False
+    if use_pypy:
+        sys.stdout.write("The PyPy JSON serializer is in use!  Currently running CPython, not a good mix.")
 
     class UnicodeBuilder(list):
         def __init__(self, length=None):
@@ -58,9 +71,9 @@ class cPythonJSONEncoder(object):
 
     def encode(self, value, pretty=False):
         if pretty:
-            return unicode(json.dumps(json_scrub(value), indent=4, sort_keys=True, separators=(',', ': ')))
+            return unicode(json.dumps(json_scrub(value), ensure_ascii=False, indent=4, sort_keys=True, separators=(',', ': ')))
 
-        return unicode(json.dumps(json_scrub(value)))
+        return unicode(json.dumps(json_scrub(value), ensure_ascii=False))
 
 
 # OH HUM, cPython with uJSON, OR pypy WITH BUILTIN JSON?
@@ -87,10 +100,13 @@ def _value2json(value, _buffer):
 
     type = value.__class__
     if type is dict:
-        _dict2json(value, _buffer)
+        if value:
+            _dict2json(value, _buffer)
+        else:
+            append(_buffer, u"{}")
     elif type is str:
         append(_buffer, u"\"")
-        v = value.decode("utf-8")
+        v = value.decode("utf8")
         v = ESCAPE.sub(replace, v)
         append(_buffer, v)  # ASSUME ALREADY utf-8 ENCODED
         append(_buffer, u"\"")
@@ -108,36 +124,46 @@ def _value2json(value, _buffer):
         append(_buffer, unicode(value))
     elif type is float:
         append(_buffer, unicode(repr(value)))
+    elif type in (set, list, tuple):
+        _list2json(value, _buffer)
     elif type is date:
         append(_buffer, unicode(long(time.mktime(value.timetuple()) * 1000)))
     elif type is datetime:
         append(_buffer, unicode(long(time.mktime(value.timetuple()) * 1000)))
     elif hasattr(value, '__iter__'):
-        _list2json(value, _buffer)
+        _iter2json(value, _buffer)
     else:
         raise Exception(repr(value) + " is not JSON serializable")
 
 
 def _list2json(value, _buffer):
+    if not value:
+        append(_buffer, u"[]")
+    else:
+        sep = u"["
+        for v in value:
+            append(_buffer, sep)
+            sep = u", "
+            _value2json(v, _buffer)
+        append(_buffer, u"]")
+
+def _iter2json(value, _buffer):
     append(_buffer, u"[")
-    first = True
+    sep = u""
     for v in value:
-        if first:
-            first = False
-        else:
-            append(_buffer, u", ")
+        append(_buffer, sep)
+        sep = u", "
         _value2json(v, _buffer)
     append(_buffer, u"]")
 
 
 def _dict2json(value, _buffer):
-    append(_buffer, u"{")
-    prefix = u"\""
+    prefix = u"{\""
     for k, v in value.iteritems():
         append(_buffer, prefix)
         prefix = u", \""
         if isinstance(k, str):
-            k = unicode(k.decode("utf-8"))
+            k = unicode(k.decode("utf8"))
         append(_buffer, ESCAPE.sub(replace, k))
         append(_buffer, u"\": ")
         _value2json(v, _buffer)
@@ -177,7 +203,7 @@ def _scrub(value):
     elif type is datetime:
         return long(time.mktime(value.timetuple()) * 1000)
     elif type is str:
-        return unicode(value.decode("utf-8"))
+        return unicode(value.decode("utf8"))
     elif type is dict:
         output = {}
         for k, v in value.iteritems():

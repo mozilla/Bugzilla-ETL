@@ -7,8 +7,10 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
+from datetime import timedelta
 import time
-from .strings import expand_template
+from . import struct
+from .struct import nvl
 from .logs import Log
 
 
@@ -22,13 +24,11 @@ class Timer:
     """
 
     def __init__(self, description, param=None):
-        self.description=expand_template(description, param)  #WE WOULD LIKE TO KEEP THIS TEMPLATE, AND PASS IT TO THE LOGGER ON __exit__(), WE FAKE IT FOR NOW
+        self.template = description
+        self.param = nvl(param, {})
 
     def __enter__(self):
-        Log.note("Timer start: {{description}}", {
-            "description":self.description
-        })
-
+        Log.note("Timer start: " + self.template, self.param)
 
         self.start = time.clock()
         return self
@@ -36,13 +36,10 @@ class Timer:
     def __exit__(self, type, value, traceback):
         self.end = time.clock()
         self.interval = self.end - self.start
-        Log.note("Timer end  : {{description}} (took {{duration}} sec)", {
-            "description":self.description,
-            "duration":round(self.interval, 3)
-        })
+        param = struct.wrap(self.param)
+        param.duration = timedelta(seconds=self.interval)
+        Log.note("Timer end  : " + self.template + " (took {{duration}})", self.param)
 
-
-        
     @property
     def duration(self):
         return self.interval

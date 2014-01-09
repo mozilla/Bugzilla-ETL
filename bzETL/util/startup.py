@@ -8,6 +8,7 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
+from __future__ import unicode_literals
 import argparse
 import os
 import tempfile
@@ -39,7 +40,7 @@ def _argparse(defs):
         args = d.copy()
         name = args.name
         args.name = None
-        parser.add_argument(*listwrap(name).list, **args.dict)
+        parser.add_argument(*listwrap(name).list, **struct.unwrap(args))
     namespace = parser.parse_args()
     output = {k: getattr(namespace, k) for k in vars(namespace)}
     return struct.wrap(output)
@@ -80,8 +81,7 @@ def read_settings(filename=None, defs=None):
         return settings
 
 
-# snagged from https://github.com/pycontribs/tendo/blob/master/tendo/singleton.py
-# TODO: get licence
+# snagged from https://github.com/pycontribs/tendo/blob/master/tendo/singleton.py (under licence PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2)
 class SingleInstance:
     """
     ONLY ONE INSTANCE OF PROGRAM ALLOWED
@@ -96,14 +96,14 @@ class SingleInstance:
     Remember that this works by creating a lock file with a filename based on the full path to the script file.
     """
     def __init__(self, flavor_id=""):
-        import sys
         self.initialized = False
-        basename = os.path.splitext(os.path.abspath(sys.argv[0]))[0].replace("/", "-").replace(":", "").replace("\\", "-") + '-%s' % flavor_id + '.lock'
+        appname = os.path.splitext(os.path.abspath(sys.argv[0]))[0]
+        basename = ((appname + '-%s') % flavor_id).replace("/", "-").replace(":", "").replace("\\", "-") + '.lock'
         self.lockfile = os.path.normpath(tempfile.gettempdir() + '/' + basename)
 
 
     def __enter__(self):
-        Log.note("SingleInstance lockfile: " + self.lockfile)
+        Log.note("SingleInstance.lockfile = " + self.lockfile)
         if sys.platform == 'win32':
             try:
                 # file already exists, we try to remove (in case previous execution was interrupted)
@@ -111,7 +111,11 @@ class SingleInstance:
                     os.unlink(self.lockfile)
                 self.fd = os.open(self.lockfile, os.O_CREAT | os.O_EXCL | os.O_RDWR)
             except Exception, e:
-                Log.warning("Another instance is already running, quitting.", e)
+                Log.note("\n"+
+                    "**********************************************************************\n"+
+                    "** Another instance is already running, quitting.\n"+
+                    "**********************************************************************\n"
+                )
                 sys.exit(-1)
         else: # non Windows
             import fcntl
@@ -119,7 +123,11 @@ class SingleInstance:
             try:
                 fcntl.lockf(self.fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except IOError:
-                Log.warning("Another instance is already running, quitting.")
+                Log.note("\n"+
+                    "**********************************************************************\n"+
+                    "** Another instance is already running, quitting.\n"+
+                    "**********************************************************************\n"
+                )
                 sys.exit(-1)
         self.initialized = True
 

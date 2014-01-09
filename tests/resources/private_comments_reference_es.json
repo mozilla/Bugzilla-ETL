@@ -1,0 +1,5386 @@
+{
+    "956": {
+        "bug_id": 384,
+        "comment": "[screened]",
+        "comment_id": 956,
+        "isprivate": 0,
+        "modified_by": "arunr@formerly-netscape.com.tld",
+        "modified_ts": 895647600000
+    },
+    "957": {
+        "bug_id": 384,
+        "comment": "[screened]",
+        "comment_id": 957,
+        "isprivate": 0,
+        "modified_by": "arunr@formerly-netscape.com.tld",
+        "modified_ts": 896752139000
+    },
+    "958": {
+        "bug_id": 384,
+        "comment": "[screened]",
+        "comment_id": 958,
+        "isprivate": 0,
+        "modified_by": "arunr@formerly-netscape.com.tld",
+        "modified_ts": 896752739000
+    },
+    "959": {
+        "bug_id": 384,
+        "comment": "[screened]",
+        "comment_id": 959,
+        "isprivate": 0,
+        "modified_by": "arunr@formerly-netscape.com.tld",
+        "modified_ts": 896753999000
+    },
+    "960": {
+        "bug_id": 384,
+        "comment": "[screened]",
+        "comment_id": 960,
+        "isprivate": 0,
+        "modified_by": "arunr@formerly-netscape.com.tld",
+        "modified_ts": 898757999000
+    },
+    "961": {
+        "bug_id": 384,
+        "comment": "[screened]",
+        "comment_id": 961,
+        "isprivate": 0,
+        "modified_by": "arunr@formerly-netscape.com.tld",
+        "modified_ts": 898757999000
+    },
+    "962": {
+        "bug_id": 384,
+        "comment": "[screened]",
+        "comment_id": 962,
+        "isprivate": 0,
+        "modified_by": "terry@mozilla.org",
+        "modified_ts": 907710539000
+    },
+    "4602": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 4602,
+        "isprivate": 0,
+        "modified_by": "dbaron@dbaron.org",
+        "modified_ts": 907979377000
+    },
+    "4603": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 4603,
+        "isprivate": 0,
+        "modified_by": "kipp@formerly-netscape.com.tld",
+        "modified_ts": 907981319000
+    },
+    "4604": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 4604,
+        "isprivate": 0,
+        "modified_by": "kipp@formerly-netscape.com.tld",
+        "modified_ts": 909517019000
+    },
+    "4605": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 4605,
+        "isprivate": 0,
+        "modified_by": "dbaron@dbaron.org",
+        "modified_ts": 914357279000
+    },
+    "4606": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 4606,
+        "isprivate": 0,
+        "modified_by": "ian@hixie.ch",
+        "modified_ts": 916521659000
+    },
+    "4607": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 4607,
+        "isprivate": 0,
+        "modified_by": "dbaron@dbaron.org",
+        "modified_ts": 916525679000
+    },
+    "4608": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 4608,
+        "isprivate": 0,
+        "modified_by": "peterl-retired@formerly-netscape.com.tld",
+        "modified_ts": 916633079000
+    },
+    "4609": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 4609,
+        "isprivate": 0,
+        "modified_by": "dbaron@dbaron.org",
+        "modified_ts": 916637159000
+    },
+    "4610": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 4610,
+        "isprivate": 0,
+        "modified_by": "leger@formerly-netscape.com.tld",
+        "modified_ts": 918058199000
+    },
+    "4611": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 4611,
+        "isprivate": 0,
+        "modified_by": "paulmac@formerly-netscape.com.tld",
+        "modified_ts": 920702339000
+    },
+    "4612": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 4612,
+        "isprivate": 0,
+        "modified_by": "kipp@formerly-netscape.com.tld",
+        "modified_ts": 921641819000
+    },
+    "4613": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 4613,
+        "isprivate": 0,
+        "modified_by": "troy@formerly-netscape.com.tld",
+        "modified_ts": 922118099000
+    },
+    "4614": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 4614,
+        "isprivate": 0,
+        "modified_by": "troy@formerly-netscape.com.tld",
+        "modified_ts": 922389719000
+    },
+    "4615": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 4615,
+        "isprivate": 0,
+        "modified_by": "troy@formerly-netscape.com.tld",
+        "modified_ts": 923532239000
+    },
+    "4616": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 4616,
+        "isprivate": 0,
+        "modified_by": "troy@formerly-netscape.com.tld",
+        "modified_ts": 925009979000
+    },
+    "4617": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 4617,
+        "isprivate": 0,
+        "modified_by": "beard@formerly-netscape.com.tld",
+        "modified_ts": 925075619000
+    },
+    "4618": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 4618,
+        "isprivate": 0,
+        "modified_by": "beard@formerly-netscape.com.tld",
+        "modified_ts": 925075739000
+    },
+    "4619": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 4619,
+        "isprivate": 0,
+        "modified_by": "karnaze@formerly-netscape.com.tld",
+        "modified_ts": 925246799000
+    },
+    "4620": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 4620,
+        "isprivate": 0,
+        "modified_by": "kmcclusk@formerly-netscape.com.tld",
+        "modified_ts": 927224159000
+    },
+    "4621": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 4621,
+        "isprivate": 0,
+        "modified_by": "chofmann@gmail.com",
+        "modified_ts": 931401179000
+    },
+    "4622": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 4622,
+        "isprivate": 0,
+        "modified_by": "troy@formerly-netscape.com.tld",
+        "modified_ts": 937493759000
+    },
+    "4623": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 4623,
+        "isprivate": 0,
+        "modified_by": "beard@formerly-netscape.com.tld",
+        "modified_ts": 937695479000
+    },
+    "4624": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 4624,
+        "isprivate": 0,
+        "modified_by": "ian@hixie.ch",
+        "modified_ts": 938437859000
+    },
+    "4625": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 4625,
+        "isprivate": 0,
+        "modified_by": "ian@hixie.ch",
+        "modified_ts": 947807939000
+    },
+    "4626": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 4626,
+        "isprivate": 0,
+        "modified_by": "dbaron@dbaron.org",
+        "modified_ts": 907979665000
+    },
+    "4627": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 4627,
+        "isprivate": 0,
+        "modified_by": "kipp@formerly-netscape.com.tld",
+        "modified_ts": 909517199000
+    },
+    "4628": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 4628,
+        "isprivate": 0,
+        "modified_by": "angus@formerly-netscape.com.tld",
+        "modified_ts": 911415539000
+    },
+    "4629": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 4629,
+        "isprivate": 0,
+        "modified_by": "peterl-retired@formerly-netscape.com.tld",
+        "modified_ts": 911416619000
+    },
+    "4630": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 4630,
+        "isprivate": 0,
+        "modified_by": "paulmac@formerly-netscape.com.tld",
+        "modified_ts": 920702339000
+    },
+    "4631": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 4631,
+        "isprivate": 0,
+        "modified_by": "ian@hixie.ch",
+        "modified_ts": 927307559000
+    },
+    "4632": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 4632,
+        "isprivate": 0,
+        "modified_by": "peterl-retired@formerly-netscape.com.tld",
+        "modified_ts": 936751559000
+    },
+    "4633": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 4633,
+        "isprivate": 0,
+        "modified_by": "pierre@formerly-netscape.com.tld",
+        "modified_ts": 940493219000
+    },
+    "4634": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 4634,
+        "isprivate": 0,
+        "modified_by": "pierre@formerly-netscape.com.tld",
+        "modified_ts": 940493579000
+    },
+    "4635": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 4635,
+        "isprivate": 0,
+        "modified_by": "dbaron@dbaron.org",
+        "modified_ts": 940977299000
+    },
+    "4636": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 4636,
+        "isprivate": 0,
+        "modified_by": "pierre@formerly-netscape.com.tld",
+        "modified_ts": 945753059000
+    },
+    "4637": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 4637,
+        "isprivate": 0,
+        "modified_by": "ian@hixie.ch",
+        "modified_ts": 947807939000
+    },
+    "5070": {
+        "bug_id": 1108,
+        "comment": "[screened]",
+        "comment_id": 5070,
+        "isprivate": 0,
+        "modified_by": "angus@formerly-netscape.com.tld",
+        "modified_ts": 908506284000
+    },
+    "5071": {
+        "bug_id": 1108,
+        "comment": "[screened]",
+        "comment_id": 5071,
+        "isprivate": 0,
+        "modified_by": "vidur@formerly-netscape.com.tld",
+        "modified_ts": 908562719000
+    },
+    "5072": {
+        "bug_id": 1108,
+        "comment": "[screened]",
+        "comment_id": 5072,
+        "isprivate": 0,
+        "modified_by": "peterl-retired@formerly-netscape.com.tld",
+        "modified_ts": 910310999000
+    },
+    "5339": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5339,
+        "isprivate": 0,
+        "modified_by": "Antti.Nayha@oulu.fi",
+        "modified_ts": 908863328000
+    },
+    "5340": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5340,
+        "isprivate": 0,
+        "modified_by": "amusil@formerly-netscape.com.tld",
+        "modified_ts": 911873759000
+    },
+    "5341": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5341,
+        "isprivate": 0,
+        "modified_by": "leger@formerly-netscape.com.tld",
+        "modified_ts": 911883359000
+    },
+    "5342": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5342,
+        "isprivate": 0,
+        "modified_by": "Antti.Nayha@oulu.fi",
+        "modified_ts": 911896739000
+    },
+    "5343": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5343,
+        "isprivate": 0,
+        "modified_by": "bkdelong@naw.org",
+        "modified_ts": 917383979000
+    },
+    "5344": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5344,
+        "isprivate": 0,
+        "modified_by": "leger@formerly-netscape.com.tld",
+        "modified_ts": 918057899000
+    },
+    "5345": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5345,
+        "isprivate": 0,
+        "modified_by": "paulmac@formerly-netscape.com.tld",
+        "modified_ts": 920704559000
+    },
+    "5346": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5346,
+        "isprivate": 0,
+        "modified_by": "rubydoo123@aol.com",
+        "modified_ts": 920735159000
+    },
+    "5347": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5347,
+        "isprivate": 0,
+        "modified_by": "glynn@formerly-netscape.com.tld",
+        "modified_ts": 920762219000
+    },
+    "5348": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5348,
+        "isprivate": 0,
+        "modified_by": "Antti.Nayha@oulu.fi",
+        "modified_ts": 920834099000
+    },
+    "5349": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5349,
+        "isprivate": 0,
+        "modified_by": "Antti.Nayha@oulu.fi",
+        "modified_ts": 920834159000
+    },
+    "5350": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5350,
+        "isprivate": 0,
+        "modified_by": "glynn@formerly-netscape.com.tld",
+        "modified_ts": 920959079000
+    },
+    "5351": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5351,
+        "isprivate": 0,
+        "modified_by": "amusil@formerly-netscape.com.tld",
+        "modified_ts": 921292379000
+    },
+    "5352": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5352,
+        "isprivate": 0,
+        "modified_by": "Antti.Nayha@oulu.fi",
+        "modified_ts": 921333599000
+    },
+    "5353": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5353,
+        "isprivate": 0,
+        "modified_by": "amusil@formerly-netscape.com.tld",
+        "modified_ts": 921525119000
+    },
+    "5354": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5354,
+        "isprivate": 0,
+        "modified_by": "amusil@formerly-netscape.com.tld",
+        "modified_ts": 921525419000
+    },
+    "5355": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5355,
+        "isprivate": 0,
+        "modified_by": "amusil@formerly-netscape.com.tld",
+        "modified_ts": 921539819000
+    },
+    "5356": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5356,
+        "isprivate": 0,
+        "modified_by": "amusil@formerly-netscape.com.tld",
+        "modified_ts": 921634019000
+    },
+    "5357": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5357,
+        "isprivate": 0,
+        "modified_by": "serhunt@flash.net",
+        "modified_ts": 921636359000
+    },
+    "5358": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5358,
+        "isprivate": 0,
+        "modified_by": "glynn@formerly-netscape.com.tld",
+        "modified_ts": 921719339000
+    },
+    "5359": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5359,
+        "isprivate": 0,
+        "modified_by": "amusil@formerly-netscape.com.tld",
+        "modified_ts": 921792239000
+    },
+    "5360": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5360,
+        "isprivate": 0,
+        "modified_by": "chofmann@gmail.com",
+        "modified_ts": 921796679000
+    },
+    "5361": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5361,
+        "isprivate": 0,
+        "modified_by": "glynn@formerly-netscape.com.tld",
+        "modified_ts": 921818699000
+    },
+    "5362": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5362,
+        "isprivate": 0,
+        "modified_by": "Antti.Nayha@oulu.fi",
+        "modified_ts": 924696179000
+    },
+    "5363": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5363,
+        "isprivate": 0,
+        "modified_by": "serhunt@flash.net",
+        "modified_ts": 924817079000
+    },
+    "5364": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5364,
+        "isprivate": 0,
+        "modified_by": "Antti.Nayha@oulu.fi",
+        "modified_ts": 924855959000
+    },
+    "5365": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5365,
+        "isprivate": 0,
+        "modified_by": "serhunt@flash.net",
+        "modified_ts": 924893039000
+    },
+    "5366": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5366,
+        "isprivate": 0,
+        "modified_by": "cmaximus@gmail.com",
+        "modified_ts": 928297559000
+    },
+    "5367": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 5367,
+        "isprivate": 0,
+        "modified_by": "rubydoo123@aol.com",
+        "modified_ts": 928339979000
+    },
+    "10579": {
+        "bug_id": 1865,
+        "comment": "[screened]",
+        "comment_id": 10579,
+        "isprivate": 0,
+        "modified_by": "webmaster@dipswitch.com",
+        "modified_ts": 913356918000
+    },
+    "10580": {
+        "bug_id": 1865,
+        "comment": "[screened]",
+        "comment_id": 10580,
+        "isprivate": 0,
+        "modified_by": "trudelle@acm.org",
+        "modified_ts": 915578279000
+    },
+    "10581": {
+        "bug_id": 1865,
+        "comment": "[screened]",
+        "comment_id": 10581,
+        "isprivate": 0,
+        "modified_by": "don@formerly-netscape.com.tld",
+        "modified_ts": 915654119000
+    },
+    "10582": {
+        "bug_id": 1865,
+        "comment": "[screened]",
+        "comment_id": 10582,
+        "isprivate": 0,
+        "modified_by": "pnunn@formerly-netscape.com.tld",
+        "modified_ts": 915760979000
+    },
+    "10583": {
+        "bug_id": 1865,
+        "comment": "[screened]",
+        "comment_id": 10583,
+        "isprivate": 0,
+        "modified_by": "pnunn@formerly-netscape.com.tld",
+        "modified_ts": 915824819000
+    },
+    "10584": {
+        "bug_id": 1865,
+        "comment": "[screened]",
+        "comment_id": 10584,
+        "isprivate": 0,
+        "modified_by": "pnunn@formerly-netscape.com.tld",
+        "modified_ts": 915825719000
+    },
+    "10585": {
+        "bug_id": 1865,
+        "comment": "[screened]",
+        "comment_id": 10585,
+        "isprivate": 0,
+        "modified_by": "leger@formerly-netscape.com.tld",
+        "modified_ts": 919970579000
+    },
+    "10586": {
+        "bug_id": 1865,
+        "comment": "[screened]",
+        "comment_id": 10586,
+        "isprivate": 0,
+        "modified_by": "pnunn@formerly-netscape.com.tld",
+        "modified_ts": 919972139000
+    },
+    "10587": {
+        "bug_id": 1865,
+        "comment": "[screened]",
+        "comment_id": 10587,
+        "isprivate": 0,
+        "modified_by": "rubydoo123@aol.com",
+        "modified_ts": 920139239000
+    },
+    "10588": {
+        "bug_id": 1865,
+        "comment": "[screened]",
+        "comment_id": 10588,
+        "isprivate": 0,
+        "modified_by": "leger@formerly-netscape.com.tld",
+        "modified_ts": 920415719000
+    },
+    "10589": {
+        "bug_id": 1865,
+        "comment": "[screened]",
+        "comment_id": 10589,
+        "isprivate": 0,
+        "modified_by": "elig@formerly-netscape.com.tld",
+        "modified_ts": 925183439000
+    },
+    "10590": {
+        "bug_id": 1865,
+        "comment": "[screened]",
+        "comment_id": 10590,
+        "isprivate": 0,
+        "modified_by": "pnunn@formerly-netscape.com.tld",
+        "modified_ts": 925240679000
+    },
+    "10591": {
+        "bug_id": 1865,
+        "comment": "[screened]",
+        "comment_id": 10591,
+        "isprivate": 0,
+        "modified_by": "pnunn@formerly-netscape.com.tld",
+        "modified_ts": 926368199000
+    },
+    "10592": {
+        "bug_id": 1865,
+        "comment": "[screened]",
+        "comment_id": 10592,
+        "isprivate": 0,
+        "modified_by": "elig@formerly-netscape.com.tld",
+        "modified_ts": 926372699000
+    },
+    "10593": {
+        "bug_id": 1865,
+        "comment": "[screened]",
+        "comment_id": 10593,
+        "isprivate": 0,
+        "modified_by": "elig@formerly-netscape.com.tld",
+        "modified_ts": 926372939000
+    },
+    "10594": {
+        "bug_id": 1865,
+        "comment": "[screened]",
+        "comment_id": 10594,
+        "isprivate": 0,
+        "modified_by": "elig@formerly-netscape.com.tld",
+        "modified_ts": 926478539000
+    },
+    "10595": {
+        "bug_id": 1865,
+        "comment": "[screened]",
+        "comment_id": 10595,
+        "isprivate": 0,
+        "modified_by": "pnunn@formerly-netscape.com.tld",
+        "modified_ts": 926529779000
+    },
+    "10596": {
+        "bug_id": 1865,
+        "comment": "[screened]",
+        "comment_id": 10596,
+        "isprivate": 0,
+        "modified_by": "pnunn@formerly-netscape.com.tld",
+        "modified_ts": 926708879000
+    },
+    "10597": {
+        "bug_id": 1865,
+        "comment": "[screened]",
+        "comment_id": 10597,
+        "isprivate": 0,
+        "modified_by": "pnunn@formerly-netscape.com.tld",
+        "modified_ts": 929148119000
+    },
+    "10598": {
+        "bug_id": 1865,
+        "comment": "[screened]",
+        "comment_id": 10598,
+        "isprivate": 0,
+        "modified_by": "elig@formerly-netscape.com.tld",
+        "modified_ts": 929476679000
+    },
+    "10613": {
+        "bug_id": 1869,
+        "comment": "[screened]",
+        "comment_id": 10613,
+        "isprivate": 0,
+        "modified_by": "dustin@e-corp.com",
+        "modified_ts": 913388604000
+    },
+    "10614": {
+        "bug_id": 1869,
+        "comment": "[screened]",
+        "comment_id": 10614,
+        "isprivate": 0,
+        "modified_by": "kipp@formerly-netscape.com.tld",
+        "modified_ts": 913392479000
+    },
+    "10615": {
+        "bug_id": 1869,
+        "comment": "[screened]",
+        "comment_id": 10615,
+        "isprivate": 0,
+        "modified_by": "kipp@formerly-netscape.com.tld",
+        "modified_ts": 913697879000
+    },
+    "10616": {
+        "bug_id": 1869,
+        "comment": "[screened]",
+        "comment_id": 10616,
+        "isprivate": 0,
+        "modified_by": "leger@formerly-netscape.com.tld",
+        "modified_ts": 918058139000
+    },
+    "10617": {
+        "bug_id": 1869,
+        "comment": "[screened]",
+        "comment_id": 10617,
+        "isprivate": 0,
+        "modified_by": "paulmac@formerly-netscape.com.tld",
+        "modified_ts": 920702339000
+    },
+    "10618": {
+        "bug_id": 1869,
+        "comment": "[screened]",
+        "comment_id": 10618,
+        "isprivate": 0,
+        "modified_by": "kipp@formerly-netscape.com.tld",
+        "modified_ts": 922245959000
+    },
+    "10619": {
+        "bug_id": 1869,
+        "comment": "[screened]",
+        "comment_id": 10619,
+        "isprivate": 0,
+        "modified_by": "troy@formerly-netscape.com.tld",
+        "modified_ts": 922248659000
+    },
+    "10620": {
+        "bug_id": 1869,
+        "comment": "[screened]",
+        "comment_id": 10620,
+        "isprivate": 0,
+        "modified_by": "christinehoff4@aol.com",
+        "modified_ts": 922515899000
+    },
+    "10621": {
+        "bug_id": 1869,
+        "comment": "[screened]",
+        "comment_id": 10621,
+        "isprivate": 0,
+        "modified_by": "troy@formerly-netscape.com.tld",
+        "modified_ts": 922553099000
+    },
+    "10622": {
+        "bug_id": 1869,
+        "comment": "[screened]",
+        "comment_id": 10622,
+        "isprivate": 0,
+        "modified_by": "chofmann@gmail.com",
+        "modified_ts": 927261479000
+    },
+    "10623": {
+        "bug_id": 1869,
+        "comment": "[screened]",
+        "comment_id": 10623,
+        "isprivate": 0,
+        "modified_by": "christinehoff4@aol.com",
+        "modified_ts": 929474939000
+    },
+    "10624": {
+        "bug_id": 1869,
+        "comment": "[screened]",
+        "comment_id": 10624,
+        "isprivate": 0,
+        "modified_by": "rickg@formerly-netscape.com.tld",
+        "modified_ts": 929514599000
+    },
+    "10625": {
+        "bug_id": 1869,
+        "comment": "[screened]",
+        "comment_id": 10625,
+        "isprivate": 0,
+        "modified_by": "christinehoff4@aol.com",
+        "modified_ts": 929560679000
+    },
+    "10626": {
+        "bug_id": 1869,
+        "comment": "[screened]",
+        "comment_id": 10626,
+        "isprivate": 0,
+        "modified_by": "rickg@formerly-netscape.com.tld",
+        "modified_ts": 929641739000
+    },
+    "10627": {
+        "bug_id": 1869,
+        "comment": "[screened]",
+        "comment_id": 10627,
+        "isprivate": 0,
+        "modified_by": "kmcclusk@formerly-netscape.com.tld",
+        "modified_ts": 929667119000
+    },
+    "10628": {
+        "bug_id": 1869,
+        "comment": "[screened]",
+        "comment_id": 10628,
+        "isprivate": 0,
+        "modified_by": "vidur@formerly-netscape.com.tld",
+        "modified_ts": 929667719000
+    },
+    "10629": {
+        "bug_id": 1869,
+        "comment": "[screened]",
+        "comment_id": 10629,
+        "isprivate": 0,
+        "modified_by": "ekrock@formerly-netscape.com.tld",
+        "modified_ts": 946934579000
+    },
+    "10630": {
+        "bug_id": 1869,
+        "comment": "[screened]",
+        "comment_id": 10630,
+        "isprivate": 0,
+        "modified_by": "christinehoff4@aol.com",
+        "modified_ts": 947294099000
+    },
+    "10684": {
+        "bug_id": 1877,
+        "comment": "[screened]",
+        "comment_id": 10684,
+        "isprivate": 0,
+        "modified_by": "balu.ram@mantech.com",
+        "modified_ts": 913410395000
+    },
+    "10685": {
+        "bug_id": 1877,
+        "comment": "[screened]",
+        "comment_id": 10685,
+        "isprivate": 0,
+        "modified_by": "joki@formerly-netscape.com.tld",
+        "modified_ts": 917576519000
+    },
+    "10686": {
+        "bug_id": 1877,
+        "comment": "[screened]",
+        "comment_id": 10686,
+        "isprivate": 0,
+        "modified_by": "leger@formerly-netscape.com.tld",
+        "modified_ts": 918057839000
+    },
+    "10687": {
+        "bug_id": 1877,
+        "comment": "[screened]",
+        "comment_id": 10687,
+        "isprivate": 0,
+        "modified_by": "don@formerly-netscape.com.tld",
+        "modified_ts": 920681759000
+    },
+    "10688": {
+        "bug_id": 1877,
+        "comment": "[screened]",
+        "comment_id": 10688,
+        "isprivate": 0,
+        "modified_by": "don@formerly-netscape.com.tld",
+        "modified_ts": 920683799000
+    },
+    "10689": {
+        "bug_id": 1877,
+        "comment": "[screened]",
+        "comment_id": 10689,
+        "isprivate": 0,
+        "modified_by": "paulmac@formerly-netscape.com.tld",
+        "modified_ts": 920699939000
+    },
+    "10690": {
+        "bug_id": 1877,
+        "comment": "[screened]",
+        "comment_id": 10690,
+        "isprivate": 0,
+        "modified_by": "leger@formerly-netscape.com.tld",
+        "modified_ts": 921079679000
+    },
+    "10691": {
+        "bug_id": 1877,
+        "comment": "[screened]",
+        "comment_id": 10691,
+        "isprivate": 0,
+        "modified_by": "don@formerly-netscape.com.tld",
+        "modified_ts": 921128579000
+    },
+    "10692": {
+        "bug_id": 1877,
+        "comment": "[screened]",
+        "comment_id": 10692,
+        "isprivate": 0,
+        "modified_by": "don@formerly-netscape.com.tld",
+        "modified_ts": 923472959000
+    },
+    "10693": {
+        "bug_id": 1877,
+        "comment": "[screened]",
+        "comment_id": 10693,
+        "isprivate": 0,
+        "modified_by": "davidm@formerly-netscape.com.tld",
+        "modified_ts": 923475599000
+    },
+    "10694": {
+        "bug_id": 1877,
+        "comment": "[screened]",
+        "comment_id": 10694,
+        "isprivate": 0,
+        "modified_by": "davidm@formerly-netscape.com.tld",
+        "modified_ts": 924164219000
+    },
+    "10695": {
+        "bug_id": 1877,
+        "comment": "[screened]",
+        "comment_id": 10695,
+        "isprivate": 0,
+        "modified_by": "don@formerly-netscape.com.tld",
+        "modified_ts": 924851219000
+    },
+    "10696": {
+        "bug_id": 1877,
+        "comment": "[screened]",
+        "comment_id": 10696,
+        "isprivate": 0,
+        "modified_by": "davidm@formerly-netscape.com.tld",
+        "modified_ts": 925015079000
+    },
+    "10697": {
+        "bug_id": 1877,
+        "comment": "[screened]",
+        "comment_id": 10697,
+        "isprivate": 0,
+        "modified_by": "davidm@formerly-netscape.com.tld",
+        "modified_ts": 927070739000
+    },
+    "10698": {
+        "bug_id": 1877,
+        "comment": "[screened]",
+        "comment_id": 10698,
+        "isprivate": 0,
+        "modified_by": "davidm@formerly-netscape.com.tld",
+        "modified_ts": 928878959000
+    },
+    "10699": {
+        "bug_id": 1877,
+        "comment": "[screened]",
+        "comment_id": 10699,
+        "isprivate": 0,
+        "modified_by": "davidm@formerly-netscape.com.tld",
+        "modified_ts": 929136299000
+    },
+    "10700": {
+        "bug_id": 1877,
+        "comment": "[screened]",
+        "comment_id": 10700,
+        "isprivate": 0,
+        "modified_by": "davidm@formerly-netscape.com.tld",
+        "modified_ts": 929136359000
+    },
+    "10701": {
+        "bug_id": 1877,
+        "comment": "[screened]",
+        "comment_id": 10701,
+        "isprivate": 0,
+        "modified_by": "davidm@formerly-netscape.com.tld",
+        "modified_ts": 930613799000
+    },
+    "10702": {
+        "bug_id": 1877,
+        "comment": "[screened]",
+        "comment_id": 10702,
+        "isprivate": 0,
+        "modified_by": "davidm@formerly-netscape.com.tld",
+        "modified_ts": 930878999000
+    },
+    "10703": {
+        "bug_id": 1877,
+        "comment": "[screened]",
+        "comment_id": 10703,
+        "isprivate": 0,
+        "modified_by": "mike+mozilla@meer.net",
+        "modified_ts": 931913879000
+    },
+    "10704": {
+        "bug_id": 1877,
+        "comment": "[screened]",
+        "comment_id": 10704,
+        "isprivate": 0,
+        "modified_by": "davidm@formerly-netscape.com.tld",
+        "modified_ts": 932786099000
+    },
+    "10705": {
+        "bug_id": 1877,
+        "comment": "[screened]",
+        "comment_id": 10705,
+        "isprivate": 0,
+        "modified_by": "davidm@formerly-netscape.com.tld",
+        "modified_ts": 936499979000
+    },
+    "16615": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 16615,
+        "isprivate": 0,
+        "modified_by": "ian@hixie.ch",
+        "modified_ts": 917101675000
+    },
+    "16616": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 16616,
+        "isprivate": 0,
+        "modified_by": "troy@formerly-netscape.com.tld",
+        "modified_ts": 917114759000
+    },
+    "16617": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 16617,
+        "isprivate": 0,
+        "modified_by": "paulmac@formerly-netscape.com.tld",
+        "modified_ts": 920700119000
+    },
+    "16618": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 16618,
+        "isprivate": 0,
+        "modified_by": "christinehoff4@aol.com",
+        "modified_ts": 920837939000
+    },
+    "16619": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 16619,
+        "isprivate": 0,
+        "modified_by": "dcone@formerly-netscape.com.tld",
+        "modified_ts": 938039879000
+    },
+    "16620": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 16620,
+        "isprivate": 0,
+        "modified_by": "elig@formerly-netscape.com.tld",
+        "modified_ts": 939334499000
+    },
+    "21618": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 21618,
+        "isprivate": 0,
+        "modified_by": "erik@eae.net",
+        "modified_ts": 918859853000
+    },
+    "21619": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 21619,
+        "isprivate": 0,
+        "modified_by": "joki@formerly-netscape.com.tld",
+        "modified_ts": 924038879000
+    },
+    "21620": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 21620,
+        "isprivate": 0,
+        "modified_by": "joki@formerly-netscape.com.tld",
+        "modified_ts": 926992199000
+    },
+    "21621": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 21621,
+        "isprivate": 0,
+        "modified_by": "jonesev@home.com",
+        "modified_ts": 933079799000
+    },
+    "21622": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 21622,
+        "isprivate": 0,
+        "modified_by": "jonesev@home.com",
+        "modified_ts": 933079919000
+    },
+    "21623": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 21623,
+        "isprivate": 0,
+        "modified_by": "joki@formerly-netscape.com.tld",
+        "modified_ts": 933131699000
+    },
+    "21624": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 21624,
+        "isprivate": 0,
+        "modified_by": "troy@formerly-netscape.com.tld",
+        "modified_ts": 933132419000
+    },
+    "21625": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 21625,
+        "isprivate": 0,
+        "modified_by": "jonesev@home.com",
+        "modified_ts": 933294599000
+    },
+    "21626": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 21626,
+        "isprivate": 0,
+        "modified_by": "joki@formerly-netscape.com.tld",
+        "modified_ts": 941739359000
+    },
+    "21627": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 21627,
+        "isprivate": 0,
+        "modified_by": "rickg@formerly-netscape.com.tld",
+        "modified_ts": 944086559000
+    },
+    "50753": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 50753,
+        "isprivate": 0,
+        "modified_by": "roland.mainz@nrubsig.org",
+        "modified_ts": 927225920000
+    },
+    "50754": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 50754,
+        "isprivate": 0,
+        "modified_by": "chrispetersen@mac.com",
+        "modified_ts": 930767279000
+    },
+    "50755": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 50755,
+        "isprivate": 0,
+        "modified_by": "dcone@formerly-netscape.com.tld",
+        "modified_ts": 933692159000
+    },
+    "50756": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 50756,
+        "isprivate": 0,
+        "modified_by": "roland.mainz@nrubsig.org",
+        "modified_ts": 933692399000
+    },
+    "50757": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 50757,
+        "isprivate": 0,
+        "modified_by": "slogan@cts.com",
+        "modified_ts": 936133619000
+    },
+    "50758": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 50758,
+        "isprivate": 0,
+        "modified_by": "roland.mainz@nrubsig.org",
+        "modified_ts": 938165399000
+    },
+    "50759": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 50759,
+        "isprivate": 0,
+        "modified_by": "paulmac@formerly-netscape.com.tld",
+        "modified_ts": 943059179000
+    },
+    "50760": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 50760,
+        "isprivate": 0,
+        "modified_by": "slogan@cts.com",
+        "modified_ts": 944115179000
+    },
+    "50761": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 50761,
+        "isprivate": 0,
+        "modified_by": "amusil@formerly-netscape.com.tld",
+        "modified_ts": 947731739000
+    },
+    "50762": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 50762,
+        "isprivate": 0,
+        "modified_by": "roland.mainz@nrubsig.org",
+        "modified_ts": 947749559000
+    },
+    "72571": {
+        "bug_id": 9622,
+        "comment": "[screened]",
+        "comment_id": 72571,
+        "isprivate": 0,
+        "modified_by": "trudelle@acm.org",
+        "modified_ts": 931745289000
+    },
+    "72572": {
+        "bug_id": 9622,
+        "comment": "[screened]",
+        "comment_id": 72572,
+        "isprivate": 0,
+        "modified_by": "trudelle@acm.org",
+        "modified_ts": 931747439000
+    },
+    "72573": {
+        "bug_id": 9622,
+        "comment": "[screened]",
+        "comment_id": 72573,
+        "isprivate": 0,
+        "modified_by": "trudelle@acm.org",
+        "modified_ts": 931759079000
+    },
+    "72574": {
+        "bug_id": 9622,
+        "comment": "[screened]",
+        "comment_id": 72574,
+        "isprivate": 0,
+        "modified_by": "mcafee@mocha.com",
+        "modified_ts": 932808299000
+    },
+    "72575": {
+        "bug_id": 9622,
+        "comment": "[screened]",
+        "comment_id": 72575,
+        "isprivate": 0,
+        "modified_by": "phillip@formerly-netscape.com.tld",
+        "modified_ts": 933025799000
+    },
+    "72576": {
+        "bug_id": 9622,
+        "comment": "[screened]",
+        "comment_id": 72576,
+        "isprivate": 0,
+        "modified_by": "mcafee@mocha.com",
+        "modified_ts": 933026759000
+    },
+    "72577": {
+        "bug_id": 9622,
+        "comment": "[screened]",
+        "comment_id": 72577,
+        "isprivate": 0,
+        "modified_by": "phillip@formerly-netscape.com.tld",
+        "modified_ts": 933028979000
+    },
+    "72578": {
+        "bug_id": 9622,
+        "comment": "[screened]",
+        "comment_id": 72578,
+        "isprivate": 0,
+        "modified_by": "phillip@formerly-netscape.com.tld",
+        "modified_ts": 933028979000
+    },
+    "79391": {
+        "bug_id": 10575,
+        "comment": "[screened]",
+        "comment_id": 79391,
+        "isprivate": 0,
+        "modified_by": "rubydoo123@aol.com",
+        "modified_ts": 938621699000
+    },
+    "79392": {
+        "bug_id": 10575,
+        "comment": "[screened]",
+        "comment_id": 79392,
+        "isprivate": 0,
+        "modified_by": "terry@mozilla.org",
+        "modified_ts": 938647919000
+    },
+    "79393": {
+        "bug_id": 10575,
+        "comment": "[screened]",
+        "comment_id": 79393,
+        "isprivate": 0,
+        "modified_by": "leger@formerly-netscape.com.tld",
+        "modified_ts": 944689319000
+    },
+    "79394": {
+        "bug_id": 10575,
+        "comment": "[screened]",
+        "comment_id": 79394,
+        "isprivate": 0,
+        "modified_by": "don@formerly-netscape.com.tld",
+        "modified_ts": 945916799000
+    },
+    "82747": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 82747,
+        "isprivate": 0,
+        "modified_by": "mozilla@davidbienvenu.org",
+        "modified_ts": 933539699000
+    },
+    "82748": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 82748,
+        "isprivate": 0,
+        "modified_by": "phil@formerly-netscape.com.tld",
+        "modified_ts": 935515739000
+    },
+    "82749": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 82749,
+        "isprivate": 0,
+        "modified_by": "phil@formerly-netscape.com.tld",
+        "modified_ts": 936146159000
+    },
+    "96239": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 96239,
+        "isprivate": 0,
+        "modified_by": "akkzilla@shallowsky.com",
+        "modified_ts": 936145527000
+    },
+    "96240": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 96240,
+        "isprivate": 0,
+        "modified_by": "selmer@formerly-netscape.com.tld",
+        "modified_ts": 936317939000
+    },
+    "96241": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 96241,
+        "isprivate": 0,
+        "modified_by": "leger@formerly-netscape.com.tld",
+        "modified_ts": 937282559000
+    },
+    "96242": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 96242,
+        "isprivate": 0,
+        "modified_by": "leger@formerly-netscape.com.tld",
+        "modified_ts": 937420559000
+    },
+    "96243": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 96243,
+        "isprivate": 0,
+        "modified_by": "leger@formerly-netscape.com.tld",
+        "modified_ts": 948388679000
+    },
+    "169926": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 169926,
+        "isprivate": 0,
+        "modified_by": "ekrock@formerly-netscape.com.tld",
+        "modified_ts": 948491458000
+    },
+    "183349": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 183349,
+        "isprivate": 0,
+        "modified_by": "digulla@hepe.com",
+        "modified_ts": 949601749000
+    },
+    "187120": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 187120,
+        "isprivate": 0,
+        "modified_by": "beard@formerly-netscape.com.tld",
+        "modified_ts": 949950807000
+    },
+    "190173": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 190173,
+        "isprivate": 0,
+        "modified_by": "beard@formerly-netscape.com.tld",
+        "modified_ts": 950129220000
+    },
+    "205568": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 205568,
+        "isprivate": 0,
+        "modified_by": "ian@hixie.ch",
+        "modified_ts": 951179713000
+    },
+    "205612": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 205612,
+        "isprivate": 0,
+        "modified_by": "dbaron@dbaron.org",
+        "modified_ts": 951180818000
+    },
+    "205665": {
+        "bug_id": 1045,
+        "comment": "[screened]",
+        "comment_id": 205665,
+        "isprivate": 0,
+        "modified_by": "ian@hixie.ch",
+        "modified_ts": 951182339000
+    },
+    "221881": {
+        "bug_id": 384,
+        "comment": "[screened]",
+        "comment_id": 221881,
+        "isprivate": 0,
+        "modified_by": "matty_is_a_geek@fastmail.fm",
+        "modified_ts": 952426223000
+    },
+    "243674": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 243674,
+        "isprivate": 0,
+        "modified_by": "fantasai.bugs@inkedblade.net",
+        "modified_ts": 954198156000
+    },
+    "243675": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 243675,
+        "isprivate": 0,
+        "modified_by": "fantasai.bugs@inkedblade.net",
+        "modified_ts": 954198345000
+    },
+    "250600": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 250600,
+        "isprivate": 0,
+        "modified_by": "joki@formerly-netscape.com.tld",
+        "modified_ts": 954876148000
+    },
+    "254909": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 254909,
+        "isprivate": 0,
+        "modified_by": "amusil@formerly-netscape.com.tld",
+        "modified_ts": 955056107000
+    },
+    "255673": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 255673,
+        "isprivate": 0,
+        "modified_by": "roland.mainz@nrubsig.org",
+        "modified_ts": 955108503000
+    },
+    "256342": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 256342,
+        "isprivate": 0,
+        "modified_by": "rickg@formerly-netscape.com.tld",
+        "modified_ts": 955143558000
+    },
+    "257100": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 257100,
+        "isprivate": 0,
+        "modified_by": "spam@minneboken.com",
+        "modified_ts": 955193616000
+    },
+    "258119": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 258119,
+        "isprivate": 0,
+        "modified_by": "digulla@hepe.com",
+        "modified_ts": 955355188000
+    },
+    "272461": {
+        "bug_id": 10575,
+        "comment": "[screened]",
+        "comment_id": 272461,
+        "isprivate": 0,
+        "modified_by": "shrir@formerly-netscape.com.tld",
+        "modified_ts": 956615748000
+    },
+    "272520": {
+        "bug_id": 10575,
+        "comment": "[screened]",
+        "comment_id": 272520,
+        "isprivate": 0,
+        "modified_by": "bugzilla@iwaruna.com",
+        "modified_ts": 956616722000
+    },
+    "301396": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 301396,
+        "isprivate": 0,
+        "modified_by": "ian@hixie.ch",
+        "modified_ts": 958860047000
+    },
+    "301742": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 301742,
+        "isprivate": 0,
+        "modified_by": "bratell@lysator.liu.se",
+        "modified_ts": 958926542000
+    },
+    "301947": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 301947,
+        "isprivate": 0,
+        "modified_by": "dcone@formerly-netscape.com.tld",
+        "modified_ts": 958963287000
+    },
+    "302403": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 302403,
+        "isprivate": 0,
+        "modified_by": "pnunn@formerly-netscape.com.tld",
+        "modified_ts": 959020974000
+    },
+    "313637": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 313637,
+        "isprivate": 0,
+        "modified_by": "racham@formerly-netscape.com.tld",
+        "modified_ts": 959807728000
+    },
+    "318359": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 318359,
+        "isprivate": 0,
+        "modified_by": "ekrock@formerly-netscape.com.tld",
+        "modified_ts": 960241369000
+    },
+    "325666": {
+        "bug_id": 1157,
+        "comment": "[screened]",
+        "comment_id": 325666,
+        "isprivate": 0,
+        "modified_by": "matt@nightrealms.com",
+        "modified_ts": 960710980000
+    },
+    "326148": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 326148,
+        "isprivate": 0,
+        "modified_by": "pierre@formerly-netscape.com.tld",
+        "modified_ts": 960807911000
+    },
+    "330009": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 330009,
+        "isprivate": 0,
+        "modified_by": "ekrock@formerly-netscape.com.tld",
+        "modified_ts": 961032231000
+    },
+    "330147": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 330147,
+        "isprivate": 0,
+        "modified_by": "dbaron@dbaron.org",
+        "modified_ts": 961046381000
+    },
+    "330150": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 330150,
+        "isprivate": 0,
+        "modified_by": "dbaron@dbaron.org",
+        "modified_ts": 961046474000
+    },
+    "330162": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 330162,
+        "isprivate": 0,
+        "modified_by": "dbaron@dbaron.org",
+        "modified_ts": 961047881000
+    },
+    "331750": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 331750,
+        "isprivate": 0,
+        "modified_by": "pierre@formerly-netscape.com.tld",
+        "modified_ts": 961148818000
+    },
+    "331751": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 331751,
+        "isprivate": 0,
+        "modified_by": "pierre@formerly-netscape.com.tld",
+        "modified_ts": 961148933000
+    },
+    "336860": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 336860,
+        "isprivate": 0,
+        "modified_by": "R6Agent@prodigy.net",
+        "modified_ts": 961619945000
+    },
+    "342479": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 342479,
+        "isprivate": 0,
+        "modified_by": "joki@formerly-netscape.com.tld",
+        "modified_ts": 962081134000
+    },
+    "343640": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 343640,
+        "isprivate": 0,
+        "modified_by": "joki@formerly-netscape.com.tld",
+        "modified_ts": 962156859000
+    },
+    "363985": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 363985,
+        "isprivate": 0,
+        "modified_by": "ekrock@formerly-netscape.com.tld",
+        "modified_ts": 964117139000
+    },
+    "368254": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 368254,
+        "isprivate": 0,
+        "modified_by": "racham@formerly-netscape.com.tld",
+        "modified_ts": 964491553000
+    },
+    "388191": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 388191,
+        "isprivate": 0,
+        "modified_by": "ckritzer@formerly-netscape.com.tld",
+        "modified_ts": 965863906000
+    },
+    "388230": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 388230,
+        "isprivate": 0,
+        "modified_by": "hjtoi-bugzilla@comcast.net",
+        "modified_ts": 965864857000
+    },
+    "388315": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 388315,
+        "isprivate": 0,
+        "modified_by": "hjtoi-bugzilla@comcast.net",
+        "modified_ts": 965866966000
+    },
+    "395091": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 395091,
+        "isprivate": 0,
+        "modified_by": "ftang@formerly-netscape.com.tld",
+        "modified_ts": 966377067000
+    },
+    "395406": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 395406,
+        "isprivate": 0,
+        "modified_by": "hjtoi-bugzilla@comcast.net",
+        "modified_ts": 966383106000
+    },
+    "395494": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 395494,
+        "isprivate": 0,
+        "modified_by": "hjtoi-bugzilla@comcast.net",
+        "modified_ts": 966385076000
+    },
+    "397450": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 397450,
+        "isprivate": 0,
+        "modified_by": "pierre@formerly-netscape.com.tld",
+        "modified_ts": 966526963000
+    },
+    "406383": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 406383,
+        "isprivate": 0,
+        "modified_by": "jaimejr@formerly-netscape.com.tld",
+        "modified_ts": 967152181000
+    },
+    "412014": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 412014,
+        "isprivate": 0,
+        "modified_by": "ftang@formerly-netscape.com.tld",
+        "modified_ts": 967591188000
+    },
+    "412246": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 412246,
+        "isprivate": 0,
+        "modified_by": "ekrock@formerly-netscape.com.tld",
+        "modified_ts": 967597923000
+    },
+    "412262": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 412262,
+        "isprivate": 0,
+        "modified_by": "dbaron@dbaron.org",
+        "modified_ts": 967598365000
+    },
+    "413896": {
+        "bug_id": 1869,
+        "comment": "[screened]",
+        "comment_id": 413896,
+        "isprivate": 0,
+        "modified_by": "ekrock@formerly-netscape.com.tld",
+        "modified_ts": 967687613000
+    },
+    "413960": {
+        "bug_id": 1869,
+        "comment": "[screened]",
+        "comment_id": 413960,
+        "isprivate": 0,
+        "modified_by": "ekrock@formerly-netscape.com.tld",
+        "modified_ts": 967690116000
+    },
+    "413963": {
+        "bug_id": 1869,
+        "comment": "[screened]",
+        "comment_id": 413963,
+        "isprivate": 0,
+        "modified_by": "ekrock@formerly-netscape.com.tld",
+        "modified_ts": 967690257000
+    },
+    "415793": {
+        "bug_id": 1869,
+        "comment": "[screened]",
+        "comment_id": 415793,
+        "isprivate": 0,
+        "modified_by": "zach@zachlipton.com",
+        "modified_ts": 967779135000
+    },
+    "415967": {
+        "bug_id": 1869,
+        "comment": "[screened]",
+        "comment_id": 415967,
+        "isprivate": 0,
+        "modified_by": "bugzilla@blakeross.com",
+        "modified_ts": 967785673000
+    },
+    "416360": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 416360,
+        "isprivate": 0,
+        "modified_by": "ekrock@formerly-netscape.com.tld",
+        "modified_ts": 967830943000
+    },
+    "418545": {
+        "bug_id": 1869,
+        "comment": "[screened]",
+        "comment_id": 418545,
+        "isprivate": 0,
+        "modified_by": "zach@zachlipton.com",
+        "modified_ts": 968086929000
+    },
+    "425155": {
+        "bug_id": 1869,
+        "comment": "[screened]",
+        "comment_id": 425155,
+        "isprivate": 0,
+        "modified_by": "zach@zachlipton.com",
+        "modified_ts": 968457443000
+    },
+    "444557": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 444557,
+        "isprivate": 0,
+        "modified_by": "dbaron@dbaron.org",
+        "modified_ts": 969678231000
+    },
+    "451831": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 451831,
+        "isprivate": 0,
+        "modified_by": "ian@hixie.ch",
+        "modified_ts": 970099170000
+    },
+    "452361": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 452361,
+        "isprivate": 0,
+        "modified_by": "ekrock@formerly-netscape.com.tld",
+        "modified_ts": 970115439000
+    },
+    "452687": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 452687,
+        "isprivate": 0,
+        "modified_by": "dbaron@dbaron.org",
+        "modified_ts": 970149878000
+    },
+    "452739": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 452739,
+        "isprivate": 0,
+        "modified_by": "pierre@formerly-netscape.com.tld",
+        "modified_ts": 970153756000
+    },
+    "452792": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 452792,
+        "isprivate": 0,
+        "modified_by": "buster@formerly-netscape.com.tld",
+        "modified_ts": 970155981000
+    },
+    "452992": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 452992,
+        "isprivate": 0,
+        "modified_by": "ekrock@formerly-netscape.com.tld",
+        "modified_ts": 970164347000
+    },
+    "453527": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 453527,
+        "isprivate": 0,
+        "modified_by": "ian@hixie.ch",
+        "modified_ts": 970177069000
+    },
+    "454988": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 454988,
+        "isprivate": 0,
+        "modified_by": "erik@vanderpoel.org",
+        "modified_ts": 970248647000
+    },
+    "455491": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 455491,
+        "isprivate": 0,
+        "modified_by": "karnaze@formerly-netscape.com.tld",
+        "modified_ts": 970260947000
+    },
+    "458295": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 458295,
+        "isprivate": 0,
+        "modified_by": "michaell@formerly-netscape.com.tld",
+        "modified_ts": 970530395000
+    },
+    "466759": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 466759,
+        "isprivate": 0,
+        "modified_by": "pierre@formerly-netscape.com.tld",
+        "modified_ts": 971081312000
+    },
+    "471968": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 471968,
+        "isprivate": 0,
+        "modified_by": "christinehoff4@aol.com",
+        "modified_ts": 971311400000
+    },
+    "480296": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 480296,
+        "isprivate": 0,
+        "modified_by": "asa@mozilla.org",
+        "modified_ts": 971822230000
+    },
+    "487694": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 487694,
+        "isprivate": 0,
+        "modified_by": "slogan@cts.com",
+        "modified_ts": 972346963000
+    },
+    "491404": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 491404,
+        "isprivate": 0,
+        "modified_by": "kmcclusk@formerly-netscape.com.tld",
+        "modified_ts": 972520367000
+    },
+    "497195": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 497195,
+        "isprivate": 0,
+        "modified_by": "junruh@formerly-netscape.com.tld",
+        "modified_ts": 973014986000
+    },
+    "500722": {
+        "bug_id": 1046,
+        "comment": "[screened]",
+        "comment_id": 500722,
+        "isprivate": 0,
+        "modified_by": "christinehoff4@aol.com",
+        "modified_ts": 973196315000
+    },
+    "506431": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 506431,
+        "isprivate": 0,
+        "modified_by": "hjtoi-bugzilla@comcast.net",
+        "modified_ts": 973634081000
+    },
+    "515087": {
+        "bug_id": 1869,
+        "comment": "[screened]",
+        "comment_id": 515087,
+        "isprivate": 0,
+        "modified_by": "bugzilla@blakeross.com",
+        "modified_ts": 974509562000
+    },
+    "526417": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 526417,
+        "isprivate": 0,
+        "modified_by": "racham@formerly-netscape.com.tld",
+        "modified_ts": 975983388000
+    },
+    "531520": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 531520,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 976558212000
+    },
+    "539315": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 539315,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 977232750000
+    },
+    "561141": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 561141,
+        "isprivate": 0,
+        "modified_by": "jcarpenter0524@aol.com",
+        "modified_ts": 979261853000
+    },
+    "582423": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 582423,
+        "isprivate": 0,
+        "modified_by": "Peter@Lairo.com",
+        "modified_ts": 980935569000
+    },
+    "583744": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 583744,
+        "isprivate": 0,
+        "modified_by": "shrir@formerly-netscape.com.tld",
+        "modified_ts": 981000837000
+    },
+    "589315": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 589315,
+        "isprivate": 0,
+        "modified_by": "calvin_g_smith@yahoo.com",
+        "modified_ts": 981428486000
+    },
+    "589588": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 589588,
+        "isprivate": 0,
+        "modified_by": "andreas.koenig@anima.de",
+        "modified_ts": 981449541000
+    },
+    "589788": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 589788,
+        "isprivate": 0,
+        "modified_by": "junruh@formerly-netscape.com.tld",
+        "modified_ts": 981476836000
+    },
+    "589965": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 589965,
+        "isprivate": 0,
+        "modified_by": "javi@formerly-netscape.com.tld",
+        "modified_ts": 981483962000
+    },
+    "590748": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 590748,
+        "isprivate": 0,
+        "modified_by": "leaf@mozilla.org",
+        "modified_ts": 981508261000
+    },
+    "590765": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 590765,
+        "isprivate": 0,
+        "modified_by": "javi@formerly-netscape.com.tld",
+        "modified_ts": 981508635000
+    },
+    "590988": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 590988,
+        "isprivate": 0,
+        "modified_by": "andreas.koenig@anima.de",
+        "modified_ts": 981519211000
+    },
+    "591496": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 591496,
+        "isprivate": 0,
+        "modified_by": "calvin_g_smith@yahoo.com",
+        "modified_ts": 981563888000
+    },
+    "591615": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 591615,
+        "isprivate": 0,
+        "modified_by": "javi@formerly-netscape.com.tld",
+        "modified_ts": 981569282000
+    },
+    "591714": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 591714,
+        "isprivate": 0,
+        "modified_by": "granrosebugs@gmail.com",
+        "modified_ts": 981572567000
+    },
+    "591803": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 591803,
+        "isprivate": 0,
+        "modified_by": "andreas.koenig@anima.de",
+        "modified_ts": 981574552000
+    },
+    "591841": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 591841,
+        "isprivate": 0,
+        "modified_by": "jdunn@maine.rr.com",
+        "modified_ts": 981575676000
+    },
+    "591886": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 591886,
+        "isprivate": 0,
+        "modified_by": "margaret.chan@sun.com",
+        "modified_ts": 981577655000
+    },
+    "591902": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 591902,
+        "isprivate": 0,
+        "modified_by": "margaret.chan@sun.com",
+        "modified_ts": 981578119000
+    },
+    "592680": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 592680,
+        "isprivate": 0,
+        "modified_by": "andreas.koenig@anima.de",
+        "modified_ts": 981605496000
+    },
+    "592722": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 592722,
+        "isprivate": 0,
+        "modified_by": "leaf@mozilla.org",
+        "modified_ts": 981610160000
+    },
+    "592774": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 592774,
+        "isprivate": 0,
+        "modified_by": "andreas.koenig@anima.de",
+        "modified_ts": 981615773000
+    },
+    "592969": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 592969,
+        "isprivate": 0,
+        "modified_by": "jdunn@maine.rr.com",
+        "modified_ts": 981640226000
+    },
+    "593244": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 593244,
+        "isprivate": 0,
+        "modified_by": "javi@formerly-netscape.com.tld",
+        "modified_ts": 981657263000
+    },
+    "593898": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 593898,
+        "isprivate": 0,
+        "modified_by": "andreas.koenig@anima.de",
+        "modified_ts": 981676206000
+    },
+    "597307": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 597307,
+        "isprivate": 0,
+        "modified_by": "calvin_g_smith@yahoo.com",
+        "modified_ts": 982010609000
+    },
+    "597318": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 597318,
+        "isprivate": 0,
+        "modified_by": "jdunn@maine.rr.com",
+        "modified_ts": 982011127000
+    },
+    "597752": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 597752,
+        "isprivate": 0,
+        "modified_by": "margaret.chan@sun.com",
+        "modified_ts": 982024087000
+    },
+    "597808": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 597808,
+        "isprivate": 0,
+        "modified_by": "margaret.chan@sun.com",
+        "modified_ts": 982024370000
+    },
+    "599106": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 599106,
+        "isprivate": 0,
+        "modified_by": "akkzilla@shallowsky.com",
+        "modified_ts": 982106557000
+    },
+    "599204": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 599204,
+        "isprivate": 0,
+        "modified_by": "brendan@mozilla.org",
+        "modified_ts": 982109897000
+    },
+    "599714": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 599714,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 982159731000
+    },
+    "599835": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 599835,
+        "isprivate": 0,
+        "modified_by": "doug.turner@gmail.com",
+        "modified_ts": 982172091000
+    },
+    "600028": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 600028,
+        "isprivate": 0,
+        "modified_by": "security-bugs@alphacentauri.cc",
+        "modified_ts": 982180716000
+    },
+    "600064": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 600064,
+        "isprivate": 0,
+        "modified_by": "akkzilla@shallowsky.com",
+        "modified_ts": 982182288000
+    },
+    "600196": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 600196,
+        "isprivate": 0,
+        "modified_by": "brendan@mozilla.org",
+        "modified_ts": 982187484000
+    },
+    "600518": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 600518,
+        "isprivate": 0,
+        "modified_by": "security-bugs@alphacentauri.cc",
+        "modified_ts": 982202398000
+    },
+    "600526": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 600526,
+        "isprivate": 0,
+        "modified_by": "akkzilla@shallowsky.com",
+        "modified_ts": 982202921000
+    },
+    "600534": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 600534,
+        "isprivate": 0,
+        "modified_by": "akkzilla@shallowsky.com",
+        "modified_ts": 982203582000
+    },
+    "600560": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 600560,
+        "isprivate": 0,
+        "modified_by": "brendan@mozilla.org",
+        "modified_ts": 982207459000
+    },
+    "600631": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 600631,
+        "isprivate": 0,
+        "modified_by": "brendan@mozilla.org",
+        "modified_ts": 982219700000
+    },
+    "600758": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 600758,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 982242286000
+    },
+    "601004": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 601004,
+        "isprivate": 0,
+        "modified_by": "brendan@mozilla.org",
+        "modified_ts": 982264204000
+    },
+    "601100": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 601100,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 982269526000
+    },
+    "601121": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 601121,
+        "isprivate": 0,
+        "modified_by": "akkzilla@shallowsky.com",
+        "modified_ts": 982270597000
+    },
+    "611212": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 611212,
+        "isprivate": 0,
+        "modified_by": "crumley@fields.space.umn.edu",
+        "modified_ts": 982968121000
+    },
+    "612468": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 612468,
+        "isprivate": 0,
+        "modified_by": "calvin_g_smith@yahoo.com",
+        "modified_ts": 983167860000
+    },
+    "614525": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 614525,
+        "isprivate": 0,
+        "modified_by": "kmcclusk@formerly-netscape.com.tld",
+        "modified_ts": 983315425000
+    },
+    "638664": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 638664,
+        "isprivate": 0,
+        "modified_by": "dbooth@carlson.com",
+        "modified_ts": 985017353000
+    },
+    "645149": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 645149,
+        "isprivate": 0,
+        "modified_by": "margaret.chan@sun.com",
+        "modified_ts": 985301042000
+    },
+    "645166": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 645166,
+        "isprivate": 0,
+        "modified_by": "javi@formerly-netscape.com.tld",
+        "modified_ts": 985301703000
+    },
+    "645205": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 645205,
+        "isprivate": 0,
+        "modified_by": "margaret.chan@sun.com",
+        "modified_ts": 985302782000
+    },
+    "645212": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 645212,
+        "isprivate": 0,
+        "modified_by": "margaret.chan@sun.com",
+        "modified_ts": 985302973000
+    },
+    "645217": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 645217,
+        "isprivate": 0,
+        "modified_by": "margaret.chan@sun.com",
+        "modified_ts": 985303204000
+    },
+    "645240": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 645240,
+        "isprivate": 0,
+        "modified_by": "margaret.chan@sun.com",
+        "modified_ts": 985303578000
+    },
+    "645252": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 645252,
+        "isprivate": 0,
+        "modified_by": "javi@formerly-netscape.com.tld",
+        "modified_ts": 985303738000
+    },
+    "645312": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 645312,
+        "isprivate": 0,
+        "modified_by": "rrelyea@redhat.com",
+        "modified_ts": 985306151000
+    },
+    "645526": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 645526,
+        "isprivate": 0,
+        "modified_by": "margaret.chan@sun.com",
+        "modified_ts": 985313073000
+    },
+    "651102": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 651102,
+        "isprivate": 0,
+        "modified_by": "t.stolwijk@virtual-finance.nl",
+        "modified_ts": 985769303000
+    },
+    "651151": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 651151,
+        "isprivate": 0,
+        "modified_by": "galfandary@yahoo.ca",
+        "modified_ts": 985774422000
+    },
+    "655302": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 655302,
+        "isprivate": 0,
+        "modified_by": "margaret.chan@sun.com",
+        "modified_ts": 986002559000
+    },
+    "662891": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 662891,
+        "isprivate": 0,
+        "modified_by": "jshin@pantheon.yale.edu",
+        "modified_ts": 986566698000
+    },
+    "665071": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 665071,
+        "isprivate": 0,
+        "modified_by": "gyles@gharvey.f2s.com",
+        "modified_ts": 986825600000
+    },
+    "665549": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 665549,
+        "isprivate": 0,
+        "modified_by": "thao.s.tran@eng.sun.com",
+        "modified_ts": 986847653000
+    },
+    "673139": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 673139,
+        "isprivate": 0,
+        "modified_by": "hjtoi-bugzilla@comcast.net",
+        "modified_ts": 987204667000
+    },
+    "678012": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 678012,
+        "isprivate": 0,
+        "modified_by": "raghu@eng.sun.com",
+        "modified_ts": 987550737000
+    },
+    "678078": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 678078,
+        "isprivate": 0,
+        "modified_by": "granrosebugs@gmail.com",
+        "modified_ts": 987552067000
+    },
+    "678164": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 678164,
+        "isprivate": 0,
+        "modified_by": "margaret.chan@sun.com",
+        "modified_ts": 987554134000
+    },
+    "686890": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 686890,
+        "isprivate": 0,
+        "modified_by": "ddrinan0264@aol.com",
+        "modified_ts": 988073972000
+    },
+    "689680": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 689680,
+        "isprivate": 0,
+        "modified_by": "joki@formerly-netscape.com.tld",
+        "modified_ts": 988215195000
+    },
+    "696778": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 696778,
+        "isprivate": 0,
+        "modified_by": "roland.mainz@nrubsig.org",
+        "modified_ts": 988659648000
+    },
+    "703802": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 703802,
+        "isprivate": 0,
+        "modified_by": "jcarpenter0524@aol.com",
+        "modified_ts": 988934617000
+    },
+    "704178": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 704178,
+        "isprivate": 0,
+        "modified_by": "lord@formerly-netscape.com.tld",
+        "modified_ts": 988946354000
+    },
+    "704198": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 704198,
+        "isprivate": 0,
+        "modified_by": "margaret.chan@sun.com",
+        "modified_ts": 988947594000
+    },
+    "749985": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 749985,
+        "isprivate": 0,
+        "modified_by": "lord@formerly-netscape.com.tld",
+        "modified_ts": 991259437000
+    },
+    "750580": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 750580,
+        "isprivate": 0,
+        "modified_by": "drapeau@eng.sun.com",
+        "modified_ts": 991268958000
+    },
+    "752111": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 752111,
+        "isprivate": 0,
+        "modified_by": "margaret.chan@sun.com",
+        "modified_ts": 991342120000
+    },
+    "756361": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 756361,
+        "isprivate": 0,
+        "modified_by": "bzbarsky@mit.edu",
+        "modified_ts": 991615664000
+    },
+    "759439": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 759439,
+        "isprivate": 0,
+        "modified_by": "desale@formerly-netscape.com.tld",
+        "modified_ts": 991767532000
+    },
+    "771280": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 771280,
+        "isprivate": 0,
+        "modified_by": "roland.mainz@nrubsig.org",
+        "modified_ts": 992343033000
+    },
+    "778309": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 778309,
+        "isprivate": 0,
+        "modified_by": "bzbarsky@mit.edu",
+        "modified_ts": 992630377000
+    },
+    "778373": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 778373,
+        "isprivate": 0,
+        "modified_by": "margaret.chan@sun.com",
+        "modified_ts": 992631868000
+    },
+    "778416": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 778416,
+        "isprivate": 0,
+        "modified_by": "granrosebugs@gmail.com",
+        "modified_ts": 992632759000
+    },
+    "778433": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 778433,
+        "isprivate": 0,
+        "modified_by": "crumley@fields.space.umn.edu",
+        "modified_ts": 992633189000
+    },
+    "778670": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 778670,
+        "isprivate": 0,
+        "modified_by": "margaret.chan@sun.com",
+        "modified_ts": 992640338000
+    },
+    "781308": {
+        "bug_id": 67742,
+        "comment": "[screened]",
+        "comment_id": 781308,
+        "isprivate": 0,
+        "modified_by": "junruh@formerly-netscape.com.tld",
+        "modified_ts": 992877843000
+    },
+    "782791": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 782791,
+        "isprivate": 0,
+        "modified_by": "caustin@gmail.com",
+        "modified_ts": 992909020000
+    },
+    "791205": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 791205,
+        "isprivate": 0,
+        "modified_by": "dcone@formerly-netscape.com.tld",
+        "modified_ts": 993220602000
+    },
+    "791224": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 791224,
+        "isprivate": 0,
+        "modified_by": "ian@hixie.ch",
+        "modified_ts": 993221515000
+    },
+    "791225": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 791225,
+        "isprivate": 0,
+        "modified_by": "ian@hixie.ch",
+        "modified_ts": 993221616000
+    },
+    "842277": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 842277,
+        "isprivate": 0,
+        "modified_by": "stummala@formerly-netscape.com.tld",
+        "modified_ts": 996096773000
+    },
+    "845245": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 845245,
+        "isprivate": 0,
+        "modified_by": "jruderman@gmail.com",
+        "modified_ts": 996263665000
+    },
+    "867264": {
+        "bug_id": 1869,
+        "comment": "[screened]",
+        "comment_id": 867264,
+        "isprivate": 0,
+        "modified_by": "bclary@bclary.com",
+        "modified_ts": 997499290000
+    },
+    "882821": {
+        "bug_id": 96421,
+        "comment": "[screened]",
+        "comment_id": 882821,
+        "isprivate": 0,
+        "modified_by": "le-mig_g@epita.fr",
+        "modified_ts": 998490993000
+    },
+    "882924": {
+        "bug_id": 96421,
+        "comment": "[screened]",
+        "comment_id": 882924,
+        "isprivate": 0,
+        "modified_by": "tingley@sundell.net",
+        "modified_ts": 998495435000
+    },
+    "882932": {
+        "bug_id": 96421,
+        "comment": "[screened]",
+        "comment_id": 882932,
+        "isprivate": 0,
+        "modified_by": "hwaara@gmail.com",
+        "modified_ts": 998495609000
+    },
+    "882957": {
+        "bug_id": 96421,
+        "comment": "[screened]",
+        "comment_id": 882957,
+        "isprivate": 0,
+        "modified_by": "tingley@sundell.net",
+        "modified_ts": 998496510000
+    },
+    "889881": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 889881,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 998949164000
+    },
+    "892324": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 892324,
+        "isprivate": 0,
+        "modified_by": "bugmail@impromptu.at",
+        "modified_ts": 999047329000
+    },
+    "901377": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 901377,
+        "isprivate": 0,
+        "modified_by": "ian@hixie.ch",
+        "modified_ts": 999607245000
+    },
+    "909361": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 909361,
+        "isprivate": 0,
+        "modified_by": "jruderman@gmail.com",
+        "modified_ts": 999916743000
+    },
+    "911133": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 911133,
+        "isprivate": 0,
+        "modified_by": "bzbarsky@mit.edu",
+        "modified_ts": 1000103051000
+    },
+    "919319": {
+        "bug_id": 384,
+        "comment": "[screened]",
+        "comment_id": 919319,
+        "isprivate": 0,
+        "modified_by": "justdave@bugzilla.org",
+        "modified_ts": 1000543884000
+    },
+    "919839": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 919839,
+        "isprivate": 0,
+        "modified_by": "ian@hixie.ch",
+        "modified_ts": 1000571837000
+    },
+    "942605": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 942605,
+        "isprivate": 0,
+        "modified_by": "stummala@formerly-netscape.com.tld",
+        "modified_ts": 1001634720000
+    },
+    "947629": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 947629,
+        "isprivate": 0,
+        "modified_by": "bzbarsky@mit.edu",
+        "modified_ts": 1001968686000
+    },
+    "947737": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 947737,
+        "isprivate": 0,
+        "modified_by": "gerv@mozilla.org",
+        "modified_ts": 1001970264000
+    },
+    "947872": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 947872,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1001972544000
+    },
+    "953179": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 953179,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1002208532000
+    },
+    "954879": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 954879,
+        "isprivate": 0,
+        "modified_by": "kmcclusk@formerly-netscape.com.tld",
+        "modified_ts": 1002237771000
+    },
+    "965754": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 965754,
+        "isprivate": 0,
+        "modified_by": "ben.bucksch@beonex.com",
+        "modified_ts": 1002751516000
+    },
+    "1013049": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 1013049,
+        "isprivate": 0,
+        "modified_by": "rcummins@bcls.lib.nj.us",
+        "modified_ts": 1005167057000
+    },
+    "1018908": {
+        "bug_id": 1869,
+        "comment": "[screened]",
+        "comment_id": 1018908,
+        "isprivate": 0,
+        "modified_by": "bclary@bclary.com",
+        "modified_ts": 1005423604000
+    },
+    "1021640": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1021640,
+        "isprivate": 0,
+        "modified_by": "bzbarsky@mit.edu",
+        "modified_ts": 1005662302000
+    },
+    "1022290": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 1022290,
+        "isprivate": 0,
+        "modified_by": "rods@formerly-netscape.com.tld",
+        "modified_ts": 1005682364000
+    },
+    "1022292": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 1022292,
+        "isprivate": 0,
+        "modified_by": "rods@formerly-netscape.com.tld",
+        "modified_ts": 1005682446000
+    },
+    "1022299": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 1022299,
+        "isprivate": 0,
+        "modified_by": "rods@formerly-netscape.com.tld",
+        "modified_ts": 1005682618000
+    },
+    "1022462": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 1022462,
+        "isprivate": 0,
+        "modified_by": "rods@formerly-netscape.com.tld",
+        "modified_ts": 1005686888000
+    },
+    "1022501": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 1022501,
+        "isprivate": 0,
+        "modified_by": "attinasi@formerly-netscape.com.tld",
+        "modified_ts": 1005687842000
+    },
+    "1022639": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 1022639,
+        "isprivate": 0,
+        "modified_by": "dcone@formerly-netscape.com.tld",
+        "modified_ts": 1005691661000
+    },
+    "1023968": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 1023968,
+        "isprivate": 0,
+        "modified_by": "rods@formerly-netscape.com.tld",
+        "modified_ts": 1005764704000
+    },
+    "1025514": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1025514,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1005836497000
+    },
+    "1037889": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1037889,
+        "isprivate": 0,
+        "modified_by": "spam@minneboken.com",
+        "modified_ts": 1006519474000
+    },
+    "1043543": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1043543,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1006896424000
+    },
+    "1053837": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 1053837,
+        "isprivate": 0,
+        "modified_by": "asa@mozilla.org",
+        "modified_ts": 1007405743000
+    },
+    "1075731": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1075731,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1008626069000
+    },
+    "1082842": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1082842,
+        "isprivate": 0,
+        "modified_by": "akkzilla@shallowsky.com",
+        "modified_ts": 1008986054000
+    },
+    "1083409": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1083409,
+        "isprivate": 0,
+        "modified_by": "bugzilla@mversen.de",
+        "modified_ts": 1009060348000
+    },
+    "1083875": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1083875,
+        "isprivate": 0,
+        "modified_by": "bugzilla@mversen.de",
+        "modified_ts": 1009129093000
+    },
+    "1096047": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 1096047,
+        "isprivate": 0,
+        "modified_by": "basic@mozdev.org",
+        "modified_ts": 1010180930000
+    },
+    "1105131": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 1105131,
+        "isprivate": 0,
+        "modified_by": "dean_tessman@hotmail.com",
+        "modified_ts": 1010682331000
+    },
+    "1107772": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1107772,
+        "isprivate": 0,
+        "modified_by": "bugzilla@mversen.de",
+        "modified_ts": 1010775884000
+    },
+    "1109004": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1109004,
+        "isprivate": 0,
+        "modified_by": "t.rother@netzwissen.de",
+        "modified_ts": 1010830883000
+    },
+    "1109500": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1109500,
+        "isprivate": 0,
+        "modified_by": "bugzilla@mversen.de",
+        "modified_ts": 1010881542000
+    },
+    "1109619": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1109619,
+        "isprivate": 0,
+        "modified_by": "caillon@redhat.com",
+        "modified_ts": 1010894938000
+    },
+    "1113341": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1113341,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1011116157000
+    },
+    "1123843": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1123843,
+        "isprivate": 0,
+        "modified_by": "jruderman@gmail.com",
+        "modified_ts": 1011650511000
+    },
+    "1128462": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 1128462,
+        "isprivate": 0,
+        "modified_by": "roland.mainz@nrubsig.org",
+        "modified_ts": 1011882917000
+    },
+    "1141599": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 1141599,
+        "isprivate": 0,
+        "modified_by": "sujay@formerly-netscape.com.tld",
+        "modified_ts": 1012516942000
+    },
+    "1144873": {
+        "bug_id": 123203,
+        "comment": "[screened]",
+        "comment_id": 1144873,
+        "isprivate": 0,
+        "modified_by": "darin.moz@gmail.com",
+        "modified_ts": 1012719422000
+    },
+    "1157241": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1157241,
+        "isprivate": 0,
+        "modified_by": "olaf.schnapauff@t-online.de",
+        "modified_ts": 1013212666000
+    },
+    "1158188": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1158188,
+        "isprivate": 0,
+        "modified_by": "bugs2@mbalz.de",
+        "modified_ts": 1013276925000
+    },
+    "1158255": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1158255,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1013281484000
+    },
+    "1158728": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1158728,
+        "isprivate": 0,
+        "modified_by": "acraigwest@gmail.com",
+        "modified_ts": 1013314611000
+    },
+    "1158756": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1158756,
+        "isprivate": 0,
+        "modified_by": "timeless@bemail.org",
+        "modified_ts": 1013319806000
+    },
+    "1158758": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1158758,
+        "isprivate": 0,
+        "modified_by": "mattdm@mattdm.org",
+        "modified_ts": 1013319968000
+    },
+    "1158824": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1158824,
+        "isprivate": 0,
+        "modified_by": "acraigwest@gmail.com",
+        "modified_ts": 1013329263000
+    },
+    "1158858": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1158858,
+        "isprivate": 0,
+        "modified_by": "ben.bucksch@beonex.com",
+        "modified_ts": 1013332836000
+    },
+    "1158862": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1158862,
+        "isprivate": 0,
+        "modified_by": "timeless@bemail.org",
+        "modified_ts": 1013333582000
+    },
+    "1158968": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1158968,
+        "isprivate": 0,
+        "modified_by": "mattdm@mattdm.org",
+        "modified_ts": 1013351321000
+    },
+    "1159067": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1159067,
+        "isprivate": 0,
+        "modified_by": "timeless@bemail.org",
+        "modified_ts": 1013360601000
+    },
+    "1159080": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1159080,
+        "isprivate": 0,
+        "modified_by": "mattdm@mattdm.org",
+        "modified_ts": 1013361174000
+    },
+    "1159157": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1159157,
+        "isprivate": 0,
+        "modified_by": "2009-bugzilla@uxp.de",
+        "modified_ts": 1013367438000
+    },
+    "1159358": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1159358,
+        "isprivate": 0,
+        "modified_by": "timeless@bemail.org",
+        "modified_ts": 1013380199000
+    },
+    "1159458": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1159458,
+        "isprivate": 0,
+        "modified_by": "alecf@flett.org",
+        "modified_ts": 1013387915000
+    },
+    "1159583": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1159583,
+        "isprivate": 0,
+        "modified_by": "acraigwest@gmail.com",
+        "modified_ts": 1013397799000
+    },
+    "1159596": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1159596,
+        "isprivate": 0,
+        "modified_by": "bzbarsky@mit.edu",
+        "modified_ts": 1013398283000
+    },
+    "1159621": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1159621,
+        "isprivate": 0,
+        "modified_by": "acraigwest@gmail.com",
+        "modified_ts": 1013401282000
+    },
+    "1173553": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1173553,
+        "isprivate": 0,
+        "modified_by": "bugzilla@geoapps.com",
+        "modified_ts": 1014003451000
+    },
+    "1180958": {
+        "bug_id": 123203,
+        "comment": "[screened]",
+        "comment_id": 1180958,
+        "isprivate": 0,
+        "modified_by": "darin.moz@gmail.com",
+        "modified_ts": 1014259827000
+    },
+    "1184271": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 1184271,
+        "isprivate": 0,
+        "modified_by": "dcone@formerly-netscape.com.tld",
+        "modified_ts": 1014392115000
+    },
+    "1184369": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1184369,
+        "isprivate": 0,
+        "modified_by": "jensend@iname.com",
+        "modified_ts": 1014395921000
+    },
+    "1184456": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 1184456,
+        "isprivate": 0,
+        "modified_by": "sujay@formerly-netscape.com.tld",
+        "modified_ts": 1014399594000
+    },
+    "1188174": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 1188174,
+        "isprivate": 0,
+        "modified_by": "roland.mainz@nrubsig.org",
+        "modified_ts": 1014631836000
+    },
+    "1188479": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1188479,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1014655258000
+    },
+    "1188506": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1188506,
+        "isprivate": 0,
+        "modified_by": "malx@uazone.net",
+        "modified_ts": 1014656679000
+    },
+    "1188725": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1188725,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1014663543000
+    },
+    "1188857": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1188857,
+        "isprivate": 0,
+        "modified_by": "aleksander.adamowski@olo.org.pl",
+        "modified_ts": 1014666526000
+    },
+    "1189769": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1189769,
+        "isprivate": 0,
+        "modified_by": "bugzilla@mversen.de",
+        "modified_ts": 1014683308000
+    },
+    "1190170": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1190170,
+        "isprivate": 0,
+        "modified_by": "bugzilla@mversen.de",
+        "modified_ts": 1014691586000
+    },
+    "1193005": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1193005,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1014834342000
+    },
+    "1193012": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1193012,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1014834637000
+    },
+    "1193013": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1193013,
+        "isprivate": 0,
+        "modified_by": "alecf@flett.org",
+        "modified_ts": 1014834715000
+    },
+    "1193106": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1193106,
+        "isprivate": 0,
+        "modified_by": "acraigwest@gmail.com",
+        "modified_ts": 1014837024000
+    },
+    "1193212": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1193212,
+        "isprivate": 0,
+        "modified_by": "alecf@flett.org",
+        "modified_ts": 1014839389000
+    },
+    "1193304": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1193304,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1014841369000
+    },
+    "1194445": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1194445,
+        "isprivate": 0,
+        "modified_by": "acraigwest@gmail.com",
+        "modified_ts": 1014866844000
+    },
+    "1195276": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1195276,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1014921202000
+    },
+    "1201185": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1201185,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1015259530000
+    },
+    "1202967": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1202967,
+        "isprivate": 0,
+        "modified_by": "scottputterman@gmail.com",
+        "modified_ts": 1015298418000
+    },
+    "1203966": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1203966,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1015353419000
+    },
+    "1209541": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1209541,
+        "isprivate": 0,
+        "modified_by": "doug.turner@gmail.com",
+        "modified_ts": 1015549900000
+    },
+    "1210042": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 1210042,
+        "isprivate": 0,
+        "modified_by": "bzbarsky@mit.edu",
+        "modified_ts": 1015572921000
+    },
+    "1218967": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1218967,
+        "isprivate": 0,
+        "modified_by": "tao@formerly-netscape.com.tld",
+        "modified_ts": 1016039270000
+    },
+    "1219037": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1219037,
+        "isprivate": 0,
+        "modified_by": "jaimejr@formerly-netscape.com.tld",
+        "modified_ts": 1016041397000
+    },
+    "1219107": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1219107,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1016042524000
+    },
+    "1221018": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1221018,
+        "isprivate": 0,
+        "modified_by": "mozbugz@outlook.com",
+        "modified_ts": 1016089699000
+    },
+    "1221795": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1221795,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1016129103000
+    },
+    "1223158": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1223158,
+        "isprivate": 0,
+        "modified_by": "bugzilla@mversen.de",
+        "modified_ts": 1016154582000
+    },
+    "1232165": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1232165,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1016581954000
+    },
+    "1232178": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1232178,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1016582158000
+    },
+    "1232307": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1232307,
+        "isprivate": 0,
+        "modified_by": "bnesse@formerly-netscape.com.tld",
+        "modified_ts": 1016584923000
+    },
+    "1234525": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1234525,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1016669584000
+    },
+    "1235592": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1235592,
+        "isprivate": 0,
+        "modified_by": "bnesse@formerly-netscape.com.tld",
+        "modified_ts": 1016730714000
+    },
+    "1244147": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1244147,
+        "isprivate": 0,
+        "modified_by": "alecf@flett.org",
+        "modified_ts": 1017166497000
+    },
+    "1244197": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1244197,
+        "isprivate": 0,
+        "modified_by": "alecf@flett.org",
+        "modified_ts": 1017167922000
+    },
+    "1244228": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1244228,
+        "isprivate": 0,
+        "modified_by": "darin.moz@gmail.com",
+        "modified_ts": 1017168726000
+    },
+    "1244291": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1244291,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1017169990000
+    },
+    "1244400": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1244400,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1017172420000
+    },
+    "1244421": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1244421,
+        "isprivate": 0,
+        "modified_by": "alecf@flett.org",
+        "modified_ts": 1017173123000
+    },
+    "1244423": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1244423,
+        "isprivate": 0,
+        "modified_by": "alecf@flett.org",
+        "modified_ts": 1017173225000
+    },
+    "1244473": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1244473,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1017174573000
+    },
+    "1246813": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1246813,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1017263842000
+    },
+    "1246923": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1246923,
+        "isprivate": 0,
+        "modified_by": "alecf@flett.org",
+        "modified_ts": 1017267196000
+    },
+    "1246990": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1246990,
+        "isprivate": 0,
+        "modified_by": "bnesse@formerly-netscape.com.tld",
+        "modified_ts": 1017269559000
+    },
+    "1247094": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1247094,
+        "isprivate": 0,
+        "modified_by": "alecf@flett.org",
+        "modified_ts": 1017272355000
+    },
+    "1247145": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1247145,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1017274395000
+    },
+    "1248213": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1248213,
+        "isprivate": 0,
+        "modified_by": "alecf@flett.org",
+        "modified_ts": 1017337362000
+    },
+    "1248316": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1248316,
+        "isprivate": 0,
+        "modified_by": "darin.moz@gmail.com",
+        "modified_ts": 1017339925000
+    },
+    "1248359": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1248359,
+        "isprivate": 0,
+        "modified_by": "alecf@flett.org",
+        "modified_ts": 1017340980000
+    },
+    "1257525": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1257525,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1017789558000
+    },
+    "1257562": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1257562,
+        "isprivate": 0,
+        "modified_by": "alecf@flett.org",
+        "modified_ts": 1017790245000
+    },
+    "1257786": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1257786,
+        "isprivate": 0,
+        "modified_by": "doug.turner@gmail.com",
+        "modified_ts": 1017794670000
+    },
+    "1258040": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1258040,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1017801820000
+    },
+    "1259946": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1259946,
+        "isprivate": 0,
+        "modified_by": "mscott@mozilla.org",
+        "modified_ts": 1017871058000
+    },
+    "1260256": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1260256,
+        "isprivate": 0,
+        "modified_by": "acraigwest@gmail.com",
+        "modified_ts": 1017875061000
+    },
+    "1262546": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1262546,
+        "isprivate": 0,
+        "modified_by": "jaimejr@formerly-netscape.com.tld",
+        "modified_ts": 1017957467000
+    },
+    "1262624": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1262624,
+        "isprivate": 0,
+        "modified_by": "asa@mozilla.org",
+        "modified_ts": 1017958960000
+    },
+    "1262631": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1262631,
+        "isprivate": 0,
+        "modified_by": "asa@mozilla.org",
+        "modified_ts": 1017959043000
+    },
+    "1262723": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1262723,
+        "isprivate": 0,
+        "modified_by": "jaimejr@formerly-netscape.com.tld",
+        "modified_ts": 1017961218000
+    },
+    "1265765": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1265765,
+        "isprivate": 0,
+        "modified_by": "jaimejr@formerly-netscape.com.tld",
+        "modified_ts": 1018056658000
+    },
+    "1267112": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1267112,
+        "isprivate": 0,
+        "modified_by": "mozilla7@phroggy.com",
+        "modified_ts": 1018162238000
+    },
+    "1267121": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1267121,
+        "isprivate": 0,
+        "modified_by": "thomas.swan@gmail.com",
+        "modified_ts": 1018162948000
+    },
+    "1268353": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1268353,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1018269919000
+    },
+    "1268634": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1268634,
+        "isprivate": 0,
+        "modified_by": "jaimejr@formerly-netscape.com.tld",
+        "modified_ts": 1018282541000
+    },
+    "1268656": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1268656,
+        "isprivate": 0,
+        "modified_by": "thomas.swan@gmail.com",
+        "modified_ts": 1018283448000
+    },
+    "1270708": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1270708,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1018362550000
+    },
+    "1276615": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1276615,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1018571328000
+    },
+    "1340652": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 1340652,
+        "isprivate": 0,
+        "modified_by": "roland.mainz@nrubsig.org",
+        "modified_ts": 1021367239000
+    },
+    "1350630": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1350630,
+        "isprivate": 0,
+        "modified_by": "petes-lists@thegoldenear.org",
+        "modified_ts": 1021880987000
+    },
+    "1378957": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1378957,
+        "isprivate": 0,
+        "modified_by": "agracebush@netscape.net",
+        "modified_ts": 1023216939000
+    },
+    "1379210": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1379210,
+        "isprivate": 0,
+        "modified_by": "jaimejr@formerly-netscape.com.tld",
+        "modified_ts": 1023223388000
+    },
+    "1380884": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1380884,
+        "isprivate": 0,
+        "modified_by": "Peter@Lairo.com",
+        "modified_ts": 1023293830000
+    },
+    "1381024": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1381024,
+        "isprivate": 0,
+        "modified_by": "bugs2@mbalz.de",
+        "modified_ts": 1023296606000
+    },
+    "1381059": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1381059,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1023297682000
+    },
+    "1434534": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 1434534,
+        "isprivate": 0,
+        "modified_by": "rcummins@bcls.lib.nj.us",
+        "modified_ts": 1026076401000
+    },
+    "1492942": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1492942,
+        "isprivate": 0,
+        "modified_by": "jpatti@ccil.org",
+        "modified_ts": 1029182785000
+    },
+    "1493046": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1493046,
+        "isprivate": 0,
+        "modified_by": "ccarlen@mac.com",
+        "modified_ts": 1029184879000
+    },
+    "1494337": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1494337,
+        "isprivate": 0,
+        "modified_by": "agracebush@netscape.net",
+        "modified_ts": 1029253705000
+    },
+    "1497248": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1497248,
+        "isprivate": 0,
+        "modified_by": "arcadepreserv@hotmail.com",
+        "modified_ts": 1029394478000
+    },
+    "1502163": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 1502163,
+        "isprivate": 0,
+        "modified_by": "rcummins@bcls.lib.nj.us",
+        "modified_ts": 1029723303000
+    },
+    "1622274": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 1622274,
+        "isprivate": 0,
+        "modified_by": "lchiang@formerly-netscape.com.tld",
+        "modified_ts": 1036550179000
+    },
+    "1624018": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 1624018,
+        "isprivate": 0,
+        "modified_by": "ipottinger@gmail.com",
+        "modified_ts": 1036629741000
+    },
+    "1625571": {
+        "bug_id": 178960,
+        "comment": "[screened]",
+        "comment_id": 1625571,
+        "isprivate": 0,
+        "modified_by": "melmanmozilla.1@mailnull.com",
+        "modified_ts": 1036709692000
+    },
+    "1625627": {
+        "bug_id": 178960,
+        "comment": "[screened]",
+        "comment_id": 1625627,
+        "isprivate": 0,
+        "modified_by": "myk@mozilla.org",
+        "modified_ts": 1036711351000
+    },
+    "1649983": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 1649983,
+        "isprivate": 0,
+        "modified_by": "bugzilla@gtalbot.org",
+        "modified_ts": 1038225766000
+    },
+    "1670151": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 1670151,
+        "isprivate": 0,
+        "modified_by": "svl-bmo@juima.org",
+        "modified_ts": 1039462200000
+    },
+    "1675020": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 1675020,
+        "isprivate": 0,
+        "modified_by": "svl-bmo@juima.org",
+        "modified_ts": 1039723589000
+    },
+    "1675051": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 1675051,
+        "isprivate": 0,
+        "modified_by": "svl-bmo@juima.org",
+        "modified_ts": 1039725073000
+    },
+    "1675115": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 1675115,
+        "isprivate": 0,
+        "modified_by": "stephend@formerly-netscape.com.tld",
+        "modified_ts": 1039728768000
+    },
+    "1675856": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 1675856,
+        "isprivate": 0,
+        "modified_by": "ivo@egeniq.com",
+        "modified_ts": 1039768306000
+    },
+    "1702923": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 1702923,
+        "isprivate": 0,
+        "modified_by": "vladimire@formerly-netscape.com.tld",
+        "modified_ts": 1042075383000
+    },
+    "1735262": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 1735262,
+        "isprivate": 0,
+        "modified_by": "svl-bmo@juima.org",
+        "modified_ts": 1044489717000
+    },
+    "1740227": {
+        "bug_id": 2586,
+        "comment": "[screened]",
+        "comment_id": 1740227,
+        "isprivate": 0,
+        "modified_by": "smontagu@smontagu.org",
+        "modified_ts": 1044922298000
+    },
+    "1745835": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 1745835,
+        "isprivate": 0,
+        "modified_by": "vladimire@formerly-netscape.com.tld",
+        "modified_ts": 1045245628000
+    },
+    "1770985": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 1770985,
+        "isprivate": 0,
+        "modified_by": "ostgote@gmx.net",
+        "modified_ts": 1047051465000
+    },
+    "1798224": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 1798224,
+        "isprivate": 0,
+        "modified_by": "svl-bmo@juima.org",
+        "modified_ts": 1048898125000
+    },
+    "1860470": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 1860470,
+        "isprivate": 0,
+        "modified_by": "jo.hermans@gmail.com",
+        "modified_ts": 1053787282000
+    },
+    "1860618": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 1860618,
+        "isprivate": 0,
+        "modified_by": "castaban@yahoo.ca",
+        "modified_ts": 1053799218000
+    },
+    "1870277": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 1870277,
+        "isprivate": 0,
+        "modified_by": "james@jamesh.id.au",
+        "modified_ts": 1054705070000
+    },
+    "1968757": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 1968757,
+        "isprivate": 0,
+        "modified_by": "mcow@well.com",
+        "modified_ts": 1064844453000
+    },
+    "1968758": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 1968758,
+        "isprivate": 0,
+        "modified_by": "mcow@well.com",
+        "modified_ts": 1064844551000
+    },
+    "2005701": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 2005701,
+        "isprivate": 0,
+        "modified_by": "jamie@white-mountain.org",
+        "modified_ts": 1068862877000
+    },
+    "2007593": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 2007593,
+        "isprivate": 0,
+        "modified_by": "ivo@egeniq.com",
+        "modified_ts": 1069058271000
+    },
+    "2014370": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 2014370,
+        "isprivate": 0,
+        "modified_by": "mcow@well.com",
+        "modified_ts": 1069782749000
+    },
+    "2036072": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 2036072,
+        "isprivate": 0,
+        "modified_by": "bugzilla.mozilla.org@khopis.com",
+        "modified_ts": 1072711735000
+    },
+    "2051737": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 2051737,
+        "isprivate": 0,
+        "modified_by": "helgedt@tihlde.org",
+        "modified_ts": 1074565911000
+    },
+    "2052827": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 2052827,
+        "isprivate": 0,
+        "modified_by": "james@jamesh.id.au",
+        "modified_ts": 1074663820000
+    },
+    "2053198": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 2053198,
+        "isprivate": 0,
+        "modified_by": "helgedt@tihlde.org",
+        "modified_ts": 1074705503000
+    },
+    "2053347": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 2053347,
+        "isprivate": 0,
+        "modified_by": "digulla@hepe.com",
+        "modified_ts": 1074717551000
+    },
+    "2053385": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 2053385,
+        "isprivate": 0,
+        "modified_by": "helgedt@tihlde.org",
+        "modified_ts": 1074719587000
+    },
+    "2070406": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 2070406,
+        "isprivate": 0,
+        "modified_by": "jonas@sicking.cc",
+        "modified_ts": 1076451585000
+    },
+    "2073143": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 2073143,
+        "isprivate": 0,
+        "modified_by": "andre@andre-langhorst.de",
+        "modified_ts": 1076651553000
+    },
+    "2073145": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 2073145,
+        "isprivate": 0,
+        "modified_by": "mozilla@davidbienvenu.org",
+        "modified_ts": 1076651670000
+    },
+    "2101171": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 2101171,
+        "isprivate": 0,
+        "modified_by": "bugzilla@bwaldvogel.de",
+        "modified_ts": 1079287873000
+    },
+    "2158488": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 2158488,
+        "isprivate": 0,
+        "modified_by": "morty@gmx.net",
+        "modified_ts": 1085396928000
+    },
+    "2158607": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 2158607,
+        "isprivate": 0,
+        "modified_by": "mcow@well.com",
+        "modified_ts": 1085411396000
+    },
+    "2236067": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 2236067,
+        "isprivate": 0,
+        "modified_by": "mcow@well.com",
+        "modified_ts": 1092862482000
+    },
+    "2310723": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 2310723,
+        "isprivate": 0,
+        "modified_by": "bugzilla@chimpychompy.org",
+        "modified_ts": 1099058625000
+    },
+    "2311468": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 2311468,
+        "isprivate": 0,
+        "modified_by": "akkzilla@shallowsky.com",
+        "modified_ts": 1099100475000
+    },
+    "2313296": {
+        "bug_id": 12911,
+        "comment": "[screened]",
+        "comment_id": 2313296,
+        "isprivate": 0,
+        "modified_by": "timeless@bemail.org",
+        "modified_ts": 1099269562000
+    },
+    "2353890": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 2353890,
+        "isprivate": 0,
+        "modified_by": "orion2480@hotmail.com",
+        "modified_ts": 1102373992000
+    },
+    "2383731": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 2383731,
+        "isprivate": 0,
+        "modified_by": "uri@mivzak.com",
+        "modified_ts": 1105514040000
+    },
+    "2389869": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 2389869,
+        "isprivate": 0,
+        "modified_by": "bugzilla1@dougweb.org",
+        "modified_ts": 1106076539000
+    },
+    "2407000": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 2407000,
+        "isprivate": 0,
+        "modified_by": "noel_public@thestjohns.net",
+        "modified_ts": 1107625355000
+    },
+    "2407007": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 2407007,
+        "isprivate": 0,
+        "modified_by": "noel_public@thestjohns.net",
+        "modified_ts": 1107625747000
+    },
+    "2422241": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 2422241,
+        "isprivate": 0,
+        "modified_by": "jo.hermans@gmail.com",
+        "modified_ts": 1109104286000
+    },
+    "2437308": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 2437308,
+        "isprivate": 0,
+        "modified_by": "weeber51@yahoo.com",
+        "modified_ts": 1110231733000
+    },
+    "2437523": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 2437523,
+        "isprivate": 0,
+        "modified_by": "helgedt@tihlde.org",
+        "modified_ts": 1110241293000
+    },
+    "2437541": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 2437541,
+        "isprivate": 0,
+        "modified_by": "helgedt@tihlde.org",
+        "modified_ts": 1110241973000
+    },
+    "2437913": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 2437913,
+        "isprivate": 0,
+        "modified_by": "james@jamesh.id.au",
+        "modified_ts": 1110270345000
+    },
+    "2448640": {
+        "bug_id": 123203,
+        "comment": "[screened]",
+        "comment_id": 2448640,
+        "isprivate": 0,
+        "modified_by": "timeless@bemail.org",
+        "modified_ts": 1111188530000
+    },
+    "2488623": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 2488623,
+        "isprivate": 0,
+        "modified_by": "alaley@gmail.com",
+        "modified_ts": 1114674660000
+    },
+    "2489402": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 2489402,
+        "isprivate": 0,
+        "modified_by": "kherron+mozilla@fmailbox.com",
+        "modified_ts": 1114731502000
+    },
+    "2536391": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 2536391,
+        "isprivate": 0,
+        "modified_by": "helgedt@tihlde.org",
+        "modified_ts": 1119832333000
+    },
+    "2536392": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 2536392,
+        "isprivate": 0,
+        "modified_by": "helgedt@tihlde.org",
+        "modified_ts": 1119832447000
+    },
+    "2536554": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 2536554,
+        "isprivate": 0,
+        "modified_by": "helgedt@tihlde.org",
+        "modified_ts": 1119865167000
+    },
+    "2538988": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 2538988,
+        "isprivate": 0,
+        "modified_by": "kherron+mozilla@fmailbox.com",
+        "modified_ts": 1120077475000
+    },
+    "2563482": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 2563482,
+        "isprivate": 0,
+        "modified_by": "helgedt@tihlde.org",
+        "modified_ts": 1122435937000
+    },
+    "2723161": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 2723161,
+        "isprivate": 0,
+        "modified_by": "uri@mivzak.com",
+        "modified_ts": 1134543226000
+    },
+    "2747906": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 2747906,
+        "isprivate": 0,
+        "modified_by": "andy_lists@bananabread.net",
+        "modified_ts": 1137227164000
+    },
+    "2750440": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 2750440,
+        "isprivate": 0,
+        "modified_by": "mcow@well.com",
+        "modified_ts": 1137527673000
+    },
+    "2796879": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 2796879,
+        "isprivate": 0,
+        "modified_by": "mozbugs.20.ikonen@recursor.net",
+        "modified_ts": 1141831624000
+    },
+    "2862342": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 2862342,
+        "isprivate": 0,
+        "modified_by": "vseerror@lehigh.edu",
+        "modified_ts": 1148331786000
+    },
+    "2886699": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 2886699,
+        "isprivate": 0,
+        "modified_by": "mcow@well.com",
+        "modified_ts": 1150724206000
+    },
+    "2890054": {
+        "bug_id": 123203,
+        "comment": "[screened]",
+        "comment_id": 2890054,
+        "isprivate": 0,
+        "modified_by": "darin.moz@gmail.com",
+        "modified_ts": 1150931473000
+    },
+    "2968915": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 2968915,
+        "isprivate": 0,
+        "modified_by": "toddf@simosoftware.com",
+        "modified_ts": 1157388431000
+    },
+    "2970831": {
+        "bug_id": 3140,
+        "comment": "[screened]",
+        "comment_id": 2970831,
+        "isprivate": 0,
+        "modified_by": "bugzilla@gtalbot.org",
+        "modified_ts": 1157533235000
+    },
+    "3010837": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3010837,
+        "isprivate": 0,
+        "modified_by": "mark-mozilla@glines.org",
+        "modified_ts": 1160841288000
+    },
+    "3036070": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3036070,
+        "isprivate": 0,
+        "modified_by": "mcow@well.com",
+        "modified_ts": 1163358386000
+    },
+    "3087891": {
+        "bug_id": 367518,
+        "comment": "[screened]",
+        "comment_id": 3087891,
+        "isprivate": 0,
+        "modified_by": "Geert.Poels@skynet.be",
+        "modified_ts": 1169232049000
+    },
+    "3087913": {
+        "bug_id": 367518,
+        "comment": "[screened]",
+        "comment_id": 3087913,
+        "isprivate": 0,
+        "modified_by": "Geert.Poels@skynet.be",
+        "modified_ts": 1169234326000
+    },
+    "3087922": {
+        "bug_id": 367518,
+        "comment": "[screened]",
+        "comment_id": 3087922,
+        "isprivate": 0,
+        "modified_by": "Geert.Poels@skynet.be",
+        "modified_ts": 1169235109000
+    },
+    "3090820": {
+        "bug_id": 367518,
+        "comment": "[screened]",
+        "comment_id": 3090820,
+        "isprivate": 0,
+        "modified_by": "mkmelin+mozilla@iki.fi",
+        "modified_ts": 1169572759000
+    },
+    "3090874": {
+        "bug_id": 367518,
+        "comment": "[screened]",
+        "comment_id": 3090874,
+        "isprivate": 0,
+        "modified_by": "Geert.Poels@skynet.be",
+        "modified_ts": 1169574974000
+    },
+    "3090897": {
+        "bug_id": 367518,
+        "comment": "[screened]",
+        "comment_id": 3090897,
+        "isprivate": 0,
+        "modified_by": "mkmelin+mozilla@iki.fi",
+        "modified_ts": 1169575893000
+    },
+    "3093081": {
+        "bug_id": 367518,
+        "comment": "[screened]",
+        "comment_id": 3093081,
+        "isprivate": 0,
+        "modified_by": "Geert.Poels@skynet.be",
+        "modified_ts": 1169752142000
+    },
+    "3093092": {
+        "bug_id": 367518,
+        "comment": "[screened]",
+        "comment_id": 3093092,
+        "isprivate": 0,
+        "modified_by": "mozilla@davidbienvenu.org",
+        "modified_ts": 1169752562000
+    },
+    "3093098": {
+        "bug_id": 367518,
+        "comment": "[screened]",
+        "comment_id": 3093098,
+        "isprivate": 0,
+        "modified_by": "mkmelin+mozilla@iki.fi",
+        "modified_ts": 1169753155000
+    },
+    "3093152": {
+        "bug_id": 367518,
+        "comment": "[screened]",
+        "comment_id": 3093152,
+        "isprivate": 0,
+        "modified_by": "Geert.Poels@skynet.be",
+        "modified_ts": 1169755210000
+    },
+    "3169543": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3169543,
+        "isprivate": 0,
+        "modified_by": "mkmelin+mozilla@iki.fi",
+        "modified_ts": 1177498904000
+    },
+    "3171508": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3171508,
+        "isprivate": 0,
+        "modified_by": "mkmelin+mozilla@iki.fi",
+        "modified_ts": 1177652388000
+    },
+    "3201475": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3201475,
+        "isprivate": 0,
+        "modified_by": "noelgrandin@gmail.com",
+        "modified_ts": 1180714897000
+    },
+    "3341932": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3341932,
+        "isprivate": 0,
+        "modified_by": "joao@psp-informatica.com",
+        "modified_ts": 1192469741000
+    },
+    "3342607": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3342607,
+        "isprivate": 0,
+        "modified_by": "noelgrandin@gmail.com",
+        "modified_ts": 1192518462000
+    },
+    "3342731": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3342731,
+        "isprivate": 0,
+        "modified_by": "joao@psp-informatica.com",
+        "modified_ts": 1192529275000
+    },
+    "3373482": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3373482,
+        "isprivate": 0,
+        "modified_by": "bugzilla.mozilla.kevin@duncklee.net",
+        "modified_ts": 1195118361000
+    },
+    "3373730": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3373730,
+        "isprivate": 0,
+        "modified_by": "mkmelin+mozilla@iki.fi",
+        "modified_ts": 1195144222000
+    },
+    "3373840": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3373840,
+        "isprivate": 0,
+        "modified_by": "bugzilla.mozilla.kevin@duncklee.net",
+        "modified_ts": 1195149874000
+    },
+    "3428046": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3428046,
+        "isprivate": 0,
+        "modified_by": "bugzilla@mversen.de",
+        "modified_ts": 1199679859000
+    },
+    "3428423": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3428423,
+        "isprivate": 0,
+        "modified_by": "sean.van.der.smythe@gmail.com",
+        "modified_ts": 1199719930000
+    },
+    "3465940": {
+        "bug_id": 6810,
+        "comment": "[screened]",
+        "comment_id": 3465940,
+        "isprivate": 0,
+        "modified_by": "kherron+mozilla@fmailbox.com",
+        "modified_ts": 1202068645000
+    },
+    "3518442": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3518442,
+        "isprivate": 0,
+        "modified_by": "zug_treno@yahoo.com",
+        "modified_ts": 1205008538000
+    },
+    "3669319": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3669319,
+        "isprivate": 0,
+        "modified_by": "kent@caspia.com",
+        "modified_ts": 1213900392000
+    },
+    "3688401": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3688401,
+        "isprivate": 0,
+        "modified_by": "kent@caspia.com",
+        "modified_ts": 1214980829000
+    },
+    "3688836": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3688836,
+        "isprivate": 0,
+        "modified_by": "philringnalda@gmail.com",
+        "modified_ts": 1215011945000
+    },
+    "3688864": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3688864,
+        "isprivate": 0,
+        "modified_by": "mozilla@davidbienvenu.org",
+        "modified_ts": 1215013188000
+    },
+    "3688876": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3688876,
+        "isprivate": 0,
+        "modified_by": "kent@caspia.com",
+        "modified_ts": 1215014155000
+    },
+    "3688897": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3688897,
+        "isprivate": 0,
+        "modified_by": "sean.van.der.smythe@gmail.com",
+        "modified_ts": 1215015807000
+    },
+    "3688903": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3688903,
+        "isprivate": 0,
+        "modified_by": "mozilla@davidbienvenu.org",
+        "modified_ts": 1215015941000
+    },
+    "3688909": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3688909,
+        "isprivate": 0,
+        "modified_by": "sean.van.der.smythe@gmail.com",
+        "modified_ts": 1215016212000
+    },
+    "3688920": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3688920,
+        "isprivate": 0,
+        "modified_by": "qbxk@luckyb.net",
+        "modified_ts": 1215016482000
+    },
+    "3688923": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3688923,
+        "isprivate": 0,
+        "modified_by": "mozilla@davidbienvenu.org",
+        "modified_ts": 1215016532000
+    },
+    "3692818": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3692818,
+        "isprivate": 0,
+        "modified_by": "mcow@well.com",
+        "modified_ts": 1215288109000
+    },
+    "3692846": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3692846,
+        "isprivate": 0,
+        "modified_by": "kent@caspia.com",
+        "modified_ts": 1215291253000
+    },
+    "3692851": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3692851,
+        "isprivate": 0,
+        "modified_by": "bugzilla09.mozilla.org@tracker.drzoom.ch",
+        "modified_ts": 1215291981000
+    },
+    "3744781": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3744781,
+        "isprivate": 0,
+        "modified_by": "dmose@mozilla.org",
+        "modified_ts": 1219085198000
+    },
+    "3745756": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3745756,
+        "isprivate": 0,
+        "modified_by": "vseerror@lehigh.edu",
+        "modified_ts": 1219143055000
+    },
+    "3749360": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3749360,
+        "isprivate": 0,
+        "modified_by": "mkmelin+mozilla@iki.fi",
+        "modified_ts": 1219341152000
+    },
+    "3750165": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3750165,
+        "isprivate": 0,
+        "modified_by": "beckley@qualcomm.com",
+        "modified_ts": 1219386319000
+    },
+    "3798531": {
+        "bug_id": 457765,
+        "comment": "[screened]",
+        "comment_id": 3798531,
+        "isprivate": 0,
+        "modified_by": "jrundruud@yahoo.com",
+        "modified_ts": 1222725462000
+    },
+    "3803550": {
+        "bug_id": 458397,
+        "comment": "[screened]",
+        "comment_id": 3803550,
+        "isprivate": 0,
+        "modified_by": "cbook@mozilla.com",
+        "modified_ts": 1223051639000
+    },
+    "3818116": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3818116,
+        "isprivate": 0,
+        "modified_by": "ben.bucksch@beonex.com",
+        "modified_ts": 1224171791000
+    },
+    "3818118": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3818118,
+        "isprivate": 0,
+        "modified_by": "ben.bucksch@beonex.com",
+        "modified_ts": 1224171970000
+    },
+    "3818120": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3818120,
+        "isprivate": 0,
+        "modified_by": "ben.bucksch@beonex.com",
+        "modified_ts": 1224172061000
+    },
+    "3840890": {
+        "bug_id": 458397,
+        "comment": "[screened]",
+        "comment_id": 3840890,
+        "isprivate": 0,
+        "modified_by": "cbook@mozilla.com",
+        "modified_ts": 1225829693000
+    },
+    "3840892": {
+        "bug_id": 458397,
+        "comment": "[screened]",
+        "comment_id": 3840892,
+        "isprivate": 0,
+        "modified_by": "cbook@mozilla.com",
+        "modified_ts": 1225829752000
+    },
+    "3861059": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3861059,
+        "isprivate": 0,
+        "modified_by": "kent@caspia.com",
+        "modified_ts": 1227050582000
+    },
+    "3861066": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3861066,
+        "isprivate": 0,
+        "modified_by": "mozilla@davidbienvenu.org",
+        "modified_ts": 1227050917000
+    },
+    "3862788": {
+        "bug_id": 458397,
+        "comment": "[screened]",
+        "comment_id": 3862788,
+        "isprivate": 0,
+        "modified_by": "jst@mozilla.org",
+        "modified_ts": 1227135786000
+    },
+    "3865261": {
+        "bug_id": 458397,
+        "comment": "[screened]",
+        "comment_id": 3865261,
+        "isprivate": 0,
+        "modified_by": "peterv@propagandism.org",
+        "modified_ts": 1227267222000
+    },
+    "3865262": {
+        "bug_id": 458397,
+        "comment": "[screened]",
+        "comment_id": 3865262,
+        "isprivate": 0,
+        "modified_by": "peterv@propagandism.org",
+        "modified_ts": 1227267315000
+    },
+    "3865264": {
+        "bug_id": 458397,
+        "comment": "[screened]",
+        "comment_id": 3865264,
+        "isprivate": 0,
+        "modified_by": "peterv@propagandism.org",
+        "modified_ts": 1227267400000
+    },
+    "3865796": {
+        "bug_id": 458397,
+        "comment": "[screened]",
+        "comment_id": 3865796,
+        "isprivate": 0,
+        "modified_by": "bent.mozilla@gmail.com",
+        "modified_ts": 1227294880000
+    },
+    "3873542": {
+        "bug_id": 458397,
+        "comment": "[screened]",
+        "comment_id": 3873542,
+        "isprivate": 0,
+        "modified_by": "sdwilsh@forerunnerdesigns.com",
+        "modified_ts": 1227845946000
+    },
+    "3910763": {
+        "bug_id": 471427,
+        "comment": "[screened]",
+        "comment_id": 3910763,
+        "isprivate": 0,
+        "modified_by": "bhearsum@mozilla.com",
+        "modified_ts": 1230576077000
+    },
+    "3910807": {
+        "bug_id": 471427,
+        "comment": "[screened]",
+        "comment_id": 3910807,
+        "isprivate": 0,
+        "modified_by": "bhearsum@mozilla.com",
+        "modified_ts": 1230578354000
+    },
+    "3910814": {
+        "bug_id": 471427,
+        "comment": "[screened]",
+        "comment_id": 3910814,
+        "isprivate": 0,
+        "modified_by": "bhearsum@mozilla.com",
+        "modified_ts": 1230578662000
+    },
+    "3910818": {
+        "bug_id": 471427,
+        "comment": "[screened]",
+        "comment_id": 3910818,
+        "isprivate": 0,
+        "modified_by": "bhearsum@mozilla.com",
+        "modified_ts": 1230578742000
+    },
+    "3910827": {
+        "bug_id": 471427,
+        "comment": "[screened]",
+        "comment_id": 3910827,
+        "isprivate": 0,
+        "modified_by": "coop@mozilla.com",
+        "modified_ts": 1230579341000
+    },
+    "3910829": {
+        "bug_id": 471427,
+        "comment": "[screened]",
+        "comment_id": 3910829,
+        "isprivate": 0,
+        "modified_by": "bhearsum@mozilla.com",
+        "modified_ts": 1230579480000
+    },
+    "3912004": {
+        "bug_id": 471427,
+        "comment": "[screened]",
+        "comment_id": 3912004,
+        "isprivate": 0,
+        "modified_by": "ted@mielczarek.org",
+        "modified_ts": 1230662265000
+    },
+    "3912201": {
+        "bug_id": 471427,
+        "comment": "[screened]",
+        "comment_id": 3912201,
+        "isprivate": 0,
+        "modified_by": "bhearsum@mozilla.com",
+        "modified_ts": 1230671559000
+    },
+    "3912214": {
+        "bug_id": 471427,
+        "comment": "[screened]",
+        "comment_id": 3912214,
+        "isprivate": 0,
+        "modified_by": "ted@mielczarek.org",
+        "modified_ts": 1230672116000
+    },
+    "3912218": {
+        "bug_id": 471427,
+        "comment": "[screened]",
+        "comment_id": 3912218,
+        "isprivate": 0,
+        "modified_by": "bhearsum@mozilla.com",
+        "modified_ts": 1230672519000
+    },
+    "3912219": {
+        "bug_id": 471427,
+        "comment": "[screened]",
+        "comment_id": 3912219,
+        "isprivate": 0,
+        "modified_by": "bhearsum@mozilla.com",
+        "modified_ts": 1230672566000
+    },
+    "3912229": {
+        "bug_id": 471427,
+        "comment": "[screened]",
+        "comment_id": 3912229,
+        "isprivate": 0,
+        "modified_by": "bhearsum@mozilla.com",
+        "modified_ts": 1230672982000
+    },
+    "3924541": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3924541,
+        "isprivate": 0,
+        "modified_by": "dmose@mozilla.org",
+        "modified_ts": 1231546197000
+    },
+    "3924584": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3924584,
+        "isprivate": 0,
+        "modified_by": "kent@caspia.com",
+        "modified_ts": 1231547188000
+    },
+    "3924638": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 3924638,
+        "isprivate": 0,
+        "modified_by": "noel_public@thestjohns.net",
+        "modified_ts": 1231548878000
+    },
+    "4082851": {
+        "bug_id": 457765,
+        "comment": "[screened]",
+        "comment_id": 4082851,
+        "isprivate": 0,
+        "modified_by": "crazy-daniel@gmx.de",
+        "modified_ts": 1241349260000
+    },
+    "4225682": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 4225682,
+        "isprivate": 0,
+        "modified_by": "mkmelin+mozilla@iki.fi",
+        "modified_ts": 1249027279000
+    },
+    "4445590": {
+        "bug_id": 11040,
+        "comment": "[screened]",
+        "comment_id": 4445590,
+        "isprivate": 0,
+        "modified_by": "thomas@nybeta.com",
+        "modified_ts": 1260562367000
+    },
+    "4521658": {
+        "bug_id": 544327,
+        "comment": "[screened]",
+        "comment_id": 4521658,
+        "isprivate": 0,
+        "modified_by": "anthony.s.hughes@gmail.com",
+        "modified_ts": 1265315747000
+    },
+    "4547594": {
+        "bug_id": 547727,
+        "comment": "[screened]",
+        "comment_id": 4547594,
+        "isprivate": 0,
+        "modified_by": "j@mailb.org",
+        "modified_ts": 1266853657000
+    },
+    "5094585": {
+        "bug_id": 544327,
+        "comment": "[screened]",
+        "comment_id": 5094585,
+        "isprivate": 0,
+        "modified_by": "hskupin@gmail.com",
+        "modified_ts": 1290199663000
+    },
+    "5357155": {
+        "bug_id": 643420,
+        "comment": "[screened]",
+        "comment_id": 5357155,
+        "isprivate": 0,
+        "modified_by": "mbeltzner@gmail.com",
+        "modified_ts": 1300720377000
+    },
+    "5357158": {
+        "bug_id": 643420,
+        "comment": "[screened]",
+        "comment_id": 5357158,
+        "isprivate": 0,
+        "modified_by": "mbeltzner@gmail.com",
+        "modified_ts": 1300720498000
+    },
+    "5357170": {
+        "bug_id": 643420,
+        "comment": "[screened]",
+        "comment_id": 5357170,
+        "isprivate": 0,
+        "modified_by": "mbeltzner@gmail.com",
+        "modified_ts": 1300720824000
+    },
+    "5763251": {
+        "bug_id": 692436,
+        "comment": "[screened]",
+        "comment_id": 5763251,
+        "isprivate": 0,
+        "modified_by": "ltsnow@mchsi.com",
+        "modified_ts": 1317910641000
+    },
+    "5763283": {
+        "bug_id": 692436,
+        "comment": "[screened]",
+        "comment_id": 5763283,
+        "isprivate": 0,
+        "modified_by": "jmjeffery@embarqmail.com",
+        "modified_ts": 1317911435000
+    },
+    "5763299": {
+        "bug_id": 692436,
+        "comment": "[screened]",
+        "comment_id": 5763299,
+        "isprivate": 0,
+        "modified_by": "bhearsum@mozilla.com",
+        "modified_ts": 1317911809000
+    },
+    "5763320": {
+        "bug_id": 692436,
+        "comment": "[screened]",
+        "comment_id": 5763320,
+        "isprivate": 0,
+        "modified_by": "jmjeffery@embarqmail.com",
+        "modified_ts": 1317912190000
+    },
+    "5763344": {
+        "bug_id": 692436,
+        "comment": "[screened]",
+        "comment_id": 5763344,
+        "isprivate": 0,
+        "modified_by": "ltsnow@mchsi.com",
+        "modified_ts": 1317912541000
+    },
+    "5763347": {
+        "bug_id": 692436,
+        "comment": "[screened]",
+        "comment_id": 5763347,
+        "isprivate": 0,
+        "modified_by": "ol.rrm.2008@gmail.com",
+        "modified_ts": 1317912600000
+    },
+    "5763489": {
+        "bug_id": 692436,
+        "comment": "[screened]",
+        "comment_id": 5763489,
+        "isprivate": 0,
+        "modified_by": "bj@herbison.com",
+        "modified_ts": 1317915070000
+    },
+    "5795911": {
+        "bug_id": 692436,
+        "comment": "[screened]",
+        "comment_id": 5795911,
+        "isprivate": 0,
+        "modified_by": "alice0775@yahoo.co.jp",
+        "modified_ts": 1319154261000
+    },
+    "5796118": {
+        "bug_id": 692436,
+        "comment": "[screened]",
+        "comment_id": 5796118,
+        "isprivate": 0,
+        "modified_by": "coop@mozilla.com",
+        "modified_ts": 1319163038000
+    },
+    "6056317": {
+        "bug_id": 726635,
+        "comment": "[screened]",
+        "comment_id": 6056317,
+        "isprivate": 0,
+        "modified_by": "majken@gmail.com",
+        "modified_ts": 1329153935000
+    },
+    "6136253": {
+        "bug_id": 726635,
+        "comment": "[screened]",
+        "comment_id": 6136253,
+        "isprivate": 0,
+        "modified_by": "majken@gmail.com",
+        "modified_ts": 1331658557000
+    },
+    "6188472": {
+        "bug_id": 726635,
+        "comment": "[screened]",
+        "comment_id": 6188472,
+        "isprivate": 0,
+        "modified_by": "majken@gmail.com",
+        "modified_ts": 1333296075000
+    },
+    "6283459": {
+        "bug_id": 692436,
+        "comment": "[screened]",
+        "comment_id": 6283459,
+        "isprivate": 0,
+        "modified_by": "mozbugz@outlook.com",
+        "modified_ts": 1336258228000
+    },
+    "6497445": {
+        "bug_id": 726635,
+        "comment": "[screened]",
+        "comment_id": 6497445,
+        "isprivate": 0,
+        "modified_by": "majken@gmail.com",
+        "modified_ts": 1343069429000
+    },
+    "6838711": {
+        "bug_id": 813650,
+        "comment": "[screened]",
+        "comment_id": 6838711,
+        "isprivate": 0,
+        "modified_by": "emorley@mozilla.com",
+        "modified_ts": 1353436940000
+    },
+    "6839870": {
+        "bug_id": 813650,
+        "comment": "[screened]",
+        "comment_id": 6839870,
+        "isprivate": 0,
+        "modified_by": "emorley@mozilla.com",
+        "modified_ts": 1353453739000
+    },
+    "6841835": {
+        "bug_id": 813650,
+        "comment": "[screened]",
+        "comment_id": 6841835,
+        "isprivate": 0,
+        "modified_by": "emorley@mozilla.com",
+        "modified_ts": 1353508764000
+    },
+    "6841861": {
+        "bug_id": 813650,
+        "comment": "[screened]",
+        "comment_id": 6841861,
+        "isprivate": 0,
+        "modified_by": "emorley@mozilla.com",
+        "modified_ts": 1353509339000
+    },
+    "6860943": {
+        "bug_id": 813650,
+        "comment": "[screened]",
+        "comment_id": 6860943,
+        "isprivate": 0,
+        "modified_by": "ted@mielczarek.org",
+        "modified_ts": 1354130864000
+    },
+    "6861103": {
+        "bug_id": 813650,
+        "comment": "[screened]",
+        "comment_id": 6861103,
+        "isprivate": 0,
+        "modified_by": "ted@mielczarek.org",
+        "modified_ts": 1354132883000
+    },
+    "6861579": {
+        "bug_id": 813650,
+        "comment": "[screened]",
+        "comment_id": 6861579,
+        "isprivate": 0,
+        "modified_by": "emorley@mozilla.com",
+        "modified_ts": 1354139096000
+    },
+    "6861590": {
+        "bug_id": 813650,
+        "comment": "[screened]",
+        "comment_id": 6861590,
+        "isprivate": 0,
+        "modified_by": "emorley@mozilla.com",
+        "modified_ts": 1354139174000
+    },
+    "6863304": {
+        "bug_id": 813650,
+        "comment": "[screened]",
+        "comment_id": 6863304,
+        "isprivate": 0,
+        "modified_by": "emorley@mozilla.com",
+        "modified_ts": 1354182750000
+    },
+    "6871529": {
+        "bug_id": 813650,
+        "comment": "[screened]",
+        "comment_id": 6871529,
+        "isprivate": 0,
+        "modified_by": "emorley@mozilla.com",
+        "modified_ts": 1354381444000
+    },
+    "6871903": {
+        "bug_id": 813650,
+        "comment": "[screened]",
+        "comment_id": 6871903,
+        "isprivate": 0,
+        "modified_by": "ryanvm@gmail.com",
+        "modified_ts": 1354413774000
+    },
+    "6924440": {
+        "bug_id": 813650,
+        "comment": "[screened]",
+        "comment_id": 6924440,
+        "isprivate": 0,
+        "modified_by": "emorley@mozilla.com",
+        "modified_ts": 1355827088000
+    }
+}

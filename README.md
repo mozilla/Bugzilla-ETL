@@ -34,9 +34,13 @@ then install requirements:
 Setup
 -----
 
-You must prepare a ```settings.json``` file to reference the resources, and it's filename must be provided as an argument in the command line. Examples of settings files can be found in [resources/settings](resources/settings)
+You must prepare a ```settings.json``` file to reference the resources,
+and it's filename must be provided as an argument in the command line.
+Examples of settings files can be found in [resources/settings](resources/settings)
 
-Bugzilla-ETL keeps local run state in the form of two files: ```first_run_time``` and ```last_run_time```.  These are both parameters in the ``settings.json``` file.
+Bugzilla-ETL keeps local run state in the form of two files:
+```first_run_time``` and ```last_run_time```.  These are both parameters
+in the ``settings.json``` file.
 
   * ```first_run_time``` is written only if it does not exist, and triggers a full ETL refresh.  Delete this file if you want to create a new ES index and start ETL from the beginning.
   * ```last_run_time``` is recorded whenever there has been a successful ETL.  This file will not exist until the initial full ETL has completed successfully.  Deleteing this file should have no net effect, other than making the program work harder then it should.
@@ -47,6 +51,7 @@ Running bz_etl.py
 Asuming your ```settings.json``` file is in ```~/Bugzilla_ETL```:
 
     cd ~/Bugzilla_ETL
+
     pypy bzETL\bz_etl.py --settings=settings.json
 
 Use ```--help``` for more options, and see [example command line script](resources/scripts/bz_etl.bat)
@@ -54,10 +59,21 @@ Use ```--help``` for more options, and see [example command line script](resourc
 Got it working?
 --------------
 
-The initial ETL will take over two hours.  If you want something quicker to confirm your configuration is correct, use ```--reset --quick``` arguments on the command line.   This will limit ETL to the first 1000, and last 1000 bugs.
+The initial ETL will take over two hours.  If you want something
+quicker to confirm your configuration is correct, use ```--reset
+--quick``` arguments on the command line.   This will limit ETL
+to the first 1000, and last 1000 bugs.
 
-    bzetl --settings=settings.json --reset --quick
+    cd ~/Bugzilla_ETL
+    pypy bzETL\bz_etl.py  --settings=settings.json --reset --quick
 
+Using Cron
+----------
+
+Bugzilla-ETL is meant to be triggered by cron; usually every 10 minutes.
+Bugzilla-ETL limits itself to only one instance *per ```settings.json```
+file*:  That way, if more then one instance is accidentally run, the
+subsequent instances will do no work and shutdown cleanly.
 
 Running Tests
 -------------
@@ -66,7 +82,7 @@ The Git clone will include test code.  You can run those tests, but you must...
 
   * Have MySQL installed (no Bugzilla schema required)
   * Have timezone database installed ([instructions](./tests/resources/mySQL/README.md))
-  * A complete ```test_settings.json``` file to point to the resources ([example](./resources/settings/test_settings_example.json))
+  * A complete ```test_settings.json``` file to point to the resources ([example](./resources/settings/test_settings.json))
   * Use pypy for 4x the speed: ```pypy .\tests\test_etl.py --settings=test_settings.json```
 
 Upgrades
@@ -77,6 +93,11 @@ There may be enhancements from time to time.  To get them
     cd ~/Bugzilla-ETL
     git pull origin
     pip install -r requirements.txt
+
+After upgrading the code, you may want to trigger a full ETL.  To do this,
+you may either run ```bz_etl.py``` with the ```--reset--``` flag directly,
+or **remove the ```first_run_time```** file (and the next cron event
+will tigger a full ETL
 
 
 More on ElasticSearch

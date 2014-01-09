@@ -50,7 +50,6 @@ SCREENED_WHITEBOARD_BUG_GROUPS = [
     "hr"
 ]
 
-
 MIXED_CASE = [
     19, #bug_file_loc
     24  #short_desc
@@ -93,9 +92,9 @@ def milli2string(db, value):
 def get_screened_whiteboard(db):
     if not SCREENED_BUG_GROUP_IDS:
         groups = db.query("SELECT id FROM groups WHERE {{where}}", {
-            "where":db.esfilter2sqlwhere({"terms":{"name": SCREENED_WHITEBOARD_BUG_GROUPS}})
+            "where": db.esfilter2sqlwhere({"terms": {"name": SCREENED_WHITEBOARD_BUG_GROUPS}})
         })
-        globals()["SCREENED_BUG_GROUP_IDS"] =  Q.select(groups, "id")
+        globals()["SCREENED_BUG_GROUP_IDS"] = Q.select(groups, "id")
 
 
 def get_bugs_table_columns(db, schema_name):
@@ -132,7 +131,6 @@ def get_bugs_table_columns(db, schema_name):
         globals()["bugs_columns"] = columns
 
 
-
 def get_private_bugs(db, param):
     if param.allow_private_bugs:
         return {0}
@@ -152,7 +150,7 @@ def get_recent_private_bugs(db, param):
     param.field_id = PRIVATE_BUG_GROUP_FIELD_ID
 
     try:
-        return db.query("""
+        output = db.query("""
         SELECT
             a.bug_id
         FROM
@@ -161,6 +159,9 @@ def get_recent_private_bugs(db, param):
             bug_when >= {{start_time_str}} AND
             fieldid={{field_id}}
         """, param)
+
+        return set(output.bug_id)
+
     except Exception, e:
         Log.error("problem getting recent private attachments", e)
 
@@ -231,9 +232,9 @@ def get_bugs(db, param):
         param.bugs_columns = Q.select(bugs_columns, "column_name")
         param.bugs_columns_SQL = SQL(",\n".join([lower(c) for c in bugs_columns]))
         param.bug_filter = db.esfilter2sqlwhere({"terms": {"b.bug_id": param.bug_list}})
-        param.screened_whiteboard = db.esfilter2sqlwhere({"and":[
-            {"exists":"m.bug_id"},
-            {"terms":{"m.group_id": SCREENED_BUG_GROUP_IDS}}
+        param.screened_whiteboard = db.esfilter2sqlwhere({"and": [
+            {"exists": "m.bug_id"},
+            {"terms": {"m.group_id": SCREENED_BUG_GROUP_IDS}}
         ]})
 
         if param.allow_private_bugs:
@@ -567,9 +568,9 @@ def get_new_activities(db, param):
     #TODO: CF_LAST_RESOLVED IS IN PDT, FIX IT
     param.bug_filter = db.esfilter2sqlwhere({"terms": {"a.bug_id": param.bug_list}})
     param.mixed_case_fields = SQL(MIXED_CASE)
-    param.screened_whiteboard = db.esfilter2sqlwhere({"and":[
-        {"exists":"m.bug_id"},
-        {"terms":{"m.group_id": SCREENED_BUG_GROUP_IDS}}
+    param.screened_whiteboard = db.esfilter2sqlwhere({"and": [
+        {"exists": "m.bug_id"},
+        {"terms": {"m.group_id": SCREENED_BUG_GROUP_IDS}}
     ]})
 
     output = db.query("""
@@ -643,13 +644,20 @@ def get_flags(db, param):
 
 
 def get_comments(db, param):
-    if param.allow_private_bugs:
-        return []
     if not param.bug_list:
         return []
 
-    param.comments_filter = SQL("isprivate=0")
-    param.bug_filter = db.esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
+    if param.allow_private_bugs:
+        param.comment_field = SQL("'[screened]' comment")
+        param.bug_filter = db.esfilter2sqlwhere({"and": [
+            {"terms": {"bug_id": param.bug_list}}
+        ]})
+    else:
+        param.comment_field = SQL("c.thetext comment")
+        param.bug_filter = db.esfilter2sqlwhere({"and": [
+            {"terms": {"bug_id": param.bug_list}},
+            {"term": {"isprivate": 0}}
+        ]})
 
     try:
         comments = db.query("""
@@ -658,7 +666,7 @@ def get_comments(db, param):
                 c.bug_id,
                 p.login_name modified_by,
                 UNIX_TIMESTAMP(CONVERT_TZ(bug_when, 'US/Pacific','UTC'))*1000 AS modified_ts,
-                c.thetext comment,
+                {{comment_field}},
                 c.isprivate
             FROM
                 longdescs c
@@ -666,8 +674,7 @@ def get_comments(db, param):
                 profiles p ON c.who = p.userid
             WHERE
                 {{bug_filter}} AND
-                bug_when >= {{start_time_str}} AND
-                {{comments_filter}}
+                bug_when >= {{start_time_str}}
             """, param)
 
         return comments

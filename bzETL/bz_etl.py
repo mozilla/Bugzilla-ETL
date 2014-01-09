@@ -30,9 +30,9 @@ from extract_bugzilla import get_private_bugs, get_recent_private_attachments, g
 from parse_bug_history import BugHistoryParser
 
 
-db_cache_lock=Lock()
+db_cache_lock = Lock()
 db_cache = []
-comment_db_cache_lock=Lock()
+comment_db_cache_lock = Lock()
 comment_db_cache = []
 
 #HERE ARE ALL THE FUNCTIONS WE WANT TO RUN, IN PARALLEL
@@ -51,7 +51,6 @@ get_stuff_from_bugzilla = [
 ]
 
 
-
 def etl_comments(db, es, param, please_stop):
     # CONNECTIONS ARE EXPENSIVE, CACHE HERE
     with comment_db_cache_lock:
@@ -62,12 +61,10 @@ def etl_comments(db, es, param, please_stop):
 
     with comment_db_cache_lock:
         Log.note("Read comments from database")
-        comments=get_comments(comment_db_cache[0], param)
+        comments = get_comments(comment_db_cache[0], param)
 
-    with Timer("Write {{num}} comments to ElasticSearch", {"num":len(comments)}):
-        es.extend({"id":c.comment_id, "value":c} for c in comments)
-
-
+    with Timer("Write {{num}} comments to ElasticSearch", {"num": len(comments)}):
+        es.extend({"id": c.comment_id, "value": c} for c in comments)
 
 
 def etl(db, output_queue, param, please_stop):
@@ -84,11 +81,11 @@ def etl(db, output_queue, param, please_stop):
                 db.begin()
                 db_cache.append(db)
 
-    db_results=Queue()
+    db_results = Queue()
     with db_cache_lock:
         # ASYMMETRIC MULTI THREADING TO GET RECORDS FROM DB
         with AllThread() as all:
-            for i,f in enumerate(get_stuff_from_bugzilla):
+            for i, f in enumerate(get_stuff_from_bugzilla):
                 def process(target, db, param, please_stop):
                     db_results.extend(target(db, param))
 
@@ -98,7 +95,7 @@ def etl(db, output_queue, param, please_stop):
     sorted = Q.sort(db_results, [
         "bug_id",
         "_merge_order",
-        {"field":"modified_ts", "sort":-1},
+        {"field": "modified_ts", "sort": -1},
         "modified_by"
     ])
 
@@ -108,12 +105,9 @@ def etl(db, output_queue, param, please_stop):
     process.processRow(struct.wrap({"bug_id": parse_bug_history.STOP_BUG, "_merge_order": 1}))
 
 
-
-
-
 def run_both_etl(db, output_queue, es_comments, param):
-    comment_thread=Thread.run("etl comments", etl_comments, db, es_comments, param)
-    process_thread=Thread.run("etl", etl, db, output_queue, param)
+    comment_thread = Thread.run("etl comments", etl_comments, db, es_comments, param)
+    process_thread = Thread.run("etl", etl, db, output_queue, param)
 
     comment_thread.join()
     process_thread.join()
@@ -123,7 +117,7 @@ def setup_es(settings, db, es, es_comments):
     """
     SETUP ES CONNECTIONS TO REFLECT IF WE ARE RESUMING, INCREMENTAL, OR STARTING OVER
     """
-    current_run_time=get_current_time(db)
+    current_run_time = get_current_time(db)
 
     if File(settings.param.first_run_time).exists and File(settings.param.last_run_time).exists:
         # INCREMENTAL UPDATE; DO NOT MAKE NEW INDEX
@@ -186,15 +180,15 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
     ####################################################################
 
     #REMOVE PRIVATE BUGS
-    private_bugs=get_private_bugs(db, param)
+    private_bugs = get_private_bugs(db, param)
     es.delete_record({"terms": {"bug_id": private_bugs}})
-    Log.note("Ensure {{num}} private bugs not in index", {"num": len(private_bugs)})
+    es_comments.delete_record({"terms": {"bug_id": private_bugs}})
+    Log.note("Ensure the following private bugs are deleted:\n{{private_bugs}}", {"private_bugs": private_bugs})
 
     #RECENT PUBLIC BUGS
-    possible_public_bugs=get_recent_private_bugs(db, param)
-    possible_public_bugs=set(Q.select(possible_public_bugs, "bug_id"))
+    possible_public_bugs = get_recent_private_bugs(db, param)
     if param.allow_private_bugs:
-        #PRIVVATE BUGS
+        #PRIVATE BUGS
         #    A CHANGE IN PRIVACY INDICATOR MEANS THE WHITEBOARD IS AFFECTED, REDO
         es.delete_record({"terms": {"bug_id": possible_public_bugs}})
     else:
@@ -217,7 +211,8 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
         refresh_param.start_time_str = extract_bugzilla.milli2string(db, 0)
 
         try:
-            etl(db, output_queue, refresh_param, please_stop=None)
+            etl(db, output_queue, refresh_param.copy(), please_stop=None)
+            etl_comments(db, es_comments, refresh_param.copy(), please_stop=None)
         except Exception, e:
             Log.error("Problem with etl using parameters {{parameters}}", {
                 "parameters": refresh_param
@@ -262,6 +257,10 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
         return
 
     with Thread.run("alias analysis", alias_analysis.main, settings=settings, bug_list=bug_list):
+        Log.note("Updating {{num}} bugs:\n{{bug_list|indent}}", {
+            "num": len(bug_list),
+            "bug_list": bug_list
+        })
         param.bug_list = bug_list
         run_both_etl(**{
             "db": db,
@@ -271,12 +270,7 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
         })
 
 
-
-
-
-
 def full_etl(resume_from_last_run, settings, param, db, es, es_comments, output_queue):
-
     with Thread.run("alias_analysis", alias_analysis.main, settings=settings):
         end = nvl(settings.param.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
         start = nvl(settings.param.start, 0)
@@ -412,7 +406,7 @@ def get_max_bug_id(es):
         results = es.search({
             "query": {"filtered": {
                 "query": {"match_all": {}},
-                "filter": {"script": {"script":"true"}}
+                "filter": {"script": {"script": "true"}}
             }},
             "from": 0,
             "size": 0,
@@ -424,45 +418,39 @@ def get_max_bug_id(es):
             return 0
         return results.facets["0"].max
     except Exception, e:
-        Log.error("Can not get_max_bug from {{host}}/{{index}}",{
+        Log.error("Can not get_max_bug from {{host}}/{{index}}", {
             "host": es.settings.host,
             "index": es.settings.index
         }, e)
 
 
-
-
-
-
 def close_db_connections():
-    (globals()["db_cache"], temp)=([], db_cache)
+    (globals()["db_cache"], temp) = ([], db_cache)
     for db in temp:
         db.commit()
         db.close()
 
-    (globals()["comment_db_cache"], temp)=([], comment_db_cache)
+    (globals()["comment_db_cache"], temp) = ([], comment_db_cache)
     for db in temp:
         db.commit()
         db.close()
-
-
 
 
 def start():
-    with startup.SingleInstance():
-        try:
-            settings = startup.read_settings(defs=[{
-                "name": ["--quick", "--fast"],
-                "help": "use this to process the first and last block, useful for testing the config settings before doing a full run",
-                "action": "store_true",
-                "dest": "quick"
-            },{
-                "name": ["--restart", "--reset", "--redo"],
-                "help": "use this to force a reprocessing of all data",
-                "action": "store_true",
-                "dest": "restart"
-            }])
+    try:
+        settings = startup.read_settings(defs=[{
+            "name": ["--quick", "--fast"],
+            "help": "use this to process the first and last block, useful for testing the config settings before doing a full run",
+            "action": "store_true",
+            "dest": "quick"
+        }, {
+            "name": ["--restart", "--reset", "--redo"],
+            "help": "use this to force a reprocessing of all data",
+            "action": "store_true",
+            "dest": "restart"
+        }])
 
+        with startup.SingleInstance(flavor_id=settings.args.filename):
             if settings.args.restart:
                 for l in struct.listwrap(settings.debug.log):
                     if l.filename:
@@ -472,13 +460,12 @@ def start():
 
             Log.start(settings.debug)
             main(settings)
-        except Exception, e:
-            Log.note("Done ETL")
-            Log.error("Can not start", e)
-        finally:
-            Log.stop()
+    except Exception, e:
+        Log.note("Done ETL")
+        Log.error("Can not start", e)
+    finally:
+        Log.stop()
 
 
-
-if __name__=="__main__":
+if __name__ == "__main__":
     start()
