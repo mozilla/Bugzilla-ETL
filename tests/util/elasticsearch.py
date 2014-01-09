@@ -14,6 +14,7 @@ def make_test_instance(name, settings):
         File(settings.filename).delete()
     return open_test_instance(name, settings)
 
+
 def open_test_instance(name, settings):
     if settings.filename:
         Log.note("Using {{filename}} as {{type}}", {
@@ -28,64 +29,53 @@ def open_test_instance(name, settings):
         })
         return ElasticSearch(settings)
 
+
 def get(es, esfilter, fields=None, limit=None):
+    query = struct.wrap({
+        "query": {"filtered": {
+            "query": {"match_all": {}},
+            "filter": esfilter
+        }},
+        "from": 0,
+        "size": nvl(limit, 200000),
+        "sort": [],
+        "facets": {}
+    })
 
     if fields:
-        results = es.search({
-            "query":{"filtered":{
-                "query":{"match_all":{}},
-                "filter":esfilter
-            }},
-            "from":0,
-            "size":nvl(limit, 200000),
-            "sort":[],
-            "facets":{},
-            "fields":fields
-        })
-
+        query.fields=fields
+        results = es.search(query)
         return Q.select(results.hits.hits, "fields")
     else:
-        results = es.search({
-            "query":{"filtered":{
-                "query":{"match_all":{}},
-                "filter":esfilter
-            }},
-            "from":0,
-            "size":200000,
-            "sort":[],
-            "facets":{}
-        })
-
+        results = es.search(query)
         return Q.select(results.hits.hits, "_source")
 
 
 class Fake_ES():
-
-
     def __init__(self, settings):
-        self.filename=settings.filename
+        self.filename = settings.filename
         try:
-            self.data=CNV.JSON2object(File(self.filename).read())
+            self.data = CNV.JSON2object(File(self.filename).read())
         except IOError:
-            self.data=Struct()
+            self.data = Struct()
 
 
     def search(self, query):
-        f=CNV.esfilter2where(struct.wrap(query).query.filtered.filter)
-        return struct.wrap({"hits":{"hits":[{"_id":i, "_source":d} for i,d in self.data.items() if f(d)]}})
+        f = CNV.esfilter2where(struct.wrap(query).query.filtered.filter)
+        return struct.wrap({"hits": {"hits": [{"_id": i, "_source": d} for i, d in self.data.items() if f(d)]}})
 
     def extend(self, records):
         """
         JUST SO WE MODEL A Queue
         """
-        records={v["id"]:v["value"] for v in records}
+        records = {v["id"]: v["value"] for v in records}
 
-        self.data.dict.update(records)
+        struct.unwrap(self.data).update(records)
 
-        data_as_json=CNV.object2JSON(self.data, pretty=True)
+        data_as_json = CNV.object2JSON(self.data, pretty=True)
 
         File(self.filename).write(data_as_json)
-        Log.note("{{num}} items added", {"num":len(records)})
+        Log.note("{{num}} items added", {"num": len(records)})
 
     def add(self, record):
         if isinstance(record, list):

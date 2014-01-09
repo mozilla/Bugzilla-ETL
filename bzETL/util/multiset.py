@@ -8,6 +8,8 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
+from __future__ import unicode_literals
+
 
 def Multiset(list=None, key_field=None, count_field=None, allow_negative=False):
     if allow_negative:
@@ -17,7 +19,6 @@ def Multiset(list=None, key_field=None, count_field=None, allow_negative=False):
 
 
 class _Multiset(object):
-
     def __init__(self, list=None, key_field=None, count_field=None):
         if not key_field and not count_field:
             self.dic = dict()
@@ -26,8 +27,8 @@ class _Multiset(object):
                     self.add(i)
             return
         else:
-            self.dic={i[key_field]:i[count_field] for i in list}
-        
+            self.dic = {i[key_field]: i[count_field] for i in list}
+
 
     def __iter__(self):
         for k, m in self.dic.items():
@@ -43,9 +44,9 @@ class _Multiset(object):
 
     def add(self, value):
         if value in self.dic:
-            self.dic[value]+=1
+            self.dic[value] += 1
         else:
-            self.dic[value]=1
+            self.dic[value] = 1
         return self
 
     def extend(self, values):
@@ -55,34 +56,35 @@ class _Multiset(object):
     def remove(self, value):
         if value not in self.dic:
             from .logs import Log
-            Log.error("{{value}} is not in multiset", {"value":value})
+
+            Log.error("{{value}} is not in multiset", {"value": value})
         self._remove(value)
 
     def copy(self):
         output = _Multiset()
-        output.dic=self.dic.copy()
+        output.dic = self.dic.copy()
         return output
 
 
     def _remove(self, value):
-        count=self.dic.get(value, None)
+        count = self.dic.get(value, None)
         if count == None:
             return
 
-        count-=1
-        if count==0:
-            del(self.dic[value])
+        count -= 1
+        if count == 0:
+            del (self.dic[value])
         else:
-            self.dic[value]=count
+            self.dic[value] = count
 
     def __sub__(self, other):
-        output=self.copy()
+        output = self.copy()
         for o in other:
             output._remove(o)
         return output
 
     def __add__(self, other):
-        output=self.copy()
+        output = self.copy()
         for o in other:
             output.add(o)
         return output
@@ -106,9 +108,7 @@ class _Multiset(object):
             return 0
 
 
-
 class _NegMultiset(object):
-
     def __init__(self, list=None, key_field=None, count_field=None):
         if not key_field and not count_field:
             self.dic = dict()
@@ -117,7 +117,7 @@ class _NegMultiset(object):
                     self.add(i)
             return
         else:
-            self.dic={i[key_field]:i[count_field] for i in list}
+            self.dic = {i[key_field]: i[count_field] for i in list}
 
 
     # def __iter__(self):
@@ -158,12 +158,12 @@ class _NegMultiset(object):
 
     def copy(self):
         output = _NegMultiset()
-        output.dic=self.dic.copy()
+        output.dic = self.dic.copy()
         return output
 
 
     def __add__(self, other):
-        output=self.copy()
+        output = self.copy()
 
         if isinstance(other, _NegMultiset):
             for k, c in other.dic.items():
@@ -178,7 +178,7 @@ class _NegMultiset(object):
         if not other:
             return self
 
-        output=self.copy()
+        output = self.copy()
         for o in other:
             output.remove(o)
         return output

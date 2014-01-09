@@ -1,13 +1,18 @@
 from datetime import datetime, timedelta
 import unittest
+from pymysql.times import TimeDelta
 from bzETL.extract_bugzilla import SCREENED_WHITEBOARD_BUG_GROUPS
-from bzETL.util import startup, struct
+from bzETL.util import startup
 from bzETL.util.cnv import CNV
 from bzETL.util.elasticsearch import ElasticSearch
 from bzETL.util.logs import Log
 from bzETL.util.maths import Math
 from bzETL.util.queries import Q
 from util import elasticsearch
+
+
+NOW = CNV.datetime2milli(datetime.utcnow())
+A_WHILE_AGO = int(NOW - TimeDelta(minutes=10).total_seconds()*1000)
 
 
 class TestLookForLeaks(unittest.TestCase):
@@ -34,7 +39,7 @@ class TestLookForLeaks(unittest.TestCase):
             "facets": {"0": {"statistical": {"field": "bug_id"}}}
         }).facets["0"].max
 
-        return reversed(list(Q.range(0, max_bug_id, self.settings.param.increment)))
+        return reversed(list(Q.intervals(0, max_bug_id, self.settings.param.increment)))
 
     def test_private_bugs_not_leaking(self):
         # FOR ALL BUG BLOCKS
@@ -46,7 +51,8 @@ class TestLookForLeaks(unittest.TestCase):
                     {"and": [
                         {"range": {"bug_id": {"gte": min_id, "lt": max_id}}},
                         {"exists": {"field": "bug_group"}},
-                        {"range": {"expires_on": {"gte": CNV.datetime2milli(datetime.utcnow())}}}
+                        {"range": {"expires_on": {"gte": NOW}}},  #CURRENT RECORDS
+                        {"range": {"modified_ts": {"lt": A_WHILE_AGO}}}, #OF A MINIMUM AGE
                     ]}
                 ]},
                 ["bug_id", "bug_group"]
@@ -63,14 +69,14 @@ class TestLookForLeaks(unittest.TestCase):
                 self.public,
                 {"and": [
                     {"terms": {"bug_id": private_ids.keys()}},
-                    {"range": {"modified_ts": {"lt": datetime.utcnow() - timedelta(minutes=10)}}} # SOME BUGS WILL LEAK FOR A LITTLE WHILE
+                    {"range": {"expires_on": {"gte": NOW}}} # SOME BUGS WILL LEAK FOR A LITTLE WHILE
                 ]}
             )
 
             if leaked_bugs:
                 Log.note("{{num}} leaks!! {{bugs}}", {
                     "num": len(leaked_bugs),
-                    "bugs":CNV.object2JSON(set(Q.sort(Q.select(leaked_bugs, "bug_id"))))
+                    "bugs": CNV.object2JSON(set(Q.sort(Q.select(leaked_bugs, "bug_id"))))
                 })
                 for b in leaked_bugs:
                     Log.note("{{bug_id}} has bug groups {{bug_group}}\n{{version|indent}}", {
@@ -80,6 +86,18 @@ class TestLookForLeaks(unittest.TestCase):
                     })
                 Log.error("Bugs have leaked!")
 
+            #CHECK FOR LEAKED COMMENTS, BEYOND THE ONES LEAKED BY BUG
+            leaked_comments = elasticsearch.get(
+                self.public_comments,
+                {"terms": {"bug_id": private_ids.keys()}},
+                limit=20
+            )
+            if leaked_comments:
+                Log.error("{{num}} comments marked private have leaked!\n{{comments|indent}}", {
+                    "num": len(leaked_comments),
+                    "comments": leaked_comments
+                })
+
 
     def test_private_attachments_not_leaking(self):
         for min_id, max_id in self.blocks_of_bugs():
@@ -88,24 +106,41 @@ class TestLookForLeaks(unittest.TestCase):
                 self.private,
                 {"and": [
                     {"range": {"bug_id": {"gte": min_id, "lt": max_id}}},
-                    {"nested": {
+                    {"range": {"expires_on": {"gte": NOW}}},  #CURRENT RECORDS
+                    {"range": {"modified_ts": {"lt": A_WHILE_AGO}}}, #OF A MINIMUM AGE
+                    {"nested": {  #MUST HAVE AN ATTACHMENT
                         "path": "attachments",
                         "query": {"filtered": {
                             "query": {"match_all": {}},
-                            "filter": {"term": {"attachments.isprivate": 1}}
+                            "filter": {"exists": {"field":"attach_id"}}
                         }}
-                    }}
+                    }},
+                    {"or":[
+                        {"nested": { #PRIVATE ATTACHMENT, OR...
+                            "path": "attachments",
+                            "query": {"filtered": {
+                                "query": {"match_all": {}},
+                                "filter": {"term": {"attachments.isprivate": 1}}
+                            }}
+                        }},
+                        {"exists":{"field":"bug_group"}}  # ...PRIVATE BUG
+                    ]}
                 ]},
-                fields=["bug_id", "attachments"]
+                fields=["bug_id", "bug_group", "attachments", "modified_ts"]
             )
 
             private_attachments = Q.run({
-                "from":bugs_w_private_attachments,
-                "select":"attachments.attach_id",
-                "where":{"or":[
+                "from": bugs_w_private_attachments,
+                "select": "attachments.attach_id",
+                "where": {"or": [
                     {"exists": "bug_group"},
                     {"terms": {"attachments.attachments\.isprivate": ['1', True, 1]}}
                 ]}
+            })
+            private_attachments = [int(v) for v in private_attachments]
+
+            Log.note("Ensure {{num}} attachments did not leak", {
+                "num": len(private_attachments)
             })
 
             #VERIFY NONE IN PUBLIC
@@ -113,7 +148,7 @@ class TestLookForLeaks(unittest.TestCase):
                 self.public,
                 {"and": [
                     {"range": {"bug_id": {"gte": min_id, "lt": max_id}}},
-                    {"range": {"modified_ts": {"lt": datetime.utcnow() - timedelta(minutes=10)}}}, # SOME BUGS WILL LEAK FOR A LITTLE WHILE
+                    {"range": {"expires_on": {"gte": NOW}}}, # CURRENT BUGS
                     {"nested": {
                         "path": "attachments",
                         "query": {"filtered": {
@@ -125,8 +160,10 @@ class TestLookForLeaks(unittest.TestCase):
                 # fields=["bug_id", "attachments"]
             )
 
+            #
+
             if leaked_bugs:
-                Log.note("{{num}} bugs with private attachments have leaked!", {"num":len(leaked_bugs)})
+                Log.note("{{num}} bugs with private attachments have leaked!", {"num": len(leaked_bugs)})
                 for b in leaked_bugs:
                     Log.note("{{bug_id}} has private_attachment\n{{version|indent}}", {
                         "bug_id": b.bug_id,
@@ -138,13 +175,13 @@ class TestLookForLeaks(unittest.TestCase):
     def test_private_comments_not_leaking(self):
         leaked_comments = elasticsearch.get(
             self.public_comments,
-            {"term":{"isprivate":"1"}},
+            {"term": {"isprivate": "1"}},
             limit=20
         )
         if leaked_comments:
             Log.error("{{num}} comments marked private have leaked!\n{{comments|indent}}", {
-                "num":len(leaked_comments),
-                "comments":leaked_comments
+                "num": len(leaked_comments),
+                "comments": leaked_comments
             })
 
 
@@ -154,7 +191,7 @@ class TestLookForLeaks(unittest.TestCase):
             {"and": [
                 {"terms": {"bug_group": SCREENED_WHITEBOARD_BUG_GROUPS}},
                 {"not": {"terms": {"status_whiteboard": ["", "[screened]"]}}},
-                {"range": {"expires_on": {"gte": CNV.datetime2milli(datetime.utcnow())}}}
+                {"range": {"expires_on": {"gte": NOW}}}
             ]},
             fields=["bug_id", "product", "component", "status_whiteboard", "bug_group"],
             limit=100
@@ -172,8 +209,8 @@ def milli2datetime(r):
         elif isinstance(r, basestring):
             return r
         elif Math.is_number(r):
-            if CNV.value2number(r)>800000000000:
-               return CNV.datetime2string(CNV.milli2datetime(r), "%Y-%m-%d %H:%M:%S")
+            if CNV.value2number(r) > 800000000000:
+                return CNV.datetime2string(CNV.milli2datetime(r), "%Y-%m-%d %H:%M:%S")
         elif isinstance(r, dict):
             output = {}
             for k, v in r.items():

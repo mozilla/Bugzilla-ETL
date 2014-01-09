@@ -8,6 +8,7 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
+from __future__ import unicode_literals
 
 from datetime import datetime
 import subprocess
@@ -49,8 +50,8 @@ class DB(object):
         if isinstance(settings, DB):
             settings = settings.settings
 
-        self.settings=settings.copy()
-        self.settings.schema=nvl(schema, self.settings.schema, self.settings.database)
+        self.settings = settings.copy()
+        self.settings.schema = nvl(schema, self.settings.schema, self.settings.database)
 
         preamble = nvl(preamble, self.settings.preamble)
         if preamble == None:
@@ -207,25 +208,13 @@ class DB(object):
                 self.cursor.close()
                 self.cursor = self.db.cursor()
 
-
-            if param: sql = expand_template(sql, self.quote_param(param))
+            if param:
+                sql = expand_template(sql, self.quote_param(param))
             sql = self.preamble + outdent(sql)
             if self.debug:
                 Log.note(u"Execute SQL:\n{{sql}}", {u"sql": indent(sql)})
 
-            # if isinstance(sql, unicode):
-            #     sql=sql.encode("utf-8")
-            # try:
-                self.cursor.execute(sql)
-            # except InterfaceError, e:
-            #     if not old_cursor:
-            #         Log.error("Problem with query, did you forget to use an open db?", e)
-            #     else:
-            #         Log.error("Problem with query", e)
-            # except Exception, e:
-            #     Log.error("Problem with query", e)
-
-
+            self.cursor.execute(sql)
             columns = [utf8_to_unicode(d[0]) for d in nvl(self.cursor.description, [])]
             fixed = [[utf8_to_unicode(c) for c in row] for row in self.cursor]
             result = CNV.table2list(columns, fixed)
@@ -252,7 +241,8 @@ class DB(object):
             if not old_cursor: #ALLOW NON-TRANSACTIONAL READS
                 self.cursor = self.db.cursor()
 
-            if param: sql = expand_template(sql, self.quote_param(param))
+            if param:
+                sql = expand_template(sql, self.quote_param(param))
             sql = self.preamble + outdent(sql)
             if self.debug:
                 Log.note(u"Execute SQL:\n{{sql}}", {u"sql": indent(sql)})
@@ -315,7 +305,7 @@ class DB(object):
             bufsize=-1
         )
         if isinstance(sql, unicode):
-            sql=sql.encode("utf-8")
+            sql = sql.encode("utf8")
         (output, _) = proc.communicate(sql)
 
         if proc.returncode:
@@ -511,7 +501,7 @@ class DB(object):
             return SQL(column_name.value + u" AS " + self.quote_column(column_name.name))
 
     def sort2sqlorderby(self, sort):
-        sort = Q.normalize_sort(sort)
+        sort = Q.normalize_sort_parameters(sort)
         return u",\n".join([self.quote_column(s.field) + (" DESC" if s.sort == -1 else " ASC") for s in sort])
 
     def esfilter2sqlwhere(self, esfilter):
@@ -633,7 +623,7 @@ def int_list_packer(term, values):
     curr_start = last
     curr_excl = set()
 
-    for v in sorted[1:]:
+    for v in sorted[1::]:
         if v <= last + 1:
             pass
         elif v - last > 3:

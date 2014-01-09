@@ -23,6 +23,7 @@ class File(object):
     def __init__(self, filename, buffering=2 ** 14):
         if filename == None:
             from .logs import Log
+
             Log.error("File must be given a filename")
 
         #USE UNIX STANDARD
@@ -54,25 +55,32 @@ class File(object):
         return output
 
 
-    def read(self, encoding="utf-8"):
-        with codecs.open(self._filename, "r", encoding=encoding) as file:
-            return file.read()
+    def read(self, encoding="utf8"):
+        with codecs.open(self._filename, "r", encoding=encoding) as f:
+            return f.read()
 
     def read_ascii(self):
-        if not self.parent.exists: self.parent.create()
-        with open(self._filename, "r") as file:
-            return file.read()
+        if not self.parent.exists:
+            self.parent.create()
+        with open(self._filename, "r") as f:
+            return f.read()
 
     def write_ascii(self, content):
-        if not self.parent.exists: self.parent.create()
-        with open(self._filename, "w") as file:
-            file.write(content)
+        if not self.parent.exists:
+            self.parent.create()
+        with open(self._filename, "w") as f:
+            f.write(content)
 
     def write(self, data):
-        if not self.parent.exists: self.parent.create()
-        with open(self._filename, "wb") as file:
+        if not self.parent.exists:
+            self.parent.create()
+        with open(self._filename, "wb") as f:
             for d in listwrap(data):
-                file.write(d)
+                if not isinstance(d, unicode):
+                    from .logs import Log
+
+                    Log.error("Expecting unicode data only")
+                f.write(d.encode("utf8"))
 
     def __iter__(self):
         #NOT SURE HOW TO MAXIMIZE FILE READ SPEED
@@ -81,7 +89,7 @@ class File(object):
         def output():
             with io.open(self._filename, "rb") as f:
                 for line in f:
-                    yield line.decode("utf-8")
+                    yield line.decode("utf8")
 
         return output()
 
@@ -102,7 +110,6 @@ class File(object):
                 output_file.write(c)
 
 
-
     def delete(self):
         try:
             if os.path.isdir(self._filename):
@@ -111,15 +118,16 @@ class File(object):
                 os.remove(self._filename)
             return self
         except Exception, e:
-            if e.strerror=="The system cannot find the path specified":
+            if e.strerror == "The system cannot find the path specified":
                 return
             from .logs import Log
+
             Log.error("Could not remove file", e)
 
     def backup(self):
-        names=self._filename.split("/")[-1].split(".")
-        if len(names)==1:
-            backup=File(self._filename+".backup "+datetime.utcnow().strftime("%Y%m%d %H%i%s"))
+        names = self._filename.split("/")[-1].split(".")
+        if len(names) == 1:
+            backup = File(self._filename + ".backup " + datetime.utcnow().strftime("%Y%m%d %H%i%s"))
 
 
     def create(self):
@@ -127,7 +135,8 @@ class File(object):
             os.makedirs(self._filename)
         except Exception, e:
             from .logs import Log
-            Log.error("Could not make directory {{dir_name}}", {"dir_name":self._filename}, e)
+
+            Log.error("Could not make directory {{dir_name}}", {"dir_name": self._filename}, e)
 
 
     @property
@@ -136,7 +145,8 @@ class File(object):
 
     @property
     def exists(self):
-        if self._filename in ["", "."]: return True
+        if self._filename in ["", "."]:
+            return True
         try:
             return os.path.exists(self._filename)
         except Exception, e:

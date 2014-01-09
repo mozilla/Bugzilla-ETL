@@ -7,7 +7,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-SPECIAL = ["keys", "values", "items", "iteritems", "dict", "copy", "__class__"]
+from __future__ import unicode_literals
+
+_get = object.__getattribute__
 
 
 class Struct(dict):
@@ -16,9 +18,12 @@ class Struct(dict):
 
     0) a.b==a["b"]
     1) the IDE does tab completion, so my spelling mistakes get found at "compile time"
-    2) it deals with missing keys gracefully, so I can put it into set operations (database operations) without choking
+    2) it deals with missing keys gracefully, so I can put it into set operations (database
+       operations) without choking
     2b) missing keys is important when dealing with JSON, which is often almost anything
     3) also, which I hardly use, is storing JSON paths in a variable, so :   a["b.c"]==a.b.c
+    4) attribute names (keys) are corrected to unicode - it appears Python object.getattribute()
+       is called with str() even when using from __future__ import unicode_literals
 
     MORE ON MISSING VALUES: http://www.numpy.org/NA-overview.html
     IT ONLY CONSIDERS THE LEGITIMATE-FIELD-WITH-MISSING-VALUE (Statistical Null)
@@ -29,9 +34,9 @@ class Struct(dict):
 
     jinja2.environment.Environment.getattr()
     argparse.Environment() - code performs setattr(e, name, value) on instances of Environment
+    collections.namedtuple() - gives attribute names to
 
     """
-
 
     def __init__(self, **map):
         """
@@ -45,16 +50,17 @@ class Struct(dict):
         return True
 
     def __nonzero__(self):
-        return True
+        d = _get(self, "__dict__")
+        return True if d else False
 
     def __str__(self):
-        return dict.__str__(object.__getattribute__(self, "__dict__"))
+        return dict.__str__(_get(self, "__dict__"))
 
     def __getitem__(self, key):
-        if not isinstance(key, str):
-            key = key.encode("utf-8")
+        if isinstance(key, str):
+            key = key.decode("utf8")
 
-        d = object.__getattribute__(self, "__dict__")
+        d = _get(self, "__dict__")
 
         if key.find(".") >= 0:
             key = key.replace("\.", "\a")
@@ -63,17 +69,18 @@ class Struct(dict):
                 d = getdefault(d, n)
             return wrap(d)
 
-        return wrap(getdefault(d, key))
-
-    def __setattr__(self, key, value):
-        Struct.__setitem__(self, key, value)
+        return getdefaultwrapped(d, key)
 
     def __setitem__(self, key, value):
-        if not isinstance(key, str):
-            key = key.encode("utf-8")
+        if key == "":
+            from .logs import Log
+
+            Log.error("key is empty string.  Probably a bad idea")
+        if isinstance(key, str):
+            key = key.decode("utf8")
 
         try:
-            d = object.__getattribute__(self, "__dict__")
+            d = _get(self, "__dict__")
             value = unwrap(value)
             if key.find(".") == -1:
                 if value is None:
@@ -95,66 +102,85 @@ class Struct(dict):
             raise e
 
     def __getattribute__(self, key):
-        if not isinstance(key, str):
-            key = key.encode("utf-8")
+        if isinstance(key, str):
+            key = key.decode("utf8")
 
-        d = object.__getattribute__(self, "__dict__")
-        if key not in SPECIAL:
-            return wrap(getdefault(d, key))
+        try:
+            output = _get(self, key)
+            if key=="__dict__":
+                return output
+            return wrap(output)
+        except Exception:
+            d = _get(self, "__dict__")
+            return _Null(d, key)
 
-        #SOME dict FUNCTIONS
-        if key == "items":
-            def temp():
-                _is = dict.__getattribute__(d, "items")
-                return [(k, wrap(v)) for k, v in _is()]
+    def __setattr__(self, key, value):
+        if isinstance(key, str):
+            key = key.decode("utf8")
 
-            return temp
-        if key == "iteritems":
-            #LOW LEVEL ITERATION
-            return d.iteritems
-        if key == "keys":
-            def temp():
-                k = dict.__getattribute__(d, "keys")
-                return set(k())
+        value = unwrap(value)
+        if value is None:
+            d = _get(self, "__dict__")
+            d.pop(key, None)
+        else:
+            object.__setattr__(self, key, value)
+        return self
 
-            return temp
-        if key == "values":
-            def temp():
-                vs = dict.__getattribute__(d, "values")
-                return [wrap(v) for v in vs()]
+    def items(self):
+        d = _get(self, "__dict__")
+        return ((k, wrap(v)) for k, v in d.items())
 
-            return temp
-        if key == "dict":
-            return d
-        if key == "copy":
-            o = wrap({k: v for k, v in d.items()})
+    def iteritems(self):
+        #LOW LEVEL ITERATION, NO WRAPPING
+        d = _get(self, "__dict__")
+        return d.iteritems()
 
-            def output():
-                return o
+    def keys(self):
+        d = _get(self, "__dict__")
+        return set(d.keys())
 
-            return output
+    def values(self):
+        d = _get(self, "__dict__")
+        return (wrap(v) for v in d.values())
 
-        return dict.__getattribute__(d, key)
+    @property
+    def dict(self):
+        return _get(self, "__dict__")
+
+    @property
+    def __class__(self):
+        return dict
+
+    def copy(self):
+        d = _get(self, "__dict__")
+        return Struct(**d)
 
     def __delitem__(self, key):
-        if not isinstance(key, str):
-            key = key.encode("utf-8")
-
-        d = object.__getattribute__(self, "__dict__")
+        if isinstance(key, str):
+            key = key.decode("utf8")
 
         if key.find(".") == -1:
+            d = _get(self, "__dict__")
             d.pop(key, None)
+            return
 
+        d = _get(self, "__dict__")
         key = key.replace("\.", "\a")
         seq = [k.replace("\a", ".") for k in key.split(".")]
         for k in seq[:-1]:
             d = d[k]
         d.pop(seq[-1], None)
 
-    def keys(self):
-        d = object.__getattribute__(self, "__dict__")
-        return d.keys()
+    def __delattr__(self, key):
+        if isinstance(key, str):
+            key = key.decode("utf8")
 
+        d = _get(self, "__dict__")
+        d.pop(key, None)
+
+    def keys(self):
+        d = _get(self, "__dict__")
+        return d.keys()
 
 # KEEP TRACK OF WHAT ATTRIBUTES ARE REQUESTED, MAYBE SOME (BUILTIN) ARE STILL USEFUL
 requested = set()
@@ -172,19 +198,25 @@ def setdefault(obj, key, value):
 
 
 def getdefault(obj, key):
+    try:
+        return obj[key]
+    except Exception, e:
+        return _Null(obj, key)
+
+def getdefaultwrapped(obj, key):
     o = obj.get(key, None)
     if o == None:
-        return NullStruct(obj, key)
-    return unwrap(o)
+        return _Null(obj, key)
+    return wrap(o)
 
 
 def _assign(null, key, value, force=True):
     """
     value IS ONLY ASSIGNED IF self.obj[self.path][key] DOES NOT EXIST
     """
-    d = object.__getattribute__(null, "__dict__")
+    d = _get(null, "__dict__")
     o = d["obj"]
-    if isinstance(o, NullStruct):
+    if isinstance(o, _Null):
         o = _assign(o, d["path"], {}, False)
     else:
         o = setdefault(o, d["path"], {})
@@ -195,7 +227,8 @@ def _assign(null, key, value, force=True):
         value = setdefault(o, key, value)
     return value
 
-class NullStruct(object):
+
+class _Null(object):
     """
     Structural Null provides closure under the dot (.) operator
         Null[x] == Null
@@ -203,7 +236,7 @@ class NullStruct(object):
     """
 
     def __init__(self, obj=None, path=None):
-        d = object.__getattribute__(self, "__dict__")
+        d = _get(self, "__dict__")
         d["obj"] = obj
         d["path"] = path
 
@@ -226,13 +259,13 @@ class NullStruct(object):
         return False
 
     def __eq__(self, other):
-        return other is None or isinstance(other, NullStruct)
+        return other is None or isinstance(other, _Null)
 
     def __ne__(self, other):
-        return other is not None and not isinstance(other, NullStruct)
+        return other is not None and not isinstance(other, _Null)
 
     def __getitem__(self, key):
-        return NullStruct(self, key)
+        return _Null(self, key)
 
     def __len__(self):
         return 0
@@ -240,40 +273,24 @@ class NullStruct(object):
     def __iter__(self):
         return ZeroList.__iter__()
 
+    def last(self):
+        """
+        IN CASE self IS INTERPRETED AS A list
+        """
+        return Null
+
+    def right(self, num=None):
+        return EmptyList
+
     def __getattribute__(self, key):
-        if key not in SPECIAL:
-            return NullStruct(self, key)
-
-        #SOME dict FUNCTIONS
-        if key == "items":
-            def temp():
-                return ZeroList
-
-            return temp
-        if key == "iteritems":
-            #LOW LEVEL ITERATION
-            return self.__iter__()
-        if key == "keys":
-            def temp():
-                return ZeroList
-
-            return temp
-        if key == "values":
-            def temp():
-                return ZeroList
-
-            return temp
-        if key == "dict":
-            return Null
-        if key == "copy":
-            #THE INTENT IS USUALLY PREPARE FOR UPDATES
-            def output():
-                return Struct()
-
+        try:
+            output = _get(self, key)
             return output
+        except Exception, e:
+            return _Null(self, key)
 
     def __setattr__(self, key, value):
-        NullStruct.__setitem__(self, key, value)
+        _Null.__setitem__(self, key, value)
 
     def __setitem__(self, key, value):
         try:
@@ -304,7 +321,8 @@ class NullStruct(object):
         return "None"
 
 
-Null = NullStruct()
+Null = _Null()
+EmptyList = Null
 
 ZeroList = []
 
@@ -312,7 +330,7 @@ ZeroList = []
 class StructList(list):
     def __init__(self, vals=None):
         """ USE THE vals, NOT A COPY """
-        list.__init__(self)
+        # list.__init__(self)
         if vals == None:
             self.list = []
         elif isinstance(vals, StructList):
@@ -321,77 +339,105 @@ class StructList(list):
             self.list = vals
 
     def __getitem__(self, index):
-        if index < 0 or len(self.list) <= index:
+        if isinstance(index, slice):
+            if index.step is not None:
+                from .logs import Log
+                Log.error("slice step must be None, do not know how to deal with values")
+            l = len(_get(self, "list"))
+            i = min(max(index.start, 0), l)
+            j = index.stop
+            if j is None:
+                j = l
+            elif j < 0 and j < i:
+                j += l   # WE ALLOW THIS BECAUSE j>i
+            else:
+                j = max(min(j, l), 0)
+            return StructList(_get(self, "list")[i:j])
+
+        if index < 0 or len(_get(self, "list")) <= index:
             return Null
-        return wrap(self.list[index])
+        return wrap(_get(self, "list")[index])
 
     def __setitem__(self, i, y):
-        self.list[i] = unwrap(y)
+        _get(self, "list")[i] = unwrap(y)
 
     def __iter__(self):
-        return (wrap(v) for v in self.list)
+        return (wrap(v) for v in _get(self, "list"))
 
     def __contains__(self, item):
-        return list.__contains__(self.list, item)
+        return list.__contains__(_get(self, "list"), item)
 
     def append(self, val):
-        self.list.append(unwrap(val))
+        _get(self, "list").append(unwrap(val))
         return self
 
     def __str__(self):
-        return self.list.__str__()
+        return _get(self, "list").__str__()
 
     def __len__(self):
-        return self.list.__len__()
+        return _get(self, "list").__len__()
+
+    @property
+    def __class__(self):
+        return list
 
     def __getslice__(self, i, j):
-        return wrap(self.list[i:j])
+        from .logs import Log
+
+        Log.error("slicing is broken in Python 2.7: a[i:j] == a[i+len(a), j].  Use [start:stop:step]")
 
     def remove(self, x):
-        self.list.remove(x)
+        _get(self, "list").remove(x)
         return self
 
     def extend(self, values):
         for v in values:
-            self.list.append(unwrap(v))
+            _get(self, "list").append(unwrap(v))
         return self
 
     def pop(self):
-        return self.list.pop()
+        return _get(self, "list").pop()
 
     def __add__(self, value):
-        output = list(self.list)
+        output = list(_get(self, "list"))
         output.extend(value)
         return StructList(vals=output)
 
     def __or__(self, value):
-        output = list(self.list)
+        output = list(_get(self, "list"))
         output.append(value)
         return StructList(vals=output)
 
     def right(self, num=None):
         if num == None:
-            return StructList(vals=[self.list[-1]])
+            return StructList([_get(self, "list")[-1]])
         if num <= 0:
-            return StructList()
-        return StructList(vals=self.list[-num])
-
+            return EmptyList
+        return StructList(_get(self, "list")[-num])
 
     def last(self):
         """
         RETURN LAST ELEMENT IN StructList
         """
-        return self.list[-1]
+        if _get(self, "list"):
+            return wrap(_get(self, "list")[-1])
+        return Null
 
+    def __getattribute__(self, key):
+        try:
+            output = _get(self, key)
+            return output
+        except Exception, e:
+            return StructList([v[key] for v in _get(self, "list")])
 
 def wrap(v):
     if v is None:
         return Null
-    if isinstance(v, (Struct, NullStruct, StructList)):
+    if isinstance(v, (Struct, _Null, StructList)):
         return v
     if isinstance(v, dict):
         m = Struct()
-        object.__setattr__(m, "__dict__", v) #INJECT m.__dict__=v SO THERE IS NO COPY
+        object.__setattr__(m, "__dict__", v)  # INJECT m.__dict__=v SO THERE IS NO COPY
         return m
     if isinstance(v, list):
         return StructList(v)
@@ -400,7 +446,7 @@ def wrap(v):
 
 def unwrap(v):
     if isinstance(v, Struct):
-        return object.__getattribute__(v, "__dict__")
+        return _get(v, "__dict__")
     if isinstance(v, StructList):
         return v.list
     if v == None:
@@ -458,7 +504,7 @@ def listwrap(value):
         return wrap([value])
 
 
-def chain(field):
+def split_field(field):
     """
     RETURN field AS ARRAY OF DOT-SEPARATED FIELDS
     """
@@ -467,3 +513,7 @@ def chain(field):
         return [k.replace("\a", "\.") for k in field.split(".")]
     else:
         return [field]
+
+
+
+

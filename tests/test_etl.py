@@ -34,8 +34,8 @@ from util.database import diff
 
 BUG_GROUP_FOR_TESTING = "super secret"
 
-class TestETL(unittest.TestCase):
 
+class TestETL(unittest.TestCase):
     def setUp(self):
         self.settings = startup.read_settings(filename="test_settings.json")
         Log.start(self.settings.debug)
@@ -55,7 +55,7 @@ class TestETL(unittest.TestCase):
 
         with DB(self.settings.bugzilla) as db:
             candidate = elasticsearch.make_test_instance("candidate", self.settings.candidate)
-            reference = elasticsearch.open_test_instance("reference", self.settings.private_reference)
+            reference = elasticsearch.open_test_instance("reference", self.settings.private_bugs_reference)
 
             #SETUP RUN PARAMETERS
             param = Struct()
@@ -90,7 +90,7 @@ class TestETL(unittest.TestCase):
 
         with DB(self.settings.bugzilla) as db:
             candidate = elasticsearch.make_test_instance("candidate", self.settings.candidate)
-            reference = ElasticSearch(self.settings.private_reference)
+            reference = ElasticSearch(self.settings.private_bugs_reference)
 
             #GO FASTER BY STORING LOCAL FILE
             local_cache = File(self.settings.param.temp_dir + "/private_bugs.json")
@@ -110,7 +110,6 @@ class TestETL(unittest.TestCase):
                 param.start_time = 0
                 param.start_time_str = extract_bugzilla.milli2string(db, 0)
                 param.alias_file = self.settings.param.alias_file
-                #            param.bugs_filter=SQL("bug_id in {{bugs}}", {"bugs":db.quote_value(some_bugs)})
 
                 try:
                     with ThreadedQueue(candidate, 100) as output:
@@ -126,7 +125,6 @@ class TestETL(unittest.TestCase):
                 except Exception, e:
                     Log.warning("Total failure during compare of bugs {{bugs}}", {"bugs": some_bugs}, e)
 
-
     def test_private_etl(self):
         """
         ENSURE IDENTIFIABLE INFORMATION DOES NOT EXIST ON ANY BUGS
@@ -136,41 +134,50 @@ class TestETL(unittest.TestCase):
         self.settings.param.allow_private_bugs = True
 
         database.make_test_instance(self.settings.bugzilla)
-        es = elasticsearch.make_test_instance("candidate", self.settings.candidate)
-        es_comments = elasticsearch.make_test_instance("candidate_comments", self.settings.candidate)
+        es = elasticsearch.make_test_instance("candidate", self.settings.test_bugs)
+        es_comments = elasticsearch.make_test_instance("candidate_comments", self.settings.test_comments)
         bz_etl.main(self.settings, es, es_comments)
 
-        ref = elasticsearch.open_test_instance("reference", self.settings.private_reference)
+        ref = elasticsearch.open_test_instance("reference", self.settings.private_bugs_reference)
         compare_both(es, ref, self.settings, self.settings.param.bugs)
 
+        #DIRECT COMPARE THE FILE JSON
+        can = File(self.settings.test_comments.filename).read()
+        ref = File(self.settings.private_comments_reference.filename).read()
+        if can != ref:
+            for i, c in enumerate(can):
+                found = -1
+                if can[i] != ref[i]:
+                    found = i
+                    break
+            Log.error("Comments do not match reference\n{{sample}}", {"sample": can[Math.min([0, found - 100]):found + 100]})
 
     def test_public_etl(self):
         """
-
+        ENSURE ETL GENERATES WHAT'S IN THE REFERENCE FILE
         """
         File(self.settings.param.first_run_time).delete()
         File(self.settings.param.last_run_time).delete()
         self.settings.param.allow_private_bugs = Null
 
         database.make_test_instance(self.settings.bugzilla)
-        es = elasticsearch.make_test_instance("candidate", self.settings.test_main)
+        es = elasticsearch.make_test_instance("candidate", self.settings.test_bugs)
         es_comments = elasticsearch.make_test_instance("candidate_comments", self.settings.test_comments)
         bz_etl.main(self.settings, es, es_comments)
 
-        ref = elasticsearch.open_test_instance("reference", self.settings.public_reference)
+        ref = elasticsearch.open_test_instance("reference", self.settings.public_bugs_reference)
         compare_both(es, ref, self.settings, self.settings.param.bugs)
 
         #DIRECT COMPARE THE FILE JSON
         can = File(self.settings.test_comments.filename).read()
-        ref = File(self.settings.comments_reference.filename).read()
+        ref = File(self.settings.public_comments_reference.filename).read()
         if can != ref:
+            found = -1
             for i, c in enumerate(can):
-                found = -1
-                if can[i]!=ref[i]:
+                if can[i] != ref[i]:
                     found = i
                     break
-            Log.error("Comments do not match reference\n{{sample}}", {"sample":can[Math.min([0, found-100]):found+100]})
-
+            Log.error("Comments do not match reference\n{{sample}}", {"sample": can[Math.min(0, found - 100):found + 100:]})
 
     def test_private_bugs_do_not_show(self):
         self.settings.param.allow_private_bugs = False
@@ -187,12 +194,11 @@ class TestETL(unittest.TestCase):
             for b in private_bugs:
                 database.add_bug_group(db, b, BUG_GROUP_FOR_TESTING)
 
-        es = elasticsearch.make_test_instance("candidate", self.settings.test_main)
+        es = elasticsearch.make_test_instance("candidate", self.settings.test_bugs)
         es_c = elasticsearch.make_test_instance("candidate_comments", self.settings.test_comments)
         bz_etl.main(self.settings, es, es_c)
 
         verify_no_private_bugs(es, private_bugs)
-
 
     def test_recent_private_stuff_does_not_show(self):
         self.settings.param.allow_private_bugs = False
@@ -201,23 +207,34 @@ class TestETL(unittest.TestCase):
 
         database.make_test_instance(self.settings.bugzilla)
 
-        es = elasticsearch.make_test_instance("candidate", self.settings.test_main)
+        es = elasticsearch.make_test_instance("candidate", self.settings.test_bugs)
         es_c = elasticsearch.make_test_instance("candidate_comments", self.settings.test_comments)
         bz_etl.main(self.settings, es, es_c)
 
         #MARK SOME STUFF PRIVATE
         with DB(self.settings.bugzilla) as db:
+            #BUGS
             private_bugs = set(Random.sample(self.settings.param.bugs, 3))
             Log.note("The private bugs are {{bugs}}", {"bugs": private_bugs})
             for b in private_bugs:
                 database.add_bug_group(db, b, BUG_GROUP_FOR_TESTING)
 
-            comments = db.query("SELECT comment_id FROM longdescs")
-            private_comments = Random.sample(comments, 5)
-            Log.note("The private comments are {{comments}}", {"comments": private_comments})
-            for c in private_comments:
-                database.mark_comment_private(db, c.comment_id, isprivate=1)
+            #COMMENTS
+            comments = db.query("SELECT comment_id FROM longdescs").comment_id
+            marked_private_comments = Random.sample(comments, 5)
+            for c in marked_private_comments:
+                database.mark_comment_private(db, c, isprivate=1)
 
+            #INCLUDE COMMENTS OF THE PRIVATE BUGS
+            implied_private_comments = db.query("""
+                SELECT comment_id FROM longdescs WHERE {{where}}
+            """, {
+                "where": db.esfilter2sqlwhere({"terms":{"bug_id":private_bugs}})
+            }).comment_id
+            private_comments = marked_private_comments + implied_private_comments
+            Log.note("The private comments are {{comments}}", {"comments": private_comments})
+
+            #ATTACHMENTS
             attachments = db.query("SELECT bug_id, attach_id FROM attachments")
             private_attachments = Random.sample(attachments, 5)
             Log.note("The private attachments are {{attachments}}", {"attachments": private_attachments})
@@ -243,8 +260,7 @@ class TestETL(unittest.TestCase):
         #VERIFY BUG IS PUBLIC, BUT PRIVATE ATTACHMENTS AND COMMENTS STILL NOT
         verify_public_bugs(es, private_bugs)
         verify_no_private_attachments(es, private_attachments)
-        verify_no_private_comments(es_c, private_comments)
-
+        verify_no_private_comments(es_c, marked_private_comments)
 
     def test_private_attachments_do_not_show(self):
         self.settings.param.allow_private_bugs = False
@@ -268,12 +284,11 @@ class TestETL(unittest.TestCase):
             for a in private_attachments:
                 database.mark_attachment_private(db, a.attach_id, isprivate=1)
 
-        es = elasticsearch.make_test_instance("candidate", self.settings.test_main)
+        es = elasticsearch.make_test_instance("candidate", self.settings.test_bugs)
         es_c = elasticsearch.make_test_instance("candidate_comments", self.settings.test_comments)
         bz_etl.main(self.settings, es, es_c)
 
         verify_no_private_attachments(es, private_attachments)
-
 
     def test_private_comments_do_not_show(self):
         self.settings.param.allow_private_bugs = False
@@ -297,12 +312,11 @@ class TestETL(unittest.TestCase):
             for c in private_comments:
                 database.mark_comment_private(db, c.comment_id, 1)
 
-        es = elasticsearch.make_test_instance("candidate", self.settings.test_main)
+        es = elasticsearch.make_test_instance("candidate", self.settings.test_bugs)
         es_c = elasticsearch.make_test_instance("candidate_comments", self.settings.test_comments)
         bz_etl.main(self.settings, es, es_c)
 
         verify_no_private_comments(es, private_comments)
-
 
     def test_changes_to_private_bugs_still_have_bug_group(self):
         self.settings.param.allow_private_bugs = True
@@ -319,7 +333,7 @@ class TestETL(unittest.TestCase):
             for b in private_bugs:
                 database.add_bug_group(db, b, BUG_GROUP_FOR_TESTING)
 
-        es = elasticsearch.make_test_instance("candidate", self.settings.test_main)
+        es = elasticsearch.make_test_instance("candidate", self.settings.test_bugs)
         es_c = elasticsearch.make_test_instance("candidate_comments", self.settings.test_comments)
         bz_etl.main(self.settings, es, es_c)
 
@@ -388,18 +402,17 @@ class TestETL(unittest.TestCase):
 
             versions = get_all_bug_versions(es, 813650)
 
-            flags=["cf_status_firefox18", "cf_status_firefox19", "cf_status_firefox_esr17", "cf_status_b2g18"]
+            flags = ["cf_status_firefox18", "cf_status_firefox19", "cf_status_firefox_esr17", "cf_status_b2g18"]
             for v in versions:
                 for f in flags:
-                    if v[f]!="fixed":
-                        Log.error("813650 should have {{flag}}=='fixed'", {"flag":f})
+                    if v[f] != "fixed":
+                        Log.error("813650 should have {{flag}}=='fixed'", {"flag": f})
 
             #CLOSE THE CACHED DB CONNECTIONS
             bz_etl.close_db_connections()
 
         if all_db:
             Log.error("not all db connections are closed")
-
 
 
 def verify_no_private_bugs(es, private_bugs):
@@ -435,27 +448,20 @@ def verify_no_private_attachments(es, private_attachments):
 
 
 def verify_no_private_comments(es, private_comments):
-    for c in private_comments:
-        data = es.search({
-            "query": {"filtered": {
-                "query": {"match_all": {}},
-                "filter": {"and": [
-                    {"term": {"comment_id": c}}
-                ]}
-            }},
-            "from": 0,
-            "size": 200000,
-            "sort": []
-        })
+    data = es.search({
+        "query": {"filtered": {
+            "query": {"match_all": {}},
+            "filter": {"and": [
+                {"terms": {"comment_id": private_comments}}
+            ]}
+        }},
+        "from": 0,
+        "size": 200000,
+        "sort": []
+    })
 
-        if Q.select(data.hits.hits, "_source"):
-            Log.error("Expecting no comments")
-
-
-
-
-
-
+    if Q.select(data.hits.hits, "_source"):
+        Log.error("Expecting no comments")
 
 
 #COMPARE ALL BUGS
@@ -480,10 +486,8 @@ def compare_both(candidate, reference, settings, some_bugs):
                 pre_ref_versions = get_all_bug_versions(reference, bug_id, max_time)
                 ref_versions = \
                     Q.sort(
-                        map(# map-lambda ADDED TO FIC OLD PRODUCTION BUG VERSIONS
-                            lambda x: compare_es.old2new(x, settings.bugzilla.expires_on),
-                            pre_ref_versions
-                        ),
+                        #ADDED TO FIX OLD PRODUCTION BUG VERSIONS
+                        [compare_es.old2new(x, settings.bugzilla.expires_on) for x in pre_ref_versions],
                         "modified_ts"
                     )
 
@@ -503,6 +507,5 @@ def compare_both(candidate, reference, settings, some_bugs):
             )
 
 
-
-if __name__=="__main__":
+if __name__ == "__main__":
     unittest.main()

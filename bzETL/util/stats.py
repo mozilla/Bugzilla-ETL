@@ -8,105 +8,163 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
+from __future__ import unicode_literals
 from math import sqrt
 from .cnv import CNV
 from .struct import nvl, Struct, Null
 from .logs import Log
 
 
-DEBUG=True
-EPSILON=0.000001
+DEBUG = True
+EPSILON = 0.000001
+
 
 def stats2z_moment(stats):
     # MODIFIED FROM http://statsmodels.sourceforge.net/devel/_modules/statsmodels/stats/moment_helpers.html
     # ADDED count
-    # FIXED ERROR IN COEFFICIENTS
-    mc0, mc1, mc2, skew, kurt = (stats.count, stats.mean, stats.variance, stats.skew, stats.kurtosis)
+    mc0, mc1, mc2, skew, kurt = stats.count, stats.mean, stats.variance, stats.skew, stats.kurtosis
 
     mz0 = mc0
     mz1 = mc1 * mc0
-    mz2 = (mc2 + mc1*mc1)*mc0
-    mc3 = skew*(mc2**1.5) # 3rd central moment
-    mz3 = (mc3 + 3*mc1*mc2 - mc1**3)*mc0  # 3rd non-central moment
-    mc4 = (kurt+3.0)*(mc2**2.0) # 4th central moment
-    mz4 = (mc4 + 4*mc1*mc3 + 6*mc1*mc1*mc2 + mc1**4) * mc0
+    mz2 = (mc2 + mc1 * mc1) * mc0
+    mc3 = nvl(skew, 0) * (mc2 ** 1.5) # 3rd central moment
+    mz3 = (mc3 + 3 * mc1 * mc2 + mc1 ** 3) * mc0  # 3rd non-central moment
+    mc4 = (nvl(kurt, 0) + 3.0) * (mc2 ** 2.0) # 4th central moment
+    mz4 = (mc4 + 4 * mc1 * mc3 + 6 * mc1 * mc1 * mc2 + mc1 ** 4) * mc0
 
-    m=Z_moment(stats.count, mz1, mz2, mz3, mz4)
+    m = Z_moment(mz0, mz1, mz2, mz3, mz4)
     if DEBUG:
-        v = z_moment2stats(m, unbiased=False)
-        if not closeEnough(v.count, stats.count): Log.error("convertion error")
-        if not closeEnough(v.mean, stats.mean): Log.error("convertion error")
-        if not closeEnough(v.variance, stats.variance):
-            Log.error("convertion error")
-
+        globals()["DEBUG"] = False
+        try:
+            v = z_moment2stats(m, unbiased=False)
+            assert closeEnough(v.count, stats.count)
+            assert closeEnough(v.mean, stats.mean)
+            assert closeEnough(v.variance, stats.variance)
+            assert closeEnough(v.skew, stats.skew)
+            assert closeEnough(v.kurtosis, stats.vkurtosis)
+        except Exception, e:
+            v = z_moment2stats(m, unbiased=False)
+            Log.error("programmer error")
+        globals()["DEBUG"] = True
     return m
 
+
 def closeEnough(a, b):
-    if abs(a-b)<=EPSILON*(abs(a)+abs(b)+1): return True
+    if a == None and b == None:
+        return True
+    if a == None or b == None:
+        return False
+
+    if abs(a - b) <= EPSILON * (abs(a) + abs(b) + 1):
+        return True
     return False
 
 
 def z_moment2stats(z_moment, unbiased=True):
-    free=0
-    if unbiased: free=1
-    N=z_moment.S[0]
+    Z = z_moment.S
+    N = Z[0]
+    if N == 0:
+        return Stats()
 
-    if N==0: return Stats()
+    mean = Z[1] / N
+    Z2 = Z[2] / N
+    Z3 = Z[3] / N
+    Z4 = Z[4] / N
 
-    return Stats(
+    variance = (Z2 - mean * mean)
+    error = -EPSILON * (abs(Z2) + 1)  # EXPECTED FLOAT ERROR
+
+    if error < variance <= 0:  # TODO: MAKE THIS A TEST ON SIGNIFICANT DIGITS
+        skew = None
+        kurtosis = None
+    elif variance < error:
+        Log.error("variance can not be negative ({{var}})", {"var": variance})
+    else:
+        mc3 = (Z3 - (3 * mean * variance + mean ** 3))  # 3rd central moment
+        mc4 = (Z4 - (4 * mean * mc3 + 6 * mean * mean * variance + mean ** 4))
+        skew = mc3 / (variance ** 1.5)
+        kurtosis = (mc4 / (variance ** 2.0)) - 3.0
+
+    stats = Stats(
         count=N,
-        mean=z_moment.S[1] / N if N > 0 else float('nan'),
-        variance=(z_moment.S[2] - (z_moment.S[1] ** 2) / N) / (N - free) if N - free > 0 else float('nan'),
+        mean=mean,
+        variance=variance,
+        skew=skew,
+        kurtosis=kurtosis,
         unbiased=unbiased
     )
 
+    if DEBUG:
+        globals()["DEBUG"] = False
+        try:
+            v = stats2z_moment(stats)
+            for i in range(5):
+                assert closeEnough(v.S[i], Z[i])
+        except Exception, e:
+            Log.error("Convertion failed.  Programmer error:\nfrom={{from|indent}},\nresult stats={{stats|indent}},\nexpected parem={{expected|indent}}", {
+                "from": Z,
+                "stats": stats,
+                "expected": v.S
+            })
+        globals()["DEBUG"] = True
+
+    return stats
 
 
 class Stats(Struct):
-
-    def __init__(self, **args):
+    def __init__(self, **kwargs):
         Struct.__init__(self)
-        if "count" not in args:
-            self.count=0
-            self.mean=0
-            self.variance=0
-            self.skew=0
-            self.kurtosis=0
-        elif "mean" not in args:
-            self.count=args["count"]
-            self.mean=0
-            self.variance=0
-            self.skew=0
-            self.kurtosis=0
-        elif "variance" not in args and "std" not in args:
-            self.count=args["count"]
-            self.mean=args["mean"]
-            self.variance=0
-            self.skew=0
-            self.kurtosis=0
-        elif "skew" not in args:
-            self.count=args["count"]
-            self.mean=args["mean"]
-            self.variance=args["variance"] if "variance" in args else args["std"]**2
-            self.skew=0
-            self.kurtosis=0
-        elif "kurtosis" not in args:
-            self.count=args["count"]
-            self.mean=args["mean"]
-            self.variance=args["variance"] if "variance" in args else args["std"]**2
-            self.skew=args["skew"]
-            self.kurtosis=0
-        else:
-            self.count=args["count"]
-            self.mean=args["mean"]
-            self.variance=args["variance"] if "variance" in args else args["std"]**2
-            self.skew=args["skew"]
-            self.kurtosis=args["kurtosis"]
 
-        self.unbiased=\
-            args["unbiased"] if "unbiased" in args else \
-            not args["biased"] if "biased" in args else \
-            False
+        if "samples" in kwargs:
+            s = z_moment2stats(Z_moment.new_instance(kwargs["samples"]))
+            self.count = s.count
+            self.mean = s.mean
+            self.variance = s.variance
+            self.skew = s.skew
+            self.kurtosis = s.kurtosis
+            return
+
+        if "count" not in kwargs:
+            self.count = 0
+            self.mean = 0
+            self.variance = 0
+            self.skew = None
+            self.kurtosis = None
+        elif "mean" not in kwargs:
+            self.count = kwargs["count"]
+            self.mean = 0
+            self.variance = 0
+            self.skew = None
+            self.kurtosis = None
+        elif "variance" not in kwargs and "std" not in kwargs:
+            self.count = kwargs["count"]
+            self.mean = kwargs["mean"]
+            self.variance = 0
+            self.skew = None
+            self.kurtosis = None
+        elif "skew" not in kwargs:
+            self.count = kwargs["count"]
+            self.mean = kwargs["mean"]
+            self.variance = kwargs["variance"] if "variance" in kwargs else kwargs["std"] ** 2
+            self.skew = None
+            self.kurtosis = None
+        elif "kurtosis" not in kwargs:
+            self.count = kwargs["count"]
+            self.mean = kwargs["mean"]
+            self.variance = kwargs["variance"] if "variance" in kwargs else kwargs["std"] ** 2
+            self.skew = kwargs["skew"]
+            self.kurtosis = None
+        else:
+            self.count = kwargs["count"]
+            self.mean = kwargs["mean"]
+            self.variance = kwargs["variance"] if "variance" in kwargs else kwargs["std"] ** 2
+            self.skew = kwargs["skew"]
+            self.kurtosis = kwargs["kurtosis"]
+
+        self.unbiased = \
+            kwargs["unbiased"] if "unbiased" in kwargs else \
+                not kwargs["biased"] if "biased" in kwargs else \
+                    False
 
 
     @property
@@ -114,15 +172,13 @@ class Stats(Struct):
         return sqrt(self.variance)
 
 
-
-
-
 class Z_moment(object):
     """
     ZERO-CENTERED MOMENTS
     """
+
     def __init__(self, *args):
-        self.S=tuple(args)
+        self.S = tuple(args)
 
     def __add__(self, other):
         return Z_moment(*map(add, self.S, other.S))
@@ -138,13 +194,14 @@ class Z_moment(object):
     @property
     def dict(self):
     #RETURN HASH OF SUMS
-        return {"s"+unicode(i): m for i, m in enumerate(self.S)}
+        return {u"s" + unicode(i): m for i, m in enumerate(self.S)}
 
 
     @staticmethod
     def new_instance(values=None):
-        if values == None: return Z_moment()
-        values=[float(v) for v in values if v != None]
+        if values == None:
+            return Z_moment()
+        values = [float(v) for v in values if v != None]
 
         return Z_moment(
             len(values),
@@ -155,31 +212,61 @@ class Z_moment(object):
         )
 
 
-def add(a,b):
-    return nvl(a, 0)+nvl(b,0)
+def add(a, b):
+    return nvl(a, 0) + nvl(b, 0)
 
-def sub(a,b):
-    return nvl(a, 0)-nvl(b,0)
+
+def sub(a, b):
+    return nvl(a, 0) - nvl(b, 0)
 
 
 def z_moment2dict(z):
     #RETURN HASH OF SUMS
-    return {"s" + unicode(i): m for i, m in enumerate(z.S)}
+    return {u"s" + unicode(i): m for i, m in enumerate(z.S)}
 
 
 setattr(CNV, "z_moment2dict", staticmethod(z_moment2dict))
 
 
-def median(values):
+def median(values, simple=True):
+    """
+    RETURN MEDIAN VALUE
+
+    IF simple=False THEN IN THE EVENT MULTIPLE INSTANCES OF THE
+    MEDIAN VALUE, THE MEDIAN IS INTERPOLATED BASED ON IT'S POSITION
+    IN THE MEDIAN RANGE
+    """
     try:
         if not values:
             return Null
 
         l = len(values)
         _sorted = sorted(values)
+
+        middle = l / 2
+        _median = float(_sorted[middle])
+
+        if simple:
+            if l % 2 == 0:
+                return float(_sorted[middle - 1] + _median) / 2
+            return _median
+
+        #FIND RANGE OF THE median
+        start_index = middle - 1
+        while start_index > 0 and _sorted[start_index] == _median:
+            start_index -= 1
+        start_index += 1
+        stop_index = middle + 1
+        while stop_index < l and _sorted[stop_index] == _median:
+            stop_index += 1
+
         if l % 2 == 0:
-            return (_sorted[l / 2 - 1] + _sorted[l / 2]) / 2
+            if start_index == stop_index:
+                return float(_sorted[middle - 1] + median) / 2
+            else:
+                return (_median - 0.5) + float(middle - start_index) / float(stop_index - start_index)
         else:
-            return _sorted[l / 2]
+            middle += 0.5
+            return (_median - 0.5) + float(middle - start_index) / float(stop_index - start_index)
     except Exception, e:
         Log.error("problem with median", e)
