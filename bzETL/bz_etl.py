@@ -459,6 +459,22 @@ def start():
                 File(settings.param.last_run_time).delete()
 
             Log.start(settings.debug)
+
+            Log.note("""
+Hello!
+
+This log has lots to say, but most of it is not important.  Here
+is a summary of log categories:
+
+PROBLEM - Indicates data inconsistency.  There is nothing we can do, and the
+          ETL will deal with it as best it can.  No need to take action.
+WARNING - There is an error in the ETL logic.  The code will try it's best to
+          continue, but you probably lost this version record.  It is fine to
+          continue running, but please report these to
+          klahnakoski@mozilla.com.
+ERR0R   - Catastrophe!  ETL is not going to work.  Either find the
+          configuration problem, or report this to klahnakoski@mozilla.com
+""")
             main(settings)
     except Exception, e:
         Log.note("Done ETL")

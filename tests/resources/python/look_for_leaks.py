@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 import unittest
 from pymysql.times import TimeDelta
 from bzETL.extract_bugzilla import SCREENED_WHITEBOARD_BUG_GROUPS

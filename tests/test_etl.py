@@ -14,7 +14,7 @@ import unittest
 import sys
 from bzETL import extract_bugzilla, bz_etl
 from bzETL.bz_etl import etl
-from bzETL.extract_bugzilla import get_current_time
+from bzETL.extract_bugzilla import get_current_time, SCREENED_WHITEBOARD_BUG_GROUPS
 from bzETL.util.cnv import CNV
 from bzETL.util.db import DB, all_db
 from bzETL.util.logs import Log
@@ -407,6 +407,44 @@ class TestETL(unittest.TestCase):
                 for f in flags:
                     if v[f] != "fixed":
                         Log.error("813650 should have {{flag}}=='fixed'", {"flag": f})
+
+            #CLOSE THE CACHED DB CONNECTIONS
+            bz_etl.close_db_connections()
+
+        if all_db:
+            Log.error("not all db connections are closed")
+
+    def test_whiteboard_screened(self):
+        GOOD_BUG_TO_TEST=1046
+
+        database.make_test_instance(self.settings.bugzilla)
+
+        with DB(self.settings.bugzilla) as db:
+            es = elasticsearch.make_test_instance("candidate", self.settings.candidate)
+
+            #MARK BUG AS ONE OF THE SCREENED GROUPS
+            database.add_bug_group(db, GOOD_BUG_TO_TEST, SCREENED_WHITEBOARD_BUG_GROUPS[0])
+            db.flush()
+
+            #SETUP RUN PARAMETERS
+            param = Struct()
+            param.end_time = CNV.datetime2milli(get_current_time(db))
+            # FLAGS ADDED TO BUG 813650 ON 18/12/2012 2:38:08 AM (PDT), SO START AT SOME LATER TIME
+            param.start_time = 0
+            param.start_time_str = extract_bugzilla.milli2string(db, 0)
+
+            param.alias_file = self.settings.param.alias_file
+            param.bug_list = struct.wrap([GOOD_BUG_TO_TEST]) # bug 1046 sees lots of whiteboard, and other field, changes
+            param.allow_private_bugs = True
+
+            with ThreadedQueue(es, size=1000) as output:
+                etl(db, output, param, please_stop=None)
+
+            versions = get_all_bug_versions(es, GOOD_BUG_TO_TEST)
+
+            for v in versions:
+                if v.status_whiteboard not in (None, "", "[screened]"):
+                    Log.error("Expecting whiteboard to be screened")
 
             #CLOSE THE CACHED DB CONNECTIONS
             bz_etl.close_db_connections()

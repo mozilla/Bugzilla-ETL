@@ -1,6 +1,5 @@
 # encoding: utf-8
 #
-from datetime import datetime
 from bzETL.extract_bugzilla import milli2string, get_current_time
 from bzETL.util.cnv import CNV
 from bzETL.util.db import DB

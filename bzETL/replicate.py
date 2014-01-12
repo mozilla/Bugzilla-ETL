@@ -172,8 +172,7 @@ def main(settings):
         extract_from_file(settings.source, dest)
         dest.set_refresh_interval(1)
 
-        dest.delete_all_but(settings.destination.alias,
-                            settings.destination.index)
+        dest.delete_all_but(settings.destination.alias, settings.destination.index)
         dest.add_alias(settings.destination.alias)
         return
 

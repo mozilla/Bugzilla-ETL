@@ -14,7 +14,7 @@ from bzETL.util.db import SQL
 
 from bzETL.util.logs import Log
 from bzETL.util.queries import Q
-from bzETL.util.struct import Struct, Null
+from bzETL.util.struct import Struct
 
 
 #ALL BUGS IN PRIVATE ETL HAVE SCREENED FIELDS
@@ -58,6 +58,7 @@ MIXED_CASE = [
 PRIVATE_ATTACHMENT_FIELD_ID = 65
 PRIVATE_COMMENTS_FIELD_ID = 82
 PRIVATE_BUG_GROUP_FIELD_ID = 66
+STATUS_WHITEBOARD_FIELD_ID = 22
 
 bugs_columns = None
 SCREENED_BUG_GROUP_IDS = None
@@ -572,6 +573,7 @@ def get_new_activities(db, param):
         {"exists": "m.bug_id"},
         {"terms": {"m.group_id": SCREENED_BUG_GROUP_IDS}}
     ]})
+    param.whiteboard_field=STATUS_WHITEBOARD_FIELD_ID
 
     output = db.query("""
         SELECT
@@ -582,7 +584,7 @@ def get_new_activities(db, param):
             CAST(
                 CASE
                 WHEN a.fieldid IN {{screened_fields}} THEN '[screened]'
-                WHEN {{screened_whiteboard}} THEN '[screened]'
+                WHEN {{screened_whiteboard}} AND a.fieldid={{whiteboard_field}} AND added IS NOT NULL AND trim(added)<>'' THEN '[screened]'
                 WHEN a.fieldid IN {{mixed_case_fields}} THEN trim(added)
                 WHEN trim(added)='' THEN NULL
                 ELSE lower(trim(added))
@@ -591,7 +593,7 @@ def get_new_activities(db, param):
             CAST(
                 CASE
                 WHEN a.fieldid IN {{screened_fields}} THEN '[screened]'
-                WHEN {{screened_whiteboard}} THEN '[screened]'
+                WHEN {{screened_whiteboard}} AND a.fieldid={{whiteboard_field}} AND removed IS NOT NULL AND trim(removed)<>'' THEN '[screened]'
                 WHEN a.fieldid IN {{mixed_case_fields}} THEN trim(removed)
                 WHEN trim(removed)='' THEN NULL
                 ELSE lower(trim(removed))
@@ -611,7 +613,7 @@ def get_new_activities(db, param):
             {{bug_filter}} AND
             bug_when >= {{start_time_str}}
         ORDER BY
-            bug_id,
+            a.bug_id,
             bug_when DESC,
             attach_id
     """, param)
