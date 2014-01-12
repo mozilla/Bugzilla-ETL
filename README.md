@@ -12,7 +12,7 @@ Motivation and Details
 Requirements
 ------------
 
-  * PyPy 2.1.0 using Python 2.7  (cPython is way too slow)
+  * PyPy >= 2.1.0 using Python 2.7  (PyPy version must have fix https://bugs.pypy.org/issue1392 (applied June2013))
   * A MySQL/Maria database with Mozilla's Bugzilla schema ([old public version can be found here](http://people.mozilla.com/~mhoye/bugzilla/))
   * A timezone database ([instructions](./tests/resources/mySQL/README.md))
   * An ElasticSearch (v 0.20.5) cluster to hold the bug version documents
@@ -20,7 +20,7 @@ Requirements
 Installation
 ------------
 
-PyPy and SetupTools are required.  It is best you install on Linux, but if you do install on Windows please [follow instructions to get these installed](https://github.com/klahnakoski/pyLibrary#windows-7-install-instructions-for-python).  When done, installation is easy:
+Python and SetupTools are required.  It is best you install on Linux, but if you do install on Windows please [follow instructions to get these installed](https://github.com/klahnakoski/pyLibrary#windows-7-install-instructions-for-python).  When done, installation is easy:
 
     git clone https://github.com/klahnakoski/Bugzilla-ETL.git
 
@@ -30,6 +30,21 @@ then install requirements:
     pip install -r requirements.txt
 
 **WARNING: ```pip install Bugzilla-ETL``` does not work** - I have been unable to get Pip to install resource files consistently across platforms and Python versions.
+
+Installation with PyPy
+----------------------
+
+PyPy will execute 4 to 5 times faster then CPython.  PyPy maintains its own environment, and it's own version of the module binaries.  This means running SetupTools is just a little different.  After
+
+    git clone https://github.com/klahnakoski/Bugzilla-ETL.git
+
+then install requirements with PyPy's version of pip:
+
+    cd Bugzilla-ETL
+    c:\PyPy27\bin\pip.exe install -r requirements.txt
+
+Despite my Windows example, the equivalent must be done in Linux.
+
 
 Setup
 -----
@@ -91,7 +106,7 @@ Upgrades
 There may be enhancements from time to time.  To get them
 
     cd ~/Bugzilla-ETL
-    git pull origin
+    git pull origin master
     pip install -r requirements.txt
 
 After upgrading the code, you may want to trigger a full ETL.  To do this,

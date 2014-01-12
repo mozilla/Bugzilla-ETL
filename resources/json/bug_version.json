@@ -397,7 +397,10 @@
 				},
 				"version": {
 					"type": "string"
-				}
+				},
+                "exists": {
+   					"type": "boolean"
+   				}
 			}
 		}
 	}

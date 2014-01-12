@@ -75,7 +75,10 @@ class DB(object):
                 use_unicode=True
             )
         except Exception, e:
-            Log.error(u"Failure to connect", e)
+            if self.settings.host.find("://")==-1:
+                Log.error(u"Failure to connect", e)
+            else:
+                Log.error(u"Failure to connect.  PROTOCOL PREFIX IS PROBABLY BAD", e)
         self.cursor = None
         self.partial_rollback = False
         self.transaction_level = 0

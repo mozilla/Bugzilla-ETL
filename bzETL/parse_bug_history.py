@@ -56,7 +56,6 @@ from bzETL.util.maths import Math
 # Example: "review-" -> (review, -)
 FLAG_PATTERN = re.compile("^(.*)([?+-])(\\([^)]*\\))?$")
 
-
 DEBUG_CHANGES = False   # SHOW ACTIVITY RECORDS BEING PROCESSED
 DEBUG_STATUS = False    # SHOW CURRENT STATE OF PROCESSING
 DEBUG_CC_CHANGES = False  # SHOW MISMATCHED CC CHANGES
@@ -64,21 +63,21 @@ DEBUG_FLAG_MATCHES = True
 
 # Fields that could have been truncated per bug 55161
 TRUNC_FIELDS = ["cc", "blocked", "dependson", "keywords"]
-KNOWN_MISSING_KEYWORDS={
+KNOWN_MISSING_KEYWORDS = {
     "dogfood", "beta1", "nsbeta1", "nsbeta2", "nsbeta3", "patch", "mozilla1.0", "correctness",
     "mozilla0.9", "mozilla0.9.9+", "nscatfood", "mozilla0.9.3", "fcc508", "nsbeta1+", "mostfreq"
- }
+}
 STOP_BUG = 999999999
 MAX_TIME = 9999999999000
 
-class BugHistoryParser():
 
+class BugHistoryParser():
     def __init__(self, settings, output_queue):
         self.aliases = Null
-        self.startNewBug(struct.wrap({"bug_id":0, "modified_ts":0, "_merge_order":1}))
+        self.startNewBug(struct.wrap({"bug_id": 0, "modified_ts": 0, "_merge_order": 1}))
         self.prevActivityID = Null
         self.prev_row = Null
-        self.settings=settings
+        self.settings = settings
         self.output = output_queue
 
         self.initializeAliases()
@@ -89,13 +88,15 @@ class BugHistoryParser():
             return
         try:
             self.currBugID = row_in.bug_id
-            if self.settings.debug: Log.note("process row: {{row}}", {"row":row_in})
+            if self.settings.debug:
+                Log.note("process row: {{row}}", {"row": row_in})
 
             # If we have switched to a new bug
             if self.prevBugID < self.currBugID:
-                if self.prevBugID>0:
+                if self.prevBugID > 0:
                     # Start replaying versions in ascending order to build full data on each version
-                    if DEBUG_STATUS: Log.note("[Bug {{bug_id}}]: Emitting intermediate versions", {"bug_id":self.prevBugID})
+                    if DEBUG_STATUS:
+                        Log.note("[Bug {{bug_id}}]: Emitting intermediate versions", {"bug_id": self.prevBugID})
                     self.populateIntermediateVersionObjects()
                 if row_in.bug_id == STOP_BUG:
                     return
@@ -104,10 +105,9 @@ class BugHistoryParser():
             # Bugzilla bug workaround - some values were truncated, introducing uncertainty / errors:
             # https://bugzilla.mozilla.org/show_bug.cgi?id=55161
             if row_in.field_name in TRUNC_FIELDS:
-                added=CNV.value2string(row_in.new_value)
-                removed=CNV.value2string(row_in.old_value)
+                added = CNV.value2string(row_in.new_value)
+                removed = CNV.value2string(row_in.old_value)
                 uncertain = False
-
 
                 if added in ["? ?", "?"]: # Unknown value extracted from a possibly truncated field
                     uncertain = True
@@ -132,10 +132,10 @@ class BugHistoryParser():
                     self.processBugsActivitiesTableItem(struct.wrap({
                         "modified_ts": row_in.modified_ts,
                         "modified_by": row_in.modified_by,
-                        "field_name":"uncertain",
-                        "new_value":Null,
-                        "old_value":"1",
-                        "attach_id":Null
+                        "field_name": "uncertain",
+                        "new_value": Null,
+                        "old_value": "1",
+                        "attach_id": Null
                     }))
                     if row_in.new_value == None and row_in.old_value == None:
                         Log.note("[Bug {{bug_id}}]: Nothing added or removed. Skipping update.", {"bug_id": self.currBugID})
@@ -146,29 +146,29 @@ class BugHistoryParser():
 
 
             # Determine where we are in the bug processing workflow
-            if row_in._merge_order==1:
+            if row_in._merge_order == 1:
                 self.processSingleValueTableItem(row_in.field_name, new_value)
-            elif row_in._merge_order==2:
+            elif row_in._merge_order == 2:
                 self.processMultiValueTableItem(row_in.field_name, new_value)
-            elif row_in._merge_order==7:
+            elif row_in._merge_order == 7:
                 self.processAttachmentsTableItem(row_in)
-            elif row_in._merge_order==8:
+            elif row_in._merge_order == 8:
                 self.processFlagsTableItem(row_in)
-            elif row_in._merge_order==9:
+            elif row_in._merge_order == 9:
                 self.processBugsActivitiesTableItem(row_in)
             else:
                 Log.warning("Unhandled merge_order: '" + row_in._merge_order + "'")
 
         except Exception, e:
-            Log.warning("Problem processing row: {{row}}", {"row":row_in}, e)
+            Log.warning("Problem processing row: {{row}}", {"row": row_in}, e)
         finally:
-            if row_in._merge_order>1 and self.currBugState.created_ts == None:
+            if row_in._merge_order > 1 and self.currBugState.created_ts == None:
                 Log.note("PROBLEM expecting a created_ts (did you install the timezone database into your MySQL instance?)", {"bug_id": self.currBugID})
 
             for b in self.currBugState.blocked:
                 if isinstance(b, basestring):
                     Log.note("PROBLEM error", {"bug_id": self.currBugID})
-            self.prev_row=row_in
+            self.prev_row = row_in
 
     @staticmethod
     def uid(bug_id, modified_ts):
@@ -196,9 +196,8 @@ class BugHistoryParser():
 
         #WE FORCE ADD ALL SETS, AND WE WILL scrub() THEM OUT LATER IF NOT USED
         for f in MULTI_FIELDS:
-            self.currBugState[f]=set([])
-        self.currBugState.flags=[]   #FLAGS ARE MULTI_FIELDS, BUT ARE ALSO STRUCTS, SO MUST BE IN AN ARRAY
-
+            self.currBugState[f] = set([])
+        self.currBugState.flags = []   #FLAGS ARE MULTI_FIELDS, BUT ARE ALSO STRUCTS, SO MUST BE IN AN ARRAY
 
         if row_in._merge_order != 1:
             # Problem: No entry found in the 'bugs' table.
@@ -209,16 +208,17 @@ class BugHistoryParser():
         self.currBugState[field_name] = new_value
 
     def processMultiValueTableItem(self, field_name, new_value):
-        if field_name in NUMERIC_FIELDS: new_value=int(new_value)
+        if field_name in NUMERIC_FIELDS:
+            new_value = int(new_value)
         try:
             self.currBugState[field_name].add(new_value)
             return Null
         except Exception, e:
-            Log.warning("Unable to push {{value}} to array field {{start_time}} on bug {{curr_value}} current value: {{curr_value}}",{
-                "value":new_value,
-                "field":field_name,
-                "bug_id":self.currBugID,
-                "curr_value":self.currBugState[field_name]
+            Log.warning("Unable to push {{value}} to array field {{start_time}} on bug {{curr_value}} current value: {{curr_value}}", {
+                "value": new_value,
+                "field": field_name,
+                "bug_id": self.currBugID,
+                "curr_value": self.currBugState[field_name]
             }, e)
 
 
@@ -227,33 +227,32 @@ class BugHistoryParser():
         if currActivityID != self.prevActivityID:
             self.prevActivityID = currActivityID
 
-            self.currActivity =Struct(
+            self.currActivity = Struct(
                 _id=currActivityID,
                 modified_ts=row_in.modified_ts,
-                modified_by= row_in.modified_by,
-                changes= [{
-                    "field_name":"attachment_added",
-                    "attach_id":row_in.attach_id
-                }]
+                modified_by=row_in.modified_by,
+                changes=[{
+                             "field_name": "attachment_added",
+                             "attach_id": row_in.attach_id
+                         }]
             )
 
             self.bugVersions.append(self.currActivity)
             self.bugVersionsMap[currActivityID] = self.currActivity
 
-
-        att=self.currBugAttachmentsMap[unicode(row_in.attach_id)]
+        att = self.currBugAttachmentsMap[unicode(row_in.attach_id)]
         if att == None:
-            att={
+            att = {
                 "attach_id": row_in.attach_id,
                 "modified_ts": row_in.modified_ts,
                 "created_ts": row_in.created_ts,
                 "modified_by": row_in.modified_by,
                 "flags": []
             }
-            self.currBugAttachmentsMap[unicode(row_in.attach_id)]=att
+            self.currBugAttachmentsMap[unicode(row_in.attach_id)] = att
 
-        att["created_ts"]=Math.min([row_in.modified_ts, att["created_ts"]])
-        if row_in.field_name=="created_ts" and row_in.new_value == None:
+        att["created_ts"] = Math.min([row_in.modified_ts, att["created_ts"]])
+        if row_in.field_name == "created_ts" and row_in.new_value == None:
             pass
         else:
             att[row_in.field_name] = row_in.new_value
@@ -264,8 +263,8 @@ class BugHistoryParser():
         if row_in.attach_id != None:
             if self.currBugAttachmentsMap[unicode(row_in.attach_id)] == None:
                 Log.note("[Bug {{bug_id}}]: Unable to find attachment {{attach_id}} for bug_id {{bug_id}}", {
-                    "attach_id":row_in.attach_id,
-                    "bug_id":self.currBugID
+                    "attach_id": row_in.attach_id,
+                    "bug_id": self.currBugID
                 })
             else:
                 if self.currBugAttachmentsMap[unicode(row_in.attach_id)].flags == None:
@@ -290,24 +289,23 @@ class BugHistoryParser():
             self.currActivity = self.bugVersionsMap[currActivityID]
             if self.currActivity == None:
                 self.currActivity = Struct(
-                    _id= currActivityID,
-                    modified_ts= row_in.modified_ts,
-                    modified_by= row_in.modified_by,
-                    changes= []
+                    _id=currActivityID,
+                    modified_ts=row_in.modified_ts,
+                    modified_by=row_in.modified_by,
+                    changes=[]
                 )
                 self.bugVersions.append(self.currActivity)
 
             self.prevActivityID = currActivityID
-
 
         if row_in.attach_id != None:
             attachment = self.currBugAttachmentsMap[unicode(row_in.attach_id)]
             if attachment == None:
                 #we are going backwards in time, no need to worry about these?  maybe delete this change for public bugs
                 Log.note("[Bug {{bug_id}}]: PROBLEM Unable to find attachment {{attach_id}} {{start_time}}: {{start_time}}", {
-                    "attach_id":row_in.attach_id,
-                    "bug_id":self.currBugID,
-                    "attachments":self.currBugAttachmentsMap
+                    "attach_id": row_in.attach_id,
+                    "bug_id": self.currBugID,
+                    "attachments": self.currBugAttachmentsMap
                 })
                 self.currActivity.changes.append({
                     "field_name": row_in.field_name,
@@ -320,9 +318,9 @@ class BugHistoryParser():
                 if row_in.field_name in MULTI_FIELDS:
                     total = attachment[row_in.field_name]
                     # Can have both added and removed values.
-                    total=self.removeValues(total, multi_field_new_value, "added", row_in.field_name, "attachment", attachment, row_in.modified_ts)
-                    total=self.addValues(total, multi_field_old_value, "removed attachment", row_in.field_name, attachment)
-                    attachment[row_in.field_name]=total
+                    total = self.removeValues(total, multi_field_new_value, "added", row_in.field_name, "attachment", attachment, row_in.modified_ts)
+                    total = self.addValues(total, multi_field_old_value, "removed attachment", row_in.field_name, attachment)
+                    attachment[row_in.field_name] = total
                 else:
                     attachment[row_in.field_name] = row_in.old_value
                     self.currActivity.changes.append({
@@ -341,7 +339,7 @@ class BugHistoryParser():
                 # Can have both added and removed values.
                 total = self.removeValues(total, multi_field_new_value, "added", row_in.field_name, "currBugState", self.currBugState, row_in.modified_ts)
                 total = self.addValues(total, multi_field_old_value, "removed bug", row_in.field_name, self.currBugState)
-                self.currBugState[row_in.field_name]=total
+                self.currBugState[row_in.field_name] = total
             else:
                 # Replace current value
                 self.currBugState[row_in.field_name] = row_in.old_value
@@ -356,19 +354,20 @@ class BugHistoryParser():
     def populateIntermediateVersionObjects(self):
         # Make sure the self.bugVersions are in descending order by modification time.
         # They could be mixed because of attachment activity
-        self.bugVersions=Q.sort(self.bugVersions, [
-                {"field":"modified_ts", "sort":-1}
+        self.bugVersions = Q.sort(self.bugVersions, [
+            {"field": "modified_ts", "sort": -1}
         ])
 
         # Tracks the previous distinct value for field
-        prevValues ={}
+        prevValues = {}
         currVersion = Null
         # Prime the while loop with an empty next version so our first iteration outputs the initial bug state
         nextVersion = Struct(_id=self.currBugState._id, changes=[])
 
-        flagMap ={}
+        flagMap = {}
         # A monotonically increasing version number (useful for debugging)
         self.bug_version_num = 1
+        self.exists = True
 
         # continue if there are more bug versions, or there is one final nextVersion
         while self.bugVersions or nextVersion != None:
@@ -387,7 +386,7 @@ class BugHistoryParser():
                         "id": currVersion._id,
                         "bug_id": currVersion.bug_id
                     })
-                # Decide whether to merge this bug activity into the current state (without emitting
+                    # Decide whether to merge this bug activity into the current state (without emitting
                 # a separate JSON document). This addresses the case where an attachment is created
                 # at exactly the same time as the bug itself.
                 # Effectively, we combine all the changes for a given timestamp into the last one.
@@ -402,11 +401,12 @@ class BugHistoryParser():
 
                 # Link this version to the next one (if there is a next one)
                 if nextVersion != None:
-                    if DEBUG_STATUS: Log.note("[Bug {{bug_id}}]: We have a nextVersion: {{timestamp}} (ver {{next_version}})", {
-                        "timestamp": nextVersion.modified_ts,
-                        "next_version": self.bug_version_num + 1,
-                        "bug_id": currVersion.bug_id
-                    })
+                    if DEBUG_STATUS:
+                        Log.note("[Bug {{bug_id}}]: We have a nextVersion: {{timestamp}} (ver {{next_version}})", {
+                            "timestamp": nextVersion.modified_ts,
+                            "next_version": self.bug_version_num + 1,
+                            "bug_id": currVersion.bug_id
+                        })
                     self.currBugState.expires_on = nextVersion.modified_ts
                 else:
                     # Otherwise, we don't know when the version expires.
@@ -424,7 +424,7 @@ class BugHistoryParser():
 
                 # Now walk self.currBugState forward in time by applying the changes from currVersion
                 #BE SURE TO APPLY REMOVES BEFORE ADDS, JUST IN CASE BOTH HAPPENED TO ONE FIELD
-                changes = Q.sort(currVersion.changes, ["attach_id", "field_name", {"field":"old_value", "sort":-1}, "new_value"])
+                changes = Q.sort(currVersion.changes, ["attach_id", "field_name", {"field": "old_value", "sort": -1}, "new_value"])
                 currVersion.changes = changes
                 self.currBugState.changes = changes
 
@@ -432,20 +432,21 @@ class BugHistoryParser():
                     if c + 1 < len(changes):
                         #PACK ADDS AND REMOVES TO SINGLE CHANGE TO MATCH ORIGINAL
                         next = changes[c + 1]
-                        if change.attach_id == next.attach_id and\
-                            change.field_name == next.field_name and\
-                            change.old_value != None and\
-                            next.old_value == None:
+                        if change.attach_id == next.attach_id and \
+                                        change.field_name == next.field_name and \
+                                        change.old_value != None and \
+                                        next.old_value == None:
                             next.old_value = change.old_value
                             changes[c] = Null
                             continue
                         if change.new_value == None and \
-                            change.old_value == None and \
-                            change.field_name!="attachment_added":
+                                        change.old_value == None and \
+                                        change.field_name != "attachment_added":
                             changes[c] = Null
                             continue
 
-                    if DEBUG_CHANGES: ("Processing change: " + CNV.object2JSON(change))
+                    if DEBUG_CHANGES:
+                        ("Processing change: " + CNV.object2JSON(change))
                     target = self.currBugState
                     targetName = "currBugState"
                     attach_id = change.attach_id
@@ -453,7 +454,7 @@ class BugHistoryParser():
                         # Handle the special change record that signals the creation of the attachment
                         if change.field_name == "attachment_added":
                             # This change only exists when the attachment has been added to the map, so no missing case needed.
-                            att=self.currBugAttachmentsMap[unicode(attach_id)]
+                            att = self.currBugAttachmentsMap[unicode(attach_id)]
                             self.currBugState.attachments.append(att)
                             continue
                         else:
@@ -481,7 +482,7 @@ class BugHistoryParser():
                         a = self.removeValues(a, multi_field_value_removed, "removed", change.field_name, targetName, target, currVersion.modified_ts)
                         # Handle addition(s) (if any)
                         a = self.addValues(a, multi_field_value, "added", change.field_name, target)
-                        target[change.field_name]=a
+                        target[change.field_name] = a
                     else:
                         # Simple field change.
                         # Track the previous value
@@ -493,37 +494,37 @@ class BugHistoryParser():
 
                         target[change.field_name] = change.new_value
 
-
                 self.currBugState.bug_version_num = self.bug_version_num
+                self.currBugState.exists = True
 
                 if not mergeBugVersion:
                     # This is not a "merge", so output a row for this bug version.
-                    self.bug_version_num+=1
+                    self.bug_version_num += 1
                     # Output this version if either it was modified after start_time, or if it
                     # expired after start_time (the latter will update the last known version of the bug
                     # that did not have a value for "expires_on").
                     if self.currBugState.expires_on >= self.settings.start_time:
-                        state=normalize(self.currBugState)
-                        if state.blocked != None and len(state.blocked)==1 and "Null" in state.blocked:
+                        state = normalize(self.currBugState)
+                        if state.blocked != None and len(state.blocked) == 1 and "Null" in state.blocked:
                             Log.note("[Bug {{bug_id}}]: ERROR: state.blocked has 'Null'!  Programming error!", {"bug_id": currVersion.bug_id})
                         if DEBUG_STATUS:
-                            Log.note("[Bug {{bug_state.bug_id}}]: v{{bug_state.bug_version_num}} (id = {{bug_state.id}})" , {
-                                "bug_state":state
+                            Log.note("[Bug {{bug_state.bug_id}}]: v{{bug_state.bug_version_num}} (id = {{bug_state.id}})", {
+                                "bug_state": state
                             })
                         self.output.add({"id": state.id, "value": state})  #ES EXPECTED FORMAT
 
                     else:
                         if DEBUG_STATUS:
                             Log.note("[Bug {{bug_id}}]: Not outputting {{_id}} - it is before self.start_time ({{start_time|datetime}})", {
-                                "_id":self.currBugState._id,
-                                "start_time":self.settings.start_time,
-                                "bug_id":currVersion.bug_id
+                                "_id": self.currBugState._id,
+                                "start_time": self.settings.start_time,
+                                "bug_id": currVersion.bug_id
                             })
 
                 else:
                     if DEBUG_STATUS:
-                        Log.note("[Bug {{bug_state.bug_id}}]: Merging a change with the same timestamp = {{bug_state._id}}: {{bug_state}}",{
-                            "bug_state":currVersion
+                        Log.note("[Bug {{bug_state.bug_id}}]: Merging a change with the same timestamp = {{bug_state._id}}: {{bug_state}}", {
+                            "bug_state": currVersion
                         })
             finally:
                 if self.currBugState.blocked == None:
@@ -532,13 +533,13 @@ class BugHistoryParser():
 
     def findFlag(self, flag_list, flag):
         for f in flag_list:
-            if f.value==flag.value:
+            if f.value == flag.value:
                 return f
 
             if (
-                f.request_type == flag.request_type and
-                f.request_status == flag.request_status and
-                self.alias(f.requestee)==self.alias(flag.requestee)
+                            f.request_type == flag.request_type and
+                            f.request_status == flag.request_status and
+                        self.alias(f.requestee) == self.alias(flag.requestee)
             ):
                 Log.note("[Bug {{bug_id}}]: Using bzAliases to match change '" + flag.value + "' to '" + f.value + "'", {"bug_id": self.currBugID})
                 return f
@@ -555,7 +556,7 @@ class BugHistoryParser():
 
         #going in reverse when traveling through bugs backwards in time
         if reverse:
-            (addedFlags, removedFlags)=(removedFlags, addedFlags)
+            (addedFlags, removedFlags) = (removedFlags, addedFlags)
 
         # First, mark any removed flags as straight-up deletions.
         for flagStr in removedFlags:
@@ -584,10 +585,10 @@ class BugHistoryParser():
                 duration_ms = existingFlag["modified_ts"] - existingFlag["previous_modified_ts"]
                 existingFlag["duration_days"] = math.floor(duration_ms / (1000.0 * 60 * 60 * 24))
             else:
-                Log.warning("[Bug {{bug_id}}]: Did not find removed FLAG {{removed}} in {{existing}}",{
-                    "removed":flagStr,
-                    "existing":target.flags,
-                    "bug_id":self.currBugState.bug_id
+                Log.warning("[Bug {{bug_id}}]: Did not find removed FLAG {{removed}} in {{existing}}", {
+                    "removed": flagStr,
+                    "existing": target.flags,
+                    "bug_id": self.currBugState.bug_id
                 })
 
         # See if we can align any of the added flags with previous deletions.
@@ -599,9 +600,9 @@ class BugHistoryParser():
             added_flag = self.makeFlag(flagStr, modified_ts, modified_by)
 
             candidates = [element for element in target.flags if
-                element["value"] == None    #SPECIAL INDICATOR
-                    and added_flag["request_type"] == element["request_type"]
-                    and added_flag["request_status"] != element["previous_status"] # Skip "r?(dre@mozilla)" -> "r?(mark@mozilla)"
+                          element["value"] == None    #SPECIAL INDICATOR
+                          and added_flag["request_type"] == element["request_type"]
+                          and added_flag["request_status"] != element["previous_status"] # Skip "r?(dre@mozilla)" -> "r?(mark@mozilla)"
             ]
 
             if not candidates:
@@ -614,13 +615,13 @@ class BugHistoryParser():
                 # Multiple matches - use the best one.
                 if DEBUG_FLAG_MATCHES:
                     Log.note("[Bug {{bug_id}}]: Matched added flag {{flag}} to multiple removed flags {{candidates}}.  Using the best.", {
-                        "flag":added_flag,
-                        "candidates":candidates,
-                        "bug_id":self.currBugState.bug_id
+                        "flag": added_flag,
+                        "candidates": candidates,
+                        "bug_id": self.currBugState.bug_id
                     })
 
                 matched_ts = [element for element in candidates if
-                    added_flag.modified_ts == element.modified_ts
+                              added_flag.modified_ts == element.modified_ts
                 ]
 
                 matched_req = [
@@ -664,16 +665,14 @@ class BugHistoryParser():
                     Log.note("[Bug {{bug_id}}]: Matched added flag {{added}} to removed flag {{removed}}", {
                         "added": added_flag,
                         "removed": chosen_one,
-                        "bug_id":self.currBugState.bug_id
+                        "bug_id": self.currBugState.bug_id
                     })
 
             if chosen_one != None:
                 for f in ["value", "request_status", "requestee"]:
                     chosen_one[f] = nvl(added_flag[f], chosen_one[f])
 
-            # We need to avoid later adding this flag twice, since we rolled an add into a delete.
-
-
+                    # We need to avoid later adding this flag twice, since we rolled an add into a delete.
 
 
     def setPrevious(self, dest, aFieldName, aValue, aChangeAway):
@@ -704,8 +703,6 @@ class BugHistoryParser():
         pv[ddField] = math.floor(duration_ms / (1000.0 * 60 * 60 * 24))
 
 
-
-
     @staticmethod
     def makeFlag(flag, modified_ts, modified_by):
         flagParts = Struct(
@@ -718,20 +715,20 @@ class BugHistoryParser():
         if matches:
             flagParts.request_type = matches.group(1)
             flagParts.request_status = matches.group(2)
-            if matches.start(3)!=-1 and len(matches.group(3)) > 2:
+            if matches.start(3) != -1 and len(matches.group(3)) > 2:
                 flagParts.requestee = matches.group(3)[1:-1]
-
 
         return flagParts
 
 
     def addValues(self, total, add, valueType, field_name, target):
-        if not add: return total
-#        Log.note("[Bug {{bug_id}}]: Adding " + valueType + " " + fieldName + " values:" + CNV.object2JSON(someValues))
+        if not add:
+            return total
+        #        Log.note("[Bug {{bug_id}}]: Adding " + valueType + " " + fieldName + " values:" + CNV.object2JSON(someValues))
         if field_name == "flags":
             for v in add:
                 total.append(BugHistoryParser.makeFlag(v, target.modified_ts, target.modified_by))
-            if valueType!="added":
+            if valueType != "added":
                 self.currActivity.changes.append({
                     "field_name": field_name,
                     "new_value": Null,
@@ -755,20 +752,20 @@ class BugHistoryParser():
             # else:
             # */
         else:
-            diff=add-total
-            removed=total&add
+            diff = add - total
+            removed = total & add
 
             #WE CAN NOT REMOVE VALUES WE KNOW TO BE THERE AFTER
-            if removed and (field_name!='cc' or DEBUG_CC_CHANGES):
-                Log.note("[Bug {{bug_id}}]: PROBLEM: Found {{type}} {{field_name}} value: (Removing {{removed}} can not result in {{existing}})",{
-                    "bug_id":target.bug_id,
-                    "type":valueType,
-                    "field_name":field_name,
-                    "removed":removed,
-                    "existing":target[field_name]
+            if removed and (field_name != 'cc' or DEBUG_CC_CHANGES):
+                Log.note("[Bug {{bug_id}}]: PROBLEM: Found {{type}} {{field_name}} value: (Removing {{removed}} can not result in {{existing}})", {
+                    "bug_id": target.bug_id,
+                    "type": valueType,
+                    "field_name": field_name,
+                    "removed": removed,
+                    "existing": target[field_name]
                 })
 
-            if valueType!="added" and diff:
+            if valueType != "added" and diff:
                 self.currActivity.changes.append({
                     "field_name": field_name,
                     "new_value": Null,
@@ -779,30 +776,28 @@ class BugHistoryParser():
             return total | add
 
 
-
-
     def removeValues(self, total, remove, valueType, field_name, arrayDesc, target, timestamp):
         if field_name == "flags":
-            removeMe=[]
+            removeMe = []
             for v in remove:
                 flag = BugHistoryParser.makeFlag(v, 0, 0)
 
-                found=self.findFlag(total, flag)
+                found = self.findFlag(total, flag)
                 if found != None:
                     removeMe.append(found.value) #FOR SOME REASON, REMOVAL BY OBJECT DOES NOT WORK
                 else:
-                    Log.note("[Bug {{bug_id}}]: PROBLEM Unable to find {{type}} FLAG: {{object}}.{{field_name}}: (All {{missing}}" + " not in : {{existing}})",{
-                        "type":valueType,
-                        "object":arrayDesc,
-                        "field_name":field_name,
-                        "missing":v,
-                        "existing":total,
-                        "bug_id":self.currBugID
+                    Log.note("[Bug {{bug_id}}]: PROBLEM Unable to find {{type}} FLAG: {{object}}.{{field_name}}: (All {{missing}}" + " not in : {{existing}})", {
+                        "type": valueType,
+                        "object": arrayDesc,
+                        "field_name": field_name,
+                        "missing": v,
+                        "existing": total,
+                        "bug_id": self.currBugID
                     })
 
-            total=[a for a in total if a.value not in removeMe]
+            total = [a for a in total if a.value not in removeMe]
 
-            if valueType=="added" and removeMe:
+            if valueType == "added" and removeMe:
                 try:
                     self.currActivity.changes.append({
                         "field_name": field_name,
@@ -817,7 +812,7 @@ class BugHistoryParser():
             diff = remove - total
             output = total - remove
 
-            if valueType=="added" and remove:
+            if valueType == "added" and remove:
                 self.currActivity.changes.append({
                     "field_name": field_name,
                     "new_value": u", ".join(map(unicode, Q.sort(remove))),
@@ -826,13 +821,13 @@ class BugHistoryParser():
                 })
 
             if diff - KNOWN_MISSING_KEYWORDS:
-                Log.note("[Bug {{bug_id}}]: PROBLEM Unable to find {{type}} KEYWORD {{object}} (adding anyway): (All {{missing}}" + " not in : {{existing}})",{
-                    "bug_id":target.bug_id,
-                    "type":valueType,
-                    "object":arrayDesc,
-                    "field_name":field_name,
-                    "missing":diff,
-                    "existing":total
+                Log.note("[Bug {{bug_id}}]: PROBLEM Unable to find {{type}} KEYWORD {{object}} (adding anyway): (All {{missing}}" + " not in : {{existing}})", {
+                    "bug_id": target.bug_id,
+                    "type": valueType,
+                    "object": arrayDesc,
+                    "field_name": field_name,
+                    "missing": diff,
+                    "existing": total
                 })
                 for d in diff:
                     KNOWN_MISSING_KEYWORDS.add(d)
@@ -840,11 +835,11 @@ class BugHistoryParser():
             return output
         elif field_name == "cc":
             # MAP CANONICAL TO EXISTING (BETWEEN map_* AND self.aliases WE HAVE A BIJECTION)
-            map_total=struct.inverse({t:self.alias(t) for t in total})
-            map_remove=struct.inverse({r:self.alias(r) for r in remove})
+            map_total = struct.inverse({t: self.alias(t) for t in total})
+            map_remove = struct.inverse({r: self.alias(r) for r in remove})
             # CANONICAL VALUES
-            c_total=set(map_total.keys())
-            c_remove=set(map_remove.keys())
+            c_total = set(map_total.keys())
+            c_remove = set(map_remove.keys())
 
             removed = c_total & c_remove
             diff = c_remove - c_total
@@ -852,14 +847,14 @@ class BugHistoryParser():
 
             if not target.uncertain:
                 if diff and DEBUG_CC_CHANGES:
-                    Log.note("[Bug {{bug_id}}]: PROBLEM: Unable to find CC:\n{{missing|indent}}\nnot in:\n{{existing|indent}}\ncurrent alias info:\n{{candidates|indent}}",{
-                        "type":valueType,
-                        "object":arrayDesc,
-                        "field_name":field_name,
-                        "missing":Q.sort(Q.map2set(diff, map_remove)),
-                        "existing":Q.sort(total),
-                        "candidates":{d: self.aliases.get(d, None) for d in diff},
-                        "bug_id":self.currBugID
+                    Log.note("[Bug {{bug_id}}]: PROBLEM: Unable to find CC:\n{{missing|indent}}\nnot in:\n{{existing|indent}}\ncurrent alias info:\n{{candidates|indent}}", {
+                        "type": valueType,
+                        "object": arrayDesc,
+                        "field_name": field_name,
+                        "missing": Q.sort(Q.map2set(diff, map_remove)),
+                        "existing": Q.sort(total),
+                        "candidates": {d: self.aliases.get(d, None) for d in diff},
+                        "bug_id": self.currBugID
                     })
 
             else:
@@ -875,49 +870,49 @@ class BugHistoryParser():
                             strings.edit_distance(map_total[found][0], lost),
                             strings.edit_distance(map_total[found][0].split("@")[0], lost.split("@")[0])
                         ])
-                        if score<best_score:
+                        if score < best_score:
                             # best_score=score
-                            best=found
+                            best = found
 
-                    if best!=Null:
+                    if best != Null:
                         if DEBUG_CC_CHANGES:
                             Log.note("[Bug {{bug_id}}]: UNCERTAIN ALIAS FOUND: {{lost}} == {{found}}", {
-                                "lost":lost,
-                                "found":best,
-                                "bug_id":self.currBugID
+                                "lost": lost,
+                                "found": best,
+                                "bug_id": self.currBugID
                             })
-                        #DO NOT SAVE THE ALIAS, IT MAY BE WRONG
+                            #DO NOT SAVE THE ALIAS, IT MAY BE WRONG
                         removed.add(best)
                         output.discard(best)
                     elif DEBUG_CC_CHANGES:
-                        Log.note("[Bug {{bug_id}}]: PROBLEM Unable to pattern match {{type}} value: {{object}}.{{field_name}}: ({{missing}}" + " not in : {{existing}})",{
-                            "type":valueType,
-                            "object":arrayDesc,
-                            "field_name":field_name,
-                            "missing":lost,
-                            "existing":total,
-                            "bug_id":self.currBugID
+                        Log.note("[Bug {{bug_id}}]: PROBLEM Unable to pattern match {{type}} value: {{object}}.{{field_name}}: ({{missing}}" + " not in : {{existing}})", {
+                            "type": valueType,
+                            "object": arrayDesc,
+                            "field_name": field_name,
+                            "missing": lost,
+                            "existing": total,
+                            "bug_id": self.currBugID
                         })
 
-            if valueType=="added":
+            if valueType == "added":
                 # DURING WALK BACK IN TIME, WE POPULATE THE changes
                 try:
                     if removed - set(map_total.keys()):
-                        Log.error("problem with alias finding:\n"+
-                                  "map_total={{map_total}}\n"+
-                                  "map_remove={{map_remove}}\n"+
-                                  "c_total={{c_total}}\n"+
-                                  "c_remove={{c_remove}}\n"+
-                                  "removed={{removed}}\n"+
-                                  "diff={{diff}}\n"+
+                        Log.error("problem with alias finding:\n" +
+                                  "map_total={{map_total}}\n" +
+                                  "map_remove={{map_remove}}\n" +
+                                  "c_total={{c_total}}\n" +
+                                  "c_remove={{c_remove}}\n" +
+                                  "removed={{removed}}\n" +
+                                  "diff={{diff}}\n" +
                                   "output={{output}}\n", {
-                                  "map_total":map_total,
-                                  "c_total":c_total,
-                                  "map_remove":map_remove,
-                                  "c_remove":c_remove,
-                                  "removed":removed,
-                                  "diff":diff,
-                                  "output":output
+                            "map_total": map_total,
+                            "c_total": c_total,
+                            "map_remove": map_remove,
+                            "c_remove": c_remove,
+                            "removed": removed,
+                            "diff": diff,
+                            "output": output
                         })
                     final_removed = Q.map2set(removed, map_total)
                     if final_removed:
@@ -936,7 +931,7 @@ class BugHistoryParser():
             diff = remove - total
             output = total - remove
 
-            if valueType=="added" and removed:
+            if valueType == "added" and removed:
                 self.currActivity.changes.append({
                     "field_name": field_name,
                     "new_value": u", ".join(map(unicode, Q.sort(removed))),
@@ -945,30 +940,29 @@ class BugHistoryParser():
                 })
 
             if diff:
-                Log.note("[Bug {{bug_id}}]: PROBLEM Unable to find {{type}} value in {{object}}.{{field_name}}: (All {{missing}}" + " not in : {{existing}})",{
-                    "bug_id":target.bug_id,
-                    "type":valueType,
-                    "object":arrayDesc,
-                    "field_name":field_name,
-                    "missing":diff,
-                    "existing":total
+                Log.note("[Bug {{bug_id}}]: PROBLEM Unable to find {{type}} value in {{object}}.{{field_name}}: (All {{missing}}" + " not in : {{existing}})", {
+                    "bug_id": target.bug_id,
+                    "type": valueType,
+                    "object": arrayDesc,
+                    "field_name": field_name,
+                    "missing": diff,
+                    "existing": total
                 })
 
             return output
-
 
 
     @staticmethod
     def getMultiFieldValue(name, value):
         if value == None:
             return set()
-        if name=="flags":
-            return [s.strip() for s in value.split(",") if s.strip()!=""]
+        if name == "flags":
+            return [s.strip() for s in value.split(",") if s.strip() != ""]
         if name in MULTI_FIELDS:
             if name in NUMERIC_FIELDS:
-                return set(int(s.strip()) for s in value.split(",") if s.strip()!="")
+                return set(int(s.strip()) for s in value.split(",") if s.strip() != "")
             else:
-                return set(s.strip() for s in value.split(",") if s.strip()!="")
+                return set(s.strip() for s in value.split(",") if s.strip() != "")
 
         return {value}
 
