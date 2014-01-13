@@ -585,7 +585,7 @@ class BugHistoryParser():
                 duration_ms = existingFlag["modified_ts"] - existingFlag["previous_modified_ts"]
                 existingFlag["duration_days"] = math.floor(duration_ms / (1000.0 * 60 * 60 * 24))
             else:
-                Log.warning("[Bug {{bug_id}}]: Did not find removed FLAG {{removed}} in {{existing}}", {
+                Log.note("[Bug {{bug_id}}]: PROBLEM: Did not find removed FLAG {{removed}} in {{existing}}", {
                     "removed": flagStr,
                     "existing": target.flags,
                     "bug_id": self.currBugState.bug_id
@@ -631,7 +631,7 @@ class BugHistoryParser():
                 ]
 
                 if not matched_ts and not matched_req:
-                    Log.warning("[Bug {{bug_id}}]: Can not match {{requestee}} in {{flags}}. Skipping match.", {
+                    Log.note("[Bug {{bug_id}}]: PROBLEM: Can not match {{requestee}} in {{flags}}. Skipping match.", {
                         "bug_id": self.currBugState.bug_id,
                         "flags": target.flags,
                         "requestee": added_flag
