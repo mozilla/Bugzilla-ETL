@@ -9,6 +9,7 @@
 #
 from __future__ import unicode_literals
 import math
+from numbers import Number
 from .struct import Null, nvl
 from .logs import Log
 from .strings import find_first
@@ -104,7 +105,7 @@ class Math(object):
         for v in values:
             if v == None:
                 continue
-            if math.isnan(v):
+            if isinstance(v, Number) and v.isnan(v):
                 continue
             if output == None:
                 output = v
