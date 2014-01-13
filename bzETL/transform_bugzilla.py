@@ -38,7 +38,7 @@ def rename_attachments(bug_version):
 
 
 #NORMALIZE BUG VERSION TO STANDARD FORM
-def normalize(bug):
+def normalize(bug, old_school=False):
     bug=bug.copy()
     bug.id = unicode(bug.bug_id) + "_" + unicode(bug.modified_ts)[:-3]
     bug._id = None
@@ -59,7 +59,8 @@ def normalize(bug):
                     k.endswith("isprivate")\
                 :
                     a[k.replace(".", "\.")]=CNV.value2int(v)
-                    a[k.split(".")[-1].split("_")[-1]]=CNV.value2int(v)
+                    if not old_school:
+                        a[k.split(".")[-1].split("_")[-1]]=CNV.value2int(v)
 
             a.flags = Q.sort(a.flags, ["modified_ts", "value"])
 

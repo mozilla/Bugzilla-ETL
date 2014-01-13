@@ -17,7 +17,6 @@ from bzETL.util.maths import Math
 from bzETL.util.queries import Q
 
 
-
 #PULL ALL BUG DOCS FROM ONE ES
 from bzETL.util.timer import Timer
 

@@ -152,7 +152,7 @@ def replicate(source, destination, pending, last_updated):
             d2 = map(
                 lambda(x): {"id": x.id, "value": x},
                 map(
-                    lambda(x): transform_bugzilla.normalize(transform_bugzilla.rename_attachments(x._source)),
+                    lambda(x): transform_bugzilla.normalize(transform_bugzilla.rename_attachments(x._source), old_school=True),
                     data.hits.hits
                 )
             )
