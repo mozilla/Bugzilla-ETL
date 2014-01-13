@@ -105,7 +105,7 @@ class Math(object):
         for v in values:
             if v == None:
                 continue
-            if isinstance(v, Number) and v.isnan(v):
+            if isinstance(v, float) and v.isnan(v):
                 continue
             if output == None:
                 output = v
