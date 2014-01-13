@@ -110,9 +110,10 @@ There may be enhancements from time to time.  To get them
     pip install -r requirements.txt
 
 After upgrading the code, you may want to trigger a full ETL.  To do this,
-you may either run ```bz_etl.py``` with the ```--reset--``` flag directly,
-or **remove the ```first_run_time```** file (and the next cron event
-will tigger a full ETL
+you may either
+
+1.  run ```bz_etl.py``` with the ```--reset--``` flag directly, or
+2.  remove the ```first_run_time``` file (and the next cron event will tigger a full ETL)
 
 
 More on ElasticSearch
