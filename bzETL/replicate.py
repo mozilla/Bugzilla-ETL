@@ -11,6 +11,8 @@
 
 from datetime import datetime, timedelta
 from bzETL.util.maths import Math
+from bzETL.util.struct import nvl
+from bzETL.util.threads import ThreadedQueue
 from bzETL.util.timer import Timer
 import transform_bugzilla
 from bzETL.util.cnv import CNV
@@ -136,7 +138,7 @@ def replicate(source, destination, pending, last_updated):
                 "query": {"filtered": {
                     "query": {"match_all": {}},
                     "filter": {"and": [
-                        {"terms": {"bug_id": bugs}},
+                        {"terms": {"bug_id": set(bugs)}},
                         {"range": {"modified_ts":
                             {"gte": CNV.datetime2milli(last_updated)}
                         }}
@@ -150,12 +152,11 @@ def replicate(source, destination, pending, last_updated):
             d2 = map(
                 lambda(x): {"id": x.id, "value": x},
                 map(
-                    lambda(x): transform_bugzilla.normalize(
-                        transform_bugzilla.rename_attachments(x._source)),
+                    lambda(x): transform_bugzilla.normalize(transform_bugzilla.rename_attachments(x._source)),
                     data.hits.hits
                 )
             )
-            destination.add(d2)
+            destination.extend(d2)
 
 
 def main(settings):
@@ -186,11 +187,12 @@ def main(settings):
     if time_file.exists:
         from_file = CNV.milli2datetime(CNV.value2int(time_file.read()))
     from_es = get_last_updated(destination)
-    last_updated = Math.min(from_file, from_es)
+    last_updated = nvl(Math.min(from_file, from_es), CNV.milli2datetime(0))
     current_time = datetime.utcnow()
 
     pending = get_pending(source, last_updated)
-    replicate(source, destination, pending, last_updated)
+    with ThreadedQueue(destination, size=1000) as data_sink:
+        replicate(source, data_sink, pending, last_updated)
 
     # RECORD LAST UPDATED
     time_file.write(unicode(CNV.datetime2milli(current_time)))
