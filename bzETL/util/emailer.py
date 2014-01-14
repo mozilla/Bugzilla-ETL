@@ -13,21 +13,34 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
 import sys
+from bzETL.util import struct
 from .struct import nvl
 
 
 class Emailer:
-
     def __init__(self, settings):
-        self.settings=settings
+        """
+        REQUIRES SETTINGS LIKE
+        "email": {
+            "from_address": "klahnakoski@mozilla.com",  #DEFAULT
+            "to":"klahnakoski@mozilla.com",  #DEFAULT
+            "subject": "catchy title",  #DEFAULT
+            "host": "mail.mozilla.com",
+            "port": 465,
+            "username": "example@example.com",
+            "password": "password",
+            "use_ssl": 1
+        }
+        """
+        self.settings = settings
 
 
     def send_email(self,
-        from_address = None,
-        to_addrs = None,
-        subject='No Subject',
-        text_data = None,
-        html_data = None
+            from_address=None,
+            to_addrs=None,
+            subject=None,
+            text_data=None,
+            html_data=None
     ):
         """Sends an email.
 
@@ -41,9 +54,10 @@ class Emailer:
         viewer supports it; otherwise he'll see the text content.
         """
 
-        settings=self.settings
+        settings = self.settings
 
-        from_address=nvl(from_address, settings.from_address)
+        from_address = nvl(from_address, settings["from"], settings.from_address)
+        to_addrs = struct.listwrap(nvl(to_addrs, settings.to, settings.to_addrs))
 
         if not from_address or not to_addrs:
             raise Exception("Both from_addr and to_addrs must be specified")
@@ -62,21 +76,20 @@ class Emailer:
             msg = MIMEText(text_data)
         elif not text_data:
             msg = MIMEMultipart()
-            msg.preamble = subject
+            msg.preamble = nvl(subject, settings.subject, 'No Subject')
             msg.attach(MIMEText(html_data, 'html'))
         else:
             msg = MIMEMultipart('alternative')
             msg.attach(MIMEText(text_data, 'plain'))
             msg.attach(MIMEText(html_data, 'html'))
 
-        msg['Subject'] = subject
+        msg['Subject'] = nvl(subject, settings.subject)
         msg['From'] = from_address
         msg['To'] = ', '.join(to_addrs)
 
         server.sendmail(from_address, to_addrs, msg.as_string())
 
         server.quit()
-
 
 
 if sys.hexversion < 0x020603f0:
@@ -89,7 +102,8 @@ if sys.hexversion < 0x020603f0:
     import ssl
 
     def _get_socket_fixed(self, host, port, timeout):
-        if self.debuglevel > 0: print>> sys.stderr, 'connect:', (host, port)
+        if self.debuglevel > 0:
+            print>> sys.stderr, 'connect:', (host, port)
         new_socket = socket.create_connection((host, port), timeout)
         new_socket = ssl.wrap_socket(new_socket, self.keyfile, self.certfile)
         self.file = smtplib.SSLFakeFile(new_socket)

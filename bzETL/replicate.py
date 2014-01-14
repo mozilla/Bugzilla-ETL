@@ -25,7 +25,7 @@ from bzETL.util.elasticsearch import ElasticSearch
 
 
 far_back = datetime.utcnow() - timedelta(weeks=52)
-BATCH_SIZE = 10000
+BATCH_SIZE = 1000
 
 
 def fix_json(json):
@@ -133,7 +133,7 @@ def replicate(source, destination, pending, last_updated):
     COPY source RECORDS TO destination
     """
     for g, bugs in Q.groupby(pending, max_size=BATCH_SIZE):
-        with Timer("Replicate {{num_bugs}} bugs...", {"num_bugs": len(bugs)}):
+        with Timer("Replicate {{num_bugs}} bug versions", {"num_bugs": len(bugs)}):
             data = source.search({
                 "query": {"filtered": {
                     "query": {"match_all": {}},
