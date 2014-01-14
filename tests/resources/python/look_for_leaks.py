@@ -2,13 +2,14 @@ from datetime import datetime
 import unittest
 from pymysql.times import TimeDelta
 from bzETL.extract_bugzilla import SCREENED_WHITEBOARD_BUG_GROUPS
-from bzETL.util import startup
+from bzETL.util import startup, struct
 from bzETL.util.cnv import CNV
 from bzETL.util.elasticsearch import ElasticSearch
+from bzETL.util.emailer import Emailer
 from bzETL.util.logs import Log
 from bzETL.util.maths import Math
 from bzETL.util.queries import Q
-from util import elasticsearch
+from bzETL.util.struct import nvl
 
 
 NOW = CNV.datetime2milli(datetime.utcnow())
@@ -44,7 +45,7 @@ class TestLookForLeaks(unittest.TestCase):
     def test_private_bugs_not_leaking(self):
         # FOR ALL BUG BLOCKS
         for min_id, max_id in self.blocks_of_bugs():
-            results = elasticsearch.get(
+            results = get(
                 self.private,
                 {"and": [
                     {"match_all": {}},
@@ -65,7 +66,7 @@ class TestLookForLeaks(unittest.TestCase):
             })
 
             # VERIFY NONE IN PUBLIC
-            leaked_bugs = elasticsearch.get(
+            leaked_bugs = get(
                 self.public,
                 {"and": [
                     {"terms": {"bug_id": private_ids.keys()}},
@@ -87,7 +88,7 @@ class TestLookForLeaks(unittest.TestCase):
                 Log.error("Bugs have leaked!")
 
             #CHECK FOR LEAKED COMMENTS, BEYOND THE ONES LEAKED BY BUG
-            leaked_comments = elasticsearch.get(
+            leaked_comments = get(
                 self.public_comments,
                 {"terms": {"bug_id": private_ids.keys()}},
                 limit=20
@@ -102,7 +103,7 @@ class TestLookForLeaks(unittest.TestCase):
     def test_private_attachments_not_leaking(self):
         for min_id, max_id in self.blocks_of_bugs():
             # FIND ALL PRIVATE ATTACHMENTS
-            bugs_w_private_attachments = elasticsearch.get(
+            bugs_w_private_attachments = get(
                 self.private,
                 {"and": [
                     {"range": {"bug_id": {"gte": min_id, "lt": max_id}}},
@@ -144,7 +145,7 @@ class TestLookForLeaks(unittest.TestCase):
             })
 
             #VERIFY NONE IN PUBLIC
-            leaked_bugs = elasticsearch.get(
+            leaked_bugs = get(
                 self.public,
                 {"and": [
                     {"range": {"bug_id": {"gte": min_id, "lt": max_id}}},
@@ -173,7 +174,7 @@ class TestLookForLeaks(unittest.TestCase):
 
 
     def test_private_comments_not_leaking(self):
-        leaked_comments = elasticsearch.get(
+        leaked_comments = get(
             self.public_comments,
             {"term": {"isprivate": "1"}},
             limit=20
@@ -186,20 +187,48 @@ class TestLookForLeaks(unittest.TestCase):
 
 
     def test_confidential_whiteboard_is_screened(self):
-        leaked_whiteboard = elasticsearch.get(
+        leaked_whiteboard = get(
             self.private,
             {"and": [
                 {"terms": {"bug_group": SCREENED_WHITEBOARD_BUG_GROUPS}},
+                {"exists": {"field": "status_whiteboard"}},
                 {"not": {"terms": {"status_whiteboard": ["", "[screened]"]}}},
-                {"range": {"expires_on": {"gte": NOW}}}
+                {"range": {"expires_on": {"gte": NOW}}}, #CURRENT RECORDS
+                {"range": {"modified_ts": {"lt": A_WHILE_AGO}}}, #OF A MINIMUM AGE
             ]},
-            fields=["bug_id", "product", "component", "status_whiteboard", "bug_group"],
+            fields=["bug_id", "product", "component", "status_whiteboard", "bug_group", "modified_ts"],
             limit=100
 
         )
 
         if leaked_whiteboard:
+            for l in leaked_whiteboard:
+                l.modified_ts=CNV.datetime2string(CNV.milli2datetime(l.modified_ts))
+
             Log.error("Whiteboard leaking:\b{{leak}}", {"leak": leaked_whiteboard})
+
+
+def get(es, esfilter, fields=None, limit=None):
+    query = struct.wrap({
+        "query": {"filtered": {
+            "query": {"match_all": {}},
+            "filter": esfilter
+        }},
+        "from": 0,
+        "size": nvl(limit, 200000),
+        "sort": [],
+        "facets": {}
+    })
+
+    if fields:
+        query.fields=fields
+        results = es.search(query)
+        return Q.select(results.hits.hits, "fields")
+    else:
+        results = es.search(query)
+        return Q.select(results.hits.hits, "_source")
+
+
 
 
 def milli2datetime(r):
@@ -237,5 +266,25 @@ def milli2datetime(r):
 
 
 
+def main():
+    try:
+        suite = unittest.TestSuite()
+        suite.addTest(unittest.defaultTestLoader.loadTestsFromName("look_for_leaks"))
+        results = unittest.TextTestRunner(failfast=True).run(suite)
+
+        if results.errors or results.failures:
+            error()
+    except Exception, e:
+        error()
+    finally:
+        pass
+
+def error():
+    settings = startup.read_settings()
+    Emailer(settings.email).send_email(
+        text_data = "The BZ ETL leak checker seems to have found leaks!  Shutdown access to public cluster now!"
+    )
 
 
+if __name__=="__main__":
+    main()

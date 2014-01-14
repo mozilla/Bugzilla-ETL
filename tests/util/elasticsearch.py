@@ -30,25 +30,6 @@ def open_test_instance(name, settings):
         return ElasticSearch(settings)
 
 
-def get(es, esfilter, fields=None, limit=None):
-    query = struct.wrap({
-        "query": {"filtered": {
-            "query": {"match_all": {}},
-            "filter": esfilter
-        }},
-        "from": 0,
-        "size": nvl(limit, 200000),
-        "sort": [],
-        "facets": {}
-    })
-
-    if fields:
-        query.fields=fields
-        results = es.search(query)
-        return Q.select(results.hits.hits, "fields")
-    else:
-        results = es.search(query)
-        return Q.select(results.hits.hits, "_source")
 
 
 class Fake_ES():

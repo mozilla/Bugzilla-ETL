@@ -58,7 +58,7 @@ class CNV:
 
 
     @staticmethod
-    def datetime2string(value, format):
+    def datetime2string(value, format="%Y-%m-%d %H:%M:%S"):
         try:
             return value.strftime(format)
         except Exception, e:
