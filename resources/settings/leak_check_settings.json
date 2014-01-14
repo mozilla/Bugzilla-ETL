@@ -17,11 +17,28 @@
         "debug": false
     },
     "private": {
-        "host": "http://elasticsearch7.metrics.scl3.mozilla.com",
+        "host": "http://elasticsearch4.bugs.scl3.mozilla.com",
         "port": "9200",
-        "index": "bugs",
+        "index": "private_bugs20140114_151004",
         "type": "bug_version",
         "debug": false
+    },
+    "private_comments": {
+        "host": "http://elasticsearch4.bugs.scl3.mozilla.com",
+        "port": "9200",
+        "index": "private_comments20140114_151006",
+        "type": "bug_comment",
+        "debug": false
+    },
+    "email": {
+        "from": "klahnakoski@mozilla.com",
+        "to": "klahnakoski@mozilla.com",
+        "subject": "BZ ETL Leaks!",
+        "host": "mail.mozilla.com",
+        "port": 465,
+        "username": "example@example.com",
+        "password": "password",
+        "use_ssl": 1
     },
     "debug": {
         "log": [
