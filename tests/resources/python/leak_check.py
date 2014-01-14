@@ -269,7 +269,7 @@ def milli2datetime(r):
 def main():
     try:
         suite = unittest.TestSuite()
-        suite.addTest(unittest.defaultTestLoader.loadTestsFromName("look_for_leaks"))
+        suite.addTest(unittest.defaultTestLoader.loadTestsFromName("leak_check"))
         results = unittest.TextTestRunner(failfast=True).run(suite)
 
         if results.errors or results.failures:
