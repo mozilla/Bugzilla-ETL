@@ -270,10 +270,10 @@ def main():
     try:
         suite = unittest.TestSuite()
         suite.addTest(unittest.defaultTestLoader.loadTestsFromName("leak_check"))
-        results = unittest.TextTestRunner(failfast=True).run(suite)
+        results = unittest.TextTestRunner(failfast=False).run(suite)
 
         if results.errors or results.failures:
-            error()
+            error(results)
     except Exception, e:
         error()
     finally:
