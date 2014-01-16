@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 import threading
 import thread
 import time
+import sys
 from .struct import nvl
 
 
@@ -225,8 +226,12 @@ class Thread(object):
         except Exception, e:
             with self.synch_lock:
                 self.response={"exception":e}
-            from .logs import Log
-            Log.error("Problem in thread", e)
+            try:
+                from .logs import Log
+                Log.error("Problem in thread {{name}}", {"name":self.name}, e)
+            except Exception, f:
+                sys.stderr.write("ERROR: "+str(self.name)+" "+str(e.message))
+                sys.stderr.write("ERROR: "+str(self.name)+" "+str(f.message))
         finally:
             self.stopped.go()
             del self.target, self.args, self.kwargs

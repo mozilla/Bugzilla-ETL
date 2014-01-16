@@ -288,19 +288,17 @@ def time_delta_pusher(please_stop, appender, queue, interval):
                     else:
                         lines.append(expand_template(log.get("template", None), log.get("params", None)))
                 except Exception, e:
-                    if DEBUG_LOGGING:
-                        sys.stdout.write("Trouble formatting logs: " + e.message)
-                        raise e
+                    sys.stderr.write("Trouble formatting logs: " + e.message)
+                    # SWALLOW ERROR, GOT TO KEEP RUNNNIG
             try:
                 if DEBUG_LOGGING and please_stop:
-                    sys.stdout.write("Last call to appender with " + str(len(lines)) + " lines\n")
+                    sys.stdout.write("Call to appender with " + str(len(lines)) + " lines\n")
                 appender(u"\n".join(lines) + u"\n")
                 if DEBUG_LOGGING and please_stop:
                     sys.stdout.write("Done call to appender with " + str(len(lines)) + " lines\n")
             except Exception, e:
-                if DEBUG_LOGGING:
-                    sys.stdout.write("Trouble with appender: " + e.message)
-                    raise e
+                sys.stderr.write("Trouble with appender: " + e.message)
+                # SWALLOW ERROR, GOT TO KEEP RUNNNIG
 
 
 class Log_usingStream(BaseLog):
