@@ -183,7 +183,9 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
     private_bugs = get_private_bugs(db, param)
     es.delete_record({"terms": {"bug_id": private_bugs}})
     es_comments.delete_record({"terms": {"bug_id": private_bugs}})
-    Log.note("Ensure the following private bugs are deleted:\n{{private_bugs}}", {"private_bugs": private_bugs})
+
+    still_existing = get_bug_ids(es, {"terms":{"bug_id":private_bugs}})
+    Log.note("Ensure the following private bugs are deleted:\n{{private_bugs}}", {"private_bugs": still_existing})
 
     #RECENT PUBLIC BUGS
     possible_public_bugs = get_recent_private_bugs(db, param)
@@ -399,6 +401,27 @@ def main(settings, es=None, es_comments=None):
             es.set_refresh_interval(1)
         except Exception, e:
             pass
+
+def get_bug_ids(es, filter):
+    try:
+        results = es.search({
+            "query": {"filtered": {
+                "query": {"match_all": {}},
+                "filter": filter
+            }},
+            "from": 0,
+            "size": 200000,
+            "sort": [],
+            "fields": ["bug_id"]
+        })
+
+        return results.hits.fields.bug_id
+    except Exception, e:
+        Log.error("Can not get_max_bug from {{host}}/{{index}}", {
+            "host": es.settings.host,
+            "index": es.settings.index
+        }, e)
+
 
 
 def get_max_bug_id(es):

@@ -279,10 +279,18 @@ def main():
     finally:
         pass
 
-def error():
+def error(results):
     settings = startup.read_settings()
+
+    content = []
+    for e in results.errors:
+        content.append("FAIL: "+str(e[0]._testMethodName))
+    for f in results.failures:
+        content.append("FAIL:  "+str(f[0]._testMethodName))
+
+
     Emailer(settings.email).send_email(
-        text_data = "The BZ ETL leak checker seems to have found leaks!  Shutdown access to public cluster now!"
+        text_data = "\n".join(content)
     )
 
 
