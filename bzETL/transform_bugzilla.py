@@ -8,7 +8,7 @@ from bzETL.util.logs import Log
 from bzETL.util.queries import Q
 
 
-USE_ATTACHMENTS_DOT = False
+USE_ATTACHMENTS_DOT = True
 
 MULTI_FIELDS = ["cc", "blocked", "dependson", "dupe_by", "dupe_of", "flags", "keywords", "bug_group", "see_also"]
 NUMERIC_FIELDS=[      "blocked", "dependson", "dupe_by", "dupe_of",
@@ -53,15 +53,12 @@ def normalize(bug, old_school=False):
         bug.attachments = Q.sort(bug.attachments, "attach_id")
         for a in bug.attachments:
             for k,v in list(a.items()):
-                if \
-                    k.endswith("isobsolete") or \
-                    k.endswith("ispatch") or \
-                    k.endswith("isprivate")\
-                :
-                    a[k.replace(".", "\.")]=CNV.value2int(v)
+                if k.startswith("attachments") and (k.endswith("isobsolete") or k.endswith("ispatch") or k.endswith("isprivate")):
+                    new_v=CNV.value2int(v)
+                    new_k=k[12:]
+                    a[k.replace(".", "\.")]=new_v
                     if not old_school:
-                        a[k.split(".")[-1].split("_")[-1]]=CNV.value2int(v)
-
+                        a[new_k]=new_v
             a.flags = Q.sort(a.flags, ["modified_ts", "value"])
 
     if bug.changes != None:

@@ -520,19 +520,18 @@ def get_attachments(db, param):
     return flatten_attachments(output)
 
 
-attachments_fields = ["created_ts", "created_by", "attachments_ispatch", "attachments_isobsolete", "attachments_isprivate"]
-
-
 def flatten_attachments(data):
     output = []
     for r in data:
-        for a in attachments_fields:
+        for k,v in r.items():
+            if k=="bug_id":
+                continue
             output.append(Struct(
                 bug_id=r.bug_id,
                 modified_ts=r.modified_ts,
                 modified_by=r.modified_by,
-                field_name=a,
-                new_value=r[a], #THESE NAMES HAVE DOTS IN THEM
+                field_name=k,
+                new_value=v, #THESE NAMES HAVE DOTS IN THEM
                 attach_id=r.attach_id,
                 _merge_order=7
             ))
