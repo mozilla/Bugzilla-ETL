@@ -485,6 +485,12 @@ class TestETL(unittest.TestCase):
             with ThreadedQueue(es, size=1000) as output:
                 etl(db, output, param, please_stop=None)
 
+            #CLOSE THE CACHED DB CONNECTIONS
+            bz_etl.close_db_connections()
+
+        if all_db:
+            Log.error("not all db connections are closed")
+
         for b in bugs:
             results = es.search({
                 "query": {"filtered": {

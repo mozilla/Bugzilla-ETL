@@ -176,16 +176,13 @@
 						"modified_ts": {
 							"type": "long"
 						},
-						"attachments_ispatch": {
-							"index_name": "is_patch",
+						"attachments.ispatch": {
 							"type": "boolean"
 						},
-						"attachments_isobsolete": {
-							"index_name": "is_obsolete",
+						"attachments.isobsolete": {
 							"type": "boolean"
 						},
-						"attachments_isprivate": {
-							"index_name": "is_private",
+						"attachments.isprivate": {
 							"type": "boolean"
 						},
                         "attachments_description": {
