@@ -42,8 +42,13 @@ class Fake_ES():
 
 
     def search(self, query):
-        f = CNV.esfilter2where(struct.wrap(query).query.filtered.filter)
-        return struct.wrap({"hits": {"hits": [{"_id": i, "_source": d} for i, d in self.data.items() if f(d)]}})
+        query=struct.wrap(query)
+        f = CNV.esfilter2where(query.query.filtered.filter)
+        filtered=struct.wrap([{"_id": i, "_source": d} for i, d in self.data.items() if f(d)])
+        if query.fields:
+            return struct.wrap({"hits": {"total":len(filtered), "hits": [{"_id":d._id, "fields":Q.select([d._source], query.fields)[0]} for d in filtered]}})
+        else:
+            return struct.wrap({"hits": {"total":len(filtered), "hits": filtered}})
 
     def extend(self, records):
         """

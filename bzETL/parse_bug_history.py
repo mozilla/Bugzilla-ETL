@@ -370,12 +370,20 @@ class BugHistoryParser():
         self.exists = True
 
         # continue if there are more bug versions, or there is one final nextVersion
-        while self.bugVersions or nextVersion != None:
+        while nextVersion:
             try:
                 currVersion = nextVersion
                 if self.bugVersions:
                     try:
                         nextVersion = self.bugVersions.pop() # Oldest version
+                        if nextVersion.modified_ts > self.settings.end_time:
+                            if DEBUG_STATUS:
+                                Log.note("[Bug {{bug_id}}]: Not outputting {{_id}} - it is after self.end_time ({{end_time|datetime}})", {
+                                    "_id": nextVersion._id,
+                                    "end_time": self.settings.end_time,
+                                    "bug_id": self.currBugState.bug_id
+                                })
+                            nextVersion = Null
                     except Exception, e:
                         Log.error("problem", e)
                 else:
@@ -384,7 +392,7 @@ class BugHistoryParser():
                 if DEBUG_STATUS:
                     Log.note("[Bug {{bug_id}}]: Populating JSON for version {{id}}", {
                         "id": currVersion._id,
-                        "bug_id": currVersion.bug_id
+                        "bug_id": self.currBugState.bug_id
                     })
                     # Decide whether to merge this bug activity into the current state (without emitting
                 # a separate JSON document). This addresses the case where an attachment is created
@@ -395,28 +403,12 @@ class BugHistoryParser():
                     if DEBUG_STATUS:
                         Log.note("[Bug {{bug_id}}]: Merge mode: activated {{id}}", {
                             "id": self.currBugState._id,
-                            "bug_id": currVersion.bug_id
+                            "bug_id": self.currBugState.bug_id
                         })
                     mergeBugVersion = True
 
                 # Link this version to the next one (if there is a next one)
-                if nextVersion != None:
-                    if DEBUG_STATUS:
-                        Log.note("[Bug {{bug_id}}]: We have a nextVersion: {{timestamp}} (ver {{next_version}})", {
-                            "timestamp": nextVersion.modified_ts,
-                            "next_version": self.bug_version_num + 1,
-                            "bug_id": currVersion.bug_id
-                        })
-                    self.currBugState.expires_on = nextVersion.modified_ts
-                else:
-                    # Otherwise, we don't know when the version expires.
-                    if DEBUG_STATUS:
-                        Log.note("[Bug {{bug_id}}]: Last bug_version_num = {{version}}", {
-                            "version": self.bug_version_num,
-                            "bug_id": currVersion.bug_id
-                        })
-
-                    self.currBugState.expires_on = MAX_TIME
+                self.currBugState.expires_on = nvl(nextVersion.modified_ts, MAX_TIME)
 
                 # Copy all attributes from the current version into self.currBugState
                 for propName, propValue in currVersion.items():
@@ -518,7 +510,7 @@ class BugHistoryParser():
                             Log.note("[Bug {{bug_id}}]: Not outputting {{_id}} - it is before self.start_time ({{start_time|datetime}})", {
                                 "_id": self.currBugState._id,
                                 "start_time": self.settings.start_time,
-                                "bug_id": currVersion.bug_id
+                                "bug_id": self.currBugState.bug_id
                             })
 
                 else:
@@ -724,7 +716,7 @@ class BugHistoryParser():
     def addValues(self, total, add, valueType, field_name, target):
         if not add:
             return total
-        #        Log.note("[Bug {{bug_id}}]: Adding " + valueType + " " + fieldName + " values:" + CNV.object2JSON(someValues))
+            #        Log.note("[Bug {{bug_id}}]: Adding " + valueType + " " + fieldName + " values:" + CNV.object2JSON(someValues))
         if field_name == "flags":
             for v in add:
                 total.append(BugHistoryParser.makeFlag(v, target.modified_ts, target.modified_by))
