@@ -31,22 +31,14 @@ SCREENED_FIELDDEFS = [
 
 #CERTAIN GROUPS IN PRIVATE ETL HAVE HAVE WHITEBOARD SCREENED
 SCREENED_WHITEBOARD_BUG_GROUPS = [
-    "mozilla-corporation-confidential",
-    "mozilla-confidential",
     "legal",
-    "netscapeconfidential",
-    "netscapeconfidential?",
     "consulting",
     "finance",
     "marketing-private",
     "partner-confidential",
-    "mozillaorgconfidential",
     "qualcomm-confidential",
     "pr-private",
-    "mozillacomconfidential",
-    "mozilla-messaging-confidential",
     "marketing private",
-    "mozillaorgconfidential?",
     "hr"
 ]
 
