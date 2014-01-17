@@ -277,8 +277,6 @@
 				},
 				"expires_on": {
 					"type": "long",
-
-
 					"null_value": 9999999999000
 				},
 				"cf_last_resolved": {

@@ -8,7 +8,7 @@ from bzETL.util.logs import Log
 from bzETL.util.queries import Q
 
 
-USE_ATTACHMENTS_DOT = True
+USE_ATTACHMENTS_DOT = False
 
 MULTI_FIELDS = ["cc", "blocked", "dependson", "dupe_by", "dupe_of", "flags", "keywords", "bug_group", "see_also"]
 NUMERIC_FIELDS=[      "blocked", "dependson", "dupe_by", "dupe_of",

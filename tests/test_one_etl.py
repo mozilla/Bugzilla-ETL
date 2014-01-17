@@ -61,3 +61,14 @@ class TestOneETL(unittest.TestCase):
 
         if all_db:
             Log.error("not all db connections are closed")
+
+        #TODO: INCLUDE OPTION TO USE REAL ES (AND ENSURE REALLY WORKING)
+        # es_settings=Struct(**{
+        #     "host": "http://localhost",
+        #     "port": "9200",
+        #     "index": ElasticSearch.proto_name("test_public_bugs"),
+        #     "type": "bug_version",
+        #     "schema_file": "./resources/json/bug_version.json"
+        # })
+        # es = ElasticSearch.create_index(es_settings, File(es_settings.schema_file).read())
+        # es.delete_all_but("test_public_bugs", es_settings.index)

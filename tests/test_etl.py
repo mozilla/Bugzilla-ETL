@@ -452,6 +452,66 @@ class TestETL(unittest.TestCase):
         if all_db:
             Log.error("not all db connections are closed")
 
+    def test_incremental_has_correct_expires_on(self):
+        # 813650, 726635 BOTH HAVE CHANGES IN 2013
+        bugs = struct.wrap([813650, 726635])
+        start_incremental=CNV.datetime2milli(CNV.string2datetime("2013-01-01", "%Y-%m-%d"))
+
+        es = elasticsearch.make_test_instance("candidate", self.settings.candidate)
+        with DB(self.settings.bugzilla) as db:
+            #SETUP FIRST RUN PARAMETERS
+            param = Struct()
+            param.end_time = start_incremental
+            param.start_time = 0
+            param.start_time_str = extract_bugzilla.milli2string(db, param.start_time)
+
+            param.alias_file = self.settings.param.alias_file
+            param.bug_list = bugs
+            param.allow_private_bugs = False
+
+            with ThreadedQueue(es, size=1000) as output:
+                etl(db, output, param, please_stop=None)
+
+            #SETUP INCREMENTAL RUN PARAMETERS
+            param = Struct()
+            param.end_time = CNV.datetime2milli(datetime.utcnow())
+            param.start_time = start_incremental
+            param.start_time_str = extract_bugzilla.milli2string(db, param.start_time)
+
+            param.alias_file = self.settings.param.alias_file
+            param.bug_list = bugs
+            param.allow_private_bugs = False
+
+            with ThreadedQueue(es, size=1000) as output:
+                etl(db, output, param, please_stop=None)
+
+        for b in bugs:
+            results = es.search({
+                "query": {"filtered": {
+                    "query": {"match_all": {}},
+                    "filter": {"and":[
+                        {"term":{"bug_id":b}},
+                        {"range":{"expires_on":{"gte":CNV.datetime2milli(datetime.utcnow())}}}
+                    ]}
+                }},
+                "from": 0,
+                "size": 200000,
+                "sort": [],
+                "fields": ["bug_id"]
+            })
+
+            if results.hits.total>1:
+                Log.error("Expecting only one active bug_version record")
+
+
+
+
+
+
+
+
+
+
 
 def verify_no_private_bugs(es, private_bugs):
     #VERIFY BUGS ARE NOT IN OUTPUT

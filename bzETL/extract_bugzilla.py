@@ -610,8 +610,9 @@ def get_new_activities(db, param):
         LEFT JOIN
             bug_group_map m on m.bug_id=a.bug_id
         WHERE
-            {{bug_filter}} AND
-            bug_when >= {{start_time_str}}
+            {{bug_filter}}
+            # NEED TO QUERY ES TO GET bug_version_num OTHERWISE WE NEED ALL HISTORY
+            # AND bug_when >= {{start_time_str}}
         ORDER BY
             a.bug_id,
             bug_when DESC,
