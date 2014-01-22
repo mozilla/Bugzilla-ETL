@@ -251,7 +251,6 @@
 					"type": "integer"
 				},
 				"changes": {
-					"enabled": false,
 					"properties": {
 						"attach_id": {
 							"type": "integer"
@@ -266,7 +265,8 @@
 							"type": "string"
 						}
 					},
-					"type": "object"
+					"type": "nested",
+										"dynamic": "strict"
 				},
 				"dependson": {
 					"index_name": "dependson",
