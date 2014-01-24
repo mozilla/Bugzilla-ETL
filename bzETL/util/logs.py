@@ -46,9 +46,12 @@ class Log(object):
                 #CAN BE SUPER SLOW
             else:
                 return Log_usingLogger(settings)
-        if settings.file: return Log_usingFile(file)
-        if settings.filename: return Log_usingFile(settings.filename)
-        if settings.stream: return Log_usingStream(settings.stream)
+        if settings.file:
+            return Log_usingFile(file)
+        if settings.filename:
+            return Log_usingFile(settings.filename)
+        if settings.stream:
+            return Log_usingStream(settings.stream)
 
     @classmethod
     def add_log(cls, log):
@@ -87,7 +90,6 @@ class Log(object):
         e = Except(WARNING, template, params, cause, format_trace(traceback.extract_stack(), 1))
         Log.note(unicode(e))
 
-    #raise an exception with a trace for the cause too
     @staticmethod
     def error(
             template, #human readable template
@@ -95,6 +97,9 @@ class Log(object):
             cause=None, #pausible cause
             offset=0        #stack trace offset (==1 if you do not want to report self)
     ):
+        """
+        raise an exception with a trace for the cause too
+        """
         if params and isinstance(struct.listwrap(params)[0], BaseException):
             cause = params
             params = None
@@ -111,6 +116,34 @@ class Log(object):
         trace = format_trace(traceback.extract_stack(), 1 + offset)
         e = Except(ERROR, template, params, cause, trace)
         raise e
+
+    @staticmethod
+    def fatal(
+            template, #human readable template
+            params=None, #parameters for template
+            cause=None, #pausible cause
+            offset=0    #stack trace offset (==1 if you do not want to report self)
+    ):
+        """
+        SEND TO STDERR
+        """
+        if params and isinstance(struct.listwrap(params)[0], BaseException):
+            cause = params
+            params = None
+
+        if cause == None:
+            cause = []
+        elif isinstance(cause, list):
+            pass
+        elif isinstance(cause, Except):
+            cause = [cause]
+        else:
+            cause = [Except(ERROR, unicode(cause), trace=format_trace(traceback.extract_tb(sys.exc_info()[2]), offset))]
+
+        trace = format_trace(traceback.extract_stack(), 1 + offset)
+        e = Except(ERROR, template, params, cause, trace)
+        sys.stderr.write(str(e))
+
 
     #RUN ME FIRST TO SETUP THE THREADED LOGGING
     @staticmethod
@@ -167,7 +200,8 @@ class Except(Exception):
 
     def __str__(self):
         output = self.type + ": " + self.template
-        if self.params: output = expand_template(output, self.params)
+        if self.params:
+            output = expand_template(output, self.params)
 
         if self.trace:
             output += "\n" + indent(self.trace)

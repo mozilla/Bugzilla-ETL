@@ -429,7 +429,6 @@ class TestETL(unittest.TestCase):
             #SETUP RUN PARAMETERS
             param = Struct()
             param.end_time = CNV.datetime2milli(get_current_time(db))
-            # FLAGS ADDED TO BUG 813650 ON 18/12/2012 2:38:08 AM (PDT), SO START AT SOME LATER TIME
             param.start_time = 0
             param.start_time_str = extract_bugzilla.milli2string(db, 0)
 
@@ -451,6 +450,47 @@ class TestETL(unittest.TestCase):
 
         if all_db:
             Log.error("not all db connections are closed")
+
+
+    def test_ambiguous_whiteboard_screened(self):
+        GOOD_BUG_TO_TEST=1046
+
+        database.make_test_instance(self.settings.bugzilla)
+
+        with DB(self.settings.bugzilla) as db:
+            es = elasticsearch.make_test_instance("candidate", self.settings.candidate)
+
+            #MARK BUG AS ONE OF THE SCREENED GROUPS
+            database.add_bug_group(db, GOOD_BUG_TO_TEST, SCREENED_WHITEBOARD_BUG_GROUPS[0])
+            #MARK BUG AS ONE OF THE *NOT* SCREENED GROUPS
+            database.add_bug_group(db, GOOD_BUG_TO_TEST, "not screened")
+            db.flush()
+
+            #SETUP RUN PARAMETERS
+            param = Struct()
+            param.end_time = CNV.datetime2milli(get_current_time(db))
+            param.start_time = 0
+            param.start_time_str = extract_bugzilla.milli2string(db, 0)
+
+            param.alias_file = self.settings.param.alias_file
+            param.bug_list = struct.wrap([GOOD_BUG_TO_TEST]) # bug 1046 sees lots of whiteboard, and other field, changes
+            param.allow_private_bugs = True
+
+            with ThreadedQueue(es, size=1000) as output:
+                etl(db, output, param, please_stop=None)
+
+            versions = get_all_bug_versions(es, GOOD_BUG_TO_TEST)
+
+            for v in versions:
+                if v.status_whiteboard not in (None, "", "[screened]"):
+                    Log.error("Expecting whiteboard to be screened")
+
+            #CLOSE THE CACHED DB CONNECTIONS
+            bz_etl.close_db_connections()
+
+        if all_db:
+            Log.error("not all db connections are closed")
+
 
     def test_incremental_has_correct_expires_on(self):
         # 813650, 726635 BOTH HAVE CHANGES IN 2013

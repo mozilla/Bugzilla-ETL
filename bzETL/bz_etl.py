@@ -183,8 +183,10 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
     private_bugs = get_private_bugs(db, param)
     still_existing = get_bug_ids(es, {"terms":{"bug_id":private_bugs}})
     Log.note("Ensure the following private bugs are deleted:\n{{private_bugs}}", {"private_bugs": still_existing})
-    es.delete_record({"terms": {"bug_id": private_bugs}})
-    es_comments.delete_record({"terms": {"bug_id": private_bugs}})
+
+    for g, delete_bugs in Q.groupby(private_bugs, size=500):
+        es.delete_record({"terms": {"bug_id": delete_bugs}})
+        es_comments.delete_record({"terms": {"bug_id": delete_bugs}})
 
 
     #RECENT PUBLIC BUGS
@@ -500,8 +502,7 @@ ERR0R   - Catastrophe!  ETL is not going to work.  Either find the
 """)
             main(settings)
     except Exception, e:
-        Log.note("Done ETL")
-        Log.error("Can not start", e)
+        Log.fatal("Can not start", e)
     finally:
         Log.stop()
 

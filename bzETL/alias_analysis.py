@@ -1,5 +1,5 @@
 from bzETL.extract_bugzilla import get_all_cc_changes
-from bzETL.util import startup, struct
+from bzETL.util import startup, struct, crypto
 from bzETL.util.cnv import CNV
 from bzETL.util.db import DB
 from bzETL.util.files import File
