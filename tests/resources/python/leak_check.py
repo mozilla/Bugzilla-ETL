@@ -216,8 +216,7 @@ def get(es, esfilter, fields=None, limit=None):
         }},
         "from": 0,
         "size": nvl(limit, 200000),
-        "sort": [],
-        "facets": {}
+        "sort": []
     })
 
     if fields:
@@ -238,8 +237,11 @@ def milli2datetime(r):
         elif isinstance(r, basestring):
             return r
         elif Math.is_number(r):
+            #                       1382068456000
             if CNV.value2number(r) > 800000000000:
                 return CNV.datetime2string(CNV.milli2datetime(r), "%Y-%m-%d %H:%M:%S")
+            else:
+                return r
         elif isinstance(r, dict):
             output = {}
             for k, v in r.items():

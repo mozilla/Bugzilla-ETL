@@ -560,10 +560,7 @@ def get_new_activities(db, param):
     #TODO: CF_LAST_RESOLVED IS IN PDT, FIX IT
     param.bug_filter = db.esfilter2sqlwhere({"terms": {"a.bug_id": param.bug_list}})
     param.mixed_case_fields = SQL(MIXED_CASE)
-    param.screened_whiteboard = db.esfilter2sqlwhere({"and": [
-        {"exists": "m.bug_id"},
-        {"terms": {"m.group_id": SCREENED_BUG_GROUP_IDS}}
-    ]})
+    param.screened_whiteboard = db.esfilter2sqlwhere({"terms": {"m.group_id": SCREENED_BUG_GROUP_IDS}})
     param.whiteboard_field=STATUS_WHITEBOARD_FIELD_ID
 
     output = db.query("""
@@ -575,7 +572,7 @@ def get_new_activities(db, param):
             CAST(
                 CASE
                 WHEN a.fieldid IN {{screened_fields}} THEN '[screened]'
-                WHEN {{screened_whiteboard}} AND a.fieldid={{whiteboard_field}} AND added IS NOT NULL AND trim(added)<>'' THEN '[screened]'
+                WHEN m.bug_id IS NOT NULL AND a.fieldid={{whiteboard_field}} AND added IS NOT NULL AND trim(added)<>'' THEN '[screened]'
                 WHEN a.fieldid IN {{mixed_case_fields}} THEN trim(added)
                 WHEN trim(added)='' THEN NULL
                 ELSE lower(trim(added))
@@ -584,7 +581,7 @@ def get_new_activities(db, param):
             CAST(
                 CASE
                 WHEN a.fieldid IN {{screened_fields}} THEN '[screened]'
-                WHEN {{screened_whiteboard}} AND a.fieldid={{whiteboard_field}} AND removed IS NOT NULL AND trim(removed)<>'' THEN '[screened]'
+                WHEN m.bug_id IS NOT NULL AND a.fieldid={{whiteboard_field}} AND removed IS NOT NULL AND trim(removed)<>'' THEN '[screened]'
                 WHEN a.fieldid IN {{mixed_case_fields}} THEN trim(removed)
                 WHEN trim(removed)='' THEN NULL
                 ELSE lower(trim(removed))
@@ -599,7 +596,7 @@ def get_new_activities(db, param):
         JOIN
             fielddefs field ON a.fieldid = field.`id`
         LEFT JOIN
-            bug_group_map m on m.bug_id=a.bug_id
+            bug_group_map m on m.bug_id=a.bug_id AND {{screened_whiteboard}}
         WHERE
             {{bug_filter}}
             # NEED TO QUERY ES TO GET bug_version_num OTHERWISE WE NEED ALL HISTORY

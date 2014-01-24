@@ -6,12 +6,11 @@ import random
 import string
 
 
-SIMPLE_ALPHABET=string.ascii_letters + string.digits
-SEED=random.Random()
+SIMPLE_ALPHABET = string.ascii_letters + string.digits
+SEED = random.Random()
 
 
 class Random(object):
-
     @staticmethod
     def string(length, alphabet=SIMPLE_ALPHABET):
         result = ''
@@ -29,5 +28,10 @@ class Random(object):
 
     @staticmethod
     def sample(data, count):
-        num=len(data)
+        num = len(data)
         return [data[Random.int(num)] for i in range(count)]
+
+    @staticmethod
+    def bytes(count):
+        output = bytearray(random.randrange(256) for i in range(count))
+        return output
