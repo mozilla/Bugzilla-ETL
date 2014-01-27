@@ -243,7 +243,7 @@ class Thread(object):
 
     def join(self, timeout=None, till=None):
         """
-        RETURN THE RESULT OF THE THREAD EXECUTION (INCLUDING EXCEPTION)
+        RETURN THE RESULT {"response":r, "exception":e} OF THE THREAD EXECUTION (INCLUDING EXCEPTION, IF EXISTS)
         """
         if not till and timeout:
             till = datetime.utcnow() + timedelta(seconds=timeout)

@@ -492,27 +492,13 @@ class BugHistoryParser():
                 if not mergeBugVersion:
                     # This is not a "merge", so output a row for this bug version.
                     self.bug_version_num += 1
-                    # Output this version if either it was modified after start_time, or if it
-                    # expired after start_time (the latter will update the last known version of the bug
-                    # that did not have a value for "expires_on").
-                    if self.currBugState.expires_on >= self.settings.start_time:
-                        state = normalize(self.currBugState)
-                        if state.blocked != None and len(state.blocked) == 1 and "Null" in state.blocked:
-                            Log.note("[Bug {{bug_id}}]: ERROR: state.blocked has 'Null'!  Programming error!", {"bug_id": currVersion.bug_id})
-                        if DEBUG_STATUS:
-                            Log.note("[Bug {{bug_state.bug_id}}]: v{{bug_state.bug_version_num}} (id = {{bug_state.id}})", {
-                                "bug_state": state
-                            })
-                        self.output.add({"id": state.id, "value": state})  #ES EXPECTED FORMAT
+                    state = normalize(self.currBugState)
 
-                    else:
-                        if DEBUG_STATUS:
-                            Log.note("[Bug {{bug_id}}]: Not outputting {{_id}} - it is before self.start_time ({{start_time|datetime}})", {
-                                "_id": self.currBugState._id,
-                                "start_time": self.settings.start_time,
-                                "bug_id": self.currBugState.bug_id
-                            })
-
+                    if DEBUG_STATUS:
+                        Log.note("[Bug {{bug_state.bug_id}}]: v{{bug_state.bug_version_num}} (id = {{bug_state.id}})", {
+                            "bug_state": state
+                        })
+                    self.output.add({"id": state.id, "value": state})  #ES EXPECTED FORMAT
                 else:
                     if DEBUG_STATUS:
                         Log.note("[Bug {{bug_state.bug_id}}]: Merging a change with the same timestamp = {{bug_state._id}}: {{bug_state}}", {
