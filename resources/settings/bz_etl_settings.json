@@ -1,40 +1,40 @@
 {
-	"param":{
-		"increment":1000,
-		"alias_increment":100000,
-        "alias_file":{
-            "path":"./resources/json/bugzilla_aliases.json",
-            "comment":"key is only meant to keep the aliases out of clear text.  Aliases are public as per https://www.mozilla.org/en-US/privacy/policies/websites/",
-            "key":""
+    "param": {
+        "increment": 1000,
+        "alias_increment": 100000,
+        "alias_file": {
+            "path": "./resources/json/bugzilla_aliases.json",
+            "comment": "key is only meant to keep the aliases out of clear text.  Aliases are public as per https://www.mozilla.org/en-US/privacy/policies/websites/",
+            "key": ""
         },
-		"first_run_time":"./results/data/first_run_time.txt",
-		"last_run_time":"./results/data/last_run_time.txt",
-		"allow_private_bugs":false
-	},
-	"bugzilla":{
-		"host":"localhost",
-		"preamble":"from https://github.com/klahnakoski/Bugzilla-ETL",
-		"port":3306,
-		"username":"username",
-		"password":"password",
-		"schema":"bugzilla",
-		"debug":false
-	},
-	"es":{
-		"host":"http://localhost",
-		"port":"9200",
-		"index":"public_bugs",
-		"type":"bug_version",
-		"schema_file":"./resources/json/bug_version.json"
-	},
-	"es_comments":{
-		"host":"http://localhost",
-		"port":"9200",
-		"index":"public_comments",
-		"type":"bug_comment",
-		"schema_file":"./resources/json/bug_comments.json"
-	},
-	"debug":{
+        "first_run_time": "./results/data/first_run_time.txt",
+        "last_run_time": "./results/data/last_run_time.txt",
+        "allow_private_bugs": false
+    },
+    "bugzilla": {
+        "host": "localhost",
+        "preamble": "from https://github.com/klahnakoski/Bugzilla-ETL",
+        "port": 3306,
+        "username": "username",
+        "password": "password",
+        "schema": "bugzilla",
+        "debug": false
+    },
+    "es": {
+        "host": "http://localhost",
+        "port": "9200",
+        "index": "public_bugs",
+        "type": "bug_version",
+        "schema_file": "./resources/json/bug_version.json"
+    },
+    "es_comments": {
+        "host": "http://localhost",
+        "port": "9200",
+        "index": "public_comments",
+        "type": "bug_comment",
+        "schema_file": "./resources/json/bug_comments.json"
+    },
+    "debug": {
 		"log":[{
 			"class": "logging.handlers.RotatingFileHandler",
 			"filename": "./results/logs/bugzilla_etl.log",
@@ -46,7 +46,7 @@
 			"stream":"sys.stdout"
 		}]
 
-	}
+    }
 
 
 }

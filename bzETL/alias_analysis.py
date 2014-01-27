@@ -7,6 +7,7 @@ from bzETL.util.logs import Log
 from bzETL.util.multiset import Multiset
 from bzETL.util.queries import Q
 from bzETL.util.struct import nvl, Struct, Null
+from bzETL.util.timer import Timer
 
 bugs = {}
 aliases = {}
@@ -188,8 +189,10 @@ def add_alias(lost, found):
 def loadAliases(settings):
     try:
         try:
-            alias_json = File(settings.param.alias_file).read()
+            with Timer("load alias file at {{filename}}", {"filename":nvl(settings.param.alias_file.path, settings.param.alias_file)}):
+                alias_json = File(settings.param.alias_file).read()
         except Exception, e:
+            Log.warning("No alias file found (looking at {{filename}}", {"filename":nvl(settings.param.alias_file.path, settings.param.alias_file)})
             alias_json = "{}"
             #self.aliases IS A dict POINTING TO structs
         for k, v in CNV.JSON2object(alias_json).iteritems():

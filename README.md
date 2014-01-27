@@ -53,12 +53,23 @@ You must prepare a ```settings.json``` file to reference the resources,
 and it's filename must be provided as an argument in the command line.
 Examples of settings files can be found in [resources/settings](resources/settings)
 
+### Inter-Run State ###
+
 Bugzilla-ETL keeps local run state in the form of two files:
 ```first_run_time``` and ```last_run_time```.  These are both parameters
 in the ``settings.json``` file.
 
   * ```first_run_time``` is written only if it does not exist, and triggers a full ETL refresh.  Delete this file if you want to create a new ES index and start ETL from the beginning.
   * ```last_run_time``` is recorded whenever there has been a successful ETL.  This file will not exist until the initial full ETL has completed successfully.  Deleteing this file should have no net effect, other than making the program work harder then it should.
+
+### Alias Analysis ###
+
+You will require an alias file that matches the various email addresses that users have over time.  This analysis is neccesary for proper CC list history and patch review history.  [More on alias analysis](https://wiki.mozilla.org/Auto-tools/Projects/PublicES#Alias_Analysis).
+
+  * Make an ```alias_analysis_settings.json``` file.  Which can be the same main ETL settings.json file.
+  * The ```param.alias_file.key``` can be ```null```, or set to a AES256 key of your choice.
+  * Run [alias_analysis.py](https://github.com/klahnakoski/Bugzilla-ETL/blob/master/resources/scripts/alias_analysis.bat)
+
 
 Running bz_etl.py
 ------------------
