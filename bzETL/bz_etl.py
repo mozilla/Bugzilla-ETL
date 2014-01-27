@@ -109,8 +109,13 @@ def run_both_etl(db, output_queue, es_comments, param):
     comment_thread = Thread.run("etl comments", etl_comments, db, es_comments, param)
     process_thread = Thread.run("etl", etl, db, output_queue, param)
 
-    comment_thread.join()
-    process_thread.join()
+    result = comment_thread.join()
+    if result.exception:
+        Log.error("etl_comments had problems", result.exception)
+
+    result = process_thread.join()
+    if result.exception:
+        Log.error("etl had problems", result.exception)
 
 
 def setup_es(settings, db, es, es_comments):
@@ -347,7 +352,7 @@ def full_etl(resume_from_last_run, settings, param, db, es, es_comments, output_
                 })
 
             except Exception, e:
-                Log.warning("Problem with dispatch loop in range [{{min}}, {{max}})", {
+                Log.error("Problem with dispatch loop in range [{{min}}, {{max}})", {
                     "min": min,
                     "max": max
                 }, e)
