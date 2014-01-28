@@ -15,7 +15,7 @@ import threading
 import thread
 import time
 import sys
-from .struct import nvl
+from .struct import nvl, Struct
 
 
 DEBUG = True
@@ -224,10 +224,10 @@ class Thread(object):
             if self.target is not None:
                 response = self.target(*self.args, **self.kwargs)
                 with self.synch_lock:
-                    self.response = {"response": response}
+                    self.response = Struct(response=response)
         except Exception, e:
             with self.synch_lock:
-                self.response = {"exception": e}
+                self.response = Struct(exception=e)
             try:
                 from .logs import Log
 
