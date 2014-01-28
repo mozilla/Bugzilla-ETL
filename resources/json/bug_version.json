@@ -260,10 +260,10 @@
 						"field_name": {
 							"type": "string"
 						},
-						"field_value": {
+						"new_value": {
 							"type": "string"
 						},
-						"field_value_removed": {
+						"old_value": {
 							"type": "string"
 						}
 					},
