@@ -404,9 +404,10 @@ class TestETL(unittest.TestCase):
 
             flags = ["cf_status_firefox18", "cf_status_firefox19", "cf_status_firefox_esr17", "cf_status_b2g18"]
             for v in versions:
-                for f in flags:
-                    if v[f] != "fixed":
-                        Log.error("813650 should have {{flag}}=='fixed'", {"flag": f})
+                if v.modified_ts>param.start_time:
+                    for f in flags:
+                        if v[f] != "fixed":
+                            Log.error("813650 should have {{flag}}=='fixed'", {"flag": f})
 
             #CLOSE THE CACHED DB CONNECTIONS
             bz_etl.close_db_connections()
