@@ -281,7 +281,7 @@ class ElasticSearch(object):
             response = requests.get(*list, **args)
             if DEBUG:
                 Log.note(response.content[:130])
-            details = CNV.JSON2object(response.content)
+            details = struct.wrap(CNV.JSON2object(response.content))
             if details.error:
                 Log.error(details.error)
             return details
