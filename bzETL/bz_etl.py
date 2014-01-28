@@ -14,7 +14,7 @@
 import gc
 from bzETL.util.maths import Math
 from bzETL.util.timer import Timer
-from bzETL.util import struct
+from bzETL.util import struct, jsons
 from bzETL.util.logs import Log
 from bzETL.util.struct import Struct, nvl
 from bzETL.util.files import File
@@ -156,22 +156,23 @@ def setup_es(settings, db, es, es_comments):
         last_run_time = 0
         if not es:
             schema = File(settings.es.schema_file).read()
-
-            # DO NOT ASK FOR TOO MANY REPLICAS
-            health = ElasticSearch.get(settings.es.host + ":" + unicode(settings.es.port) + "/_cluster/health")
-            if schema.index.number_of_replicas >= health.number_of_nodes:
-                Log.warning("Reduced number of replicas: {{from}} requested, {{to} actual", {
-                    "from": schema.index.number_of_replicas,
-                    "to": health.number_of_nodes-1
-                })
-                schema.index.number_of_replicas = health.number_of_nodes-1
-
             #TODO: ADD SWITCH TO ENABLE SINGLE SHARD MODE
             # schema.index.number_of_shards=1
             # schema.index.number_of_replicas=0
 
             if transform_bugzilla.USE_ATTACHMENTS_DOT:
                 schema = schema.replace("attachments_", "attachments.")
+            schema=CNV.JSON2object(schema)
+            schema.settings=jsons.expand_dot(schema.settings)
+
+            # DO NOT ASK FOR TOO MANY REPLICAS
+            health = ElasticSearch.get(settings.es.host + ":" + unicode(settings.es.port) + "/_cluster/health")
+            if schema.settings.index.number_of_replicas >= health.number_of_nodes:
+                Log.warning("Reduced number of replicas: {{from}} requested, {{to}} realized", {
+                    "from": schema.settings.index.number_of_replicas,
+                    "to": health.number_of_nodes-1
+                })
+                schema.settings.index.number_of_replicas = health.number_of_nodes-1
 
             if not settings.es.alias:
                 settings.es.alias = settings.es.index

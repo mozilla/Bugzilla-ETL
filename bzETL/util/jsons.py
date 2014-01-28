@@ -25,6 +25,8 @@ import time
 from datetime import datetime, date
 from decimal import Decimal
 import sys
+from bzETL.util import struct
+from bzETL.util.struct import Struct
 
 use_pypy = False
 try:
@@ -220,6 +222,32 @@ def _scrub(value):
         return output
     else:
         return value
+
+
+def expand_dot(value):
+    """
+    JSON CAN HAVE ATTRIBUTE NAMES WITH DOTS
+    """
+    if value == None:
+        return None
+    elif isinstance(value, (basestring, int, float)):
+        return value
+    elif isinstance(value, dict):
+        output = Struct()
+        for k, v in value.iteritems():
+            output[k]=expand_dot(v)
+        return output
+    elif hasattr(value, '__iter__'):
+        output = []
+        for v in value:
+            v = expand_dot(v)
+            output.append(v)
+        return output
+    else:
+        return value
+
+
+
 
 
 
