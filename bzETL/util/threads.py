@@ -378,7 +378,8 @@ class ThreadedQueue(Queue):
                         })
                         return
                 except Exception, e:
-                    self.push_exception = e
+                    with self.lock:
+                        self.push_exception = e
 
         self.thread = Thread.run("threaded queue", size_pusher)
 
@@ -393,15 +394,23 @@ class ThreadedQueue(Queue):
         self.thread.join()
 
     def add(self, value):
-        if self.push_exception:
-            from logs import Log
-
-            Log.error("Previous push has failed", self.push_exception)
         Queue.add(self, value)
 
-    def extend(self, values):
         if self.push_exception:
             from logs import Log
+            with self.lock:
+                e = self.push_exception
+                self.push_exception = None
+            Log.error("Previous push has failed", e)
 
-            Log.error("Previous push has failed", self.push_exception)
+
+    def extend(self, values):
         Queue.add(self, values)
+
+        if self.push_exception:
+            from logs import Log
+            with self.lock:
+                e = self.push_exception
+                self.push_exception = None
+            Log.error("Previous push has failed", e)
+
