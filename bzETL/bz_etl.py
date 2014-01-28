@@ -156,6 +156,16 @@ def setup_es(settings, db, es, es_comments):
         last_run_time = 0
         if not es:
             schema = File(settings.es.schema_file).read()
+
+            # DO NOT ASK FOR TOO MANY REPLICAS
+            health = ElasticSearch.get(settings.es.host + ":" + unicode(settings.es.port) + "/_cluster/health")
+            if schema.index.number_of_replicas >= health.number_of_nodes:
+                Log.warning("Reduced number of replicas: {{from}} requested, {{to} actual", {
+                    "from": schema.index.number_of_replicas,
+                    "to": health.number_of_nodes-1
+                })
+                schema.index.number_of_replicas = health.number_of_nodes-1
+
             #TODO: ADD SWITCH TO ENABLE SINGLE SHARD MODE
             # schema.index.number_of_shards=1
             # schema.index.number_of_replicas=0
@@ -498,7 +508,7 @@ is a summary of log categories:
 
 PROBLEM - Indicates data inconsistency.  There is nothing we can do, and the
           ETL will deal with it as best it can.  No need to take action.
-WARNING - There is an error in the ETL logic.  The code will try it's best to
+WARN1NG - There is an error in the ETL logic.  The code will try it's best to
           continue, but you probably lost this version record.  It is fine to
           continue running, but please report these to
           klahnakoski@mozilla.com.
