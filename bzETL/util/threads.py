@@ -15,7 +15,7 @@ import threading
 import thread
 import time
 import sys
-from .struct import nvl, Struct
+from .struct import nvl
 
 
 DEBUG = True
@@ -62,6 +62,7 @@ class Queue(object):
         self.keep_running = True
         self.lock = Lock("lock for queue")
         self.queue = []
+
 
     def __iter__(self):
         while self.keep_running:
@@ -223,10 +224,10 @@ class Thread(object):
             if self.target is not None:
                 response = self.target(*self.args, **self.kwargs)
                 with self.synch_lock:
-                    self.response = Struct(response=response)
+                    self.response = {"response": response}
         except Exception, e:
             with self.synch_lock:
-                self.response = Struct(exception=e)
+                self.response = {"exception": e}
             try:
                 from .logs import Log
 
@@ -358,7 +359,7 @@ class ThreadedQueue(Queue):
         if max == None:
             #REASONABLE DEFAULT
             max = size * 2
-        self.push_exception = None  # USE THIS TO TRACK ANY PROBLEMS GETTING STUFF OUT OF QUEUE
+
         Queue.__init__(self, max=max)
 
         def size_pusher(please_stop):
@@ -378,8 +379,9 @@ class ThreadedQueue(Queue):
                         })
                         return
                 except Exception, e:
-                    with self.lock:
-                        self.push_exception = e
+                    from logs import Log
+
+                    Log.error("Problem with pushing {{num}} items to data sink", {"num": len(g)})
 
         self.thread = Thread.run("threaded queue", size_pusher)
 
@@ -392,25 +394,3 @@ class ThreadedQueue(Queue):
         if isinstance(b, BaseException):
             self.thread.please_stop.go()
         self.thread.join()
-
-    def add(self, value):
-        Queue.add(self, value)
-
-        if self.push_exception:
-            from logs import Log
-            with self.lock:
-                e = self.push_exception
-                self.push_exception = None
-            Log.error("Previous push has failed", e)
-
-
-    def extend(self, values):
-        Queue.add(self, values)
-
-        if self.push_exception:
-            from logs import Log
-            with self.lock:
-                e = self.push_exception
-                self.push_exception = None
-            Log.error("Previous push has failed", e)
-
