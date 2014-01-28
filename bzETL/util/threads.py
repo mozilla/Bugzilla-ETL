@@ -15,7 +15,7 @@ import threading
 import thread
 import time
 import sys
-from .struct import nvl
+from .struct import nvl, Struct
 
 
 DEBUG = True
@@ -223,10 +223,10 @@ class Thread(object):
             if self.target is not None:
                 response = self.target(*self.args, **self.kwargs)
                 with self.synch_lock:
-                    self.response = {"response": response}
+                    self.response = Struct(response=response)
         except Exception, e:
             with self.synch_lock:
-                self.response = {"exception": e}
+                self.response = Struct(exception=e)
             try:
                 from .logs import Log
 
@@ -358,7 +358,7 @@ class ThreadedQueue(Queue):
         if max == None:
             #REASONABLE DEFAULT
             max = size * 2
-
+        self.push_exception = None  # USE THIS TO TRACK ANY PROBLEMS GETTING STUFF OUT OF QUEUE
         Queue.__init__(self, max=max)
 
         def size_pusher(please_stop):
@@ -378,9 +378,7 @@ class ThreadedQueue(Queue):
                         })
                         return
                 except Exception, e:
-                    from logs import Log
-
-                    Log.warning("Can not push {{num}} records to given queue.", {"num": len(g)}, e)
+                    self.push_exception = e
 
         self.thread = Thread.run("threaded queue", size_pusher)
 
@@ -393,3 +391,17 @@ class ThreadedQueue(Queue):
         if isinstance(b, BaseException):
             self.thread.please_stop.go()
         self.thread.join()
+
+    def add(self, value):
+        if self.push_exception:
+            from logs import Log
+
+            Log.error("Previous push has failed", self.push_exception)
+        Queue.add(self, value)
+
+    def extend(self, values):
+        if self.push_exception:
+            from logs import Log
+
+            Log.error("Previous push has failed", self.push_exception)
+        Queue.add(self, values)
