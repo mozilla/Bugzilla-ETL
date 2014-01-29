@@ -161,7 +161,7 @@ class ElasticSearch(object):
 
     def is_proto(self, index):
         """
-        RETURN True IF THIS INDEX HAS NOT BEEN ASSIGNED IT'S ALIAS
+        RETURN True IF THIS INDEX HAS NOT BEEN ASSIGNED ITS ALIAS
         """
         for a in self.get_aliases():
             if a.index == index and a.alias:

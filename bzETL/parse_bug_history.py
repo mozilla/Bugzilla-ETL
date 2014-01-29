@@ -438,7 +438,7 @@ class BugHistoryParser():
                             continue
 
                     if DEBUG_CHANGES:
-                        ("Processing change: " + CNV.object2JSON(change))
+                        Log.note("Processing change: " + CNV.object2JSON(change))
                     target = self.currBugState
                     targetName = "currBugState"
                     attach_id = change.attach_id
@@ -479,7 +479,7 @@ class BugHistoryParser():
                         # Simple field change.
                         # Track the previous value
                         # Single-value field has changed in bug or attachment
-                        # Make sure it's actually changing.  We seem to get change
+                        # Make sure its actually changing.  We seem to get change
                         # entries for attachments that show the current field value.
                         if target[change.field_name] != change.new_value:
                             self.setPrevious(target, change.field_name, target[change.field_name], currVersion.modified_ts)
