@@ -34,7 +34,7 @@ class Math(object):
         return Math.bayesian_add(a, 1 - b)
 
 
-    # FOR GOODNESS SAKE - IF YOU PROVIDE A METHOD abs(), PLEASE PROVIDE IT'S COMPLEMENT
+    # FOR GOODNESS SAKE - IF YOU PROVIDE A METHOD abs(), PLEASE PROVIDE ITS COMPLEMENT
     # x = abs(x)*sign(x)
     # FOUND IN numpy, BUT WE USUALLY DO NOT NEED TO BRING IN A BIG LIB FOR A SIMPLE DECISION
     @staticmethod

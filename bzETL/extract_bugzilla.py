@@ -561,7 +561,7 @@ def get_new_activities(db, param):
     param.bug_filter = db.esfilter2sqlwhere({"terms": {"a.bug_id": param.bug_list}})
     param.mixed_case_fields = SQL(MIXED_CASE)
     param.screened_whiteboard = db.esfilter2sqlwhere({"terms": {"m.group_id": SCREENED_BUG_GROUP_IDS}})
-    param.whiteboard_field=STATUS_WHITEBOARD_FIELD_ID
+    param.whiteboard_field = STATUS_WHITEBOARD_FIELD_ID
 
     output = db.query("""
         SELECT
