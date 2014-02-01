@@ -10,9 +10,9 @@
 
 from __future__ import unicode_literals
 from math import sqrt
-from .cnv import CNV
-from .struct import nvl, Struct, Null
-from .logs import Log
+from ..cnv import CNV
+from ..struct import nvl, Struct, Null
+from ..env.logs import Log
 
 
 DEBUG = True
@@ -126,14 +126,14 @@ class Stats(Struct):
 
         if "count" not in kwargs:
             self.count = 0
-            self.mean = 0
-            self.variance = 0
+            self.mean = None
+            self.variance = None
             self.skew = None
             self.kurtosis = None
         elif "mean" not in kwargs:
             self.count = kwargs["count"]
-            self.mean = 0
-            self.variance = 0
+            self.mean = None
+            self.variance = None
             self.skew = None
             self.kurtosis = None
         elif "variance" not in kwargs and "std" not in kwargs:

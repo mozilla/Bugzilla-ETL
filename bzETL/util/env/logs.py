@@ -14,12 +14,12 @@ from datetime import datetime, timedelta
 import traceback
 import logging
 import sys
-
-from .struct import listwrap, nvl
 import struct
-import threads
-from .strings import indent, expand_template
-from .threads import Thread
+
+from ..thread import threads
+from ..struct import listwrap, nvl
+from ..strings import indent, expand_template
+from ..thread.threads import Thread
 
 
 DEBUG_LOGGING = False
@@ -224,7 +224,7 @@ class Log_usingFile(BaseLog):
     def __init__(self, file):
         assert file
 
-        from files import File
+        from ..env.files import File
 
         self.file = File(file)
         if self.file.exists:
@@ -234,7 +234,7 @@ class Log_usingFile(BaseLog):
         self.file_lock = threads.Lock()
 
     def write(self, template, params):
-        from files import File
+        from ..env.files import File
 
         with self.file_lock:
             File(self.filename).append(expand_template(template, params))
@@ -284,7 +284,7 @@ def make_log_from_settings(settings):
 
     #IF WE NEED A FILE, MAKE SURE DIRECTORY EXISTS
     if settings.filename:
-        from files import File
+        from ..env.files import File
 
         f = File(settings.filename)
         if not f.parent.exists:
@@ -353,7 +353,7 @@ class Log_usingStream(BaseLog):
             name = "stream"
 
         #WRITE TO STREAMS CAN BE *REALLY* SLOW, WE WILL USE A THREAD
-        from threads import Queue
+        from ..thread.threads import Queue
 
         if use_UTF8:
             def utf8_appender(value):
@@ -398,7 +398,7 @@ class Log_usingStream(BaseLog):
 class Log_usingThread(BaseLog):
     def __init__(self, logger):
         #DELAYED LOAD FOR THREADS MODULE
-        from threads import Queue
+        from ..thread.threads import Queue
 
         self.queue = Queue()
         self.logger = logger

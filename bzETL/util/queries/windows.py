@@ -10,11 +10,11 @@
 
 from __future__ import unicode_literals
 import functools
-from dzAlerts.util import stats
-from ..logs import Log
-from ..maths import Math
-from ..multiset import Multiset
-from ..stats import Z_moment, stats2z_moment, z_moment2stats
+from ..math import stats
+from ..env.logs import Log
+from ..math.maths import Math
+from ..collections.multiset import Multiset
+from ..math.stats import Z_moment, stats2z_moment, z_moment2stats
 
 
 class AggregationFunction(object):

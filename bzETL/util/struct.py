@@ -72,7 +72,7 @@ class Struct(dict):
 
     def __setitem__(self, key, value):
         if key == "":
-            from .logs import Log
+            from ...env.logs import Log
 
             Log.error("key is empty string.  Probably a bad idea")
         if isinstance(key, str):
@@ -245,6 +245,30 @@ class _Null(object):
     def __nonzero__(self):
         return False
 
+    def __add__(self, other):
+        return Null
+
+    def __radd__(self, other):
+        return Null
+
+    def __sub__(self, other):
+        return Null
+
+    def __rsub__(self, other):
+        return Null
+
+    def __mul__(self, other):
+        return Null
+
+    def __rmul__(self, other):
+        return Null
+
+    def __div__(self, other):
+        return Null
+
+    def __rdiv__(self, other):
+        return Null
+
     def __gt__(self, other):
         return False
 
@@ -314,7 +338,7 @@ class _Null(object):
         return set()
 
     def pop(self, key, default=None):
-        return None
+        return Null
 
     def __str__(self):
         return "None"
@@ -346,7 +370,7 @@ class StructList(list):
         if isinstance(index, slice):
             # IMPLEMENT FLAT SLICES (for i not in range(0, len(self)): assert self[i]==None)
             if index.step is not None:
-                from .logs import Log
+                from ...env.logs import Log
                 Log.error("slice step must be None, do not know how to deal with values")
             length = len(_get(self, "list"))
 
@@ -387,7 +411,7 @@ class StructList(list):
         return list
 
     def __getslice__(self, i, j):
-        from .logs import Log
+        from .env.logs import Log
 
         Log.error("slicing is broken in Python 2.7: a[i:j] == a[i+len(a), j] sometimes.  Use [start:stop:step]")
 
@@ -411,6 +435,11 @@ class StructList(list):
     def __or__(self, value):
         output = list(_get(self, "list"))
         output.append(value)
+        return StructList(vals=output)
+
+    def __radd__(self, other):
+        output = list(other)
+        output.extend(_get(self, "list"))
         return StructList(vals=output)
 
     def right(self, num=None):

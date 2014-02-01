@@ -10,12 +10,12 @@
 
 from __future__ import unicode_literals
 
-from .cnv import CNV
-from .logs import Log
-from .queries import Q
-from .struct import Struct
-from .randoms import Random
-from .vendor.aespython import key_expander, aes_cipher, cbc_mode
+from ..cnv import CNV
+from ..env.logs import Log
+from ..queries import Q
+from ..struct import Struct
+from ..math.randoms import Random
+from ..vendor.aespython import key_expander, aes_cipher, cbc_mode
 
 
 DEBUG = False
@@ -43,6 +43,7 @@ def encrypt(text, _key, salt=None):
     aes_cbc_256.set_iv(salt)
 
     output = Struct()
+    output.type = "AES256"
     output.salt = CNV.bytearray2base64(salt)
     output.length = len(data)
 

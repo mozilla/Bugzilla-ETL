@@ -11,10 +11,12 @@
 from __future__ import unicode_literals
 import __builtin__
 from . import group_by
+from ..collections.matrix import Matrix
+from ..queries.cube import Cube
 from .index import UniqueIndex, Index
 from .flat_list import FlatList
-from ..maths import Math
-from ..logs import Log
+from ....math.maths import Math
+from ....env.logs import Log
 from ..struct import nvl, listwrap, EmptyList
 from .. import struct
 from ..struct import Struct, Null
@@ -52,6 +54,7 @@ def run(query):
 
 
 groupby = group_by.groupby
+
 
 def index(data, keys=None):
 #return dict that uses keys to index data
@@ -118,10 +121,13 @@ def map2set(data, relation):
             Log.error("Expecting a dict with lists in codomain", e)
     return Null
 
+
 def select(data, field_name):
 #return list with values from field_name
     if isinstance(data, Cube):
-        Log.error("Do not know how to deal with cubes yet")
+        if isinstance(data.data, Matrix):
+            Log.error("Do not know how to deal with cubes yet")
+        return select(data.data, field_name)
 
     if isinstance(data, FlatList):
         if isinstance(field_name, basestring):
@@ -168,7 +174,6 @@ def _select_a_field(field):
         return struct.wrap({"name": field.name, "value": struct.split_field(field.value)})
 
 
-
 def _select(template, data, fields, depth):
     output = []
     deep_path = None
@@ -178,7 +183,7 @@ def _select(template, data, fields, depth):
         for f in fields:
             index, children = go_deep(d, f, depth, record)
             if index:
-                path = f.value[0:index]
+                path = f.value[0:index:]
                 deep_fields.append(f)
                 if deep_path and path != deep_path:
                     Log.error("Dangerous to select into more than one branch at time")
@@ -195,7 +200,7 @@ def go_deep(v, field, depth, record):
     field = {"name":name, "value":["attribute", "path"]}
     r[field.name]=v[field.value], BUT WE MUST DEAL WITH POSSIBLE LIST IN field.value PATH
     """
-    for i, f in enumerate(field.value[depth:-1:]):
+    for i, f in enumerate(field.value[depth:len(field.value) - 1:]):
         v = v[f]
         if isinstance(v, list):
             return depth + i + 1, v
@@ -221,6 +226,7 @@ def _select1(data, field, depth, output):
         else:
             output.append(d)
 
+
 def get_columns(data):
     output = {}
     for d in data:
@@ -237,6 +243,7 @@ def get_columns(data):
 def stack(data, name=None, value_column=None, columns=None):
     """
     STACK ALL CUBE DATA TO A SINGLE COLUMN, WITH ONE COLUMN PER DIMENSION
+    GREAT FOR SPARSE CUBES
     >>> s
           a   b
      one  1   2
@@ -636,11 +643,10 @@ def window(data, param):
     aggregate = param.aggregate  # WindowFunction to apply
     _range = param.range          # of form {"min":-10, "max":0} to specify the size and relative position of window
 
-    if aggregate == None and sortColumns == None and edges == None:
+    if aggregate == None and edges == None:
         #SIMPLE CALCULATED VALUE
         for rownum, r in enumerate(data):
             r[name] = value(r, rownum, data)
-
         return
 
     for rownum, r in enumerate(data):
@@ -669,43 +675,9 @@ def window(data, param):
         r["__temp__"] = None  #CLEANUP
 
 
-class Cube():
-    def __init__(self, data=None, edges=None, name=None):
-        if isinstance(data, Cube):
-            Log.error("do not know how to handle cubes yet")
-
-        columns = get_columns(data)
-
-        if edges == None:
-            self.edges = [{"name": "index", "domain": {"type": "numeric", "min": 0, "max": len(data), "interval": 1}}]
-            self.data = data
-            self.select = columns
-            return
-
-        self.name = name
-        self.edges = edges
-        self.select = Null
 
 
-    def get_columns(self):
-        return self.columns
 
-
-class Domain():
-    def __init__(self):
-        pass
-
-
-    def part2key(self, part):
-        pass
-
-
-    def part2label(self, part):
-        pass
-
-
-    def part2value(self, part):
-        pass
 
 
 def intervals(_min, _max=None, size=1):

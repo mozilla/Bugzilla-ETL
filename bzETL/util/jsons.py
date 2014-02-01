@@ -25,8 +25,8 @@ import time
 from datetime import datetime, date
 from decimal import Decimal
 import sys
-from bzETL.util import struct
-from bzETL.util.struct import Struct
+
+from .struct import Struct
 
 use_pypy = False
 try:
