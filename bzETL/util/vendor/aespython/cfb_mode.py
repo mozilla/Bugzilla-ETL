@@ -11,27 +11,23 @@ Licensed under the MIT license http://www.opensource.org/licenses/mit-license.ph
 """
 __author__ = "Adam Newman"
 
-try:
-    from aespython.cipher_mode import CipherMode
-    from aespython.mode_test import GeneralTestEncryptionMode
-except:
-    from cipher_mode import CipherMode
-    from mode_test import GeneralTestEncryptionMode
+from .cipher_mode import CipherMode
+from .mode_test import GeneralTestEncryptionMode
 
 class CFBMode(CipherMode):
     """Perform CFB operation on a block and retain IV information for next operation"""
-    
+
     name = "CFB"
 
     def __init__(self, block_cipher, block_size):
         CipherMode.__init__(self, block_cipher, block_size)
-    
+
     def encrypt_block(self, plaintext):
         cipher_iv = self._block_cipher.cipher_block(self._iv)
         ciphertext = [i ^ j for i,j in zip (plaintext, cipher_iv)]
         self._iv = ciphertext
         return ciphertext
-    
+
     def decrypt_block(self, ciphertext):
         cipher_iv = self._block_cipher.cipher_block(self._iv)
         plaintext = [i ^ j for i,j in zip (cipher_iv, ciphertext)]
@@ -40,16 +36,16 @@ class CFBMode(CipherMode):
 
 class TestEncryptionMode(GeneralTestEncryptionMode):
     def test_mode(self):
-        """Test CBC Mode Encrypt/Decrypt"""        
+        """Test CBC Mode Encrypt/Decrypt"""
         try:
-            from aespython.test_keys import TestKeys
+            from .test_keys import TestKeys
         except:
             from test_keys import TestKeys
-             
+
         test_data = TestKeys()
 
-        test_mode = CFBMode(self.get_keyed_cipher(test_data.test_mode_key), 16)        
-        
+        test_mode = CFBMode(self.get_keyed_cipher(test_data.test_mode_key), 16)
+
         self.run_cipher(test_mode, test_data.test_mode_iv, test_data.test_cfb_ciphertext, test_data.test_mode_plaintext)
 
 if __name__ == "__main__":

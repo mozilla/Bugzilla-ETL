@@ -12,17 +12,18 @@ from datetime import datetime
 import re
 import sha
 import time
+import struct
 
 import requests
-from .threads import ThreadedQueue
 
-import struct
-from .maths import Math
-from .queries import Q
-from .cnv import CNV
-from .logs import Log
-from .struct import nvl, Null
-from .struct import Struct, StructList
+from ..thread.threads import ThreadedQueue
+from ..math.maths import Math
+from ..queries import Q
+from ..cnv import CNV
+from ..env.logs import Log
+from ..struct import nvl, Null
+from ..struct import Struct, StructList
+
 
 DEBUG = False
 

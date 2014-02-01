@@ -13,9 +13,9 @@ import base64
 import datetime
 import re
 import time
-from .multiset import Multiset
+from .collections.multiset import Multiset
 from .jsons import json_decoder, json_encoder
-from .logs import Log
+from .env.logs import Log
 import struct
 from .strings import expand_template
 

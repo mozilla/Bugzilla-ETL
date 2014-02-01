@@ -10,9 +10,9 @@
 
 from __future__ import unicode_literals
 import threading
-from .struct import nvl
-from .logs import Log
-from .threads import Queue, Thread
+from ..struct import nvl
+from ..env.logs import Log
+from ..thread.threads import Queue, Thread
 
 
 DEBUG = True

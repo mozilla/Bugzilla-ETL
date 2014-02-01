@@ -13,8 +13,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
 import sys
-from bzETL.util import struct
-from .struct import nvl
+from .. import struct
+from ..struct import nvl
 
 
 class Emailer:

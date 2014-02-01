@@ -11,14 +11,21 @@
 from __future__ import unicode_literals
 
 
-def Multiset(list=None, key_field=None, count_field=None, allow_negative=False):
-    if allow_negative:
-        return _NegMultiset(list, key_field, count_field)
-    else:
-        return _Multiset(list, key_field, count_field)
+class Multiset(object):
+
+    def __new__(cls, list=None, key_field=None, count_field=None, allow_negative=False):
+        if allow_negative:
+            return _NegMultiset(list, key_field, count_field)
+        else:
+            return _Multiset(list, key_field, count_field)
 
 
-class _Multiset(object):
+class _Multiset(Multiset):
+
+    def __new__(cls, *args, **kwargs):
+        return object.__new__(cls, *args, **kwargs)
+
+
     def __init__(self, list=None, key_field=None, count_field=None):
         if not key_field and not count_field:
             self.dic = dict()
@@ -55,7 +62,7 @@ class _Multiset(object):
 
     def remove(self, value):
         if value not in self.dic:
-            from .logs import Log
+            from ..env.logs import Log
 
             Log.error("{{value}} is not in multiset", {"value": value})
         self._remove(value)
@@ -108,7 +115,10 @@ class _Multiset(object):
             return 0
 
 
-class _NegMultiset(object):
+class _NegMultiset(Multiset):
+    def __new__(cls, *args, **kwargs):
+            return object.__new__(cls, *args, **kwargs)
+
     def __init__(self, list=None, key_field=None, count_field=None):
         if not key_field and not count_field:
             self.dic = dict()

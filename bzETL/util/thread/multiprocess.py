@@ -8,7 +8,7 @@
 #
 from __future__ import unicode_literals
 from multiprocessing.queues import Queue
-from .logs import Log
+from ..env.logs import Log
 
 
 class worker(object):

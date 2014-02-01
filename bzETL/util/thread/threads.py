@@ -15,7 +15,7 @@ import threading
 import thread
 import time
 import sys
-from .struct import nvl, Struct
+from ..struct import nvl, Struct
 
 
 DEBUG = True
@@ -266,7 +266,7 @@ class Thread(object):
             if self.stopped:
                 return self.response
             else:
-                from logs import Except
+                from ..env.logs import Except
 
                 raise Except(type=Thread.TIMEOUT)
 
@@ -274,7 +274,7 @@ class Thread(object):
     def run(name, target, *args, **kwargs):
         #ENSURE target HAS please_stop ARGUMENT
         if "please_stop" not in target.__code__.co_varnames:
-            from logs import Log
+            from ..env.logs import Log
 
             Log.error("function must have please_stop argument for signalling emergency shutdown")
 
@@ -372,14 +372,14 @@ class ThreadedQueue(Queue):
                 try:
                     queue.extend(g)
                     if please_stop:
-                        from logs import Log
+                        from ..env.logs import Log
 
                         Log.warning("ThreadedQueue stopped early, with {{num}} items left in queue", {
                             "num": len(self)
                         })
                         return
                 except Exception, e:
-                    from logs import Log
+                    from ..env.logs import Log
 
                     Log.error("Problem with pushing {{num}} items to data sink", {"num": len(g)})
 

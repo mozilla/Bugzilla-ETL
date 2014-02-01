@@ -15,18 +15,22 @@ from datetime import datetime
 import io
 import os
 import shutil
-from . import crypto
-from .struct import listwrap, nvl
-from .cnv import CNV
+from ..math import crypto
+from ..struct import listwrap, nvl
+from ..cnv import CNV
 
 
 class File(object):
+    """
+    ASSUMES ALL FILE CONTENT IS UTF8 ENCODED STRINGS
+    """
+
     def __init__(self, filename, buffering=2 ** 14):
         """
         YOU MAY SET filename TO {"path":p, "key":k} FOR CRYPTO FILES
         """
         if filename == None:
-            from .logs import Log
+            from ..env.logs import Log
 
             Log.error("File must be given a filename")
         elif isinstance(filename, basestring):
@@ -86,13 +90,13 @@ class File(object):
             self.parent.create()
         with open(self._filename, "wb") as f:
             if isinstance(data, list) and self.key:
-                from logs import Log
+                from ..env.logs import Log
 
                 Log.error("list of data and keys are not supported, encrypt before sending to file")
 
             for d in listwrap(data):
                 if not isinstance(d, unicode):
-                    from .logs import Log
+                    from ..env.logs import Log
 
                     Log.error("Expecting unicode data only")
                 if self.key:
@@ -138,7 +142,7 @@ class File(object):
         except Exception, e:
             if e.strerror == "The system cannot find the path specified":
                 return
-            from .logs import Log
+            from ..env.logs import Log
 
             Log.error("Could not remove file", e)
 
@@ -152,7 +156,7 @@ class File(object):
         try:
             os.makedirs(self._filename)
         except Exception, e:
-            from .logs import Log
+            from ..env.logs import Log
 
             Log.error("Could not make directory {{dir_name}}", {"dir_name": self._filename}, e)
 

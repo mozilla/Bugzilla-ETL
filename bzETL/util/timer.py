@@ -11,7 +11,7 @@ from datetime import timedelta
 import time
 from . import struct
 from .struct import nvl
-from .logs import Log
+from .env.logs import Log
 
 
 class Timer:

@@ -10,7 +10,7 @@
 
 from __future__ import unicode_literals
 from .. import struct
-from ..logs import Log
+from ..env.logs import Log
 from ..strings import indent, expand_template
 from ..struct import Null
 

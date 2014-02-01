@@ -10,10 +10,11 @@
 
 from __future__ import unicode_literals
 import sys
+from .cube import Cube
 from ..struct import listwrap
-from ..logs import Log
+from ..env.logs import Log
 from .. import struct
-from ..multiset import Multiset
+from ..collections.multiset import Multiset
 
 
 def groupby(data, keys=None, size=None, min_size=None, max_size=None, contiguous=False):
@@ -28,6 +29,10 @@ def groupby(data, keys=None, size=None, min_size=None, max_size=None, contiguous
         if size != None:
             max_size = size
         return groupby_min_max_size(data, min_size=min_size, max_size=max_size)
+
+    if isinstance(data, Cube):
+        return data.groupby(keys, simple=True)
+
 
     keys = listwrap(keys)
 
