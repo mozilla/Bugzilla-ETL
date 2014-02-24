@@ -16,6 +16,7 @@ from bzETL import extract_bugzilla, bz_etl
 from bzETL.bz_etl import etl
 from bzETL.extract_bugzilla import get_current_time, SCREENED_WHITEBOARD_BUG_GROUPS
 from bzETL.util.cnv import CNV
+from bzETL.util.collections import MIN
 from bzETL.util.queries.db_query import esfilter2sqlwhere
 from bzETL.util.sql.db import DB, all_db
 from bzETL.util.env.logs import Log
