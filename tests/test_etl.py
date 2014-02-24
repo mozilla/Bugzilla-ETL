@@ -16,16 +16,18 @@ from bzETL import extract_bugzilla, bz_etl
 from bzETL.bz_etl import etl
 from bzETL.extract_bugzilla import get_current_time, SCREENED_WHITEBOARD_BUG_GROUPS
 from bzETL.util.cnv import CNV
-from bzETL.util.db import DB, all_db
-from bzETL.util.logs import Log
-from bzETL.util.elasticsearch import ElasticSearch
-from bzETL.util.files import File
+from bzETL.util.queries.db_query import esfilter2sqlwhere
+from bzETL.util.sql.db import DB, all_db
+from bzETL.util.env.logs import Log
+from bzETL.util.env.elasticsearch import ElasticSearch
+from bzETL.util.env.files import File
 from bzETL.util.maths import Math
 from bzETL.util.queries import Q
-from bzETL.util.randoms import Random
-from bzETL.util import startup, struct
+from bzETL.util.maths.randoms import Random
+from bzETL.util.env import startup
+from bzETL.util import struct
 from bzETL.util.struct import Struct, Null
-from bzETL.util.threads import ThreadedQueue
+from bzETL.util.thread.threads import ThreadedQueue
 from bzETL.util.timer import Timer
 
 from util import compare_es, database, elasticsearch
@@ -150,7 +152,7 @@ class TestETL(unittest.TestCase):
                 if can[i] != ref[i]:
                     found = i
                     break
-            Log.error("Comments do not match reference\n{{sample}}", {"sample": can[Math.min([0, found - 100]):found + 100]})
+            Log.error("Comments do not match reference\n{{sample}}", {"sample": can[MIN([0, found - 100]):found + 100]})
 
     def test_public_etl(self):
         """
@@ -177,7 +179,7 @@ class TestETL(unittest.TestCase):
                 if can[i] != ref[i]:
                     found = i
                     break
-            Log.error("Comments do not match reference\n{{sample}}", {"sample": can[Math.min(0, found - 100):found + 100:]})
+            Log.error("Comments do not match reference\n{{sample}}", {"sample": can[MIN(0, found - 100):found + 100:]})
 
     def test_private_bugs_do_not_show(self):
         self.settings.param.allow_private_bugs = False
@@ -229,7 +231,7 @@ class TestETL(unittest.TestCase):
             implied_private_comments = db.query("""
                 SELECT comment_id FROM longdescs WHERE {{where}}
             """, {
-                "where": db.esfilter2sqlwhere({"terms":{"bug_id":private_bugs}})
+                "where": esfilter2sqlwhere(db, {"terms":{"bug_id":private_bugs}})
             }).comment_id
             private_comments = marked_private_comments + implied_private_comments
             Log.note("The private comments are {{comments}}", {"comments": private_comments})

@@ -2,8 +2,9 @@
 #
 from bzETL.extract_bugzilla import milli2string, get_current_time
 from bzETL.util.cnv import CNV
-from bzETL.util.db import DB
-from bzETL.util.logs import Log
+from bzETL.util.queries.db_query import esfilter2sqlwhere
+from bzETL.util.sql.db import DB
+from bzETL.util.env.logs import Log
 from bzETL.util.struct import Struct
 from bzETL.util.timer import Timer
 
@@ -115,6 +116,6 @@ def diff(db, table, old_record, new_record):
 
     db.execute("UPDATE bugs SET delta_ts={{now}} WHERE {{where}}", {
         "now":now,
-        "where":db.esfilter2sqlwhere({"term":{"bug_id":old_record.bug_id}})
+        "where":esfilter2sqlwhere(db, {"term":{"bug_id":old_record.bug_id}})
     })
 
