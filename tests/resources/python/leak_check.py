@@ -2,11 +2,12 @@ from datetime import datetime
 import unittest
 from pymysql.times import TimeDelta
 from bzETL.extract_bugzilla import SCREENED_WHITEBOARD_BUG_GROUPS
-from bzETL.util import startup, struct
+from bzETL.util.env import startup
+from bzETL.util import struct
 from bzETL.util.cnv import CNV
-from bzETL.util.elasticsearch import ElasticSearch
-from bzETL.util.emailer import Emailer
-from bzETL.util.logs import Log
+from bzETL.util.env.elasticsearch import ElasticSearch
+from bzETL.util.env.emailer import Emailer
+from bzETL.util.env.logs import Log
 from bzETL.util.maths import Math
 from bzETL.util.queries import Q
 from bzETL.util.struct import nvl
@@ -56,7 +57,7 @@ class TestLookForLeaks(unittest.TestCase):
                         {"range": {"modified_ts": {"lt": A_WHILE_AGO}}}, #OF A MINIMUM AGE
                     ]}
                 ]},
-                ["bug_id", "bug_group"]
+                ["bug_id", "bug_group", "modified_ts"]
             )
 
             private_ids = {b.bug_id: b.bug_group for b in results}
@@ -75,9 +76,17 @@ class TestLookForLeaks(unittest.TestCase):
             )
 
             if leaked_bugs:
+                self.public.delete_record(
+                    {"terms":{"bug_id":leaked_bugs.bug_id}}
+                )
+
                 Log.note("{{num}} leaks!! {{bugs}}", {
                     "num": len(leaked_bugs),
-                    "bugs": CNV.object2JSON(set(Q.sort(Q.select(leaked_bugs, "bug_id"))))
+                    "bugs": Q.run({
+                        "from":leaked_bugs,
+                        "select":["bug_id", "bug_version_num", {"name":"modified_ts", "value":lambda d: CNV.datetime2string(CNV.milli2datetime(d.modified_ts))}],
+                        "sort":"bug_id"
+                    })
                 })
                 for b in leaked_bugs:
                     Log.note("{{bug_id}} has bug groups {{bug_group}}\n{{version|indent}}", {
@@ -94,6 +103,10 @@ class TestLookForLeaks(unittest.TestCase):
                 limit=20
             )
             if leaked_comments:
+                self.public_comments.delete_record(
+                    {"terms":{"bug_id":leaked_comments.bug_id}}
+                )
+
                 Log.error("{{num}} comments marked private have leaked!\n{{comments|indent}}", {
                     "num": len(leaked_comments),
                     "comments": leaked_comments
@@ -109,11 +122,11 @@ class TestLookForLeaks(unittest.TestCase):
                     {"range": {"bug_id": {"gte": min_id, "lt": max_id}}},
                     {"range": {"expires_on": {"gte": NOW}}},  #CURRENT RECORDS
                     {"range": {"modified_ts": {"lt": A_WHILE_AGO}}}, #OF A MINIMUM AGE
-                    {"nested": {  #MUST HAVE AN ATTACHMENT
+                    {"nested": { #HAS ATTACHMENT.
                         "path": "attachments",
                         "query": {"filtered": {
                             "query": {"match_all": {}},
-                            "filter": {"exists": {"field":"attach_id"}}
+                            "filter": {"exists": {"field":"attachments.attach_id"}}
                         }}
                     }},
                     {"or":[
@@ -135,7 +148,7 @@ class TestLookForLeaks(unittest.TestCase):
                 "select": "attachments.attach_id",
                 "where": {"or": [
                     {"exists": "bug_group"},
-                    {"terms": {"attachments.attachments\.isprivate": ['1', True, 1]}}
+                    {"terms": {"attachments.isprivate": ['1', True, 1]}}
                 ]}
             })
             private_attachments = [int(v) for v in private_attachments]
@@ -164,6 +177,10 @@ class TestLookForLeaks(unittest.TestCase):
             #
 
             if leaked_bugs:
+                self.public.delete_record(
+                    {"terms":{"bug_id":leaked_bugs.bug_id}}
+                )
+
                 Log.note("{{num}} bugs with private attachments have leaked!", {"num": len(leaked_bugs)})
                 for b in leaked_bugs:
                     Log.note("{{bug_id}} has private_attachment\n{{version|indent}}", {
@@ -180,6 +197,8 @@ class TestLookForLeaks(unittest.TestCase):
             limit=20
         )
         if leaked_comments:
+
+
             Log.error("{{num}} comments marked private have leaked!\n{{comments|indent}}", {
                 "num": len(leaked_comments),
                 "comments": leaked_comments
@@ -231,6 +250,9 @@ def get(es, esfilter, fields=None, limit=None):
 
 
 def milli2datetime(r):
+    """
+    CONVERT ANY longs INTO TIME STRINGS
+    """
     try:
         if r == None:
             return None
