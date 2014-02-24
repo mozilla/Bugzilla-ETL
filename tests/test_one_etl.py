@@ -12,12 +12,12 @@ from bzETL import extract_bugzilla, bz_etl
 from bzETL.bz_etl import etl
 from bzETL.extract_bugzilla import get_current_time
 from bzETL.util.cnv import CNV
-from bzETL.util.db import DB, all_db
+from bzETL.util.sql.db import DB, all_db
 
-from bzETL.util.logs import Log
-from bzETL.util import startup
+from bzETL.util.env.logs import Log
+from bzETL.util.env import startup
 from bzETL.util.struct import Struct
-from bzETL.util.threads import ThreadedQueue
+from bzETL.util.thread.threads import ThreadedQueue
 from util import elasticsearch
 
 

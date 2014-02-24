@@ -2,9 +2,9 @@
 #
 from bzETL.util import struct
 from bzETL.util.cnv import CNV
-from bzETL.util.elasticsearch import ElasticSearch
-from bzETL.util.logs import Log
-from bzETL.util.files import File
+from bzETL.util.env.elasticsearch import ElasticSearch
+from bzETL.util.env.logs import Log
+from bzETL.util.env.files import File
 from bzETL.util.queries import Q
 from bzETL.util.struct import Struct, nvl
 
