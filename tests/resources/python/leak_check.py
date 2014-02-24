@@ -197,7 +197,9 @@ class TestLookForLeaks(unittest.TestCase):
             limit=20
         )
         if leaked_comments:
-
+            self.public_comments.delete_record(
+                {"terms":{"bug_id":leaked_comments.bug_id}}
+            )
 
             Log.error("{{num}} comments marked private have leaked!\n{{comments|indent}}", {
                 "num": len(leaked_comments),
