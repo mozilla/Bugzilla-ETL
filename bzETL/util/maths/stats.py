@@ -19,6 +19,7 @@ DEBUG = True
 EPSILON = 0.000001
 
 
+
 def stats2z_moment(stats):
     # MODIFIED FROM http://statsmodels.sourceforge.net/devel/_modules/statsmodels/stats/moment_helpers.html
     # ADDED count
@@ -105,7 +106,7 @@ def z_moment2stats(z_moment, unbiased=True):
                 "from": Z,
                 "stats": stats,
                 "expected": v.S
-            })
+            }, e)
         globals()["DEBUG"] = True
 
     return stats
@@ -270,3 +271,6 @@ def median(values, simple=True):
             return (_median - 0.5) + float(middle - start_index) / float(stop_index - start_index)
     except Exception, e:
         Log.error("problem with median", e)
+
+
+zero = Stats()

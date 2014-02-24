@@ -9,13 +9,11 @@
 #
 
 
-
-import codecs
 from datetime import datetime
 import io
 import os
 import shutil
-from ..math import crypto
+from ..maths import crypto
 from ..struct import listwrap, nvl
 from ..cnv import CNV
 
@@ -66,8 +64,8 @@ class File(object):
         return output
 
     def read(self, encoding="utf8"):
-        with codecs.open(self._filename, "r", encoding=encoding) as f:
-            content = f.read()
+        with open(self._filename, "rb") as f:
+            content = f.read().decode(encoding)
             if self.key:
                 return crypto.decrypt(content, self.key)
             else:

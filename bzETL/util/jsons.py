@@ -26,6 +26,7 @@ from datetime import datetime, date
 from decimal import Decimal
 import sys
 
+
 from .struct import Struct
 
 use_pypy = False
@@ -59,7 +60,7 @@ class PyPyJSONEncoder(object):
 
     def encode(self, value, pretty=False):
         if pretty:
-            return unicode(json.dumps(json_scrub(value), indent=4, sort_keys=True, separators=(',', ': ')))
+            return pretty_json(value)
 
         _buffer = UnicodeBuilder(1024)
         _value2json(value, _buffer)
@@ -73,7 +74,7 @@ class cPythonJSONEncoder(object):
 
     def encode(self, value, pretty=False):
         if pretty:
-            return unicode(json.dumps(json_scrub(value), ensure_ascii=False, indent=4, sort_keys=True, separators=(',', ': ')))
+            return pretty_json(value)
 
         return unicode(json.dumps(json_scrub(value), ensure_ascii=False))
 
@@ -134,6 +135,8 @@ def _value2json(value, _buffer):
         append(_buffer, unicode(long(time.mktime(value.timetuple()) * 1000)))
     elif hasattr(value, '__iter__'):
         _iter2json(value, _buffer)
+    elif hasattr(value, '__json__'):
+        append(value.__json__(), _buffer)
     else:
         raise Exception(repr(value) + " is not JSON serializable")
 
@@ -220,6 +223,8 @@ def _scrub(value):
             v = _scrub(v)
             output.append(v)
         return output
+    elif hasattr(value, '__json__'):
+        return json._default_decoder.decode(value.__json__())
     else:
         return value
 
@@ -247,8 +252,42 @@ def expand_dot(value):
         return value
 
 
+def pretty_json(value):
+    try:
+        if isinstance(value, dict):
+            if not value:
+                return "{}"
+            items = list(value.items())
+            if len(items) == 1:
+                return "{\"" + items[0][0] + "\": " + pretty_json(items[0][1]).strip() + "}"
+
+            values = ["\"" + ESCAPE.sub(replace, k) + "\": " + indent(pretty_json(v)).strip() for k, v in items if v != None]
+            return "{\n\t" + ",\n\t".join(values) + "\n}"
+        elif isinstance(value, list) or hasattr(value, '__iter__'):
+            value = list(value)
+            if not value:
+                return "[]"
+            if len(value) == 1:
+                return "[" + indent(pretty_json(value[0])) + "]"
+
+            return "[\n" + ",\n".join([indent(pretty_json(v)) for v in value]) + "\n]"
+        elif hasattr(value, '__json__'):
+            j = value.__json__()
+            return pretty_json(json_decoder.decode(j))
+        else:
+            return json_encoder.encode(value)
+
+    except Exception, e:
+        from .env.logs import Log
+
+        Log.error("Problem turning value to json", e)
 
 
-
-
-
+def indent(value, prefix="\t"):
+    try:
+        content = value.rstrip()
+        suffix = value[len(content):]
+        lines = content.splitlines()
+        return prefix + (u"\n" + prefix).join(lines) + suffix
+    except Exception, e:
+        raise Exception(u"Problem with indent of value (" + e.message + u")\n" + value)

@@ -41,14 +41,13 @@ import re
 import math
 from bzETL.util import struct, strings
 from bzETL.util.struct import nvl
-from bzETL.util.multiset import Multiset
 from transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS
 
 from bzETL.util.cnv import CNV
-from bzETL.util.logs import Log
+from bzETL.util.env.logs import Log
 from bzETL.util.queries import Q
 from bzETL.util.struct import Struct, Null
-from bzETL.util.files import File
+from bzETL.util.env.files import File
 from bzETL.util.maths import Math
 
 # Used to split a flag into (type, status [,requestee])
@@ -251,7 +250,7 @@ class BugHistoryParser():
             }
             self.currBugAttachmentsMap[unicode(row_in.attach_id)] = att
 
-        att["created_ts"] = Math.min([row_in.modified_ts, att["created_ts"]])
+        att["created_ts"] = MIN([row_in.modified_ts, att["created_ts"]])
         if row_in.field_name == "created_ts" and row_in.new_value == None:
             pass
         else:
@@ -842,7 +841,7 @@ class BugHistoryParser():
                     best_score = 0.3
                     best = Null
                     for found in output:
-                        score = Math.min([
+                        score = MIN([
                             strings.edit_distance(found, lost),
                             strings.edit_distance(found.split("@")[0], lost.split("@")[0]),
                             strings.edit_distance(map_total[found][0], lost),

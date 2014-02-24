@@ -9,6 +9,8 @@
 #
 from __future__ import unicode_literals
 import math
+import __builtin__
+import types
 from ..struct import Null, nvl
 from ..env.logs import Log
 from ..strings import find_first
@@ -63,6 +65,10 @@ class Math(object):
             return False
 
     @staticmethod
+    def is_nan(s):
+        return math.isnan(s)
+
+    @staticmethod
     def is_integer(s):
         try:
             if float(s) == round(float(s), 0):
@@ -72,12 +78,12 @@ class Math(object):
             return False
 
     @staticmethod
-    def round_sci(value, decimal=None, digits=None):
+    def round(value, decimal=None, digits=None):
         if digits != None:
             m = pow(10, math.floor(math.log10(digits)))
-            return round(value / m, digits) * m
+            return __builtin__.round(value / m, digits) * m
 
-        return round(value, decimal)
+        return __builtin__.round(value, decimal)
 
 
     @staticmethod
@@ -102,54 +108,8 @@ class Math(object):
 
         return Math.round_sci(value, decimal=i - d - 1)
 
-
-    @staticmethod
-    def min(*values):
-        if isinstance(values, tuple) and len(values) == 1 and isinstance(values[0], (list, set, tuple, Multiset)):
-            values = values[0]
-        output = Null
-        for v in values:
-            if v == None:
-                continue
-            if isinstance(v, float) and math.isnan(v):
-                continue
-            if output == None:
-                output = v
-                continue
-            output = min(output, v)
-        return output
-
-
-    @staticmethod
-    def max(*values):
-        if isinstance(values, tuple) and len(values) == 1 and isinstance(values[0], (list, set, tuple)):
-            values = values[0]
-        output = Null
-        for v in values:
-            if v == None:
-                continue
-            if isinstance(v, float) and math.isnan(v):
-                continue
-            if output == None:
-                output = v
-                continue
-            output = max(output, v)
-        return output
-
     @staticmethod
     def ceiling(value):
         return int(math.ceil(value))
 
-    @staticmethod
-    def product(*values):
-        if isinstance(values, tuple) and len(values) == 1 and isinstance(values[0], (list, set, tuple, Multiset)):
-            values = values[0]
-        output = 1
-        for v in values:
-            if v == None:
-                continue
-            if isinstance(v, float) and math.isnan(v):
-                continue
-            output = output * v
-        return output
 

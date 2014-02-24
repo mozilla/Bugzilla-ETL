@@ -71,7 +71,7 @@ class Queue(object):
                 if value != Thread.STOP:
                     yield value
             except Exception, e:
-                from .logs import Log
+                from ..env.logs import Log
 
                 Log.warning("Tell me about what happened here", e)
 
@@ -151,12 +151,12 @@ class AllThread(object):
                 if "exception" in response:
                     exceptions.append(response["exception"])
         except Exception, e:
-            from .logs import Log
+            from ..env.logs import Log
 
             Log.warning("Problem joining", e)
 
         if exceptions:
-            from .logs import Log
+            from ..env.logs import Log
 
             Log.error("Problem in child threads", exceptions)
 
@@ -212,7 +212,7 @@ class Thread(object):
         try:
             self.thread = thread.start_new_thread(Thread._run, (self, ))
         except Exception, e:
-            from .logs import Log
+            from ..env.logs import Log
 
             Log.error("Can not start thread", e)
 
@@ -229,7 +229,7 @@ class Thread(object):
             with self.synch_lock:
                 self.response = Struct(exception=e)
             try:
-                from .logs import Log
+                from ..env.logs import Log
 
                 Log.fatal("Problem in thread {{name}}", {"name": self.name}, e)
             except Exception, f:
@@ -258,7 +258,7 @@ class Thread(object):
                         self.synch_lock.wait(0.5)
 
                 if DEBUG:
-                    from .logs import Log
+                    from ..env.logs import Log
 
                     Log.note("Waiting on thread {{thread}}", {"thread": self.name})
         else:
@@ -366,7 +366,7 @@ class ThreadedQueue(Queue):
             please_stop.on_go(lambda: self.add(Thread.STOP))
 
             #queue IS A MULTI-THREADED QUEUE, SO THIS WILL BLOCK UNTIL THE size ARE READY
-            from .queries import Q
+            from ..queries import Q
 
             for i, g in Q.groupby(self, size=size):
                 try:
@@ -381,7 +381,7 @@ class ThreadedQueue(Queue):
                 except Exception, e:
                     from ..env.logs import Log
 
-                    Log.error("Problem with pushing {{num}} items to data sink", {"num": len(g)})
+                    Log.error("Problem with pushing {{num}} items to data sink", {"num": len(g)}, e)
 
         self.thread = Thread.run("threaded queue", size_pusher)
 

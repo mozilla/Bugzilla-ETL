@@ -14,9 +14,9 @@ import datetime
 import re
 import time
 from .collections.multiset import Multiset
-from .jsons import json_decoder, json_encoder
+from .jsons import json_decoder, json_encoder, replace, ESCAPE
 from .env.logs import Log
-import struct
+from . import struct
 from .strings import expand_template
 
 
@@ -89,6 +89,10 @@ class CNV:
             Log.error("Can not convert {{value}}", {"value": d}, e)
 
     @staticmethod
+    def timedelta2milli(v):
+        return v.total_seconds()
+
+    @staticmethod
     def unix2datetime(u):
         try:
             if u == None:
@@ -99,6 +103,8 @@ class CNV:
 
     @staticmethod
     def milli2datetime(u):
+        if u == None:
+            return None
         return datetime.datetime.utcfromtimestamp(u / 1000)
 
 
@@ -119,7 +125,6 @@ class CNV:
         if value == None:
             return None
         return dict(value.dic)
-
 
     @staticmethod
     def table2list(
@@ -147,8 +152,14 @@ class CNV:
 
     @staticmethod
     def string2quote(value):
-        # return repr(value)
-        return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+        return "\""+ESCAPE.sub(replace, value)+"\""
+
+    @staticmethod
+    def quote2string(value):
+        if value[0] == "\"" and value[-1] == "\"":
+            value = value[1:-1]
+
+        return value.replace("\\\\", "\\").replace("\\\"", "\"").replace("\\'", "'").replace("\\\n", "\n").replace("\\\t", "\t")
 
     #RETURN PYTHON CODE FOR THE SAME
     @staticmethod
@@ -254,6 +265,51 @@ class CNV:
             return _filter(esfilter, row, rownum, rows)
 
         return output
+
+
+    @staticmethod
+    def pipe2value(value):
+        type = value[0]
+        if type == '0':
+            return None
+        if type == 'n':
+            return CNV.value2number(value[1::])
+
+        if type != 's' and type != 'a':
+            Log.error("unknown pipe type")
+
+        # EXPECTING MOST STRINGS TO NOT HAVE ESCAPED CHARS
+        output = unPipe(value)
+        if type == 's':
+            return output
+
+        return [CNV.pipe2value(v) for v in output.split("|")]
+
+
+def unPipe(value):
+    s = value.find("\\", 1)
+    if s < 0:
+        return value[1::]
+
+    result = ""
+    e = 1
+    while True:
+        c = value[s + 1]
+        if c == 'p':
+            result = result + value[e:s] + '|'
+            s += 2
+            e = s
+        elif c == '\\':
+            result = result + value[e:s] + '\\'
+            s += 2
+            e = s
+        else:
+            s += 1
+
+        s = value.find("\\", s)
+        if s < 0:
+            break
+    return result + value[e::]
 
 
 def _filter(esfilter, row, rownum, rows):

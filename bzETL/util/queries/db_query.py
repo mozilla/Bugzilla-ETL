@@ -9,12 +9,12 @@
 #
 from __future__ import unicode_literals
 
-from dzAlerts.util import struct
+from .. import struct
 from ..cnv import CNV
 from ..collections.matrix import Matrix
-from ..sql.db import int_list_packer, SQL
+from .query import Query
+from ..sql.db import int_list_packer, SQL, DB
 from ..env.logs import Log
-from ..queries.cube import Cube
 from ..strings import indent, expand_template
 from ..struct import nvl
 
@@ -25,28 +25,45 @@ class DBQuery(object):
     """
     def __init__(self, db):
         object.__init__(self)
-        self.db = db
+        if isinstance(db, DB):
+            self.db = db
+        else:
+            self.db = DB(db)
 
     def query(self, query, stacked=False):
         """
         TRANSLATE Qb QUERY ON SINGLE TABLE TO SQL QUERY
         """
-        query = Cube(query=query)
+        query = Query(query)
 
         sql, post = self._subquery(query, isolate=False, stacked=stacked)
         query.data = post(sql)
-        return query
+        return query.data
+
+    def update(self, query):
+        self.db.execute("""
+            UPDATE {{table_name}}
+            SET {{assignment}}
+            {{where}}
+        """, {
+            "table_name": query["from"],
+            "assignment": ",".join(self.db.quote_column(k) + "=" + self.db.quote_value(v) for k, v in query.set),
+            "where": self._where2sql(query.where)
+        })
+
 
     def _subquery(self, query, isolate=True, stacked=False):
         if isinstance(query, basestring):
             return self.db.quote_column(query), None
+        if query.name:  # IT WOULD BE SAFER TO WRAP TABLE REFERENCES IN A TYPED OBJECT (Cube, MAYBE?)
+            return self.db.quote_column(query.name), None
 
         if query.edges:
             # RETURN A CUBE
             sql, post = self._grouped(query, stacked)
         else:
             select = struct.listwrap(query.select)
-            if select[0].aggregate:
+            if select[0].aggregate != "none":
                 sql, post = self._aggop(query)
             else:
                 sql, post = self._setop(query)
@@ -236,7 +253,7 @@ class DBQuery(object):
         """
         if not sort:
             return ""
-        return SQL("ORDER BY "+",\n".join([o.value+(" DESC" if o.sort==-1 else "") for o in sort]))
+        return SQL("ORDER BY "+",\n".join([self.db.quote_column(o.field)+(" DESC" if o.sort==-1 else "") for o in sort]))
 
     def _limit2sql(self, limit):
         return SQL("" if not limit else "LIMIT "+str(limit))
@@ -245,7 +262,7 @@ class DBQuery(object):
     def _where2sql(self, where):
         if where == None:
             return ""
-        return SQL("WHERE "+esfilter2sqlwhere(self.db, where))
+        return SQL("WHERE "+_esfilter2sqlwhere(self.db, where))
 
 
 def _isolate(separator, list):
@@ -256,6 +273,9 @@ def _isolate(separator, list):
 
 
 def esfilter2sqlwhere(db, esfilter):
+    return SQL(_esfilter2sqlwhere(db, esfilter))
+
+def _esfilter2sqlwhere(db, esfilter):
     """
     CONVERT ElassticSearch FILTER TO SQL FILTER
     db - REQUIRED TO PROPERLY QUOTE VALUES AND COLUMN NAMES

@@ -11,12 +11,15 @@
 from __future__ import unicode_literals
 from datetime import timedelta
 import re
-from .jsons import json_encoder
+
 from . import struct
 
 
 def datetime(value):
     from .cnv import CNV
+
+    if isinstance(value, datetime):
+        CNV.datetime2string(value, "%Y-%m-%d %H:%M:%S")
 
     if value < 10000000000:
         value = CNV.unix2datetime(value)
@@ -151,13 +154,13 @@ def _simple_expand(template, seq):
             return val
         except Exception, e:
             try:
-                if e.message.find(u"is not JSON serializable"):
+                if e.message.find("is not JSON serializable"):
                     #WORK HARDER
                     val = toString(val)
                     return val
             except Exception, f:
-                from ..env.logs import Log
-
+                from .env.logs import Log
+                val = toString(val)
                 Log.error(u"Can not expand " + "|".join(ops) + u" in template:\n" + indent(template), e)
 
     return pattern.sub(replacer, template)
@@ -167,10 +170,13 @@ def toString(val):
     if val == None:
         return u""
     elif isinstance(val, (dict, list, set)):
+        from .jsons import json_encoder
+
         return json_encoder.encode(val, pretty=True)
     elif isinstance(val, timedelta):
         duration = val.total_seconds()
         return unicode(round(duration, 3))+" seconds"
+
     return unicode(val)
 
 

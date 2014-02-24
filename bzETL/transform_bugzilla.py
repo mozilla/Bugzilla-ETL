@@ -3,8 +3,8 @@
 from datetime import datetime, date
 import re
 from bzETL.util.cnv import CNV
-from bzETL.util.elasticsearch import ElasticSearch
-from bzETL.util.logs import Log
+from bzETL.util.env.elasticsearch import ElasticSearch
+from bzETL.util.env.logs import Log
 from bzETL.util.queries import Q
 
 

@@ -1,10 +1,11 @@
 from bzETL.extract_bugzilla import get_all_cc_changes
-from bzETL.util import startup, struct, crypto
+from bzETL.util.env import startup
+from bzETL.util import struct
 from bzETL.util.cnv import CNV
-from bzETL.util.db import DB
-from bzETL.util.files import File
-from bzETL.util.logs import Log
-from bzETL.util.multiset import Multiset
+from bzETL.util.sql.db import DB
+from bzETL.util.env.files import File
+from bzETL.util.env.logs import Log
+from bzETL.util.collections.multiset import Multiset
 from bzETL.util.queries import Q
 from bzETL.util.struct import nvl, Struct, Null
 from bzETL.util.timer import Timer

@@ -14,7 +14,7 @@ from ..cnv import CNV
 from ..env.logs import Log
 from ..queries import Q
 from ..struct import Struct
-from ..math.randoms import Random
+from ..maths.randoms import Random
 from ..vendor.aespython import key_expander, aes_cipher, cbc_mode
 
 
