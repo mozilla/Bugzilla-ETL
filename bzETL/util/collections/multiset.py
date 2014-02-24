@@ -14,19 +14,24 @@ from __future__ import unicode_literals
 class Multiset(object):
 
     def __new__(cls, list=None, key_field=None, count_field=None, allow_negative=False):
-        if allow_negative:
-            return _NegMultiset(list, key_field, count_field)
-        else:
-            return _Multiset(list, key_field, count_field)
+        try:
+            if allow_negative:
+                return _NegMultiset(list, key_field, count_field)
+            else:
+                return _Multiset(list, key_field, count_field)
+        except Exception, e:
+            from ..env.logs import Log
+
+            Log.error("Not expected", e)
 
 
 class _Multiset(Multiset):
 
-    def __new__(cls, *args, **kwargs):
-        return object.__new__(cls, *args, **kwargs)
+    def __new__(cls, *args):
+        return object.__new__(cls, *args)
 
 
-    def __init__(self, list=None, key_field=None, count_field=None):
+    def __init__(self, list=None, key_field=None, count_field=None, **kwargs):
         if not key_field and not count_field:
             self.dic = dict()
             if list:
@@ -119,7 +124,7 @@ class _NegMultiset(Multiset):
     def __new__(cls, *args, **kwargs):
             return object.__new__(cls, *args, **kwargs)
 
-    def __init__(self, list=None, key_field=None, count_field=None):
+    def __init__(self, list=None, key_field=None, count_field=None, **kwargs):
         if not key_field and not count_field:
             self.dic = dict()
             if list:

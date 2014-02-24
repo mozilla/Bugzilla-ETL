@@ -11,7 +11,7 @@
 from __future__ import unicode_literals
 import sys
 from .cube import Cube
-from ..struct import listwrap
+from ..struct import listwrap, StructList
 from ..env.logs import Log
 from .. import struct
 from ..collections.multiset import Multiset
@@ -31,7 +31,7 @@ def groupby(data, keys=None, size=None, min_size=None, max_size=None, contiguous
         return groupby_min_max_size(data, min_size=min_size, max_size=max_size)
 
     if isinstance(data, Cube):
-        return data.groupby(keys, simple=True)
+        return data.groupby(keys)
 
 
     keys = listwrap(keys)
@@ -71,7 +71,7 @@ def groupby(data, keys=None, size=None, min_size=None, max_size=None, contiguous
             if key in agg:
                 pair = agg[key]
             else:
-                pair = (get_keys(d), [])
+                pair = (get_keys(d), StructList([]))
                 agg[key] = pair
             pair[1].append(d)
 

@@ -15,15 +15,15 @@ import gc
 from bzETL.util.maths import Math
 from bzETL.util.timer import Timer
 from bzETL.util import struct, jsons
-from bzETL.util.logs import Log
+from bzETL.util.env.logs import Log
 from bzETL.util.struct import Struct, nvl
-from bzETL.util.files import File
-from bzETL.util import startup
-from bzETL.util.threads import Queue, Thread, AllThread, Lock, ThreadedQueue
+from bzETL.util.env.files import File
+from bzETL.util.env import startup
+from bzETL.util.thread.threads import Queue, Thread, AllThread, Lock, ThreadedQueue
 from bzETL.util.cnv import CNV
-from bzETL.util.elasticsearch import ElasticSearch
+from bzETL.util.env.elasticsearch import ElasticSearch
 from bzETL.util.queries import Q
-from bzETL.util.db import DB
+from bzETL.util.sql.db import DB
 
 from bzETL import parse_bug_history, transform_bugzilla, extract_bugzilla, alias_analysis
 from extract_bugzilla import get_private_bugs, get_recent_private_attachments, get_recent_private_comments, get_comments, get_comments_by_id, get_recent_private_bugs, get_current_time, get_bugs, get_dependencies, get_flags, get_new_activities, get_bug_see_also, get_attachments, get_tracking_flags, get_keywords, get_cc, get_bug_groups, get_duplicates
@@ -56,7 +56,6 @@ def etl_comments(db, es, param, please_stop):
     with comment_db_cache_lock:
         if not comment_db_cache:
             comment_db = DB(db)
-            comment_db.begin()
             comment_db_cache.append(comment_db)
 
     with comment_db_cache_lock:
@@ -74,12 +73,12 @@ def etl(db, output_queue, param, please_stop):
     """
 
     # CONNECTIONS ARE EXPENSIVE, CACHE HERE
-    with db_cache_lock:
-        if not db_cache:
-            for f in get_stuff_from_bugzilla:
-                db = DB(db)
-                db.begin()
-                db_cache.append(db)
+    with Timer("open connections to db"):
+        with db_cache_lock:
+            if not db_cache:
+                for f in get_stuff_from_bugzilla:
+                    db = DB(db)
+                    db_cache.append(db)
 
     db_results = Queue()
     with db_cache_lock:
@@ -165,24 +164,15 @@ def setup_es(settings, db, es, es_comments):
             schema=CNV.JSON2object(schema)
             schema.settings=jsons.expand_dot(schema.settings)
 
-            # DO NOT ASK FOR TOO MANY REPLICAS
-            health = ElasticSearch.get(settings.es.host + ":" + unicode(settings.es.port) + "/_cluster/health")
-            if schema.settings.index.number_of_replicas >= health.number_of_nodes:
-                Log.warning("Reduced number of replicas: {{from}} requested, {{to}} realized", {
-                    "from": schema.settings.index.number_of_replicas,
-                    "to": health.number_of_nodes-1
-                })
-                schema.settings.index.number_of_replicas = health.number_of_nodes-1
-
             if not settings.es.alias:
                 settings.es.alias = settings.es.index
                 settings.es.index = ElasticSearch.proto_name(settings.es.alias)
-            es = ElasticSearch.create_index(settings.es, schema)
+            es = ElasticSearch.create_index(settings.es, schema, limit_replicas=True)
 
             if not settings.es_comments.alias:
                 settings.es_comments.alias = settings.es_comments.index
                 settings.es_comments.index = ElasticSearch.proto_name(settings.es_comments.alias)
-            es_comments = ElasticSearch.create_index(settings.es_comments, File(settings.es_comments.schema_file).read())
+            es_comments = ElasticSearch.create_index(settings.es_comments, File(settings.es_comments.schema_file).read(), limit_replicas=True)
 
         File(settings.param.first_run_time).write(unicode(CNV.datetime2milli(current_run_time)))
 
@@ -197,10 +187,10 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
 
     #REMOVE PRIVATE BUGS
     private_bugs = get_private_bugs(db, param)
-    still_existing = get_bug_ids(es, {"terms":{"bug_id":private_bugs}})
-    Log.note("Ensure the following private bugs are deleted:\n{{private_bugs}}", {"private_bugs": still_existing})
-
-    for g, delete_bugs in Q.groupby(private_bugs, size=500):
+    for g, delete_bugs in Q.groupby(private_bugs, size=1000):
+        still_existing = get_bug_ids(es, {"terms": {"bug_id": delete_bugs}})
+        if still_existing:
+            Log.note("Ensure the following private bugs are deleted:\n{{private_bugs|indent}}", {"private_bugs": still_existing})
         es.delete_record({"terms": {"bug_id": delete_bugs}})
         es_comments.delete_record({"terms": {"bug_id": delete_bugs}})
 
@@ -468,12 +458,10 @@ def get_max_bug_id(es):
 def close_db_connections():
     (globals()["db_cache"], temp) = ([], db_cache)
     for db in temp:
-        db.commit()
         db.close()
 
     (globals()["comment_db_cache"], temp) = ([], comment_db_cache)
     for db in temp:
-        db.commit()
         db.close()
 
 

@@ -8,10 +8,11 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 from datetime import timedelta
-import time
-from . import struct
-from .struct import nvl
-from .env.logs import Log
+from time import clock
+
+from .. import struct
+from ..struct import nvl, Struct
+from ..env.logs import Log
 
 
 class Timer:
@@ -25,16 +26,16 @@ class Timer:
 
     def __init__(self, description, param=None):
         self.template = description
-        self.param = nvl(param, {})
+        self.param = nvl(param, Struct())
 
     def __enter__(self):
-        Log.note("Timer start: " + self.template, self.param)
+        Log.note("Timer start: " + self.template, self.param, stack_depth=1)
 
-        self.start = time.clock()
+        self.start = clock()
         return self
 
     def __exit__(self, type, value, traceback):
-        self.end = time.clock()
+        self.end = clock()
         self.interval = self.end - self.start
         param = struct.wrap(self.param)
         param.duration = timedelta(seconds=self.interval)

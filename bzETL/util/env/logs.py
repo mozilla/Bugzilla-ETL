@@ -14,10 +14,10 @@ from datetime import datetime, timedelta
 import traceback
 import logging
 import sys
-import struct
 
+from .. import struct
 from ..thread import threads
-from ..struct import listwrap, nvl
+from ..struct import listwrap, nvl, Struct
 from ..strings import indent, expand_template
 from ..thread.threads import Thread
 
@@ -27,18 +27,20 @@ ERROR = "ERROR"
 WARNING = "WARNING"
 NOTE = "NOTE"
 
-main_log = None
-logging_multi = None
-
 
 class Log(object):
     """
     FOR STRUCTURED LOGGING AND EXCEPTION CHAINING
     """
+    trace = False
+    main_log = None
+    logging_multi = None
+
 
     @classmethod
     def new_instance(cls, settings):
         settings = struct.wrap(settings)
+
         if settings["class"]:
             if not settings["class"].startswith("logging.handlers."):
                 return make_log_from_settings(settings)
@@ -55,43 +57,56 @@ class Log(object):
 
     @classmethod
     def add_log(cls, log):
-        logging_multi.add_log(log)
+        cls.logging_multi.add_log(log)
 
-    @staticmethod
-    def debug(template=None, params=None):
+    @classmethod
+    def debug(cls, template=None, params=None):
         """
         USE THIS FOR DEBUGGING (AND EVENTUAL REMOVAL)
         """
-        Log.note(nvl(template, ""), params)
+        Log.note(nvl(template, ""), params, stack_depth=1)
 
-    @staticmethod
-    def println(template, params=None):
-        Log.note(template, params)
+    @classmethod
+    def println(cls, template, params=None):
+        Log.note(template, params, stack_depth=1)
 
-    @staticmethod
-    def note(template, params=None):
-        template = "{{log_timestamp}} - " + template
-        params = nvl(params, {}).copy()
+    @classmethod
+    def note(cls, template, params=None, stack_depth=0):
+        # USE replace() AS POOR MAN'S CHILD TEMPLATE
 
-        #NICE TO GATHER MANY MORE ITEMS FOR LOGGING (LIKE STACK TRACES AND LINE NUMBERS)
-        params["log_timestamp"] = datetime.utcnow().strftime("%H:%M:%S")
+        log_params = Struct(
+            template=template,
+            params=nvl(params, {}).copy(),
+            timestamp=datetime.utcnow(),
+        )
+        if cls.trace:
+            log_template = "{{timestamp|datetime}} - {{location.file}}:{{location.line}} ({{location.method}}) - " + template.replace("{{", "{{params.")
+            f = sys._getframe(stack_depth + 1)
+            log_params.location = {
+                "line": f.f_lineno,
+                "file": f.f_code.co_filename,
+                "method": f.f_code.co_name
+            }
+        else:
+            log_template = "{{timestamp|datetime}} - " + template.replace("{{", "{{params.")
 
-        main_log.write(template, params)
+        cls.main_log.write(log_template, log_params)
 
-    @staticmethod
-    def warning(template, params=None, cause=None):
+    @classmethod
+    def warning(cls, template, params=None, cause=None):
         if isinstance(params, BaseException):
             cause = params
             params = None
 
         if cause and not isinstance(cause, Except):
-            cause = Except(WARNING, unicode(cause), trace=format_trace(traceback.extract_tb(sys.exc_info()[2]), 0))
+            cause = Except(WARNING, unicode(cause), trace=extract_tb(0))
 
-        e = Except(WARNING, template, params, cause, format_trace(traceback.extract_stack(), 1))
+        e = Except(WARNING, template, params, cause, extract_stack(1))
         Log.note(unicode(e))
 
-    @staticmethod
+    @classmethod
     def error(
+            cls,
             template, #human readable template
             params=None, #parameters for template
             cause=None, #pausible cause
@@ -111,14 +126,15 @@ class Log(object):
         elif isinstance(cause, Except):
             cause = [cause]
         else:
-            cause = [Except(ERROR, unicode(cause), trace=format_trace(traceback.extract_tb(sys.exc_info()[2]), offset))]
+            cause = [Except(ERROR, unicode(cause), trace=extract_tb(offset))]
 
-        trace = format_trace(traceback.extract_stack(), 1 + offset)
+        trace = extract_stack(1 + offset)
         e = Except(ERROR, template, params, cause, trace)
         raise e
 
-    @staticmethod
+    @classmethod
     def fatal(
+            cls,
             template, #human readable template
             params=None, #parameters for template
             cause=None, #pausible cause
@@ -138,43 +154,108 @@ class Log(object):
         elif isinstance(cause, Except):
             cause = [cause]
         else:
-            cause = [Except(ERROR, unicode(cause), trace=format_trace(traceback.extract_tb(sys.exc_info()[2]), offset))]
+            cause = [Except(ERROR, unicode(cause), trace=extract_tb(offset))]
 
-        trace = format_trace(traceback.extract_stack(), 1 + offset)
+        trace = extract_stack(1 + offset)
         e = Except(ERROR, template, params, cause, trace)
         sys.stderr.write(str(e))
 
 
     #RUN ME FIRST TO SETUP THE THREADED LOGGING
-    @staticmethod
-    def start(settings=None):
+    @classmethod
+    def start(cls, settings=None):
         ##http://victorlin.me/2012/08/good-logging-practice-in-python/
         if not settings:
             return
+
+        cls.trace = cls.trace | nvl(settings.trace, False)
+
         if not settings.log:
             return
 
-        globals()["logging_multi"] = Log_usingMulti()
-        globals()["main_log"] = Log_usingThread(logging_multi)
+        cls.logging_multi = Log_usingMulti()
+        cls.main_log = Log_usingThread(cls.logging_multi)
 
         for log in listwrap(settings.log):
             Log.add_log(Log.new_instance(log))
 
-    @staticmethod
-    def stop():
-        main_log.stop()
+    @classmethod
+    def stop(cls):
+        cls.main_log.stop()
 
     def write(self):
         Log.error("not implemented")
 
+def extract_stack(start=0):
+    """
+    SNAGGED FROM traceback.py
+    Extract the raw traceback from the current stack frame.
 
-def format_trace(tbs, trim=0):
-    tbs.reverse()
-    list = []
-    for filename, lineno, name, line in tbs[trim:]:
-        item = 'at File "%s", line %d, in %s\n' % (filename.replace("\\", "/"), lineno, name)
-        list.append(item)
-    return "".join(list)
+    Each item in the returned list is a quadruple (filename,
+    line number, function name, text), and the entries are in order
+    from newest to oldest
+    """
+    try:
+        raise ZeroDivisionError
+    except ZeroDivisionError:
+        trace = sys.exc_info()[2]
+        f = trace.tb_frame.f_back
+
+    for i in range(start):
+        f = f.f_back
+
+    stack = []
+    n = 0
+    while f is not None:
+        stack.append({
+            "depth": n,
+            "line": f.f_lineno,
+            "file": f.f_code.co_filename,
+            "method": f.f_code.co_name
+        })
+        f = f.f_back
+        n += 1
+    return stack
+
+
+def extract_tb(start):
+    """
+    SNAGGED FROM traceback.py
+
+    Return list of up to limit pre-processed entries from traceback.
+
+    This is useful for alternate formatting of stack traces.  If
+    'limit' is omitted or None, all entries are extracted.  A
+    pre-processed stack trace entry is a quadruple (filename, line
+    number, function name, text) representing the information that is
+    usually printed for a stack trace.
+    """
+    tb = sys.exc_info()[2]
+    for i in range(start):
+        tb = tb.tb_next
+
+    trace = []
+    n = 0
+    while tb is not None:
+        f = tb.tb_frame
+        trace.append({
+            "depth": n,
+            "file": f.f_code.co_filename,
+            "line": tb.tb_lineno,
+            "method": f.f_code.co_name
+        })
+        tb = tb.tb_next
+        n += 1
+    trace.reverse()
+    return trace
+
+
+def format_trace(tbs, start=0):
+    trace = []
+    for d in tbs[start:]:
+        item = expand_template('at File {{file}}, line {{line}}, in {{method}}\n', d)
+        trace.append(item)
+    return "".join(trace)
 
 
 class Except(Exception):
@@ -204,7 +285,7 @@ class Except(Exception):
             output = expand_template(output, self.params)
 
         if self.trace:
-            output += "\n" + indent(self.trace)
+            output += "\n" + indent(format_trace(self.trace))
 
         if self.cause:
             output += "\ncaused by\n\t" + "\nand caused by\n\t".join([c.__str__() for c in self.cause])
@@ -279,8 +360,16 @@ def make_log_from_settings(settings):
     path = settings["class"].split(".")
     class_name = path[-1]
     path = ".".join(path[:-1])
-    temp = __import__(path, globals(), locals(), [class_name], -1)
-    constructor = object.__getattribute__(temp, class_name)
+    constructor = None
+    try:
+        temp = __import__(path, globals(), locals(), [class_name], -1)
+        constructor = object.__getattribute__(temp, class_name)
+    except Exception, e:
+        if settings.stream and not constructor:
+            #PROVIDE A DEFAULT STREAM HANLDER
+            constructor = Log_usingStream
+        else:
+            Log.error("Can not find class {{class}}", {"class": path}, e)
 
     #IF WE NEED A FILE, MAKE SURE DIRECTORY EXISTS
     if settings.filename:
@@ -323,7 +412,7 @@ def time_delta_pusher(please_stop, appender, queue, interval):
                         lines.append(expand_template(log.get("template", None), log.get("params", None)))
                 except Exception, e:
                     sys.stderr.write("Trouble formatting logs: " + e.message)
-                    # SWALLOW ERROR, GOT TO KEEP RUNNNIG
+                    # SWALLOW ERROR, GOT TO KEEP RUNNING
             try:
                 if DEBUG_LOGGING and please_stop:
                     sys.stdout.write("Call to appender with " + str(len(lines)) + " lines\n")
@@ -477,5 +566,5 @@ class Log_usingMulti(BaseLog):
                 pass
 
 
-if not main_log:
-    main_log = Log_usingStream("sys.stdout")
+if not Log.main_log:
+    Log.main_log = Log_usingStream("sys.stdout")

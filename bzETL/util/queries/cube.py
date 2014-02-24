@@ -10,39 +10,64 @@
 from __future__ import unicode_literals
 from .. import struct
 from ..collections.matrix import Matrix
+from ..collections import MAX, OR
+from ..maths import Math
 from ..env.logs import Log
-from ..struct import nvl, Struct
 
 
-class Cube(Struct):
-    def __init__(self, query=None):
-        Struct.__init__(self)
+class Cube(object):
+    """
+    A CUBE IS LIKE A NUMPY ARRAY, ONLY WITH THE DIMENSIONS TYPED AND NAMED.
+    CUBES ARE BETTER THAN PANDAS BECAUSE THEY DEAL WITH NULLS GRACEFULLY
+    """
 
-        query = struct.wrap(query)
-        # if edges == None:
-        #     self.edges = [{"name": "index", "domain": {"type": "numeric", "min": 0, "max": len(data), "interval": 1}}]
-        #     self.data = data
-        #     self.select = columns
-        #     return
+    def __init__(self, select, edges, data, frum=None):
+        """
+        data IS EXPECTED TO BE A dict TO MATRICES, BUT OTHER COLLECTIONS ARE
+        ALLOWED, USING THE select AND edges TO DESCRIBE THE data
+        """
 
-        edges = [_normalize_edge(e) for e in struct.listwrap(query.edges)]
-
-        select = query.select
-        if isinstance(select, list):
-            select = [_normalize_select(s) for s in select]
-        else:
-            select = _normalize_select(select)
-
-        limit = query.limit
-        sort = _normalize_sort(query.sort)
-
-        self["from"] = (query["from"] if isinstance(query["from"], basestring) else Cube(query["from"]))
-        self.name = query.name
-        self.edges = edges
+        self.is_value = False if isinstance(select, list) else True
         self.select = select
-        self.where = query.where
-        self.limit = limit
-        self.sort = sort
+
+        #ENSURE frum IS PROPER FORM
+        if isinstance(select, list):
+            try:
+                for k, v in data.items():
+                    if not isinstance(v, Matrix):
+                        raise ZeroDivisionError
+            except Exception, e:
+                Log.error("Expecting data to be a dict with Matrix values")
+
+        if not edges:
+            if isinstance(data, dict):
+                # EXPECTING NO MORE THAN ONE rownum EDGE IN THE DATA
+                length = MAX([len(v) for v in data.values()])
+                if length >= 1:
+                    self.edges = [{"name": "rownum", "domain": {"type": "index"}}]
+                else:
+                    self.edges = []
+            elif isinstance(data, list):
+                if isinstance(select, list):
+                    Log.error("not expecting a list of records")
+
+                data = {select.name: Matrix.wrap(data)}
+                self.edges = [{"name": "rownum", "domain": {"type": "index"}}]
+            elif isinstance(data, Matrix):
+                if isinstance(select, list):
+                    Log.error("not expecting a list of records")
+
+                data = {select.name: data}
+            else:
+                if isinstance(select, list):
+                    Log.error("not expecting a list of records")
+
+                data = {select.name: Matrix(value=data)}
+                self.edges = []
+        else:
+            self.edges = edges
+
+        self.data = data
 
     def __len__(self):
         """
@@ -51,152 +76,96 @@ class Cube(Struct):
         if not self.edges:
             return 1
 
-        return len(self.data)
+        return len(self.data.values()[0])
 
     def __iter__(self):
-        return self.data.__iter__()
+        if self.is_value:
+            return self.data[self.select.name].__iter__()
+
+        if len(self.edges) == 1 and struct.wrap(self.edges[0]).domain.type == "index":
+            # ITERATE AS LIST OF RECORDS
+            keys = list(self.data.keys())
+            output = ({k: v for k, v in zip(keys, r)} for r in zip(*self.data.values()))
+            return output
+
+        Log.error("This is a multicube")
+
+    @property
+    def value(self):
+        if self.edges:
+            Log.error("can not get value of with dimension")
+        if isinstance(self.select, list):
+            Log.error("can not get value of multi-valued cubes")
+        return self.data[self.select.name].cube
+
+    def __lt__(self, other):
+        return self.value < other
+
+    def __gt__(self, other):
+        return self.value > other
+
+    def __eq__(self, other):
+        return self.value == other
+
+    def __eq__(self, other):
+        if other == None:
+            return False
+        return self.value == other
+
+    def __getitem__(self, item):
+        return self.data[item]
+
+    def __getattr__(self, item):
+        return self.data[item]
 
     def get_columns(self):
-        return self.columns
+        return self.edges + struct.listwrap(self.select)
 
-    def groupby(self, edges, simple=False):
+    def _select(self, select):
+        selects = struct.listwrap(select)
+        is_aggregate = OR(s.aggregate != None and s.aggregate != "none" for s in selects)
+        if is_aggregate:
+            values = {s.name: Matrix(value=self.data[s.value].aggregate(s.aggregate)) for s in selects}
+            return Cube(select, [], values)
+        else:
+            values = {s.name: self.data[s.value] for s in selects}
+            return Cube(select, self.edges, values)
+
+    def groupby(self, edges):
         """
         SLICE THIS CUBE IN TO ONES WITH LESS DIMENSIONALITY
         simple==True WILL HAVE GROUPS BASED ON PARTITION VALUE, NOT PARTITION OBJECTS
         """
-        edges = struct.wrap([_normalize_edge(e) for e in struct.listwrap(edges)])
-        remainder = [e for e in self.edges if e.value not in edges.value]
+        stacked = [e for e in self.edges if e in edges]
+        remainder = [e for e in self.edges if e not in edges]
+        selector = [1 if e in edges else 0 for e in self.edges]
 
-        if len(edges) + len(remainder) != len(self.edges):
+        if len(stacked) + len(remainder) != len(self.edges):
             Log.error("can not find some edges to group by")
 
-        #offsets WILL SERVE TO MASK DIMS WE ARE NOT GROUPING BY, AND SERVE AS RELATIVE INDEX FOR EACH COORDINATE
-        offsets = [self.data.dims[i] if e in edges else 0 for i, e in enumerate(self.edges)]
-        new_dim = []
-        acc = 1
-        for i in range(len(offsets)-1, -1, -1):
-            if offsets[i] == 0:
-                new_dim.insert(0, self.data.cube.dims[i])
-            else:
-                size = offsets[i]
-                offsets[i] = acc
-                acc *= size
+        selects = struct.listwrap(self.select)
+        index, v = zip(*self.data[selects[0].name].groupby(selector))
 
-        if not new_dim:
-            output = [[None, None] for i in range(acc)]
-            _stack(self.edges, self.data.cube, offsets, 0, output, Struct(), simple)
+        coord = struct.wrap([{e.name: e.domain.partitions[c[i]] for i, e in enumerate(self.edges) if c[i] != -1} for c in index])
+
+        values = [v]
+        for s in selects[1::]:
+            i, v = zip(*self.data[s.name].group_by(selector))
+            values.append(v)
+
+        if isinstance(self.select, list):
+            output = zip(coord, [Cube(self.select, remainder, {s.name: v[i] for i, s in enumerate(selects)}) for v in zip(*values)])
         else:
-            output = [[None, Matrix(new_dim)] for i in range(acc)]
-            _groupby(self.edges, self.data.cube, offsets, 0, output, Struct(), [], simple)
+            if not remainder:
+                output = zip(coord, [v[0] for v in zip(*values)])
+            else:
+                output = zip(coord, [Cube(self.select, remainder, v[0]) for v in zip(*values)])
 
         return output
 
-def _groupby(edges, cube, index, offset, output, group, new_coord, simple):
-    if not edges:
-        output[offset][0] = group
-        output[offset][1][new_coord] = cube
-
-    if index[0]:
-        for i, c in enumerate(cube):
-            g = group.copy()
-            if simple:
-                g[edges[0].name] = edges[0].domain.partitions[0].value
-            else:
-                g[edges[0].name] = edges[0].domain.partitions[0]
-            _groupby(edges[1::], c, index[1::], offset+i*index[0], output, g, new_coord, simple)
-    else:
-        for i, c in enumerate(cube):
-            _groupby(edges[1::], c, index[1::], offset, output, group, new_coord+[i], simple)
-
-
-def _stack(edges, cube, index, offset, output, group, simple):
-    """
-    WHEN groupby ALL EDGES IN A CUBE, AND ZERO DIMENSIONS REMAIN
-    """
-    if not edges:
-        output[offset][0] = group
-        output[offset][1] = cube
-        return
-
-    if len(cube) == 1:
-        if simple:
-            group[edges[0].name] = edges[0].domain.partitions[0].value
+    def __str__(self):
+        if self.is_value:
+            return str(self.data)
         else:
-            group[edges[0].name] = edges[0].domain.partitions[0]
-        _stack(edges[1::], cube[0], index[1::], offset, output, group, simple)
-    else:
-        for i, c in enumerate(cube):
-            g = group.copy()
-            if simple:
-                g[edges[0].name] = edges[0].domain.partitions[0].value
-            else:
-                g[edges[0].name] = edges[0].domain.partitions[0]
-            _stack(edges[1::], c, index[1::], offset+i*index[0], output, g, simple)
+            return str(self.data)
 
-
-
-
-
-class Domain():
-    def __init__(self):
-        pass
-
-
-    def part2key(self, part):
-        pass
-
-
-    def part2label(self, part):
-        pass
-
-
-    def part2value(self, part):
-        pass
-
-
-def _normalize_select(select):
-    if isinstance(select, basestring):
-        return Struct(name=select, value=select)
-    else:
-        if not select.name:
-            select = select.copy()
-            select.name = select.value
-            return select
-        return select
-
-
-def _normalize_edge(edge):
-    if isinstance(edge, basestring):
-        return Struct(name=edge, value=edge, domain=_normalize_domain())
-    else:
-        return Struct(name=nvl(edge.ame, edge.value), value=edge.value, domain=_normalize_domain(edge.domain))
-
-
-def _normalize_domain(domain=None):
-    if domain == None:
-        return {"type": "default"}
-    if not domain.name:
-        domain = domain.copy()
-        domain.name = domain.type
-        return domain
-    return domain
-
-
-def _normalize_sort(sort=None):
-    output = []
-    for s in struct.listwrap(sort):
-        if isinstance(s, basestring):
-            output.append({"value": s, "sort": 1})
-        else:
-            output.append({"value": s.value, "sort": nvl(sort_direction[s.sort], 1)})
-    return output
-
-
-sort_direction = {
-    "asc": 1,
-    "desc": -1,
-    "none": 0,
-    1: 1,
-    0: 0,
-    -1: -1
-}

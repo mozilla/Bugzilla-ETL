@@ -34,7 +34,7 @@ class UniqueIndex(object):
             if isinstance(key, dict):
                 key = struct.wrap(key)
                 key = [key[k] for k in self._keys]
-            elif not isinstance(key, list):
+            elif not isinstance(key, (list, tuple)):
                 key = [key]
 
             d = self._data

@@ -14,7 +14,7 @@ from datetime import datetime
 import subprocess
 from pymysql import connect, InterfaceError
 from .. import struct
-from ..math.maths import Math
+from ..maths import Math
 from ..strings import expand_template
 from ..struct import nvl
 from ..cnv import CNV
@@ -75,7 +75,7 @@ class DB(object):
                 use_unicode=True
             )
         except Exception, e:
-            if self.settings.host.find("://")==-1:
+            if self.settings.host.find("://") == -1:
                 Log.error(u"Failure to connect", e)
             else:
                 Log.error(u"Failure to connect.  PROTOCOL PREFIX IS PROBABLY BAD", e)
@@ -447,8 +447,8 @@ class DB(object):
             command = \
                 "INSERT INTO " + self.quote_column(table_name) + "(" + \
                 ",".join([self.quote_column(k) for k in keys]) + \
-                ") VALUES " + ",".join([
-                    "(" + ",".join([self.quote_value(r[k]) for k in keys]) + ")\n"
+                ") VALUES " + ",\n".join([
+                    "(" + ",".join([self.quote_value(r[k]) for k in keys]) + ")"
                     for r in records
                 ])
             self.execute(command)
@@ -546,8 +546,6 @@ class DB(object):
         sort = Q.normalize_sort_parameters(sort)
         return ",\n".join([self.quote_column(s.field) + (" DESC" if s.sort == -1 else " ASC") for s in sort])
 
-    def esfilter2sqlwhere(self, esfilter):
-        return SQL(self._filter2where(esfilter))
 
 
 
@@ -567,6 +565,10 @@ class SQL(unicode):
         unicode.__init__(self)
         self.template = template
         self.param = param
+
+    @property
+    def sql(self):
+        return expand_template(self.template, self.param)
 
     def __str__(self):
         Log.error("do not do this")

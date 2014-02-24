@@ -10,47 +10,62 @@
 
 from __future__ import unicode_literals
 import __builtin__
+
 from . import group_by
-from ..collections.matrix import Matrix
+from ..queries import flat_list, query
+from ..queries.filters import TRUE_FILTER, FALSE_FILTER
+from ..queries.query import Query, _normalize_select, _normalize_selects
 from ..queries.cube import Cube
 from .index import UniqueIndex, Index
 from .flat_list import FlatList
-from ....math.maths import Math
-from ....env.logs import Log
-from ..struct import nvl, listwrap, EmptyList
+from ..maths import Math
+from ..env.logs import Log
+from ..struct import nvl, listwrap, EmptyList, split_field
 from .. import struct
-from ..struct import Struct, Null
+from ..struct import Struct, Null, StructList
 
 
 # A COLLECTION OF DATABASE OPERATORS (RELATIONAL ALGEBRA OPERATORS)
 
 
 def run(query):
-    query = struct.wrap(query)
-    if isinstance(query["from"], list):
-        _from = query["from"]
+    query = Query(query)
+    frum = query["from"]
+    if isinstance(frum, list):
+        pass
+    elif isinstance(frum, Cube):
+        pass
+    elif isinstance(frum, Query):
+        frum = run(frum)
     else:
-        _from = run(query["from"])
+        Log.error("Do ont know how to handle")
 
-    if query.edges != None:
+    if query.edges:
         Log.error("not implemented yet")
 
-    if query.filter != None or query.esfilter != None:
-        Log.error("use 'where' clause")
+    try:
+        if query.filter != None or query.esfilter != None:
+            Log.error("use 'where' clause")
+    except Exception, e:
+        pass
 
-    for param in listwrap(query.window):
-        window(_from, param)
+    if query.window:
+        if isinstance(frum, Cube):
+            frum = StructList(list(frum))  # TRY TO CAST TO LIST OF RECORDS
 
-    if query.where != None:
-        _from = filter(_from, query.where)
+        for param in query.window:
+            window(frum, param)
 
-    if query.sort != None:
-        _from = sort(_from, query.sort)
+    if query.where is not TRUE_FILTER:
+        frum = filter(frum, query.where)
 
-    if query.select != None:
-        _from = select(_from, query.select)
+    if query.sort:
+        frum = sort(frum, query.sort)
 
-    return _from
+    if query.select:
+        frum = select(frum, query.select)
+
+    return frum
 
 
 groupby = group_by.groupby
@@ -125,28 +140,10 @@ def map2set(data, relation):
 def select(data, field_name):
 #return list with values from field_name
     if isinstance(data, Cube):
-        if isinstance(data.data, Matrix):
-            Log.error("Do not know how to deal with cubes yet")
-        return select(data.data, field_name)
+        return data._select(_normalize_selects(field_name))
 
     if isinstance(data, FlatList):
-        if isinstance(field_name, basestring):
-            # RETURN LIST OF VALUES
-            if field_name.find(".") < 0:
-                if data.path[0] == field_name:
-                    return [d[1] for d in data.data]
-                else:
-                    return [d[0][field_name] for d in data.data]
-            else:
-                keys = struct.split_field(field_name)
-                depth = nvl(Math.min([i for i, (k, p) in enumerate(zip(keys, data.path)) if k != p]), len(data.path)) #LENGTH OF COMMON PREFIX
-                short_keys = keys[depth:]
-
-                output = []
-                _select1((d[depth] for d in data.data), short_keys, 0, output)
-                return output
-
-        Log.error("multiselect over FlatList not supported")
+        return data.select(field_name)
 
     if isinstance(field_name, dict) and "value" in field_name:
         # SIMPLIFY {"value":value} AS STRING
@@ -154,24 +151,32 @@ def select(data, field_name):
 
     # SIMPLE PYTHON ITERABLE ASSUMED
     if isinstance(field_name, basestring):
-        if field_name.find(".") < 0:
-            return [d[field_name] for d in data]
+        if len(split_field(field_name)) == 1:
+            return StructList([d[field_name] for d in data])
         else:
-            keys = struct.split_field(field_name)
+            keys = split_field(field_name)
             output = []
-            _select1(data, keys, 0, output)
+            flat_list._select1(data, keys, 0, output)
             return output
+    elif isinstance(field_name, list):
+        keys = [_select_a_field(f) for f in field_name]
+        return _select(Struct(), data, keys, 0)
+    else:
+        keys = [_select_a_field(field_name)]
+        result = _select(Struct(), data, keys, 0)
+        output = select(result, field_name.value)
+        return output
 
-    keys = [_select_a_field(f) for f in field_name]
-    return _select(Struct(), data, keys, 0)
 
 
 def _select_a_field(field):
     if isinstance(field, basestring):
-        return struct.wrap({"name": field, "value": struct.split_field(field)})
-    else:
+        return struct.wrap({"name": field, "value": split_field(field)})
+    elif isinstance(field.value, basestring):
         field = struct.wrap(field)
-        return struct.wrap({"name": field.name, "value": struct.split_field(field.value)})
+        return struct.wrap({"name": field.name, "value": split_field(field.value)})
+    else:
+        return struct.wrap({"name": field.name, "value": field.value})
 
 
 def _select(template, data, fields, depth):
@@ -200,6 +205,10 @@ def go_deep(v, field, depth, record):
     field = {"name":name, "value":["attribute", "path"]}
     r[field.name]=v[field.value], BUT WE MUST DEAL WITH POSSIBLE LIST IN field.value PATH
     """
+    if hasattr(field.value, '__call__'):
+        record[field.name]=field.value(v)
+        return 0, None
+
     for i, f in enumerate(field.value[depth:len(field.value) - 1:]):
         v = v[f]
         if isinstance(v, list):
@@ -209,22 +218,6 @@ def go_deep(v, field, depth, record):
     record[field.name] = v[f]
     return 0, None
 
-
-def _select1(data, field, depth, output):
-    """
-    SELECT A SINGLE FIELD
-    """
-    for d in data:
-        for i, f in enumerate(field[depth:]):
-            d = d[f]
-            if d == None:
-                output.append(None)
-                break
-            elif isinstance(d, list):
-                _select1(d, field, i + 1, output)
-                break
-        else:
-            output.append(d)
 
 
 def get_columns(data):
@@ -302,22 +295,6 @@ def unstack(data, keys=None, column=None, value=None):
     return struct.wrap(output)
 
 
-def normalize_sort_parameters(fieldnames):
-    """
-    CONVERT SORT PARAMETERS TO A NORMAL FORM SO EASIER TO USE
-    """
-    if fieldnames == None:
-        return EmptyList
-
-    formal = []
-    for f in listwrap(fieldnames):
-        if isinstance(f, basestring):
-            f = {"field": f, "sort": 1}
-        formal.append(f)
-
-    return struct.wrap(formal)
-
-
 def sort(data, fieldnames=None):
     """
     PASS A FIELD NAME, OR LIST OF FIELD NAMES, OR LIST OF STRUCTS WITH {"field":field_name, "sort":direction}
@@ -329,7 +306,9 @@ def sort(data, fieldnames=None):
         if fieldnames == None:
             return struct.wrap(sorted(data))
 
-        if not isinstance(fieldnames, list):
+        fieldnames = struct.listwrap(fieldnames)
+        if len(fieldnames) == 1:
+            fieldnames = fieldnames[0]
             #SPECIAL CASE, ONLY ONE FIELD TO SORT BY
             if isinstance(fieldnames, basestring):
                 def comparer(left, right):
@@ -339,12 +318,11 @@ def sort(data, fieldnames=None):
             else:
                 #EXPECTING {"field":f, "sort":i} FORMAT
                 def comparer(left, right):
-                    return fieldnames["sort"] * cmp(nvl(left, Struct())[fieldnames["field"]],
-                        nvl(right, Struct())[fieldnames["field"]])
+                    return fieldnames["sort"] * cmp(nvl(left, Struct())[fieldnames["field"]], nvl(right, Struct())[fieldnames["field"]])
 
                 return struct.wrap(sorted(data, cmp=comparer))
 
-        formal = normalize_sort_parameters(fieldnames)
+        formal = query._normalize_sort(fieldnames)
 
         def comparer(left, right):
             left = nvl(left, Struct())
@@ -370,6 +348,8 @@ def sort(data, fieldnames=None):
         Log.error("Problem sorting\n{{data}}", {"data": data}, e)
 
 
+
+
 def add(*values):
     total = Null
     for v in values:
@@ -385,6 +365,9 @@ def filter(data, where):
     """
     where  - a function that accepts (record, rownum, rows) and returns boolean
     """
+    if isinstance(data, Cube):
+        Log.error("Do not know how to handle")
+
     return drill_filter(where, data)
 
 
@@ -401,7 +384,7 @@ def drill_filter(esfilter, data):
         """
         RETURN (first, rest) OF fieldname
         """
-        col = struct.split_field(fieldname)
+        col = split_field(fieldname)
         d = data[col[0]]
         if isinstance(d, list) and len(col) > 1:
             if len(primary_column) <= depth:
@@ -429,6 +412,11 @@ def drill_filter(esfilter, data):
         """
         PARTIAL EVALUATE THE filter BASED ON data GIVEN
         """
+        if filter is TRUE_FILTER:
+            return True
+        if filter is FALSE_FILTER:
+            return False
+
         if "and" in filter:
             result = True
             output = []
@@ -633,24 +621,24 @@ def wrap_function(func):
 
 def window(data, param):
     """
-    MAYBE WE CAN DO THIS WITH NUMPY (no, the edges of windows are not graceful with numpy??
+    MAYBE WE CAN DO THIS WITH NUMPY (no, the edges of windows are not graceful with numpy)
     data - list of records
     """
     name = param.name            # column to assign window function result
     edges = param.edges          # columns to gourp by
     sortColumns = param.sort            # columns to sort by
-    value = wrap_function(param.value) # function that takes a record and returns a value (for aggregation)
+    calc_value = wrap_function(param.value) # function that takes a record and returns a value (for aggregation)
     aggregate = param.aggregate  # WindowFunction to apply
     _range = param.range          # of form {"min":-10, "max":0} to specify the size and relative position of window
 
-    if aggregate == None and edges == None:
+    if not aggregate and not edges:
         #SIMPLE CALCULATED VALUE
         for rownum, r in enumerate(data):
-            r[name] = value(r, rownum, data)
+            r[name] = calc_value(r, rownum, data)
         return
 
     for rownum, r in enumerate(data):
-        r["__temp__"] = value(r, rownum, data)
+        r["__temp__"] = calc_value(r, rownum, data)
 
     for keys, values in groupby(data, edges):
         if not values:
