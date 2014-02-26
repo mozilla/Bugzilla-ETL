@@ -73,9 +73,9 @@ def etl(db, output_queue, param, please_stop):
     """
 
     # CONNECTIONS ARE EXPENSIVE, CACHE HERE
-    with Timer("open connections to db"):
-        with db_cache_lock:
-            if not db_cache:
+    with db_cache_lock:
+        if not db_cache:
+            with Timer("open connections to db"):
                 for f in get_stuff_from_bugzilla:
                     db = DB(db)
                     db_cache.append(db)
@@ -367,7 +367,7 @@ def main(settings, es=None, es_comments=None):
 
     #MAKE HANDLES TO CONTAINERS
     try:
-        with DB(settings.bugzilla) as db:
+        with DB(settings.bugzilla, readonly=True) as db:
             current_run_time, es, es_comments, last_run_time = setup_es(settings, db, es, es_comments)
 
             with ThreadedQueue(es, size=1000) as output_queue:
