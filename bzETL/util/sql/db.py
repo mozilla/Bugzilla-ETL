@@ -36,11 +36,19 @@ class DB(object):
 
     """
 
-    def __init__(self, settings, schema=None, preamble=None):
+    def __init__(self, settings, schema=None, preamble=None, readonly=False):
         """
         OVERRIDE THE settings.schema WITH THE schema PARAMETER
         preamble WILL BE USED TO ADD COMMENTS TO THE BEGINNING OF ALL SQL
         THE INTENT IS TO HELP ADMINISTRATORS ID THE SQL RUNNING ON THE DATABASE
+
+        schema - NAME OF DEFAULT database/schema IN QUERIES
+
+        preamble - A COMMENT TO BE ADDED TO EVERY SQL STATEMENT SENT
+
+        readonly - USED ONLY TO INDICATE IF A TRANSACTION WILL BE OPENED UPON
+        USE IN with CLAUSE, YOU CAN STILL SEND UPDATES, BUT MUST OPEN A
+        TRANSACTION BEFORE YOU DO
         """
         if settings == None:
             return
@@ -59,6 +67,7 @@ class DB(object):
         else:
             self.preamble = indent(preamble, "# ").strip() + "\n"
 
+        self.readonly = readonly
         self.debug = nvl(self.settings.debug, DEBUG)
         self._open()
 
@@ -86,10 +95,15 @@ class DB(object):
 
 
     def __enter__(self):
-        self.begin()
+        if not self.readonly:
+            self.begin()
         return self
 
     def __exit__(self, type, value, traceback):
+        if self.readonly:
+            self.close()
+            return
+
         if isinstance(value, BaseException):
             try:
                 if self.cursor: self.cursor.close()

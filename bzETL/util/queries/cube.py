@@ -11,7 +11,7 @@ from __future__ import unicode_literals
 from .. import struct
 from ..collections.matrix import Matrix
 from ..collections import MAX, OR
-from dz2es.util.queries.query import _normalize_edge
+from ..queries.query import _normalize_edge
 from ..struct import StructList
 from ..env.logs import Log
 

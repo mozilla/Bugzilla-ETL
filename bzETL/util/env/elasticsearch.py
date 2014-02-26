@@ -147,7 +147,8 @@ class ElasticSearch(object):
                 "actions": [
                     {"add": {"index": self.settings.index, "alias": alias}}
                 ]
-            })
+            }),
+            timeout=nvl(self.settings.timeout, 30)
         )
 
     def get_proto(self, alias):
@@ -290,6 +291,7 @@ class ElasticSearch(object):
             Log.error("data must be utf8 encoded string")
 
         try:
+            kwargs.setdefault("timeout", 30)
             response = requests.post(*args, **kwargs)
             if DEBUG:
                 Log.note(response.content[:130])
@@ -307,9 +309,10 @@ class ElasticSearch(object):
             Log.error("Problem with call to {{url}}" + suggestion, {"url": args[0]}, e)
 
     @staticmethod
-    def get(*list, **args):
+    def get(*args, **kwargs):
         try:
-            response = requests.get(*list, **args)
+            kwargs.setdefault("timeout", 30)
+            response = requests.get(*args, **kwargs)
             if DEBUG:
                 Log.note(response.content[:130])
             details = struct.wrap(CNV.JSON2object(response.content))
@@ -317,21 +320,23 @@ class ElasticSearch(object):
                 Log.error(details.error)
             return details
         except Exception, e:
-            Log.error("Problem with call to {{url}}", {"url": list[0]}, e)
+            Log.error("Problem with call to {{url}}", {"url": args[0]}, e)
 
     @staticmethod
-    def put(*list, **args):
+    def put(*args, **kwargs):
         try:
-            response = requests.put(*list, **args)
+            kwargs.setdefault("timeout", 30)
+            response = requests.put(*args, **kwargs)
             if DEBUG:
                 Log.note(response.content)
             return response
         except Exception, e:
-            Log.error("Problem with call to {{url}}", {"url": list[0]}, e)
+            Log.error("Problem with call to {{url}}", {"url": args[0]}, e)
 
     @staticmethod
     def delete(*args, **kwargs):
         try:
+            kwargs.setdefault("timeout", 30)
             response = requests.delete(*args, **kwargs)
             if DEBUG:
                 Log.note(response.content)
