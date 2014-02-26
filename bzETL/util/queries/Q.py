@@ -12,6 +12,7 @@ from __future__ import unicode_literals
 import __builtin__
 
 from . import group_by
+from ..collections import UNION
 from ..queries import flat_list, query
 from ..queries.filters import TRUE_FILTER, FALSE_FILTER
 from ..queries.query import Query, _normalize_select, _normalize_selects
@@ -20,7 +21,7 @@ from .index import UniqueIndex, Index
 from .flat_list import FlatList
 from ..maths import Math
 from ..env.logs import Log
-from ..struct import nvl, listwrap, EmptyList, split_field
+from ..struct import nvl, listwrap, EmptyList, split_field, unwrap
 from .. import struct
 from ..struct import Struct, Null, StructList
 
@@ -137,6 +138,80 @@ def map2set(data, relation):
     return Null
 
 
+def tuple(data, field_name):
+    """
+    RETURN LIST  OF TUPLES
+    """
+    if isinstance(data, Cube):
+        Log.error("not supported yet")
+
+    if isinstance(data, FlatList):
+        Log.error("not supported yet")
+
+    if isinstance(field_name, dict) and "value" in field_name:
+        # SIMPLIFY {"value":value} AS STRING
+        field_name = field_name["value"]
+
+    # SIMPLE PYTHON ITERABLE ASSUMED
+    if isinstance(field_name, basestring):
+        if len(split_field(field_name)) == 1:
+            return [(d[field_name], ) for d in data]
+        else:
+            path = split_field(field_name)
+            output = []
+            flat_list._tuple1(data, path, 0, output)
+            return output
+    elif isinstance(field_name, list):
+        paths = [_select_a_field(f) for f in field_name]
+        output = []
+        _tuple((), unwrap(data), paths, 0, output)
+        return output
+    else:
+        paths = [_select_a_field(field_name)]
+        output = []
+        _tuple((), data, paths, 0, output)
+        return output
+
+
+def _tuple(template, data, fields, depth, output):
+    deep_path = None
+    deep_fields = []
+    for d in data:
+        record = template
+        for f in fields:
+            index, children, record = _tuple_deep(d, f, depth, record)
+            if index:
+                path = f.value[0:index:]
+                deep_fields.append(f)
+                if deep_path and path != deep_path:
+                    Log.error("Dangerous to select into more than one branch at time")
+        if not children:
+            output.append(record)
+        else:
+            _tuple(record, children, deep_fields, depth + 1, output)
+
+    return output
+
+
+def _tuple_deep(v, field, depth, record):
+    """
+    field = {"name":name, "value":["attribute", "path"]}
+    r[field.name]=v[field.value], BUT WE MUST DEAL WITH POSSIBLE LIST IN field.value PATH
+    """
+    if hasattr(field.value, '__call__'):
+        return 0, None, record + (field.value(v), )
+
+    for i, f in enumerate(field.value[depth:len(field.value) - 1:]):
+        v = v.get(f, None)
+        if isinstance(v, list):
+            return depth + i + 1, v, record
+
+    f = field.value.last()
+    return 0, None, record + (v.get(f, None), )
+
+
+
+
 def select(data, field_name):
 #return list with values from field_name
     if isinstance(data, Cube):
@@ -160,13 +235,10 @@ def select(data, field_name):
             return output
     elif isinstance(field_name, list):
         keys = [_select_a_field(f) for f in field_name]
-        return _select(Struct(), data, keys, 0)
+        return _select(Struct(), unwrap(data), keys, 0)
     else:
         keys = [_select_a_field(field_name)]
-        result = _select(Struct(), data, keys, 0)
-        output = select(result, field_name.value)
-        return output
-
+        return _select(Struct(), unwrap(data), keys, 0)
 
 
 def _select_a_field(field):
@@ -186,7 +258,7 @@ def _select(template, data, fields, depth):
     for d in data:
         record = template.copy()
         for f in fields:
-            index, children = go_deep(d, f, depth, record)
+            index, children = _select_deep(d, f, depth, record)
             if index:
                 path = f.value[0:index:]
                 deep_fields.append(f)
@@ -200,7 +272,7 @@ def _select(template, data, fields, depth):
     return output
 
 
-def go_deep(v, field, depth, record):
+def _select_deep(v, field, depth, record):
     """
     field = {"name":name, "value":["attribute", "path"]}
     r[field.name]=v[field.value], BUT WE MUST DEAL WITH POSSIBLE LIST IN field.value PATH
@@ -210,89 +282,17 @@ def go_deep(v, field, depth, record):
         return 0, None
 
     for i, f in enumerate(field.value[depth:len(field.value) - 1:]):
-        v = v[f]
+        v = v.get(f, None)
         if isinstance(v, list):
             return depth + i + 1, v
 
     f = field.value.last()
-    record[field.name] = v[f]
+    record[field.name] = v.get(f, None)
     return 0, None
 
 
-
 def get_columns(data):
-    output = {}
-    for d in data:
-        for k, v in d.items():
-            if k not in output:
-                c = {"name": k, "domain": Null}
-                output[k] = c
-
-                # IT WOULD BE NICE TO ADD DOMAIN ANALYSIS HERE
-
-    return [{"name": n} for n in output]
-
-
-def stack(data, name=None, value_column=None, columns=None):
-    """
-    STACK ALL CUBE DATA TO A SINGLE COLUMN, WITH ONE COLUMN PER DIMENSION
-    GREAT FOR SPARSE CUBES
-    >>> s
-          a   b
-     one  1   2
-     two  3   4
-
-    >>> stack(s)
-     one a    1
-     one b    2
-     two a    3
-     two b    4
-
-    STACK LIST OF HASHES, OR 'MERGE' SEPARATE CUBES
-    data - expected to be a list of dicts
-    name - give a name to the new column
-    value_column - Name given to the new, single value column
-    columns - explicitly list the value columns (USE SELECT INSTEAD)
-    """
-
-    assert value_column != None
-    if isinstance(data, Cube):
-        Log.error("Do not know how to deal with cubes yet")
-
-    if columns == None:
-        columns = data.get_columns()
-    data = data.select(columns)
-
-    name = nvl(name, data.name)
-
-    output = []
-
-    parts = set()
-    for r in data:
-        for c in columns:
-            v = r[c]
-            parts.add(c)
-            output.append({"name": c, "value": v})
-
-    edge = struct.wrap({"domain": {"type": "set", "partitions": parts}})
-
-
-#UNSTACKING CUBES WILL BE SIMPLER BECAUSE THE keys ARE IMPLIED (edges-column)
-
-def unstack(data, keys=None, column=None, value=None):
-    assert keys != None
-    assert column != None
-    assert value != None
-    if isinstance(data, Cube):
-        Log.error("Do not know how to deal with cubes yet")
-
-    output = []
-    for key, values in groupby(data, keys):
-        for v in values:
-            key[v[column]] = v[value]
-        output.append(key)
-
-    return struct.wrap(output)
+    return [{"name": n} for n in UNION(set(d.keys()) for d in data)]
 
 
 def sort(data, fieldnames=None):

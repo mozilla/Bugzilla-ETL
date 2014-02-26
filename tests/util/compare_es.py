@@ -18,7 +18,7 @@ from bzETL.util.queries import Q
 
 
 #PULL ALL BUG DOCS FROM ONE ES
-from bzETL.util.timer import Timer
+from bzETL.util.times.timer import Timer
 
 
 def get_all_bug_versions(es, bug_id, max_time=None):

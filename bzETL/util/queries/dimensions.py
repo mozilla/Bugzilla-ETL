@@ -10,12 +10,9 @@
 from __future__ import unicode_literals
 from .. import struct
 from ..collections import SUM
-from ..maths import Math
-
 from ..queries.domains import PARTITION, Domain
 from ..struct import Struct, nvl, Null, StructList, join_field, split_field
 from ..times.timer import Timer
-
 from ..env.logs import Log
 
 DEFAULT_QUERY_LIMIT = 20
@@ -279,5 +276,3 @@ def parse_partition(parent, part):
         # DEFAULT esfilter IS THE UNION OF ALL CHILD FILTERS
         if not part.esfilter:
             part.esfilter = {"or": part.partitions.esfilter}
-
-

@@ -96,7 +96,7 @@ class DB(object):
                 self.cursor = None
                 self.rollback()
             except Exception, e:
-                Log.warning(u"can not rollback()", e)
+                Log.warning(u"can not rollback()", [value, e])
             finally:
                 self.close()
             return

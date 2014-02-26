@@ -13,7 +13,6 @@
 
 import gc
 from bzETL.util.maths import Math
-from bzETL.util.timer import Timer
 from bzETL.util import struct, jsons
 from bzETL.util.env.logs import Log
 from bzETL.util.struct import Struct, nvl
@@ -26,6 +25,7 @@ from bzETL.util.queries import Q
 from bzETL.util.sql.db import DB
 
 from bzETL import parse_bug_history, transform_bugzilla, extract_bugzilla, alias_analysis
+from bzETL.util.times.timer import Timer
 from extract_bugzilla import get_private_bugs, get_recent_private_attachments, get_recent_private_comments, get_comments, get_comments_by_id, get_recent_private_bugs, get_current_time, get_bugs, get_dependencies, get_flags, get_new_activities, get_bug_see_also, get_attachments, get_tracking_flags, get_keywords, get_cc, get_bug_groups, get_duplicates
 from parse_bug_history import BugHistoryParser
 

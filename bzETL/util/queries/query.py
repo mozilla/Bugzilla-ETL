@@ -11,12 +11,13 @@ from __future__ import unicode_literals
 from .. import struct
 from .dimensions import Dimension
 from .domains import Domain
-from ..queries.filters import TRUE_FILTER
+from ..env.logs import Log
+from ..queries import MVEL
+from ..queries.filters import TRUE_FILTER, simplify
 from ..struct import nvl, Struct, EmptyList
 
 
 class Query(object):
-
     def __new__(cls, query, schema=None):
         if isinstance(query, Query):
             return query
@@ -49,7 +50,7 @@ class Query(object):
 
         self.edges = [_normalize_edge(e, schema=schema) for e in struct.listwrap(query.edges)]
         self.frum = _normalize_from(query["from"], schema=schema)
-        self.where = nvl(query.where, TRUE_FILTER)
+        self.where = _normalize_where(query.where, schema=schema)
 
         self.window = [_normalize_window(w) for w in struct.listwrap(query.window)]
 
@@ -73,6 +74,7 @@ class Query(object):
         dest = object.__getattribute__(output, "__dict__")
         struct.set_default(dest, source)
         return output
+
 
 def _normalize_selects(selects, schema=None):
     if isinstance(selects, list):
@@ -119,6 +121,8 @@ def _normalize_edge(edge, schema=None):
             allowNulls=False if edge.allowNulls is False else True,
             domain=_normalize_domain(edge.domain, schema=schema)
         )
+
+
 def _normalize_from(frum, schema=None):
     if isinstance(frum, basestring):
         return Struct(name=frum)
@@ -126,6 +130,7 @@ def _normalize_from(frum, schema=None):
         return Query(frum, schema=schema)
     else:
         return struct.wrap(frum)
+
 
 def _normalize_domain(domain=None, schema=None):
     if not domain:
@@ -142,6 +147,7 @@ def _normalize_domain(domain=None, schema=None):
         domain.name = domain.type
     return Domain(**struct.unwrap(domain))
 
+
 def _normalize_window(window, schema=None):
     return Struct(
         name=nvl(window.name, window.value),
@@ -152,6 +158,7 @@ def _normalize_window(window, schema=None):
         range=_normalize_range(window.range)
     )
 
+
 def _normalize_range(range):
     if range == None:
         return None
@@ -160,6 +167,65 @@ def _normalize_range(range):
         min=range.min,
         max=range.max
     )
+
+
+def _normalize_where(where, schema=None):
+    if where == None:
+        return TRUE_FILTER
+    if schema == None:
+        return where
+    where = simplify(_where_terms(where, schema))
+    return where
+
+
+def _where_terms(where, schema):
+    """
+    USE THE SCHEMA TO CONVERT DIMENSION NAMES TO ES FILTERS
+    """
+    if isinstance(where, dict):
+        if where.term:
+            #MAP TERM
+            output = []
+            for k, v in where.term.items():
+                dimension = schema.edges[k]
+                if dimension:
+                    domain = schema.edges[k].getDomain()
+                    if len(dimension.fields) == 1 and MVEL.isKeyword(dimension.fields[0]):
+                        if domain.getPartByKey(v) is domain.NULL:
+                            output.append({"missing": {"field": dimension.fields[0]}})
+                        else:
+                            output.append({"term": {dimension.fields[0]: v}})
+                        continue
+                    if domain.partitions:
+                        part = domain.getPartByKey(v)
+                        if part is domain.NULL or not part.esfilter:
+                            Log.error("not expected to get NULL")
+                        output.append(part.esfilter)
+                        continue
+                    else:
+                        Log.error("not expected")
+                output.append({"term": {k: v}})
+            return {"and": output}
+        elif where.terms:
+            #MAP TERM
+            output = []
+            for k, v in where.terms.items():
+                if schema.edges[k]:
+                    domain = schema.edges[k].getDomain()
+                    if len(domain.dimension.fields) == 1 and MVEL.isKeyword(domain.dimension.fields[0]):
+                        if domain.getPartByKey(v) is domain.NULL:
+                            output.append({"missing": {"field": domain.dimension.fields[0]}})
+                        else:
+                            output.append({"terms": {domain.dimension.fields[0]: v}})
+                        continue
+                    if domain.partitions:
+                        output.append({"or": [domain.getPartByKey(vv).esfilter for vv in v]})
+                        continue
+                output.append({"terms": {k: v}})
+            return {"and": output}
+        elif where["and"] or where["or"]:
+            return {k: [_where_terms(vv, schema) for vv in v] for k, v in where.items()}
+    return where
 
 
 def _normalize_sort(sort=None):

@@ -12,7 +12,6 @@ from .. import struct
 from ..collections import PRODUCT, reverse, MAX, MIN
 from ..cnv import CNV
 from ..env.logs import Log
-from ..maths import Math
 from ..struct import Null, Struct
 
 
@@ -73,12 +72,20 @@ class Matrix(object):
         except Exception, e:
             Log.error("can not set item", e)
 
+    def __bool__(self):
+        return self.cube != None
+
+    def __nonzero__(self):
+        return self.cube != None
+
     def __len__(self):
         if self.num == 0:
             return 0
         return PRODUCT(self.dims)
 
     def __iter__(self):
+        if self.num == 0:
+            return [self.cube].__iter__()
         return _iter(self.cube, self.num)
 
     def groupby(self, io_select):
@@ -115,6 +122,8 @@ class Matrix(object):
     def __str__(self):
         return "Matrix " + CNV.object2JSON(self.dims) + ": " + str(self.cube)
 
+    def __json__(self):
+        return CNV.object2JSON(self.cube)
 
 def _max(depth, cube):
     if depth == 0:

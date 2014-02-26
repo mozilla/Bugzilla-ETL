@@ -10,10 +10,10 @@
 
 
 from datetime import datetime, timedelta
-from bzETL.util.maths import Math
+from bzETL.util.collections import MIN
 from bzETL.util.struct import nvl
 from bzETL.util.thread.threads import ThreadedQueue
-from bzETL.util.timer import Timer
+from bzETL.util.times.timer import Timer
 import transform_bugzilla
 from bzETL.util.cnv import CNV
 from bzETL.util.env.logs import Log

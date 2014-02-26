@@ -39,7 +39,7 @@ class Timer:
         self.interval = self.end - self.start
         param = struct.wrap(self.param)
         param.duration = timedelta(seconds=self.interval)
-        Log.note("Timer end  : " + self.template + " (took {{duration}})", self.param)
+        Log.note("Timer end  : " + self.template + " (took {{duration}})", self.param, stack_depth=1)
 
     @property
     def duration(self):

@@ -6,7 +6,7 @@ from bzETL.util.queries.db_query import esfilter2sqlwhere
 from bzETL.util.sql.db import DB
 from bzETL.util.env.logs import Log
 from bzETL.util.struct import Struct
-from bzETL.util.timer import Timer
+from bzETL.util.times.timer import Timer
 
 
 def make_test_instance(db_settings):

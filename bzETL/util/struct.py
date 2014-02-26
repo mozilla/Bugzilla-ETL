@@ -8,6 +8,7 @@
 #
 
 from __future__ import unicode_literals
+import types
 
 _get = object.__getattribute__
 
@@ -513,7 +514,12 @@ def wrap(v):
         object.__setattr__(m, "__dict__", v)  # INJECT m.__dict__=v SO THERE IS NO COPY
         return m
     if isinstance(v, list):
+        for vv in v:
+            if vv is not unwrap(vv):
+                return StructList([unwrap(vv) for vv in v])
         return StructList(v)
+    if isinstance(v, types.GeneratorType):
+        return (wrap(vv) for vv in v)
     return v
 
 
@@ -545,6 +551,11 @@ def nvl(*args):
             return a
     return Null
 
+def zip(keys, values):
+    output = Struct()
+    for i, k in enumerate(keys):
+        output[k] = values[i]
+    return output
 
 def listwrap(value):
     """
