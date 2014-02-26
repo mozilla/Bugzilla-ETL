@@ -41,7 +41,7 @@ import re
 import math
 from bzETL.util import struct, strings
 from bzETL.util.collections import MIN
-from bzETL.util.struct import nvl
+from bzETL.util.struct import nvl, StructList
 from transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS
 
 from bzETL.util.cnv import CNV
@@ -179,7 +179,7 @@ class BugHistoryParser():
 
     def startNewBug(self, row_in):
         self.prevBugID = row_in.bug_id
-        self.bugVersions = []
+        self.bugVersions = StructList()
         self.bugVersionsMap = Struct()
         self.currActivity = Struct()
         self.currBugAttachmentsMap = Struct()
@@ -237,6 +237,8 @@ class BugHistoryParser():
                          }]
             )
 
+            if not self.currActivity.modified_ts:
+                Log.error("should not happen")
             self.bugVersions.append(self.currActivity)
             self.bugVersionsMap[currActivityID] = self.currActivity
 
@@ -294,6 +296,8 @@ class BugHistoryParser():
                     modified_by=row_in.modified_by,
                     changes=[]
                 )
+                if not self.currActivity.modified_ts:
+                    Log.error("should not happen")
                 self.bugVersions.append(self.currActivity)
 
             self.prevActivityID = currActivityID
