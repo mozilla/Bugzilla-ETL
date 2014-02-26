@@ -20,11 +20,13 @@
 
 from __future__ import unicode_literals
 import json
+from math import floor
 import re
 import time
 from datetime import datetime, date
 from decimal import Decimal
 import sys
+from bzETL.util.collections import AND, MAX
 
 from .struct import Struct
 
@@ -160,6 +162,7 @@ def _list2json(value, _buffer):
             _value2json(v, _buffer)
         append(_buffer, u"]")
 
+
 def _iter2json(value, _buffer):
     append(_buffer, u"[")
     sep = u""
@@ -225,6 +228,12 @@ def _scrub(value):
         return output
     elif type is Decimal:
         return float(value)
+    elif type is list:
+        output = []
+        for v in value:
+            v = _scrub(v)
+            output.append(v)
+        return output
     elif hasattr(value, '__json__'):
         return json._default_decoder.decode(value.__json__())
     elif hasattr(value, '__iter__'):
@@ -248,7 +257,7 @@ def expand_dot(value):
     elif isinstance(value, dict):
         output = Struct()
         for k, v in value.iteritems():
-            output[k]=expand_dot(v)
+            output[k] = expand_dot(v)
         return output
     elif hasattr(value, '__iter__'):
         output = []
@@ -260,6 +269,9 @@ def expand_dot(value):
         return value
 
 
+ARRAY_ROW_LENGTH = 80
+ARRAY_ITEM_MAX_LENGTH = 30
+
 def pretty_json(value):
     try:
         if isinstance(value, dict):
@@ -270,6 +282,7 @@ def pretty_json(value):
                 if len(items) == 1:
                     return "{\"" + items[0][0] + "\": " + pretty_json(items[0][1]).strip() + "}"
 
+                items = sorted(items, lambda a, b: value_compare(a[0], b[0]))
                 values = ["\"" + ESCAPE.sub(replace, unicode(k)) + "\": " + indent(pretty_json(v)).strip() for k, v in items if v != None]
                 return "{\n\t" + ",\n\t".join(values) + "\n}"
             except Exception, e:
@@ -288,10 +301,31 @@ def pretty_json(value):
             if not value:
                 return "[]"
             if len(value) == 1:
-                return "[" + indent(pretty_json(value[0])) + "]"
+                j = pretty_json(value[0])
+                if j.find("\n") >= 0:
+                    return "[\n" + indent(j) + "\n]"
+                else:
+                    return "[" + j + "]"
+
+            js = [pretty_json(v) for v in value]
+            max_len = MAX(len(j) for j in js)
+            if max_len<=ARRAY_ITEM_MAX_LENGTH and AND(j.find("\n")==-1 for j in js):
+                max_columns = max(10, int(floor((ARRAY_ROW_LENGTH + 2.0)/float(max_len+2)))) # +2 TO COMPENSATE FOR COMMAS
+
+                #ALL TINY VALUES
+                if len(js)<=max_columns:
+                    return "[" + ", ".join(js) + "]"
+
+                content = "\n".join(
+                    ", ".join(j.rjust(max_len) for j in js[r:r+max_columns])
+                    for r in xrange(0, len(js), max_columns)
+                )
+                return "[\n" + indent(content) + "\n]"
 
             return "[\n" + ",\n".join([indent(pretty_json(v)) for v in value]) + "\n]"
         elif hasattr(value, '__json__'):
+            if value.__json__ == None:
+                Log.debug()
             j = value.__json__()
             return pretty_json(json_decoder.decode(j))
         elif hasattr(value, '__iter__'):
@@ -313,3 +347,19 @@ def indent(value, prefix="\t"):
         return prefix + (u"\n" + prefix).join(lines) + suffix
     except Exception, e:
         raise Exception(u"Problem with indent of value (" + e.message + u")\n" + value)
+
+
+def value_compare(a, b):
+    if a == None:
+        if b == None:
+            return 0
+        return -1
+    elif b == None:
+        return 1
+
+    if a > b:
+        return 1
+    elif a < b:
+        return -1
+    else:
+        return 0

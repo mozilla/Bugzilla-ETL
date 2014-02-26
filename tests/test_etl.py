@@ -47,6 +47,9 @@ class TestETL(unittest.TestCase):
 
 
     def tearDown(self):
+        if all_db:
+            Log.error("not all db connections are closed")
+
         Log.stop()
 
 
@@ -109,6 +112,8 @@ class TestETL(unittest.TestCase):
 
             while True:
                 some_bugs = [b for b in [Random.int(MAX_BUG_ID) for i in range(NUM_TO_TEST)] if b not in private_bugs]
+
+                Log.note("Test with the following bug_ids: {{bugs}}", {"bugs":some_bugs})
 
                 #SETUP RUN PARAMETERS
                 param = Struct()

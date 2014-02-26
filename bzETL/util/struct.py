@@ -184,6 +184,10 @@ class Struct(dict):
         d = _get(self, "__dict__")
         return d.keys()
 
+    def setdefault(self, k, d=None):
+        if not self[k]:
+            self[k]=d
+
 # KEEP TRACK OF WHAT ATTRIBUTES ARE REQUESTED, MAYBE SOME (BUILTIN) ARE STILL USEFUL
 requested = set()
 
@@ -451,7 +455,7 @@ class StructList(list):
         return self
 
     def pop(self):
-        return _get(self, "list").pop()
+        return wrap(_get(self, "list").pop())
 
     def __add__(self, value):
         output = list(_get(self, "list"))
