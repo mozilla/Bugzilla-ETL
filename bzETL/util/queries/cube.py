@@ -11,7 +11,8 @@ from __future__ import unicode_literals
 from .. import struct
 from ..collections.matrix import Matrix
 from ..collections import MAX, OR
-from ..maths import Math
+from dz2es.util.queries.query import _normalize_edge
+from ..struct import StructList
 from ..env.logs import Log
 
 
@@ -32,11 +33,7 @@ class Cube(object):
 
         #ENSURE frum IS PROPER FORM
         if isinstance(select, list):
-            try:
-                for k, v in data.items():
-                    if not isinstance(v, Matrix):
-                        raise ZeroDivisionError
-            except Exception, e:
+            if OR(not isinstance(v, Matrix) for v in data.values()):
                 Log.error("Expecting data to be a dict with Matrix values")
 
         if not edges:
@@ -82,10 +79,13 @@ class Cube(object):
         if self.is_value:
             return self.data[self.select.name].__iter__()
 
+        if not self.edges:
+            return list.__iter__([])
+
         if len(self.edges) == 1 and struct.wrap(self.edges[0]).domain.type == "index":
             # ITERATE AS LIST OF RECORDS
             keys = list(self.data.keys())
-            output = ({k: v for k, v in zip(keys, r)} for r in zip(*self.data.values()))
+            output = (struct.zip(keys, r) for r in zip(*self.data.values()))
             return output
 
         Log.error("This is a multicube")
@@ -136,9 +136,11 @@ class Cube(object):
         SLICE THIS CUBE IN TO ONES WITH LESS DIMENSIONALITY
         simple==True WILL HAVE GROUPS BASED ON PARTITION VALUE, NOT PARTITION OBJECTS
         """
-        stacked = [e for e in self.edges if e in edges]
-        remainder = [e for e in self.edges if e not in edges]
-        selector = [1 if e in edges else 0 for e in self.edges]
+        edges = StructList([_normalize_edge(e) for e in edges])
+
+        stacked = [e for e in self.edges if e.name in edges.name]
+        remainder = [e for e in self.edges if e.name not in edges.name]
+        selector = [1 if e.name in edges.name else 0 for e in self.edges]
 
         if len(stacked) + len(remainder) != len(self.edges):
             Log.error("can not find some edges to group by")
@@ -146,20 +148,17 @@ class Cube(object):
         selects = struct.listwrap(self.select)
         index, v = zip(*self.data[selects[0].name].groupby(selector))
 
-        coord = struct.wrap([{e.name: e.domain.partitions[c[i]] for i, e in enumerate(self.edges) if c[i] != -1} for c in index])
-
-        values = [v]
-        for s in selects[1::]:
-            i, v = zip(*self.data[s.name].group_by(selector))
-            values.append(v)
+        coord = struct.wrap([{e.name: e.domain.getKey(e.domain.partitions[c[i]]) for i, e in enumerate(self.edges) if c[i] != -1} for c in index])
 
         if isinstance(self.select, list):
+            values = [v]
+            for s in selects[1::]:
+                i, v = zip(*self.data[s.name].group_by(selector))
+                values.append(v)
+
             output = zip(coord, [Cube(self.select, remainder, {s.name: v[i] for i, s in enumerate(selects)}) for v in zip(*values)])
         else:
-            if not remainder:
-                output = zip(coord, [v[0] for v in zip(*values)])
-            else:
-                output = zip(coord, [Cube(self.select, remainder, v[0]) for v in zip(*values)])
+            output = zip(coord, [Cube(self.select, remainder, vv) for vv in v])
 
         return output
 

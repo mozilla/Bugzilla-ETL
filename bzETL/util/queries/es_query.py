@@ -9,7 +9,9 @@
 #
 from __future__ import unicode_literals
 
-from .. import struct
+from ..cnv import CNV
+from ..env.elasticsearch import ElasticSearch
+from ..queries import MVEL
 from ..queries.es_query_aggop import is_aggop, es_aggop
 from ..queries.es_query_setop import is_fieldop, is_setop, is_deep, es_setop, es_deepop, es_fieldop
 from ..queries.es_query_terms import es_terms, is_terms
@@ -17,10 +19,10 @@ from ..queries.es_query_terms_stats import es_terms_stats, is_terms_stats
 from ..queries.es_query_util import aggregates, loadColumns
 from . import Q
 from ..queries.dimensions import Dimension
-from ..queries.query import Query
+from ..queries.query import Query, _normalize_where
 from ..env.logs import Log
 from ..queries.MVEL import _MVEL
-from ..struct import Struct, split_field, listwrap
+from ..struct import Struct, split_field, wrap, listwrap
 
 
 class ESQuery(object):
@@ -82,3 +84,45 @@ class ESQuery(object):
 
     def __getattr__(self, item):
         return self.edges[item]
+
+
+    def update(self, command):
+        """
+        EXPECTING command == {"set":term, "where":where}
+        THE set CLAUSE IS A DICT MAPPING NAMES TO VALUES
+        THE where CLAUSE IS AN ES FILTER
+        """
+        command = wrap(command)
+
+        #GET IDS OF DOCUMENTS
+        results = self.es.search({
+            "fields": [],
+            "query": {"filtered": {
+                "query": {"match_all": {}},
+                "filter": _normalize_where(command.where, self)
+            }},
+            "size": 200000
+        })
+
+        scripts = []
+        for k, v in command.set.items():
+            if not MVEL.isKeyword(k):
+                Log.error("Only support simple paths for now")
+
+            scripts.append("ctx._source."+k+" = "+MVEL.value2MVEL(v)+";")
+        script = "".join(scripts)
+
+        for id in results.hits.hits._id:
+            #SEND UPDATE TO EACH
+            try:
+                response = ElasticSearch.post(
+                    self.es.path + "/" + id + "/_update",
+                    data=CNV.object2JSON({"script": script}).encode("utf8"),
+                    headers={"Content-Type": "application/json"}
+                )
+
+                if not response.ok:
+                    Log.error("Problem updating es: {{error}}", {"error":response})
+            except Exception, e:
+                Log.error("Problem updating es: {{error}}", e)
+

@@ -10,8 +10,8 @@
 
 from __future__ import unicode_literals
 import functools
-from bzETL.util.collections import MIN
 from ..maths import stats
+from ..collections import MIN, MAX
 from ..env.logs import Log
 from ..maths import Math
 from ..collections.multiset import Multiset

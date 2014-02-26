@@ -19,7 +19,7 @@ from ..thread.threads import ThreadedQueue
 from ..maths import Math
 from ..cnv import CNV
 from ..env.logs import Log
-from ..struct import nvl, Null
+from ..struct import nvl, Null, wrap
 from ..struct import Struct, StructList
 
 
@@ -205,7 +205,7 @@ class ElasticSearch(object):
         # ADD LINE WITH COMMAND
         lines = []
         for r in records:
-            id = r["id"]
+            id = r.get("id", None)
             if "json" in r:
                 json = r["json"]
             elif "value" in r:
@@ -265,9 +265,15 @@ class ElasticSearch(object):
             })
 
     def search(self, query):
+        query = wrap(query)
         try:
             if DEBUG:
-                Log.note("Query:\n{{query|indent}}", {"query": query})
+                if len(query.facets.keys()) > 20:
+                    show_query = query.copy()
+                    show_query.facets = {k: "..." for k in query.facets.keys()}
+                else:
+                    show_query = query
+                Log.note("Query:\n{{query|indent}}", {"query": show_query})
             return ElasticSearch.post(self.path + "/_search", data=CNV.object2JSON(query).encode("utf8"))
         except Exception, e:
             Log.error("Problem with search (path={{path}}):\n{{query|indent}}", {
@@ -280,8 +286,8 @@ class ElasticSearch(object):
 
     @staticmethod
     def post(*args, **kwargs):
-        if "data" in kwargs and isinstance(kwargs["data"], unicode):
-            Log.error("data can not be unicode")
+        if "data" in kwargs and not isinstance(kwargs["data"], str):
+            Log.error("data must be utf8 encoded string")
 
         try:
             response = requests.post(*args, **kwargs)

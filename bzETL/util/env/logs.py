@@ -10,8 +10,9 @@
 
 
 from __future__ import unicode_literals
+import cProfile
 from datetime import datetime, timedelta
-import traceback
+import pstats
 import logging
 import sys
 
@@ -35,6 +36,7 @@ class Log(object):
     trace = False
     main_log = None
     logging_multi = None
+    profiler = None
 
 
     @classmethod
@@ -80,13 +82,15 @@ class Log(object):
             timestamp=datetime.utcnow(),
         )
         if cls.trace:
-            log_template = "{{timestamp|datetime}} - {{location.file}}:{{location.line}} ({{location.method}}) - " + template.replace("{{", "{{params.")
+            log_template = "{{timestamp|datetime}} - {{thread.name}} - {{location.file}}:{{location.line}} ({{location.method}}) - " + template.replace("{{", "{{params.")
             f = sys._getframe(stack_depth + 1)
             log_params.location = {
                 "line": f.f_lineno,
                 "file": f.f_code.co_filename,
                 "method": f.f_code.co_name
             }
+            thread = Thread.current()
+            log_params.thread = {"name": thread.name, "id": thread.id}
         else:
             log_template = "{{timestamp|datetime}} - " + template.replace("{{", "{{params.")
 
@@ -169,6 +173,8 @@ class Log(object):
             return
 
         cls.trace = cls.trace | nvl(settings.trace, False)
+        if cls.trace:
+            from ..thread.threads import Thread
 
         if not settings.log:
             return
@@ -179,9 +185,33 @@ class Log(object):
         for log in listwrap(settings.log):
             Log.add_log(Log.new_instance(log))
 
+        if settings.profile:
+            cls.profiler = cProfile.Profile()
+            cls.profiler.enable()
+
+
     @classmethod
     def stop(cls):
+        if cls.profiler:
+            from bzETL.util.cnv import CNV
+            from bzETL.util.env.files import File
+
+            p = pstats.Stats(cls.profiler)
+            stats = [{
+                "num_calls":d[1],
+                "self_time":d[2],
+                "total_time":d[3],
+                "file":(f[0] if f[0] != "~" else "").replace("\\", "/"),
+                "line":f[1],
+                "method":f[2].lstrip("<").rstrip(">")
+            }
+                for f, d, in p.stats.iteritems()
+            ]
+            CNV.list2tab(stats)
+            File("profile.tab").write(CNV.list2tab(stats))
+
         cls.main_log.stop()
+
 
     def write(self):
         Log.error("not implemented")
@@ -405,7 +435,7 @@ def time_delta_pusher(please_stop, appender, queue, interval):
             lines = []
             for log in logs:
                 try:
-                    if log == Thread.STOP:
+                    if log is Thread.STOP:
                         please_stop.go()
                         next_run = datetime.utcnow()
                     else:
@@ -497,7 +527,7 @@ class Log_usingThread(BaseLog):
                 Thread.sleep(1)
                 logs = self.queue.pop_all()
                 for log in logs:
-                    if log == Thread.STOP:
+                    if log is Thread.STOP:
                         if DEBUG_LOGGING:
                             sys.stdout.write("Log_usingThread.worker() sees stop, filling rest of queue\n")
                         please_stop.go()

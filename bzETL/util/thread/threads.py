@@ -68,7 +68,7 @@ class Queue(object):
         while self.keep_running:
             try:
                 value = self.pop()
-                if value != Thread.STOP:
+                if value is not Thread.STOP:
                     yield value
             except Exception, e:
                 from ..env.logs import Log
@@ -99,7 +99,7 @@ class Queue(object):
             while self.keep_running:
                 if self.queue:
                     value = self.queue.pop(0)
-                    if value == Thread.STOP:  #SENDING A STOP INTO THE QUEUE IS ALSO AN OPTION
+                    if value is Thread.STOP:  #SENDING A STOP INTO THE QUEUE IS ALSO AN OPTION
                         self.keep_running = False
                     return value
                 self.lock.wait()
@@ -116,7 +116,7 @@ class Queue(object):
                 return []
 
             for v in self.queue:
-                if v == Thread.STOP:  #SENDING A STOP INTO THE QUEUE IS ALSO AN OPTION
+                if v is Thread.STOP:  #SENDING A STOP INTO THE QUEUE IS ALSO AN OPTION
                     self.keep_running = False
 
             output = list(self.queue)
@@ -169,6 +169,12 @@ class AllThread(object):
         self.threads.append(t)
 
 
+ALL_LOCK = Lock()
+MAIN_THREAD = Struct(name="Main Thread", id=thread.get_ident())
+ALL = dict()
+ALL[thread.get_ident()] = MAIN_THREAD
+
+
 class Thread(object):
     """
     join() ENHANCED TO ALLOW CAPTURE OF CTRL-C, AND RETURN POSSIBLE THREAD EXCEPTIONS
@@ -181,6 +187,7 @@ class Thread(object):
 
 
     def __init__(self, name, target, *args, **kwargs):
+        self.id = -1
         self.name = name
         self.target = target
         self.response = None
@@ -210,7 +217,7 @@ class Thread(object):
 
     def start(self):
         try:
-            self.thread = thread.start_new_thread(Thread._run, (self, ))
+            thread.start_new_thread(Thread._run, (self, ))
         except Exception, e:
             from ..env.logs import Log
 
@@ -220,6 +227,10 @@ class Thread(object):
         self.please_stop.go()
 
     def _run(self):
+        self.id = thread.get_ident()
+        with ALL_LOCK:
+            ALL[self.id] = self
+
         try:
             if self.target is not None:
                 response = self.target(*self.args, **self.kwargs)
@@ -234,10 +245,11 @@ class Thread(object):
                 Log.fatal("Problem in thread {{name}}", {"name": self.name}, e)
             except Exception, f:
                 sys.stderr.write("ERROR in thread: " + str(self.name) + " " + str(e) + "\n")
-                sys.stderr.write("ERROR in thread: " + str(self.name) + " " + str(f) + "\n")
         finally:
             self.stopped.go()
             del self.target, self.args, self.kwargs
+            with ALL_LOCK:
+                del ALL[self.id]
 
     def is_alive(self):
         return not self.stopped
@@ -292,6 +304,15 @@ class Thread(object):
             duration = (till - datetime.utcnow()).total_seconds()
             if duration > 0:
                 time.sleep(duration)
+
+    @staticmethod
+    def current():
+        id = thread.get_ident()
+        with ALL_LOCK:
+            try:
+                return ALL[id]
+            except KeyError, e:
+                return MAIN_THREAD
 
 
 class Signal(object):

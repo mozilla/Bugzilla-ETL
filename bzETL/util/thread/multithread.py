@@ -9,7 +9,7 @@
 #
 
 from __future__ import unicode_literals
-import threading
+
 from ..struct import nvl
 from ..env.logs import Log
 from ..thread.threads import Queue, Thread
@@ -18,34 +18,29 @@ from ..thread.threads import Queue, Thread
 DEBUG = True
 
 
-class worker_thread(threading.Thread):
+class worker_thread(Thread):
     #in_queue MUST CONTAIN HASH OF PARAMETERS FOR load()
     def __init__(self, name, in_queue, out_queue, function):
-        threading.Thread.__init__(self)
-        self.name = name
+        Thread.__init__(self, name, self.event_loop)
         self.in_queue = in_queue
         self.out_queue = out_queue
         self.function = function
-        self.keep_running = True
         self.num_runs = 0
         self.start()
 
-    #REQUIRED TO DETECT KEYBOARD, AND OTHER, INTERRUPTS
-    def join(self, timeout=None):
-        while self.isAlive():
-            Log.note("Waiting on thread {{thread}}", {"thread": self.name})
-            threading.Thread.join(self, nvl(timeout, 0.5))
-
-    def run(self):
+    def event_loop(self, please_stop):
         got_stop = False
-        while self.keep_running:
+        while not please_stop.is_go():
             request = self.in_queue.pop()
             if request == Thread.STOP:
                 got_stop = True
                 if self.in_queue.queue:
-                    Log.warning("programmer error, queue not empty. {{num}} requests lost.", {"num": len(self.in_queue.queue)})
+                    Log.warning("programmer error, queue not empty. {{num}} requests lost:\n{{requests}}", {
+                        "num": len(self.in_queue.queue),
+                        "requests": self.in_queue.queue[:5:] + self.in_queue.queue[-5::]
+                    })
                 break
-            if not self.keep_running:
+            if please_stop.is_go():
                 break
 
             try:
@@ -61,7 +56,9 @@ class worker_thread(threading.Thread):
             finally:
                 self.num_runs += 1
 
-        self.keep_running = False
+        please_stop.go()
+        del self.function
+
         if self.num_runs == 0:
             Log.warning("{{name}} thread did no work", {"name": self.name})
         if DEBUG and self.num_runs != 1:
@@ -74,9 +71,6 @@ class worker_thread(threading.Thread):
         if DEBUG:
             Log.note("{{thread}} DONE", {"thread": self.name})
 
-
-    def stop(self):
-        self.keep_running = False
 
 
 #PASS A SET OF FUNCTIONS TO BE EXECUTED (ONE PER THREAD)

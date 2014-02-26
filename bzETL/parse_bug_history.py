@@ -40,6 +40,7 @@
 import re
 import math
 from bzETL.util import struct, strings
+from bzETL.util.collections import MIN
 from bzETL.util.struct import nvl
 from transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS
 

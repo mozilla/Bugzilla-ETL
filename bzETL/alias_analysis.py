@@ -8,7 +8,7 @@ from bzETL.util.env.logs import Log
 from bzETL.util.collections.multiset import Multiset
 from bzETL.util.queries import Q
 from bzETL.util.struct import nvl, Struct, Null
-from bzETL.util.timer import Timer
+from bzETL.util.times.timer import Timer
 
 bugs = {}
 aliases = {}

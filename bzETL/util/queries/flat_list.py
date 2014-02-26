@@ -10,9 +10,8 @@
 
 from __future__ import unicode_literals
 from .. import struct
-from bzETL.util.collections import MIN
+from ..collections import MIN
 from ..env.logs import Log
-from ..maths import Math
 from ..struct import nvl, split_field
 
 

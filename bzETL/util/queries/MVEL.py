@@ -124,7 +124,7 @@ class _MVEL(object):
         list = []
         for s in selectList:
             if s.value and isKeyword(s.value):
-                list.append("Value2Pipe(getDocValue(" + CNV.value2quote(s.value) + "))\n")
+                list.append("Value2Pipe(getDocValue(" + value2MVEL(s.value) + "))\n")
             elif s.value:
                 shortForm = self._translate(s.value)
                 list.append("Value2Pipe(" + shortForm + ")\n")
@@ -160,8 +160,8 @@ class _MVEL(object):
             )
         else:
             for v in domain.partitions:
-                term.append("if (" + _where(v.esfilter, lambda x: self._translate(x)) + ") " + CNV.value2quote(domain.getKey(v)) + "; else ")
-            term.append(CNV.value2quote(domain.getKey(domain.NULL)))
+                term.append("if (" + _where(v.esfilter, lambda x: self._translate(x)) + ") " + value2MVEL(domain.getKey(v)) + "; else ")
+            term.append(value2MVEL(domain.getKey(domain.NULL)))
 
             func_name = "_temp"+UID()
             return self.register_function("+\"|\"+".join(term))

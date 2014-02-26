@@ -26,7 +26,6 @@ from datetime import datetime, date
 from decimal import Decimal
 import sys
 
-
 from .struct import Struct
 
 use_pypy = False
@@ -62,10 +61,19 @@ class PyPyJSONEncoder(object):
         if pretty:
             return pretty_json(value)
 
-        _buffer = UnicodeBuilder(1024)
-        _value2json(value, _buffer)
-        output = _buffer.build()
-        return output
+        try:
+            _buffer = UnicodeBuilder(1024)
+            _value2json(value, _buffer)
+            output = _buffer.build()
+            return output
+        except Exception, e:
+            #THE PRETTY JSON WILL PROVIDE MORE DETAIL ABOUT THE SERIALIZATION CONCERNS
+            from .env.logs import Log
+
+            try:
+                pretty_json(value)
+            except Exception, f:
+                Log.error("problem serializing object", f)
 
 
 class cPythonJSONEncoder(object):
@@ -168,8 +176,8 @@ def _dict2json(value, _buffer):
         append(_buffer, prefix)
         prefix = u", \""
         if isinstance(k, str):
-            k = unicode(k.decode("utf8"))
-        append(_buffer, ESCAPE.sub(replace, k))
+            k = k.decode("utf8")
+        append(_buffer, ESCAPE.sub(replace, unicode(k)))
         append(_buffer, u"\": ")
         _value2json(v, _buffer)
     append(_buffer, u"}")
@@ -217,14 +225,14 @@ def _scrub(value):
         return output
     elif type is Decimal:
         return float(value)
+    elif hasattr(value, '__json__'):
+        return json._default_decoder.decode(value.__json__())
     elif hasattr(value, '__iter__'):
         output = []
         for v in value:
             v = _scrub(v)
             output.append(v)
         return output
-    elif hasattr(value, '__json__'):
-        return json._default_decoder.decode(value.__json__())
     else:
         return value
 
@@ -255,16 +263,28 @@ def expand_dot(value):
 def pretty_json(value):
     try:
         if isinstance(value, dict):
-            if not value:
-                return "{}"
-            items = list(value.items())
-            if len(items) == 1:
-                return "{\"" + items[0][0] + "\": " + pretty_json(items[0][1]).strip() + "}"
+            try:
+                if not value:
+                    return "{}"
+                items = list(value.items())
+                if len(items) == 1:
+                    return "{\"" + items[0][0] + "\": " + pretty_json(items[0][1]).strip() + "}"
 
-            values = ["\"" + ESCAPE.sub(replace, k) + "\": " + indent(pretty_json(v)).strip() for k, v in items if v != None]
-            return "{\n\t" + ",\n\t".join(values) + "\n}"
-        elif isinstance(value, list) or hasattr(value, '__iter__'):
-            value = list(value)
+                values = ["\"" + ESCAPE.sub(replace, unicode(k)) + "\": " + indent(pretty_json(v)).strip() for k, v in items if v != None]
+                return "{\n\t" + ",\n\t".join(values) + "\n}"
+            except Exception, e:
+                from .env.logs import Log
+                from .collections import OR
+
+                if OR(not isinstance(k, basestring) for k in value.keys()):
+                    Log.error("JSON must have string keys: {{keys}}:", {
+                        "keys": [k for k in value.keys()]
+                    }, e)
+
+                Log.error("problem making dict pretty: keys={{keys}}:", {
+                    "keys": [k for k in value.keys()]
+                }, e)
+        elif isinstance(value, list):
             if not value:
                 return "[]"
             if len(value) == 1:
@@ -274,6 +294,8 @@ def pretty_json(value):
         elif hasattr(value, '__json__'):
             j = value.__json__()
             return pretty_json(json_decoder.decode(j))
+        elif hasattr(value, '__iter__'):
+            return pretty_json(list(value))
         else:
             return json_encoder.encode(value)
 

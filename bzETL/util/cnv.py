@@ -133,6 +133,19 @@ class CNV:
     ):
         return struct.wrap([dict(zip(column_names, r)) for r in rows])
 
+    @staticmethod
+    def list2tab(rows):
+        columns = set()
+        for r in rows:
+            columns |= set(r.keys())
+        keys = list(columns)
+
+        output = []
+        for r in rows:
+            output.append("\t".join(CNV.object2JSON(r[k]) for k in keys))
+
+        return "\t".join(keys)+"\n"+"\n".join(output)
+
 
     #PROPER NULL HANDLING
     @staticmethod
