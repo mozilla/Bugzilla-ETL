@@ -36,20 +36,21 @@
 # cutoff time, and build all versions.  Only index versions after start_time in ElasticSearch.
 
 
-
+from __future__ import unicode_literals
 import re
 import math
 from bzETL.util import struct, strings
 from bzETL.util.collections import MIN
 from bzETL.util.struct import nvl, StructList
-from transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS
-
 from bzETL.util.cnv import CNV
 from bzETL.util.env.logs import Log
 from bzETL.util.queries import Q
 from bzETL.util.struct import Struct, Null
 from bzETL.util.env.files import File
-from bzETL.util.maths import Math
+
+from transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS
+
+
 
 # Used to split a flag into (type, status [,requestee])
 # Example: "review?(mreid@mozilla.com)" -> (review, ?, mreid@mozilla.com)
@@ -519,9 +520,9 @@ class BugHistoryParser():
                 return f
 
             if (
-                            f.request_type == flag.request_type and
-                            f.request_status == flag.request_status and
-                        self.alias(f.requestee) == self.alias(flag.requestee)
+                deformat(f.request_type) == deformat(flag.request_type) and
+                f.request_status == flag.request_status and
+                self.alias(f.requestee) == self.alias(flag.requestee)
             ):
                 Log.note("[Bug {{bug_id}}]: Using bzAliases to match change '" + flag.value + "' to '" + f.value + "'", {"bug_id": self.currBugID})
                 return f
@@ -968,5 +969,5 @@ class BugHistoryParser():
         except Exception, e:
             Log.error("Can not init aliases", e)
 
-
-
+def deformat(value):
+    return value.lower().replace(u"\u2011", u"-")
