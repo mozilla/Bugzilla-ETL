@@ -110,7 +110,10 @@ def old2new(bug, max_date):
         bug.votes = 3
 
     try:
-        bug.cf_last_resolved = CNV.datetime2milli(CNV.string2datetime(bug.cf_last_resolved, "%Y-%m-%d %H:%M:%S"))
+        if Math.is_number(bug.cf_last_resolved):
+            bug.cf_last_resolved = long(bug.cf_last_resolved)
+        else:
+            bug.cf_last_resolved = CNV.datetime2milli(CNV.string2datetime(bug.cf_last_resolved, "%Y-%m-%d %H:%M:%S"))
     except Exception, e:
         pass
 
