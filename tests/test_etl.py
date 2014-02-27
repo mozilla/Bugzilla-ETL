@@ -47,6 +47,9 @@ class TestETL(unittest.TestCase):
 
 
     def tearDown(self):
+        #CLOSE THE CACHED DB CONNECTIONS
+        bz_etl.close_db_connections()
+
         if all_db:
             Log.error("not all db connections are closed")
 
@@ -82,11 +85,6 @@ class TestETL(unittest.TestCase):
             #COMPARE ALL BUGS
             compare_both(candidate, reference, self.settings, self.settings.param.bugs)
 
-            #CLOSE THE CACHED DB CONNECTIONS
-            bz_etl.close_db_connections()
-
-        if all_db:
-            Log.error("not all db connections are closed")
 
 
     def random_sample_of_bugs(self):
@@ -420,12 +418,6 @@ class TestETL(unittest.TestCase):
                         if v[f] != "fixed":
                             Log.error("813650 should have {{flag}}=='fixed'", {"flag": f})
 
-            #CLOSE THE CACHED DB CONNECTIONS
-            bz_etl.close_db_connections()
-
-        if all_db:
-            Log.error("not all db connections are closed")
-
     def test_whiteboard_screened(self):
         GOOD_BUG_TO_TEST=1046
 
@@ -456,13 +448,6 @@ class TestETL(unittest.TestCase):
             for v in versions:
                 if v.status_whiteboard not in (None, "", "[screened]"):
                     Log.error("Expecting whiteboard to be screened")
-
-            #CLOSE THE CACHED DB CONNECTIONS
-            bz_etl.close_db_connections()
-
-        if all_db:
-            Log.error("not all db connections are closed")
-
 
     def test_ambiguous_whiteboard_screened(self):
         GOOD_BUG_TO_TEST=1046
@@ -497,13 +482,6 @@ class TestETL(unittest.TestCase):
                 if v.status_whiteboard not in (None, "", "[screened]"):
                     Log.error("Expecting whiteboard to be screened")
 
-            #CLOSE THE CACHED DB CONNECTIONS
-            bz_etl.close_db_connections()
-
-        if all_db:
-            Log.error("not all db connections are closed")
-
-
     def test_incremental_has_correct_expires_on(self):
         # 813650, 726635 BOTH HAVE CHANGES IN 2013
         bugs = struct.wrap([813650, 726635])
@@ -536,12 +514,6 @@ class TestETL(unittest.TestCase):
 
             with ThreadedQueue(es, size=1000) as output:
                 etl(db, output, param, please_stop=None)
-
-            #CLOSE THE CACHED DB CONNECTIONS
-            bz_etl.close_db_connections()
-
-        if all_db:
-            Log.error("not all db connections are closed")
 
         for b in bugs:
             results = es.search({

@@ -32,6 +32,12 @@ class TestOneETL(unittest.TestCase):
 
 
     def tearDown(self):
+        #CLOSE THE CACHED DB CONNECTIONS
+        bz_etl.close_db_connections()
+
+        if all_db:
+            Log.error("not all db connections are closed")
+
         Log.stop()
 
 
@@ -56,11 +62,6 @@ class TestOneETL(unittest.TestCase):
             with ThreadedQueue(candidate, size=1000) as output:
                 etl(db, output, param, please_stop=None)
 
-            #CLOSE THE CACHED DB CONNECTIONS
-            bz_etl.close_db_connections()
-
-        if all_db:
-            Log.error("not all db connections are closed")
 
         #TODO: INCLUDE OPTION TO USE REAL ES (AND ENSURE REALLY WORKING)
         # es_settings=Struct(**{
