@@ -52,6 +52,8 @@ class CNV:
     @staticmethod
     def string2datetime(value, format):
         ## http://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
+        if value == None:
+            return None
         try:
             return datetime.datetime.strptime(value, format)
         except Exception, e:
@@ -76,7 +78,9 @@ class CNV:
     @staticmethod
     def datetime2milli(d):
         try:
-            if isinstance(d, datetime.datetime):
+            if d == None:
+                return None
+            elif isinstance(d, datetime.datetime):
                 epoch = datetime.datetime(1970, 1, 1)
             elif isinstance(d, datetime.date):
                 epoch = datetime.date(1970, 1, 1)
