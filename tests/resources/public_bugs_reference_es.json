@@ -73852,13 +73852,6 @@
                 "flags": [
                     {
                         "modified_by": "bhearsum@mozilla.com",
-                        "modified_ts": 1230672566000,
-                        "request_status": "+",
-                        "request_type": "checked-in",
-                        "value": "checked-in+"
-                    },
-                    {
-                        "modified_by": "bhearsum@mozilla.com",
                         "modified_ts": 1230578662000,
                         "request_status": "?",
                         "request_type": "review",
@@ -73944,13 +73937,6 @@
                 "flags": [
                     {
                         "modified_by": "bhearsum@mozilla.com",
-                        "modified_ts": 1230672566000,
-                        "request_status": "+",
-                        "request_type": "checked-in",
-                        "value": "checked-in+"
-                    },
-                    {
-                        "modified_by": "bhearsum@mozilla.com",
                         "modified_ts": 1230578662000,
                         "request_status": "?",
                         "request_type": "review",
@@ -73972,13 +73958,6 @@
                 "created_by": "bhearsum@mozilla.com",
                 "created_ts": 1230578742000,
                 "flags": [
-                    {
-                        "modified_by": "bhearsum@mozilla.com",
-                        "modified_ts": 1230672519000,
-                        "request_status": "+",
-                        "request_type": "checked-in",
-                        "value": "checked-in+"
-                    },
                     {
                         "modified_by": "bhearsum@mozilla.com",
                         "modified_ts": 1230578742000,
@@ -74065,13 +74044,6 @@
                 "created_ts": 1230578662000,
                 "flags": [
                     {
-                        "modified_by": "bhearsum@mozilla.com",
-                        "modified_ts": 1230672566000,
-                        "request_status": "+",
-                        "request_type": "checked-in",
-                        "value": "checked-in+"
-                    },
-                    {
                         "duration_days": 0,
                         "modified_by": "coop@mozilla.com",
                         "modified_ts": 1230579340000,
@@ -74099,13 +74071,6 @@
                 "created_by": "bhearsum@mozilla.com",
                 "created_ts": 1230578742000,
                 "flags": [
-                    {
-                        "modified_by": "bhearsum@mozilla.com",
-                        "modified_ts": 1230672519000,
-                        "request_status": "+",
-                        "request_type": "checked-in",
-                        "value": "checked-in+"
-                    },
                     {
                         "modified_by": "bhearsum@mozilla.com",
                         "modified_ts": 1230578742000,
@@ -74189,13 +74154,6 @@
                 "created_ts": 1230578662000,
                 "flags": [
                     {
-                        "modified_by": "bhearsum@mozilla.com",
-                        "modified_ts": 1230672566000,
-                        "request_status": "+",
-                        "request_type": "checked-in",
-                        "value": "checked-in+"
-                    },
-                    {
                         "duration_days": 0,
                         "modified_by": "coop@mozilla.com",
                         "modified_ts": 1230579340000,
@@ -74223,13 +74181,6 @@
                 "created_by": "bhearsum@mozilla.com",
                 "created_ts": 1230578742000,
                 "flags": [
-                    {
-                        "modified_by": "bhearsum@mozilla.com",
-                        "modified_ts": 1230672519000,
-                        "request_status": "+",
-                        "request_type": "checked-in",
-                        "value": "checked-in+"
-                    },
                     {
                         "duration_days": 0,
                         "modified_by": "coop@mozilla.com",
@@ -74318,13 +74269,6 @@
                 "created_ts": 1230578662000,
                 "flags": [
                     {
-                        "modified_by": "bhearsum@mozilla.com",
-                        "modified_ts": 1230672566000,
-                        "request_status": "+",
-                        "request_type": "checked-in",
-                        "value": "checked-in+"
-                    },
-                    {
                         "duration_days": 0,
                         "modified_by": "coop@mozilla.com",
                         "modified_ts": 1230579340000,
@@ -74352,13 +74296,6 @@
                 "created_by": "bhearsum@mozilla.com",
                 "created_ts": 1230578742000,
                 "flags": [
-                    {
-                        "modified_by": "bhearsum@mozilla.com",
-                        "modified_ts": 1230672519000,
-                        "request_status": "+",
-                        "request_type": "checked-in",
-                        "value": "checked-in+"
-                    },
                     {
                         "duration_days": 0,
                         "modified_by": "coop@mozilla.com",
@@ -74473,13 +74410,6 @@
                 "created_ts": 1230578662000,
                 "flags": [
                     {
-                        "modified_by": "bhearsum@mozilla.com",
-                        "modified_ts": 1230672566000,
-                        "request_status": "+",
-                        "request_type": "checked-in",
-                        "value": "checked-in+"
-                    },
-                    {
                         "duration_days": 0,
                         "modified_by": "coop@mozilla.com",
                         "modified_ts": 1230579340000,
@@ -74507,13 +74437,6 @@
                 "created_by": "bhearsum@mozilla.com",
                 "created_ts": 1230578742000,
                 "flags": [
-                    {
-                        "modified_by": "bhearsum@mozilla.com",
-                        "modified_ts": 1230672519000,
-                        "request_status": "+",
-                        "request_type": "checked-in",
-                        "value": "checked-in+"
-                    },
                     {
                         "duration_days": 0,
                         "modified_by": "coop@mozilla.com",
@@ -74620,13 +74543,6 @@
                 "created_ts": 1230578662000,
                 "flags": [
                     {
-                        "modified_by": "bhearsum@mozilla.com",
-                        "modified_ts": 1230672566000,
-                        "request_status": "+",
-                        "request_type": "checked-in",
-                        "value": "checked-in+"
-                    },
-                    {
                         "duration_days": 0,
                         "modified_by": "coop@mozilla.com",
                         "modified_ts": 1230579340000,
@@ -74655,13 +74571,6 @@
                 "created_ts": 1230578742000,
                 "flags": [
                     {
-                        "modified_by": "bhearsum@mozilla.com",
-                        "modified_ts": 1230672519000,
-                        "request_status": "+",
-                        "request_type": "checked-in",
-                        "value": "checked-in+"
-                    },
-                    {
                         "duration_days": 0,
                         "modified_by": "coop@mozilla.com",
                         "modified_ts": 1230579433000,
@@ -74689,13 +74598,6 @@
                 "created_by": "bhearsum@mozilla.com",
                 "created_ts": 1230671559000,
                 "flags": [
-                    {
-                        "modified_by": "bhearsum@mozilla.com",
-                        "modified_ts": 1230672981000,
-                        "request_status": "+",
-                        "request_type": "checked-in",
-                        "value": "checked-in+"
-                    },
                     {
                         "modified_by": "bhearsum@mozilla.com",
                         "modified_ts": 1230671559000,
@@ -74800,13 +74702,6 @@
                 "created_ts": 1230578662000,
                 "flags": [
                     {
-                        "modified_by": "bhearsum@mozilla.com",
-                        "modified_ts": 1230672566000,
-                        "request_status": "+",
-                        "request_type": "checked-in",
-                        "value": "checked-in+"
-                    },
-                    {
                         "duration_days": 0,
                         "modified_by": "coop@mozilla.com",
                         "modified_ts": 1230579340000,
@@ -74835,13 +74730,6 @@
                 "created_ts": 1230578742000,
                 "flags": [
                     {
-                        "modified_by": "bhearsum@mozilla.com",
-                        "modified_ts": 1230672519000,
-                        "request_status": "+",
-                        "request_type": "checked-in",
-                        "value": "checked-in+"
-                    },
-                    {
                         "duration_days": 0,
                         "modified_by": "coop@mozilla.com",
                         "modified_ts": 1230579433000,
@@ -74869,13 +74757,6 @@
                 "created_by": "bhearsum@mozilla.com",
                 "created_ts": 1230671559000,
                 "flags": [
-                    {
-                        "modified_by": "bhearsum@mozilla.com",
-                        "modified_ts": 1230672981000,
-                        "request_status": "+",
-                        "request_type": "checked-in",
-                        "value": "checked-in+"
-                    },
                     {
                         "duration_days": 0,
                         "modified_by": "ted@mielczarek.org",
@@ -74982,13 +74863,6 @@
                 "created_ts": 1230578662000,
                 "flags": [
                     {
-                        "modified_by": "bhearsum@mozilla.com",
-                        "modified_ts": 1230672566000,
-                        "request_status": "+",
-                        "request_type": "checked-in",
-                        "value": "checked-in+"
-                    },
-                    {
                         "duration_days": 0,
                         "modified_by": "coop@mozilla.com",
                         "modified_ts": 1230579340000,
@@ -75052,13 +74926,6 @@
                 "created_ts": 1230671559000,
                 "flags": [
                     {
-                        "modified_by": "bhearsum@mozilla.com",
-                        "modified_ts": 1230672981000,
-                        "request_status": "+",
-                        "request_type": "checked-in",
-                        "value": "checked-in+"
-                    },
-                    {
                         "duration_days": 0,
                         "modified_by": "ted@mielczarek.org",
                         "modified_ts": 1230672116000,
@@ -75088,6 +74955,13 @@
         "bug_version_num": 11,
         "cc": [
             "joduinn@mozilla.com"
+        ],
+        "changes": [
+            {
+                "attach_id": 354714,
+                "field_name": "flags",
+                "new_value": "checked-in+"
+            }
         ],
         "component": "release engineering",
         "created_by": "bhearsum@mozilla.com",
@@ -75226,13 +75100,6 @@
                 "created_ts": 1230671559000,
                 "flags": [
                     {
-                        "modified_by": "bhearsum@mozilla.com",
-                        "modified_ts": 1230672981000,
-                        "request_status": "+",
-                        "request_type": "checked-in",
-                        "value": "checked-in+"
-                    },
-                    {
                         "duration_days": 0,
                         "modified_by": "ted@mielczarek.org",
                         "modified_ts": 1230672116000,
@@ -75262,6 +75129,13 @@
         "bug_version_num": 12,
         "cc": [
             "joduinn@mozilla.com"
+        ],
+        "changes": [
+            {
+                "attach_id": 354713,
+                "field_name": "flags",
+                "new_value": "checked-in+"
+            }
         ],
         "component": "release engineering",
         "created_by": "bhearsum@mozilla.com",
@@ -75436,6 +75310,13 @@
         "bug_version_num": 13,
         "cc": [
             "joduinn@mozilla.com"
+        ],
+        "changes": [
+            {
+                "attach_id": 354871,
+                "field_name": "flags",
+                "new_value": "checked-in+"
+            }
         ],
         "component": "release engineering",
         "created_by": "bhearsum@mozilla.com",
