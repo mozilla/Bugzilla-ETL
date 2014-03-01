@@ -40,7 +40,7 @@ from __future__ import unicode_literals
 import re
 import math
 from bzETL.util import struct, strings
-from bzETL.util.collections import MIN
+from bzETL.util.collections import MIN, OR
 from bzETL.util.struct import nvl, StructList
 from bzETL.util.cnv import CNV
 from bzETL.util.env.logs import Log
@@ -322,9 +322,14 @@ class BugHistoryParser():
 
                 if row_in.field_name in MULTI_FIELDS:
                     total = attachment[row_in.field_name]
-                    # Can have both added and removed values.
-                    total = self.removeValues(total, multi_field_new_value, "added", row_in.field_name, "attachment", attachment, row_in.modified_ts)
-                    total = self.addValues(total, multi_field_old_value, "removed attachment", row_in.field_name, attachment)
+                    if row_in.field_name == "flags":
+                        total = self.processFlags(total, multi_field_old_value, multi_field_new_value, row_in.modified_ts, row_in.modified_by, "attachment", attachment)
+                    else:
+                        total = attachment[row_in.field_name]
+                        # Can have both added and removed values.
+                        total = self.removeValues(total, multi_field_new_value, "added", row_in.field_name, "attachment", attachment)
+                        total = self.addValues(total, multi_field_old_value, "removed attachment", row_in.field_name, attachment)
+
                     attachment[row_in.field_name] = total
                 else:
                     attachment[row_in.field_name] = row_in.old_value
@@ -341,9 +346,12 @@ class BugHistoryParser():
                 # STATE, IT IS STILL RECORDED (see above self.currActivity.changes.append...).  THIS MEANS
                 # WHEN GOING THROUGH THE CHANGES IN IN ORDER THE VALUE WILL EXIST, BUT IT SHOULD NOT
                 total = self.currBugState[row_in.field_name]
-                # Can have both added and removed values.
-                total = self.removeValues(total, multi_field_new_value, "added", row_in.field_name, "currBugState", self.currBugState, row_in.modified_ts)
-                total = self.addValues(total, multi_field_old_value, "removed bug", row_in.field_name, self.currBugState)
+                if row_in.field_name == "flags":
+                    total = self.processFlags(total, multi_field_old_value, multi_field_new_value, row_in.modified_ts, row_in.modified_by, "bug", self.currBugState)
+                else:
+                    # Can have both added and removed values.
+                    total = self.removeValues(total, multi_field_new_value, "added", row_in.field_name, "currBugState", self.currBugState)
+                    total = self.addValues(total, multi_field_old_value, "removed bug", row_in.field_name, self.currBugState)
                 self.currBugState[row_in.field_name] = total
             else:
                 # Replace current value
@@ -476,7 +484,7 @@ class BugHistoryParser():
                         multi_field_value_removed = BugHistoryParser.getMultiFieldValue(change.field_name, change.old_value)
 
                         # This was a deletion, find and delete the value(s)
-                        a = self.removeValues(a, multi_field_value_removed, "removed", change.field_name, targetName, target, currVersion.modified_ts)
+                        a = self.removeValues(a, multi_field_value_removed, "removed", change.field_name, targetName, target)
                         # Handle addition(s) (if any)
                         a = self.addValues(a, multi_field_value, "added", change.field_name, target)
                         target[change.field_name] = a
@@ -516,30 +524,30 @@ class BugHistoryParser():
 
     def findFlag(self, flag_list, flag):
         for f in flag_list:
-            if f.value == flag.value:
-                return f
-
             if (
                 deformat(f.request_type) == deformat(flag.request_type) and
                 f.request_status == flag.request_status and
-                self.alias(f.requestee) == self.alias(flag.requestee)
+                (
+                    (f.request_status!='?' and self.alias(f.modified_by) == self.alias(flag.modified_by)) or
+                    (f.request_status=='?' and self.alias(f.requestee) == self.alias(flag.requestee))
+                )
             ):
-                Log.note("[Bug {{bug_id}}]: Using bzAliases to match change '" + flag.value + "' to '" + f.value + "'", {"bug_id": self.currBugID})
                 return f
+
+        for f in flag_list:
+            if f.value == flag.value:
+                return f
+
         return Null
 
 
-    def processFlagChange(self, target, change, modified_ts, modified_by, reverse=False):
+    def processFlagChange(self, target, change, modified_ts, modified_by):
         if target.flags == None:
             Log.note("[Bug {{bug_id}}]: PROBLEM  processFlagChange called with unset 'flags'", {"bug_id": self.currBugState.bug_id})
             target.flags = []
 
         addedFlags = BugHistoryParser.getMultiFieldValue("flags", change.new_value)
         removedFlags = BugHistoryParser.getMultiFieldValue("flags", change.old_value)
-
-        #going in reverse when traveling through bugs backwards in time
-        if reverse:
-            (addedFlags, removedFlags) = (removedFlags, addedFlags)
 
         # First, mark any removed flags as straight-up deletions.
         for flagStr in removedFlags:
@@ -549,7 +557,7 @@ class BugHistoryParser():
             removed_flag = BugHistoryParser.makeFlag(flagStr, modified_ts, modified_by)
             existingFlag = self.findFlag(target.flags, removed_flag)
 
-            if existingFlag != None:
+            if existingFlag:
                 # Carry forward some previous values:
                 existingFlag["previous_modified_ts"] = existingFlag["modified_ts"]
                 existingFlag["modified_ts"] = modified_ts
@@ -688,6 +696,9 @@ class BugHistoryParser():
 
     @staticmethod
     def makeFlag(flag, modified_ts, modified_by):
+        # if flag==u'review?(bjacob@mozilla.co':
+        #     Log.debug()
+
         flagParts = Struct(
             modified_ts=modified_ts,
             modified_by=modified_by,
@@ -709,31 +720,7 @@ class BugHistoryParser():
             return total
             #        Log.note("[Bug {{bug_id}}]: Adding " + valueType + " " + fieldName + " values:" + CNV.object2JSON(someValues))
         if field_name == "flags":
-            for v in add:
-                total.append(BugHistoryParser.makeFlag(v, target.modified_ts, target.modified_by))
-            if valueType != "added":
-                self.currActivity.changes.append({
-                    "field_name": field_name,
-                    "new_value": Null,
-                    "old_value": ", ".join(Q.sort(add)),
-                    "attach_id": target.attach_id
-                })
-            else:
-                Log.error("programming error")
-
-            return total
-            ## TODO: Some bugs (like 685605) actually have duplicate flags. Do we want to keep them?
-            #/*
-            # # Check if this flag has already been incorporated into a removed flag. If so, don't add it again.
-            # dupes = anArray.filter(def(element, index, array):
-            # return element["value"] == added
-            # and element["modified_by"] == anObj.modified_by
-            # and element["modified_ts"] == anObj.modified_ts
-            # })
-            # if dupes and dupes.length > 0:
-            # Log.note("Skipping duplicated added flag '" + added + "' since info is already in " + CNV.object2JSON(dupes[0]))
-            # else:
-            # */
+            Log.error("use processFlags")
         else:
             diff = add - total
             removed = total & add
@@ -759,38 +746,9 @@ class BugHistoryParser():
             return total | add
 
 
-    def removeValues(self, total, remove, valueType, field_name, arrayDesc, target, timestamp):
+    def removeValues(self, total, remove, valueType, field_name, arrayDesc, target):
         if field_name == "flags":
-            removeMe = []
-            for v in remove:
-                flag = BugHistoryParser.makeFlag(v, 0, 0)
-
-                found = self.findFlag(total, flag)
-                if found != None:
-                    removeMe.append(found.value) #FOR SOME REASON, REMOVAL BY OBJECT DOES NOT WORK
-                else:
-                    Log.note("[Bug {{bug_id}}]: PROBLEM Unable to find {{type}} FLAG: {{object}}.{{field_name}}: (All {{missing}}" + " not in : {{existing}})", {
-                        "type": valueType,
-                        "object": arrayDesc,
-                        "field_name": field_name,
-                        "missing": v,
-                        "existing": total,
-                        "bug_id": self.currBugID
-                    })
-
-            total = [a for a in total if a.value not in removeMe]
-
-            if valueType == "added" and removeMe:
-                try:
-                    self.currActivity.changes.append({
-                        "field_name": field_name,
-                        "new_value": u", ".join(Q.sort(removeMe)),
-                        "old_value": Null,
-                        "attach_id": target.attach_id
-                    })
-                except Exception, email:
-                    Log.error("problem", email)
-            return total
+            Log.error("use processFlags")
         elif field_name == "keywords":
             diff = remove - total
             output = total - remove
@@ -934,6 +892,57 @@ class BugHistoryParser():
 
             return output
 
+    def processFlags(self, total, old_values, new_values, modified_ts, modified_by, target_type, target):
+        added_values = StructList() #FOR SOME REASON, REMOVAL BY OBJECT DOES NOT WORK, SO WE USE THIS LIST OF STRING  VALUES
+        for v in new_values:
+            flag = BugHistoryParser.makeFlag(v, modified_ts, modified_by)
+
+            if flag.request_type == None:
+                Log.note("[Bug {{bug_id}}]: PROBLEM Unable to parse flag {{flag}} (caused by 255 char limit?)", {
+                    "flag": CNV.value2quote(flag.value),
+                    "bug_id": self.currBugID
+                })
+                continue
+
+            found = self.findFlag(total, flag)
+            if found:
+                total = [a for a in total if tuple(a.items()) != tuple(found.items())]  # COMPARE DICTS
+                added_values.append(found)
+            else:
+                Log.note("[Bug {{bug_id}}]: PROBLEM Unable to find {{type}} FLAG: {{object}}.{{field_name}}: (All {{missing}}" + " not in : {{existing}})", {
+                    "type": target_type,
+                    "object": target,
+                    "field_name": "flags",
+                    "missing": v,
+                    "existing": total,
+                    "bug_id": self.currBugID
+                })
+
+
+        if added_values:
+            self.currActivity.changes.append({
+                "field_name": "flags",
+                "new_value": ", ".join(Q.sort(added_values.value)),
+                "old_value": Null,
+                "attach_id": target.attach_id
+            })
+
+        if not old_values:
+            return total
+            #        Log.note("[Bug {{bug_id}}]: Adding " + valueType + " " + fieldName + " values:" + CNV.object2JSON(someValues))
+        for v in old_values:
+            total.append(BugHistoryParser.makeFlag(v, target.modified_ts, target.modified_by))
+
+        self.currActivity.changes.append({
+            "field_name": "flags",
+            "new_value": Null,
+            "old_value": ", ".join(Q.sort(old_values)),
+            "attach_id": target.attach_id
+        })
+
+        return total
+
+
 
     @staticmethod
     def getMultiFieldValue(name, value):
@@ -970,4 +979,6 @@ class BugHistoryParser():
             Log.error("Can not init aliases", e)
 
 def deformat(value):
+    if value == None:
+        Log.error("not expected")
     return value.lower().replace(u"\u2011", u"-")
