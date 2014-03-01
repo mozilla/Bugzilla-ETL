@@ -11,7 +11,7 @@ from __future__ import unicode_literals
 
 from .. import struct
 from ..collections.matrix import Matrix
-from ..collections import SUM, COUNT
+from ..collections import COUNT
 from ..queries import es_query_util
 from ..queries.cube import Cube
 from ..queries.es_query_util import aggregates, buildESQuery, compileEdges2Term
@@ -19,7 +19,7 @@ from ..queries.filters import simplify
 from ..env.logs import Log
 from ..queries import domains, MVEL, filters
 from ..queries.MVEL import UID
-from ..struct import nvl, StructList
+from ..struct import nvl, StructList, wrap
 
 
 def is_terms_stats(query):
@@ -199,7 +199,7 @@ def buildCondition(mvel, edge, partition):
 
     if edge.domain.isFacet:
         # MUST USE THIS' esFacet
-        condition = struct.wrap(nvl(partition.where, {"and": []}))
+        condition = wrap(nvl(partition.where, {"and": []}))
 
         if partition.min and partition.max and MVEL.isKeyword(edge.value):
             condition["and"].append({

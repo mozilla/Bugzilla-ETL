@@ -18,7 +18,7 @@ import sys
 
 from .. import struct
 from ..thread import threads
-from ..struct import listwrap, nvl, Struct
+from ..struct import listwrap, nvl, Struct, wrap
 from ..strings import indent, expand_template
 from ..thread.threads import Thread
 
@@ -41,7 +41,7 @@ class Log(object):
 
     @classmethod
     def new_instance(cls, settings):
-        settings = struct.wrap(settings)
+        settings = wrap(settings)
 
         if settings["class"]:
             if not settings["class"].startswith("logging.handlers."):

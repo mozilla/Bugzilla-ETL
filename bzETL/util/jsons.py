@@ -26,7 +26,7 @@ import time
 from datetime import datetime, date
 from decimal import Decimal
 import sys
-from bzETL.util.collections import AND, MAX
+from .collections import AND, MAX
 
 from .struct import Struct
 
@@ -82,11 +82,23 @@ class cPythonJSONEncoder(object):
     def __init__(self):
         object.__init__(self)
 
+        self.encoder = json.JSONEncoder(
+            skipkeys=False,
+            ensure_ascii=False,  # DIFF FROM DEFAULTS
+            check_circular=True,
+            allow_nan=True,
+            indent=None,
+            separators=None,
+            encoding='utf-8',
+            default=None,
+            sort_keys=False
+        )
+
     def encode(self, value, pretty=False):
         if pretty:
             return pretty_json(value)
 
-        return unicode(json.dumps(json_scrub(value), ensure_ascii=False))
+        return unicode(self.encoder.encode(json_scrub(value)))
 
 
 # OH HUM, cPython with uJSON, OR pypy WITH BUILTIN JSON?
@@ -130,7 +142,7 @@ def _value2json(value, _buffer):
             append(_buffer, v)
             append(_buffer, u"\"")
         except Exception, e:
-            from util.logs import Log
+            from .env.logs import Log
 
             Log.error(value, e)
     elif type in (int, long, Decimal):
@@ -271,6 +283,8 @@ def expand_dot(value):
 
 ARRAY_ROW_LENGTH = 80
 ARRAY_ITEM_MAX_LENGTH = 30
+ARRAY_MAX_COLUMNS = 10
+INDENT = "    "
 
 def pretty_json(value):
     try:
@@ -284,7 +298,7 @@ def pretty_json(value):
 
                 items = sorted(items, lambda a, b: value_compare(a[0], b[0]))
                 values = ["\"" + ESCAPE.sub(replace, unicode(k)) + "\": " + indent(pretty_json(v)).strip() for k, v in items if v != None]
-                return "{\n\t" + ",\n\t".join(values) + "\n}"
+                return "{\n" + INDENT + (",\n"+INDENT).join(values) + "\n}"
             except Exception, e:
                 from .env.logs import Log
                 from .collections import OR
@@ -300,6 +314,10 @@ def pretty_json(value):
         elif isinstance(value, list):
             if not value:
                 return "[]"
+
+            if ARRAY_MAX_COLUMNS==1:
+                return "[\n" + ",\n".join([indent(pretty_json(v)) for v in value]) + "\n]"
+
             if len(value) == 1:
                 j = pretty_json(value[0])
                 if j.find("\n") >= 0:
@@ -310,15 +328,16 @@ def pretty_json(value):
             js = [pretty_json(v) for v in value]
             max_len = MAX(len(j) for j in js)
             if max_len<=ARRAY_ITEM_MAX_LENGTH and AND(j.find("\n")==-1 for j in js):
-                max_columns = max(10, int(floor((ARRAY_ROW_LENGTH + 2.0)/float(max_len+2)))) # +2 TO COMPENSATE FOR COMMAS
-
                 #ALL TINY VALUES
-                if len(js)<=max_columns:
+                num_columns = max(1, min(ARRAY_MAX_COLUMNS, int(floor((ARRAY_ROW_LENGTH + 2.0)/float(max_len+2))))) # +2 TO COMPENSATE FOR COMMAS
+                if len(js)<=num_columns:  # DO NOT ADD \n IF ONLY ONE ROW
                     return "[" + ", ".join(js) + "]"
+                if num_columns == 1:  # DO NOT rjust IF THERE IS ONLY ONE COLUMN
+                    return "[\n" + ",\n".join([indent(pretty_json(v)) for v in value]) + "\n]"
 
-                content = "\n".join(
-                    ", ".join(j.rjust(max_len) for j in js[r:r+max_columns])
-                    for r in xrange(0, len(js), max_columns)
+                content = ",\n".join(
+                    ", ".join(j.rjust(max_len) for j in js[r:r+num_columns])
+                    for r in xrange(0, len(js), num_columns)
                 )
                 return "[\n" + indent(content) + "\n]"
 
@@ -339,7 +358,7 @@ def pretty_json(value):
         Log.error("Problem turning value to json", e)
 
 
-def indent(value, prefix="\t"):
+def indent(value, prefix=INDENT):
     try:
         content = value.rstrip()
         suffix = value[len(content):]

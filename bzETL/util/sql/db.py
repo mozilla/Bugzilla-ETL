@@ -16,7 +16,7 @@ from pymysql import connect, InterfaceError
 from .. import struct
 from ..maths import Math
 from ..strings import expand_template
-from ..struct import nvl
+from ..struct import nvl, wrap
 from ..cnv import CNV
 from ..env.logs import Log, Except
 from ..queries import Q
@@ -307,7 +307,7 @@ class DB(object):
             columns = tuple([utf8_to_unicode(d[0]) for d in self.cursor.description])
             for r in self.cursor:
                 num += 1
-                _execute(struct.wrap(dict(zip(columns, [utf8_to_unicode(c) for c in r]))))
+                _execute(wrap(dict(zip(columns, [utf8_to_unicode(c) for c in r]))))
 
             if not old_cursor:   #CLEANUP AFTER NON-TRANSACTIONAL READS
                 self.cursor.close()

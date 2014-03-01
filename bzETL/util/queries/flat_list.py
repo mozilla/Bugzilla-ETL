@@ -9,10 +9,9 @@
 #
 
 from __future__ import unicode_literals
-from .. import struct
 from ..collections import MIN
 from ..env.logs import Log
-from ..struct import nvl, split_field
+from ..struct import nvl, split_field, wrap
 
 
 class FlatList(list):
@@ -64,7 +63,7 @@ class FlatList(list):
                 short_keys = keys[depth:]
 
                 output = []
-                _select1((struct.wrap(d[depth]) for d in self.data), short_keys, 0, output)
+                _select1((wrap(d[depth]) for d in self.data), short_keys, 0, output)
                 return output
 
         Log.error("multiselect over FlatList not supported")

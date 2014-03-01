@@ -16,7 +16,7 @@ from .query import Query
 from ..sql.db import int_list_packer, SQL, DB
 from ..env.logs import Log
 from ..strings import indent, expand_template
-from ..struct import nvl
+from ..struct import nvl, wrap
 
 
 class DBQuery(object):
@@ -280,7 +280,7 @@ def _esfilter2sqlwhere(db, esfilter):
     CONVERT ElassticSearch FILTER TO SQL FILTER
     db - REQUIRED TO PROPERLY QUOTE VALUES AND COLUMN NAMES
     """
-    esfilter = struct.wrap(esfilter)
+    esfilter = wrap(esfilter)
 
     if esfilter["and"]:
         return _isolate("AND", [esfilter2sqlwhere(db, a) for a in esfilter["and"]])

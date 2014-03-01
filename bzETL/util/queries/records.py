@@ -8,7 +8,7 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 from __future__ import unicode_literals
-from dzAlerts.util.struct import listwrap
+from ..struct import listwrap
 
 
 class Record(object):

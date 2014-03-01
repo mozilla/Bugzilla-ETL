@@ -8,11 +8,10 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 from __future__ import unicode_literals
-from .. import struct
 from ..collections import PRODUCT, reverse, MAX, MIN
 from ..cnv import CNV
 from ..env.logs import Log
-from ..struct import Null, Struct
+from ..struct import Null, Struct, wrap
 
 
 class Matrix(object):
@@ -21,7 +20,7 @@ class Matrix(object):
     """
 
     def __init__(self, *dims, **kwargs):
-        kwargs=struct.wrap(kwargs)
+        kwargs = wrap(kwargs)
         list = kwargs.list
         if list:
             self.num = 1
@@ -100,7 +99,7 @@ class Matrix(object):
         for i, d in reverse(enumerate(self.dims)):
             if not io_select[i]:
                 new_dim.insert(0, d)
-            offsets.insert(0, acc*io_select[i])
+            offsets.insert(0, acc * io_select[i])
             acc *= d
 
         if not new_dim:
@@ -125,6 +124,7 @@ class Matrix(object):
     def __json__(self):
         return CNV.object2JSON(self.cube)
 
+
 def _max(depth, cube):
     if depth == 0:
         return cube
@@ -132,6 +132,7 @@ def _max(depth, cube):
         return MAX(cube)
     else:
         return MAX(_max(depth - 1, c) for c in cube)
+
 
 def _min(depth, cube):
     if depth == 0:
@@ -150,15 +151,15 @@ aggregates = Struct(
 )
 
 
-
 def _iter(cube, depth):
     if depth == 1:
         return cube.__iter__()
     else:
         def iterator():
             for c in cube:
-                for b in _iter(c, depth-1):
+                for b in _iter(c, depth - 1):
                     yield b
+
         return iterator()
 
 
@@ -172,7 +173,6 @@ def _null(*dims):
         return [_null(*dims[1::]) for i in range(dims[0])]
 
 
-
 def _groupby(cube, depth, intervals, offset, output, group, new_coord):
     if depth == len(intervals):
         output[offset][0] = group
@@ -183,10 +183,10 @@ def _groupby(cube, depth, intervals, offset, output, group, new_coord):
 
     if interval:
         for i, c in enumerate(cube):
-            _groupby(c, depth + 1, intervals, offset + i * interval, output, group + ( i, ), new_coord      )
+            _groupby(c, depth + 1, intervals, offset + i * interval, output, group + ( i, ), new_coord)
     else:
         for i, c in enumerate(cube):
-            _groupby(c, depth + 1, intervals, offset,                output, group + (-1, ), new_coord + [i])
+            _groupby(c, depth + 1, intervals, offset, output, group + (-1, ), new_coord + [i])
 
 
 def _stack(cube, depth, intervals, offset, output, group):

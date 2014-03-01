@@ -8,7 +8,7 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 from __future__ import unicode_literals
-from .. import struct
+from ..struct import wrap
 
 
 TRUE_FILTER = True
@@ -16,7 +16,7 @@ FALSE_FILTER = False
 
 
 def simplify(esfilter):
-    output = normalize(struct.wrap(esfilter))
+    output = normalize(wrap(esfilter))
     if output is TRUE_FILTER:
         return {"match_all": {}}
     output.isNormal = None

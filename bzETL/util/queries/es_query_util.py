@@ -13,13 +13,13 @@ from datetime import datetime
 from .. import struct
 from ..cnv import CNV
 from .. import strings
-from dzAlerts.util.collections import COUNT
+from ..collections import COUNT
 from ..maths import stats
 from ..env.elasticsearch import ElasticSearch
 from ..env.logs import Log
 from ..maths import Math
 from ..queries import domains, MVEL, filters
-from ..struct import nvl, StructList, Struct, split_field, join_field
+from ..struct import nvl, StructList, Struct, split_field, join_field, wrap
 from ..times import durations
 
 
@@ -60,7 +60,7 @@ def loadColumns(es, frum):
     if diff:
         es = ElasticSearch(frum)
 
-    output = struct.wrap(frum).copy()
+    output = wrap(frum).copy()
     schema = es.get_schema()
     properties = schema.properties
     output.es = es
@@ -102,7 +102,7 @@ def post(es, esQuery, limit):
 
 
 def buildESQuery(query):
-    output = struct.wrap({
+    output = wrap({
         "query": {"match_all": {}},
         "from": 0,
         "size": 100 if DEBUG else 0,

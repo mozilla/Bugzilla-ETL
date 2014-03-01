@@ -13,6 +13,7 @@ from datetime import timedelta
 import re
 
 from . import struct
+from .struct import wrap
 
 
 def datetime(value):
@@ -102,7 +103,7 @@ def expand_template(template, value):
     template IS A STRING WITH {{variable_name}} INSTANCES, WHICH WILL
     BE EXPANDED TO WHAT IS IS IN THE value dict
     """
-    value = struct.wrap(value)
+    value = wrap(value)
     if isinstance(template, basestring):
         return _simple_expand(template, (value,))
 
@@ -116,7 +117,7 @@ def _expand(template, seq):
     if isinstance(template, basestring):
         return _simple_expand(template, seq)
     elif isinstance(template, dict):
-        template = struct.wrap(template)
+        template = wrap(template)
         assert template["from"], "Expecting template to have 'from' attribute"
         assert template.template, "Expecting template to have 'template' attribute"
 

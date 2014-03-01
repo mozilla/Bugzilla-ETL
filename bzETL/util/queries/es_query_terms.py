@@ -12,11 +12,11 @@ from __future__ import unicode_literals
 from .. import struct
 from ..collections.matrix import Matrix
 from ..collections import AND
-from ..queries import Q
 from ..queries import es_query_util
 from ..queries.es_query_util import aggregates, buildESQuery, compileEdges2Term
 from ..queries.filters import simplify
 from ..queries.cube import Cube
+from ..struct import wrap
 
 
 def is_terms(query):
@@ -37,7 +37,7 @@ def es_terms(es, mvel, query):
     """
     select = struct.listwrap(query.select)
     esQuery = buildESQuery(query)
-    packed_term = compileEdges2Term(mvel, query.edges, struct.wrap([]))
+    packed_term = compileEdges2Term(mvel, query.edges, wrap([]))
     for s in select:
 
         esQuery.facets[s.name] = {

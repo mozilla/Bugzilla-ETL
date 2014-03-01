@@ -9,8 +9,8 @@
 #
 
 from __future__ import unicode_literals
-from .. import struct
 from ..queries.db_query import esfilter2sqlwhere
+from ..struct import wrap
 
 
 def find_holes(db, table_name, column_name, _range, filter=None):
@@ -21,7 +21,7 @@ def find_holes(db, table_name, column_name, _range, filter=None):
     if not filter:
         filter = {"match_all": {}}
 
-    _range = struct.wrap(_range)
+    _range = wrap(_range)
     params = {
         "min": _range.min,
         "max": _range.max - 1,

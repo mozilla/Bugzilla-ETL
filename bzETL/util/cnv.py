@@ -18,6 +18,7 @@ from .jsons import json_decoder, json_encoder, replace, ESCAPE
 from .env.logs import Log
 from . import struct
 from .strings import expand_template
+from .struct import wrap
 
 
 class CNV:
@@ -44,7 +45,7 @@ class CNV:
                 params = dict([(k, CNV.value2quote(v)) for k, v in params.items()])
                 json_string = expand_template(json_string, params)
 
-            return struct.wrap(json_decoder.decode(json_string))
+            return wrap(json_decoder.decode(json_string))
         except Exception, e:
             Log.error("Can not decode JSON:\n\t" + json_string, e)
 
@@ -135,7 +136,7 @@ class CNV:
             column_names, #tuple of columns names
             rows          #list of tuples
     ):
-        return struct.wrap([dict(zip(column_names, r)) for r in rows])
+        return wrap([dict(zip(column_names, r)) for r in rows])
 
     @staticmethod
     def list2tab(rows):
@@ -330,7 +331,7 @@ def unPipe(value):
 
 
 def _filter(esfilter, row, rownum, rows):
-    esfilter = struct.wrap(esfilter)
+    esfilter = wrap(esfilter)
 
     if esfilter[u"and"]:
         for a in esfilter[u"and"]:
