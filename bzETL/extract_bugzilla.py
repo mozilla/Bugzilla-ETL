@@ -304,7 +304,7 @@ def get_dependencies(db, param):
     return db.query("""
         SELECT blocked AS bug_id
             , CAST(null AS signed) AS modified_ts
-            , CAST(null AS char(255)) AS modified_by
+            , CAST(null AS CHAR) AS modified_by
             , 'dependson' AS field_name
             , CAST(dependson AS SIGNED) AS new_value
             , CAST(null AS SIGNED) AS old_value
@@ -336,7 +336,7 @@ def get_duplicates(db, param):
     return db.query("""
         SELECT dupe AS bug_id
             , CAST(null AS signed) AS modified_ts
-            , CAST(null AS char(255)) AS modified_by
+            , CAST(null AS CHAR) AS modified_by
             , 'dupe_of' AS field_name
             , CAST(dupe_of AS SIGNED) AS new_value
             , CAST(null AS SIGNED) AS old_value
@@ -367,10 +367,10 @@ def get_bug_groups(db, param):
     return db.query("""
         SELECT bug_id
             , CAST(null AS signed) AS modified_ts
-            , CAST(null AS char(255)) AS modified_by
+            , CAST(null AS CHAR) AS modified_by
             , 'bug_group' AS field_name
-            , lower(CAST(g.`name` AS char(255))) AS new_value
-            , CAST(null AS char(255)) AS old_value
+            , lower(CAST(g.`name` AS CHAR)) AS new_value
+            , CAST(null AS CHAR) AS old_value
             , CAST(null AS signed) AS attach_id
             , 2 AS _merge_order
         FROM bug_group_map bg
@@ -386,10 +386,10 @@ def get_cc(db, param):
     return db.query("""
         SELECT bug_id
             , CAST(null AS signed) AS modified_ts
-            , CAST(null AS char(255)) AS modified_by
+            , CAST(null AS CHAR) AS modified_by
             , 'cc' AS field_name
-            , lower(CAST(p.login_name AS char(255))) AS new_value
-            , CAST(null AS char(255)) AS old_value
+            , lower(CAST(p.login_name AS CHAR)) AS new_value
+            , CAST(null AS CHAR) AS old_value
             , CAST(null AS signed) AS attach_id
             , 2 AS _merge_order
         FROM
@@ -411,8 +411,8 @@ def get_all_cc_changes(db, bug_list):
             SELECT
                 bug_id,
                 CAST({{max_time}} AS signed) AS modified_ts,
-                CAST(null AS char(255)) AS new_value,
-                lower(CAST(p.login_name AS CHAR(255) CHARACTER SET utf8)) AS old_value
+                CAST(null AS CHAR) AS new_value,
+                lower(CAST(p.login_name AS CHAR CHARACTER SET utf8)) AS old_value
             FROM
                 cc
             LEFT JOIN
@@ -537,10 +537,10 @@ def get_bug_see_also(db, param):
     return db.query("""
         SELECT bug_id
             , CAST(null AS signed) AS modified_ts
-            , CAST(null AS char(255)) AS modified_by
+            , CAST(null AS CHAR) AS modified_by
             , 'see_also' AS field_name
-            , CAST(`value` AS char(255)) AS new_value
-            , CAST(null AS char(255)) AS old_value
+            , CAST(`value` AS CHAR) AS new_value
+            , CAST(null AS CHAR) AS old_value
             , CAST(null AS signed) AS attach_id
             , 2 AS _merge_order
         FROM bug_see_also
@@ -620,7 +620,7 @@ def get_flags(db, param):
             , ps.login_name AS modified_by
             , 'flagtypes_name' AS field_name
             , CONCAT(ft.`name`,status,IF(requestee_id IS NULL,'',CONCAT('(',pr.login_name,')'))) AS new_value
-            , CAST(null AS char(255)) AS old_value
+            , CAST(null AS CHAR) AS old_value
             , attach_id
             , 8 AS _merge_order
         FROM
@@ -664,6 +664,8 @@ def get_comments(db, param):
                 longdescs c
             LEFT JOIN
                 profiles p ON c.who = p.userid
+            LEFT JOIN
+                longdesc_tag t ON t.comment.id=c.comment_id AND t.tag <> 'deleted'
             WHERE
                 {{bug_filter}} AND
                 bug_when >= {{start_time_str}}
@@ -699,6 +701,8 @@ def get_comments_by_id(db, comments, param):
                 longdescs c
             LEFT JOIN
                 profiles p ON c.who = p.userid
+            LEFT JOIN
+                longdesc_tag t ON t.comment.id=c.comment_id AND t.tag <> 'deleted'
             WHERE
                 {{comments_filter}}
             """, param)
