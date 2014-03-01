@@ -665,7 +665,7 @@ def get_comments(db, param):
             LEFT JOIN
                 profiles p ON c.who = p.userid
             LEFT JOIN
-                longdesc_tag t ON t.comment.id=c.comment_id AND t.tag <> 'deleted'
+                longdesc_tags t ON t.comment.id=c.comment_id AND t.tag <> 'deleted'
             WHERE
                 {{bug_filter}} AND
                 bug_when >= {{start_time_str}}
@@ -702,7 +702,7 @@ def get_comments_by_id(db, comments, param):
             LEFT JOIN
                 profiles p ON c.who = p.userid
             LEFT JOIN
-                longdesc_tag t ON t.comment.id=c.comment_id AND t.tag <> 'deleted'
+                longdesc_tags t ON t.comment.id=c.comment_id AND t.tag <> 'deleted'
             WHERE
                 {{comments_filter}}
             """, param)
