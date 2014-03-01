@@ -14,7 +14,7 @@ from .domains import Domain
 from ..env.logs import Log
 from ..queries import MVEL
 from ..queries.filters import TRUE_FILTER, simplify
-from ..struct import nvl, Struct, EmptyList
+from ..struct import nvl, Struct, EmptyList, wrap
 
 
 class Query(object):
@@ -31,7 +31,7 @@ class Query(object):
             return
 
         object.__init__(self)
-        query = struct.wrap(query)
+        query = wrap(query)
 
         self.name = query.name
 
@@ -78,7 +78,7 @@ class Query(object):
 
 def _normalize_selects(selects, schema=None):
     if isinstance(selects, list):
-        return struct.wrap([_normalize_select(s, schema=schema) for s in selects])
+        return wrap([_normalize_select(s, schema=schema) for s in selects])
     else:
         return _normalize_select(selects, schema=schema)
 
@@ -129,7 +129,7 @@ def _normalize_from(frum, schema=None):
     elif isinstance(frum, dict) and frum["from"]:
         return Query(frum, schema=schema)
     else:
-        return struct.wrap(frum)
+        return wrap(frum)
 
 
 def _normalize_domain(domain=None, schema=None):
@@ -242,7 +242,7 @@ def _normalize_sort(sort=None):
             output.append({"field": s, "sort": 1})
         else:
             output.append({"field": nvl(s.field, s.value), "sort": nvl(sort_direction[s.sort], 1)})
-    return struct.wrap(output)
+    return wrap(output)
 
 
 sort_direction = {

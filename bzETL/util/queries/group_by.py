@@ -11,9 +11,8 @@
 from __future__ import unicode_literals
 import sys
 from .cube import Cube
-from ..struct import listwrap, StructList
+from ..struct import listwrap, StructList, wrap
 from ..env.logs import Log
-from .. import struct
 from ..collections.multiset import Multiset
 
 
@@ -41,12 +40,12 @@ def groupby(data, keys=None, size=None, min_size=None, max_size=None, contiguous
         return u"|".join([unicode(x[k]) for k in keys])
 
     def get_keys(d):
-        return struct.wrap({k: d[k] for k in keys})
+        return wrap({k: d[k] for k in keys})
 
     if contiguous:
         try:
             if not data:
-                return struct.wrap([])
+                return wrap([])
 
             agg = []
             acc = []
@@ -60,7 +59,7 @@ def groupby(data, keys=None, size=None, min_size=None, max_size=None, contiguous
                 else:
                     acc.append(d)
             agg.append((get_keys(acc[0]), acc))
-            return struct.wrap(agg)
+            return wrap(agg)
         except Exception, e:
             Log.error("Problem grouping contiguous values", e)
 

@@ -109,7 +109,7 @@ class ElasticSearch(object):
             else:
                 for a in desc["aliases"]:
                     output.append({"index": index, "alias": a})
-        return struct.wrap(output)
+        return wrap(output)
 
     def get_metadata(self):
         if not self.metadata:
@@ -291,7 +291,7 @@ class ElasticSearch(object):
             Log.error("data must be utf8 encoded string")
 
         try:
-            kwargs.setdefault("timeout", 30)
+            kwargs.setdefault("timeout", 600)
             response = requests.post(*args, **kwargs)
             if DEBUG:
                 Log.note(response.content[:130])
@@ -315,7 +315,7 @@ class ElasticSearch(object):
             response = requests.get(*args, **kwargs)
             if DEBUG:
                 Log.note(response.content[:130])
-            details = struct.wrap(CNV.JSON2object(response.content))
+            details = wrap(CNV.JSON2object(response.content))
             if details.error:
                 Log.error(details.error)
             return details
@@ -352,7 +352,7 @@ class ElasticSearch(object):
         CONVERT STRINGS OF NUMBERS TO NUMBERS
         RETURNS **COPY**, DOES NOT CHANGE ORIGINAL
         """
-        return struct.wrap(_scrub(r))
+        return wrap(_scrub(r))
 
 
 def _scrub(r):
@@ -398,4 +398,4 @@ def _scrub(r):
 
 
 def sort(values):
-    return struct.wrap(sorted(values))
+    return wrap(sorted(values))

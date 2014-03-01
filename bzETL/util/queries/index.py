@@ -12,7 +12,7 @@ from __future__ import unicode_literals
 from .. import struct
 from ..env.logs import Log
 from ..strings import indent, expand_template
-from ..struct import Null
+from ..struct import Null, wrap
 
 
 class UniqueIndex(object):
@@ -32,7 +32,7 @@ class UniqueIndex(object):
     def __getitem__(self, key):
         try:
             if isinstance(key, dict):
-                key = struct.wrap(key)
+                key = wrap(key)
                 key = [key[k] for k in self._keys]
             elif not isinstance(key, (list, tuple)):
                 key = [key]
@@ -62,7 +62,7 @@ class UniqueIndex(object):
     def add(self, val):
         if not isinstance(val, dict):
             val = {self._keys[0]: val}
-        val = struct.wrap(val)
+        val = wrap(val)
         d = self._data
         for k in self._keys[0:-1]:
             v = val[k]
@@ -133,7 +133,7 @@ def lookup_method(depth, is_unique):
             }), prefix="    ", indent=depth + 1)
         depth += 1
 
-    code = code + indent(expand_template("yield struct.wrap(d{{curr}})", {"curr": depth}), prefix="    ", indent=depth + 1)
+    code = code + indent(expand_template("yield wrap(d{{curr}})", {"curr": depth}), prefix="    ", indent=depth + 1)
     lookup = None
     exec code
     return lookup
@@ -188,7 +188,7 @@ class Index(object):
     def add(self, val):
         if not isinstance(val, dict):
             val = {self._keys[0]: val}
-        val = struct.wrap(val)
+        val = wrap(val)
         d = self._data
         for k in self._keys[0:-1]:
             v = val[k]

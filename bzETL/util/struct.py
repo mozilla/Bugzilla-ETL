@@ -8,7 +8,7 @@
 #
 
 from __future__ import unicode_literals
-import types
+from types import NoneType, GeneratorType
 
 _get = object.__getattribute__
 
@@ -41,7 +41,7 @@ class Struct(dict):
     def __init__(self, **map):
         """
         THIS WILL MAKE A COPY, WHICH IS UNLIKELY TO BE USEFUL
-        USE struct.wrap() INSTEAD
+        USE wrap() INSTEAD
         """
         dict.__init__(self)
         object.__setattr__(self, "__dict__", map)  #map IS A COPY OF THE PARAMETERS
@@ -370,6 +370,9 @@ class _Null(object):
     def __repr__(self):
         return "Null"
 
+    def __class__(self):
+        return NoneType
+
 
 Null = _Null()
 EmptyList = Null
@@ -509,21 +512,37 @@ class StructList(list):
             return StructList([v[key] for v in _get(self, "list")])
 
 def wrap(v):
-    if v is None:
-        return Null
-    if isinstance(v, (Struct, _Null, StructList)):
-        return v
-    if isinstance(v, dict):
+    v_type = v.__class__
+
+    if v_type is dict:
+        if isinstance(v, Struct):
+            return v
         m = Struct()
         object.__setattr__(m, "__dict__", v)  # INJECT m.__dict__=v SO THERE IS NO COPY
         return m
-    if isinstance(v, list):
+
+    if v_type is list:
+        if isinstance(v, StructList):
+            return v
+
         for vv in v:
+            # IN PRACTICE WE DO NOT EXPECT TO GO THROUGH THIS LIST, IF ANY ARE WRAPPED, THE FIRST IS PROBABLY WRAPPED
             if vv is not unwrap(vv):
-                return StructList([unwrap(vv) for vv in v])
+                #MUST KEEP THE LIST
+                temp = [unwrap(vv) for vv in v]
+                del v[:]
+                v.extend(temp)
+                return StructList(v)
         return StructList(v)
-    if isinstance(v, types.GeneratorType):
+
+    if v_type is NoneType:
+        if v is None:
+            return Null
+        return v
+
+    if v_type is GeneratorType:
         return (wrap(vv) for vv in v)
+
     return v
 
 

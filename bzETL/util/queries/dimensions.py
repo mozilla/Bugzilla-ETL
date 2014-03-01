@@ -11,7 +11,7 @@ from __future__ import unicode_literals
 from .. import struct
 from ..collections import SUM
 from ..queries.domains import PARTITION, Domain
-from ..struct import Struct, nvl, Null, StructList, join_field, split_field
+from ..struct import Struct, nvl, Null, StructList, join_field, split_field, wrap
 from ..times.timer import Timer
 from ..env.logs import Log
 
@@ -87,7 +87,7 @@ class Dimension(object):
                 self.value = "name"  # USE THE "name" ATTRIBUTE OF PARTS
 
                 # SIMPLE LIST OF PARTS RETURNED, BE SURE TO INTERRELATE THEM
-                self.partitions = struct.wrap([
+                self.partitions = wrap([
                     {
                         "name": str(d.partitions[i].name),  # CONVERT TO STRING
                         "value": d.getEnd(d.partitions[i]),
@@ -102,7 +102,7 @@ class Dimension(object):
 
                 # SIMPLE LIST OF PARTS RETURNED, BE SURE TO INTERRELATE THEM
                 array = parts.data.values()[0].cube  # DIG DEEP INTO RESULT (ASSUME SINGLE VALUE CUBE, WITH NULL AT END)
-                self.partitions = struct.wrap([
+                self.partitions = wrap([
                     {
                         "name": str(d.partitions[i].name),  # CONVERT TO STRING
                         "value": d.getEnd(d.partitions[i]),
@@ -143,7 +143,7 @@ class Dimension(object):
 
     def getDomain(self, **kwargs):
         # param.depth IS MEANT TO REACH INTO SUB-PARTITIONS
-        kwargs = struct.wrap(kwargs)
+        kwargs = wrap(kwargs)
         kwargs.depth = nvl(kwargs.depth, len(self.fields)-1)
         kwargs.separator = nvl(kwargs.separator, ".")
 
@@ -196,7 +196,7 @@ class Dimension(object):
         return Domain(
             type=self.type,
             name=self.name,
-            partitions=struct.wrap(partitions),
+            partitions=wrap(partitions),
             min=self.min,
             max=self.max,
             interval=self.interval,

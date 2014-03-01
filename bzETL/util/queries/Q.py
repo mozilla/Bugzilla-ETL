@@ -21,7 +21,7 @@ from .index import UniqueIndex, Index
 from .flat_list import FlatList
 from ..maths import Math
 from ..env.logs import Log
-from ..struct import nvl, listwrap, EmptyList, split_field, unwrap
+from ..struct import nvl, listwrap, EmptyList, split_field, unwrap, wrap
 from .. import struct
 from ..struct import Struct, Null, StructList
 
@@ -243,12 +243,12 @@ def select(data, field_name):
 
 def _select_a_field(field):
     if isinstance(field, basestring):
-        return struct.wrap({"name": field, "value": split_field(field)})
-    elif isinstance(field.value, basestring):
-        field = struct.wrap(field)
-        return struct.wrap({"name": field.name, "value": split_field(field.value)})
+        return wrap({"name": field, "value": split_field(field)})
+    elif isinstance(wrap(field).value, basestring):
+        field = wrap(field)
+        return wrap({"name": field.name, "value": split_field(field.value)})
     else:
-        return struct.wrap({"name": field.name, "value": field.value})
+        return wrap({"name": field.name, "value": field.value})
 
 
 def _select(template, data, fields, depth):
@@ -304,7 +304,7 @@ def sort(data, fieldnames=None):
             return EmptyList
 
         if fieldnames == None:
-            return struct.wrap(sorted(data))
+            return wrap(sorted(data))
 
         fieldnames = struct.listwrap(fieldnames)
         if len(fieldnames) == 1:
@@ -314,13 +314,13 @@ def sort(data, fieldnames=None):
                 def comparer(left, right):
                     return cmp(nvl(left, Struct())[fieldnames], nvl(right, Struct())[fieldnames])
 
-                return struct.wrap(sorted(data, cmp=comparer))
+                return wrap(sorted(data, cmp=comparer))
             else:
                 #EXPECTING {"field":f, "sort":i} FORMAT
                 def comparer(left, right):
                     return fieldnames["sort"] * cmp(nvl(left, Struct())[fieldnames["field"]], nvl(right, Struct())[fieldnames["field"]])
 
-                return struct.wrap(sorted(data, cmp=comparer))
+                return wrap(sorted(data, cmp=comparer))
 
         formal = query._normalize_sort(fieldnames)
 
@@ -337,9 +337,9 @@ def sort(data, fieldnames=None):
             return 0
 
         if isinstance(data, list):
-            output = struct.wrap(sorted(data, cmp=comparer))
+            output = wrap(sorted(data, cmp=comparer))
         elif hasattr(data, "__iter__"):
-            output = struct.wrap(sorted(list(data), cmp=comparer))
+            output = wrap(sorted(list(data), cmp=comparer))
         else:
             Log.error("Do not know how to handle")
 
@@ -590,7 +590,7 @@ def drill_filter(esfilter, data):
 
     if not max:
         #SIMPLE LIST AS RESULT
-        return struct.wrap([u[0] for u in uniform_output])
+        return wrap([u[0] for u in uniform_output])
 
     return FlatList(primary_column[0:max], uniform_output)
 
