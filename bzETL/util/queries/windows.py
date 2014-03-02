@@ -17,6 +17,8 @@ from ..maths import Math
 from ..collections.multiset import Multiset
 from ..maths.stats import Z_moment, stats2z_moment, z_moment2stats
 
+# A VARIETY OF SLIDING WINDOW FUNCTIONS
+
 
 class AggregationFunction(object):
     def __init__(self):
@@ -128,12 +130,12 @@ class _SimpleStats(WindowFunction):
     def add(self, value):
         if value == None:
             return
-        self.total += stats2z_moment(value)
+        self.total += Z_moment.new_instance([value])
 
     def sub(self, value):
         if value == None:
             return
-        self.total -= stats2z_moment(value)
+        self.total -= Z_moment.new_instance([value])
 
     def merge(self, agg):
         self.total += agg.total

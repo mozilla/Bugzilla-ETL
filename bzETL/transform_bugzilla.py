@@ -10,6 +10,7 @@ from bzETL.util.queries import Q
 
 USE_ATTACHMENTS_DOT = True
 
+DIFF_FIELDS = ["cf_user_story"]
 MULTI_FIELDS = ["cc", "blocked", "dependson", "dupe_by", "dupe_of", "flags", "keywords", "bug_group", "see_also"]
 NUMERIC_FIELDS=[      "blocked", "dependson", "dupe_by", "dupe_of",
     "votes",

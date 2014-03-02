@@ -33,7 +33,8 @@ all_db = []
 
 class DB(object):
     """
-
+    Parameterize SQL by name rather than by position.  Return records as objects
+    rather than tuples.
     """
 
     def __init__(self, settings, schema=None, preamble=None, readonly=False):

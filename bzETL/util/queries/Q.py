@@ -15,7 +15,7 @@ from . import group_by
 from ..collections import UNION
 from ..queries import flat_list, query
 from ..queries.filters import TRUE_FILTER, FALSE_FILTER
-from ..queries.query import Query, _normalize_select, _normalize_selects
+from ..queries.query import Query, _normalize_selects
 from ..queries.cube import Cube
 from .index import UniqueIndex, Index
 from .flat_list import FlatList

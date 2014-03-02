@@ -40,7 +40,8 @@ from __future__ import unicode_literals
 import re
 import math
 from bzETL.util import struct, strings
-from bzETL.util.collections import MIN, OR
+from bzETL.util.collections import MIN
+from bzETL.util.strings import apply_diff
 from bzETL.util.struct import nvl, StructList
 from bzETL.util.cnv import CNV
 from bzETL.util.env.logs import Log
@@ -48,7 +49,7 @@ from bzETL.util.queries import Q
 from bzETL.util.struct import Struct, Null
 from bzETL.util.env.files import File
 
-from transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS
+from transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS, DIFF_FIELDS
 
 
 
@@ -68,7 +69,7 @@ KNOWN_MISSING_KEYWORDS = {
     "dogfood", "beta1", "nsbeta1", "nsbeta2", "nsbeta3", "patch", "mozilla1.0", "correctness",
     "mozilla0.9", "mozilla0.9.9+", "nscatfood", "mozilla0.9.3", "fcc508", "nsbeta1+", "mostfreq"
 }
-STOP_BUG = 999999999
+STOP_BUG = 999999999  # AN UNFORTUNATE SIDE EFFECT OF DATAFLOW PROGRAMMING (http://en.wikipedia.org/wiki/Dataflow_programming)
 MAX_TIME = 9999999999000
 
 
@@ -354,7 +355,17 @@ class BugHistoryParser():
                     total = self.addValues(total, multi_field_old_value, "removed bug", row_in.field_name, self.currBugState)
                 self.currBugState[row_in.field_name] = total
             else:
-                # Replace current value
+                if row_in.field_name in DIFF_FIELDS:
+                    new_value = row_in.new_value
+                    try:
+                        row_in.old_value = "\n".join(apply_diff(self.currBugState[row_in.field_name].split("\n"), row_in.new_value.split("\n"), reverse=True))
+                        row_in.new_value = self.currBugState[row_in.field_name]
+                    except Exception, e:
+                        Log.note("[Bug {{bug_id}}]: PROBLEM Unable to process {{field_name}} diff:\n{{diff|indent}}", {
+                            "bug_id": self.currBugID,
+                            "field_name": row_in.field_name,
+                            "diff":new_value
+                        })
                 self.currBugState[row_in.field_name] = row_in.old_value
                 self.currActivity.changes.append({
                     "field_name": row_in.field_name,
@@ -362,7 +373,6 @@ class BugHistoryParser():
                     "old_value": row_in.old_value,
                     "attach_id": row_in.attach_id
                 })
-
 
     def populateIntermediateVersionObjects(self):
         # Make sure the self.bugVersions are in descending order by modification time.

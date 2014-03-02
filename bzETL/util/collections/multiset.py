@@ -12,6 +12,18 @@ from __future__ import unicode_literals
 
 
 class Multiset(object):
+    """
+    Multiset IS ONE MEMBER IN A FAMILY OF USEFUL CONTAINERS
+
+    +------------+---------+----------+
+    | Uniqueness | Ordered | Type     |
+    +------------+---------+----------+
+    |     Yes    |   Yes   | Queue    |
+    |     Yes    |   No    | Set      |
+    |     No     |   Yes   | List     |
+    |     No     |   No    | Multiset |
+    +------------+---------+----------+
+    """
 
     def __new__(cls, list=None, key_field=None, count_field=None, allow_negative=False):
         try:
