@@ -23,7 +23,7 @@ EPSILON = 0.000001
 def stats2z_moment(stats):
     # MODIFIED FROM http://statsmodels.sourceforge.net/devel/_modules/statsmodels/stats/moment_helpers.html
     # ADDED count
-    mc0, mc1, mc2, skew, kurt = stats.count, stats.mean, stats.variance, stats.skew, stats.kurtosis
+    mc0, mc1, mc2, skew, kurt = stats.count, nvl(stats.mean, 0), nvl(stats.variance, 0), nvl(stats.skew, 0), nvl(stats.kurtosis, 0)
 
     mz0 = mc0
     mz1 = mc1 * mc0
@@ -72,19 +72,24 @@ def z_moment2stats(z_moment, unbiased=True):
     Z3 = Z[3] / N
     Z4 = Z[4] / N
 
-    variance = (Z2 - mean * mean)
-    error = -EPSILON * (abs(Z2) + 1)  # EXPECTED FLOAT ERROR
-
-    if error < variance <= 0:  # TODO: MAKE THIS A TEST ON SIGNIFICANT DIGITS
+    if N == 1:
+        variance = None
         skew = None
         kurtosis = None
-    elif variance < error:
-        Log.error("variance can not be negative ({{var}})", {"var": variance})
     else:
-        mc3 = (Z3 - (3 * mean * variance + mean ** 3))  # 3rd central moment
-        mc4 = (Z4 - (4 * mean * mc3 + 6 * mean * mean * variance + mean ** 4))
-        skew = mc3 / (variance ** 1.5)
-        kurtosis = (mc4 / (variance ** 2.0)) - 3.0
+        variance = (Z2 - mean * mean)
+        error = -EPSILON * (abs(Z2) + 1)  # EXPECTED FLOAT ERROR
+
+        if error < variance <= 0:  # TODO: MAKE THIS A TEST ON SIGNIFICANT DIGITS
+            skew = None
+            kurtosis = None
+        elif variance < error:
+            Log.error("variance can not be negative ({{var}})", {"var": variance})
+        else:
+            mc3 = (Z3 - (3 * mean * variance + mean ** 3))  # 3rd central moment
+            mc4 = (Z4 - (4 * mean * mc3 + 6 * mean * mean * variance + mean ** 4))
+            skew = mc3 / (variance ** 1.5)
+            kurtosis = (mc4 / (variance ** 2.0)) - 3.0
 
     stats = Stats(
         count=N,
@@ -97,6 +102,7 @@ def z_moment2stats(z_moment, unbiased=True):
 
     if DEBUG:
         globals()["DEBUG"] = False
+        v=Null
         try:
             v = stats2z_moment(stats)
             for i in range(5):

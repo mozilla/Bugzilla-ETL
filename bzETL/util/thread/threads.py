@@ -7,19 +7,20 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-
 from __future__ import unicode_literals
-from datetime import datetime, timedelta
 
+from datetime import datetime, timedelta
 import threading
 import thread
 import time
 import sys
 from ..struct import nvl, Struct
 
+# THIS THREADING MODULE IS PERMEATED BY THE please_stop SIGNAL.
+# THIS SIGNAL IS IMPORTANT FOR PROPER SIGNALLING WHICH ALLOWS
+# FOR FAST AND PREDICTABLE SHUTDOWN AND CLEANUP OF THREADS
 
 DEBUG = True
-
 
 class Lock(object):
     """

@@ -10,14 +10,18 @@
 from __future__ import unicode_literals
 import math
 import __builtin__
-import types
 from ..struct import Null, nvl
 from ..env.logs import Log
 from ..strings import find_first
-from ..collections.multiset import Multiset
 
 
 class Math(object):
+    """
+    MATH FUNCTIONS THAT ASSUME NONE IMPLY *NOT APPLICABLE* RATHER THAN *MISSING*
+    """
+
+
+
     @staticmethod
     def bayesian_add(*args):
         a = args[0]

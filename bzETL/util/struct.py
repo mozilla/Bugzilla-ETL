@@ -18,12 +18,17 @@ class Struct(dict):
     Struct is an anonymous class with some properties good for manipulating JSON
 
     0) a.b==a["b"]
-    1) the IDE does tab completion, so my spelling mistakes get found at "compile time"
+    1) the IDE does tab completion, and my spelling mistakes get found at "compile time"
     2) it deals with missing keys gracefully, so I can put it into set operations (database
        operations) without choking
     2b) missing keys is important when dealing with JSON, which is often almost anything
-    3) you can access JSON paths as a variable:   a["b.c"]==a.b.c
-    4) attribute names (keys) are corrected to unicode - it appears Python object.getattribute()
+    3) you can access paths as a variable:   a["b.c"]==a.b.c
+    4) you can set paths to values, missing objects along the path are created:
+       a = wrap({})
+       > a == {}
+       a["b.c"] = 42
+       > a == {"b": {"c": 42}}
+    5) attribute names (keys) are corrected to unicode - it appears Python object.getattribute()
        is called with str() even when using from __future__ import unicode_literals
 
     MORE ON MISSING VALUES: http://www.numpy.org/NA-overview.html
