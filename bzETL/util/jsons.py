@@ -229,10 +229,8 @@ def _scrub(value):
         return None
 
     type = value.__class__
-    if type is date:
-        return long(time.mktime(value.timetuple()) * 1000)
-    elif type is datetime:
-        return long(time.mktime(value.timetuple()) * 1000)
+    if type in (date, datetime):
+        return datetime2milli(value)
     elif type is timedelta:
         return unicode(value.total_seconds())+"second"
     elif type is str:
@@ -387,3 +385,20 @@ def value_compare(a, b):
         return -1
     else:
         return 0
+
+
+def datetime2milli(d):
+    try:
+        if d == None:
+            return None
+        elif isinstance(d, datetime.datetime):
+            epoch = datetime.datetime(1970, 1, 1)
+        elif isinstance(d, datetime.date):
+            epoch = datetime.date(1970, 1, 1)
+        else:
+            raise Exception("Can not convert "+repr(d)+" to json")
+
+        diff = d - epoch
+        return long(diff.total_seconds()) * 1000L + long(diff.microseconds / 1000)
+    except Exception, e:
+        raise Exception("Can not convert "+repr(d)+" to json")
