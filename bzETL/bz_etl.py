@@ -377,7 +377,7 @@ def main(settings, es=None, es_comments=None):
                 # DB WRITES ARE DELAYED, RESULTING IN UNORDERED bug_when IN bugs_activity (AS IS ASSUMED FOR bugs(delats_ts))
                 # THIS JITTER IS USUALLY NO MORE THAN ONE SECOND, BUT WE WILL GO BACK 60sec, JUST IN CASE.
                 # THERE ARE OCCASIONAL WRITES THAT ARE IN GMT, BUT SINCE THEY LOOK LIKE THE FUTURE, WE CAPTURE THEM
-                param.start_time = last_run_time - 60000
+                param.start_time = last_run_time - 500000  # %MIN LOOK_BACK
                 param.start_time_str = extract_bugzilla.milli2string(db, param.start_time)
                 param.alias_file = settings.param.alias_file
                 param.allow_private_bugs = settings.param.allow_private_bugs
