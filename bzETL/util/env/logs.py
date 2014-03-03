@@ -11,9 +11,8 @@
 
 from __future__ import unicode_literals
 import cProfile
-from datetime import datetime, timedelta
+from datetime import datetime
 import pstats
-import logging
 import sys
 
 from .. import struct
@@ -44,17 +43,18 @@ class Log(object):
         settings = wrap(settings)
 
         if settings["class"]:
-            if not settings["class"].startswith("logging.handlers."):
-                return make_log_from_settings(settings)
-                # elif settings["class"]=="sys.stdout":
-                #CAN BE SUPER SLOW
-            else:
+            if settings["class"].startswith("logging.handlers."):
+                from .log_usingLogger import Log_usingLogger
                 return Log_usingLogger(settings)
+            else:
+                from .log_usingLogger import make_log_from_settings
+                return make_log_from_settings(settings)
         if settings.file:
             return Log_usingFile(file)
         if settings.filename:
             return Log_usingFile(settings.filename)
         if settings.stream:
+            from .log_usingStream import Log_usingStream
             return Log_usingStream(settings.stream)
 
     @classmethod
@@ -351,167 +351,6 @@ class Log_usingFile(BaseLog):
             File(self.filename).append(expand_template(template, params))
 
 
-#WRAP PYTHON CLASSIC logger OBJECTS
-class Log_usingLogger(BaseLog):
-    def __init__(self, settings):
-        self.logger = logging.Logger("unique name", level=logging.INFO)
-        self.logger.addHandler(make_log_from_settings(settings))
-
-        # TURNS OUT LOGGERS ARE REALLY SLOW TOO
-        self.queue = threads.Queue()
-        self.thread = Thread("log to logger", time_delta_pusher, appender=self.logger.info, queue=self.queue, interval=timedelta(seconds=0.3))
-        self.thread.start()
-
-    def write(self, template, params):
-        # http://docs.python.org/2/library/logging.html#logging.LogRecord
-        self.queue.add({"template": template, "params": params})
-
-    def stop(self):
-        try:
-            if DEBUG_LOGGING:
-                sys.stdout.write("Log_usingLogger sees stop, adding stop to queue\n")
-            self.queue.add(Thread.STOP)  #BE PATIENT, LET REST OF MESSAGE BE SENT
-            self.thread.join()
-            if DEBUG_LOGGING:
-                sys.stdout.write("Log_usingLogger done\n")
-        except Exception, e:
-            pass
-
-        try:
-            self.queue.close()
-        except Exception, f:
-            pass
-
-
-def make_log_from_settings(settings):
-    assert settings["class"]
-
-    # IMPORT MODULE FOR HANDLER
-    path = settings["class"].split(".")
-    class_name = path[-1]
-    path = ".".join(path[:-1])
-    constructor = None
-    try:
-        temp = __import__(path, globals(), locals(), [class_name], -1)
-        constructor = object.__getattribute__(temp, class_name)
-    except Exception, e:
-        if settings.stream and not constructor:
-            #PROVIDE A DEFAULT STREAM HANLDER
-            constructor = Log_usingStream
-        else:
-            Log.error("Can not find class {{class}}", {"class": path}, e)
-
-    #IF WE NEED A FILE, MAKE SURE DIRECTORY EXISTS
-    if settings.filename:
-        from ..env.files import File
-
-        f = File(settings.filename)
-        if not f.parent.exists:
-            f.parent.create()
-
-    settings['class'] = None
-    params = struct.unwrap(settings)
-    return constructor(**params)
-
-
-def time_delta_pusher(please_stop, appender, queue, interval):
-    """
-    appender - THE FUNCTION THAT ACCEPTS A STRING
-    queue - FILLED WITH LINES TO WRITE
-    interval - timedelta
-    USE IN A THREAD TO BATCH LOGS BY TIME INTERVAL
-    """
-
-    if not isinstance(interval, timedelta):
-        Log.error("Expecting interval to be a timedelta")
-
-    next_run = datetime.utcnow() + interval
-
-    while not please_stop:
-        Thread.sleep(till=next_run)
-        next_run = datetime.utcnow() + interval
-        logs = queue.pop_all()
-        if logs:
-            lines = []
-            for log in logs:
-                try:
-                    if log is Thread.STOP:
-                        please_stop.go()
-                        next_run = datetime.utcnow()
-                    else:
-                        lines.append(expand_template(log.get("template", None), log.get("params", None)))
-                except Exception, e:
-                    sys.stderr.write("Trouble formatting logs: " + e.message)
-                    # SWALLOW ERROR, GOT TO KEEP RUNNING
-            try:
-                if DEBUG_LOGGING and please_stop:
-                    sys.stdout.write("Call to appender with " + str(len(lines)) + " lines\n")
-                appender(u"\n".join(lines) + u"\n")
-                if DEBUG_LOGGING and please_stop:
-                    sys.stdout.write("Done call to appender with " + str(len(lines)) + " lines\n")
-            except Exception, e:
-                sys.stderr.write("Trouble with appender: " + e.message)
-                # SWALLOW ERROR, GOT TO KEEP RUNNNIG
-
-
-class Log_usingStream(BaseLog):
-    #stream CAN BE AN OBJCET WITH write() METHOD, OR A STRING
-    #WHICH WILL eval() TO ONE
-    def __init__(self, stream):
-        assert stream
-
-        use_UTF8 = False
-
-        if isinstance(stream, basestring):
-            if stream.startswith("sys."):
-                use_UTF8 = True  #sys.* ARE OLD AND CAN NOT HANDLE unicode
-            self.stream = eval(stream)
-            name = stream
-        else:
-            self.stream = stream
-            name = "stream"
-
-        #WRITE TO STREAMS CAN BE *REALLY* SLOW, WE WILL USE A THREAD
-        from ..thread.threads import Queue
-
-        if use_UTF8:
-            def utf8_appender(value):
-                if isinstance(value, unicode):
-                    value = value.encode('utf-8')
-                self.stream.write(value)
-
-            appender = utf8_appender
-        else:
-            appender = self.stream.write
-
-        self.queue = Queue()
-        self.thread = Thread("log to " + name, time_delta_pusher, appender=appender, queue=self.queue, interval=timedelta(seconds=0.3))
-        self.thread.start()
-
-    def write(self, template, params):
-        try:
-            self.queue.add({"template": template, "params": params})
-            return self
-        except Exception, e:
-            raise e  #OH NO!
-
-    def stop(self):
-        try:
-            if DEBUG_LOGGING:
-                sys.stdout.write("Log_usingStream sees stop, adding stop to queue\n")
-            self.queue.add(Thread.STOP)  #BE PATIENT, LET REST OF MESSAGE BE SENT
-            self.thread.join()
-            if DEBUG_LOGGING:
-                sys.stdout.write("Log_usingStream done\n")
-        except Exception, e:
-            if DEBUG_LOGGING:
-                raise e
-
-        try:
-            self.queue.close()
-        except Exception, f:
-            if DEBUG_LOGGING:
-                raise f
 
 
 class Log_usingThread(BaseLog):
@@ -597,4 +436,5 @@ class Log_usingMulti(BaseLog):
 
 
 if not Log.main_log:
+    from log_usingStream import Log_usingStream
     Log.main_log = Log_usingStream("sys.stdout")
