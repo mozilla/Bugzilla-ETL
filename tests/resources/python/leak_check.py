@@ -156,7 +156,14 @@ class TestLookForLeaks(unittest.TestCase):
             try:
                 private_attachments = [int(v) for v in private_attachments]
             except Exception, e:
-                pass
+                private_attachments = Q.run({
+                    "from": bugs_w_private_attachments,
+                    "select": "attachments.attach_id",
+                    "where": {"or": [
+                        {"exists": "bug_group"},
+                        {"terms": {"attachments.isprivate": ['1', True, 1]}}
+                    ]}
+                })
 
             Log.note("Ensure {{num}} attachments did not leak", {
                 "num": len(private_attachments)

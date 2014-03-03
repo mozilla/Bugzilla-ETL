@@ -220,9 +220,9 @@ def select(data, field_name):
     if isinstance(data, FlatList):
         return data.select(field_name)
 
-    if isinstance(field_name, dict) and "value" in field_name:
+    if isinstance(field_name, dict) and field_name.value:
         # SIMPLIFY {"value":value} AS STRING
-        field_name = field_name["value"]
+        field_name = field_name.value
 
     # SIMPLE PYTHON ITERABLE ASSUMED
     if isinstance(field_name, basestring):
@@ -278,7 +278,10 @@ def _select_deep(v, field, depth, record):
     r[field.name]=v[field.value], BUT WE MUST DEAL WITH POSSIBLE LIST IN field.value PATH
     """
     if hasattr(field.value, '__call__'):
-        record[field.name]=field.value(v)
+        try:
+            record[field.name] = field.value(wrap(v))
+        except Exception, e:
+            record[field.name] = None
         return 0, None
 
     for i, f in enumerate(field.value[depth:len(field.value) - 1:]):
