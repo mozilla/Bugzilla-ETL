@@ -208,6 +208,8 @@ class Log(object):
                 "num_calls":d[1],
                 "self_time":d[2],
                 "total_time":d[3],
+                "self_time_per_call":d[2]/d[1],
+                "total_time_per_call":d[3]/d[1],
                 "file":(f[0] if f[0] != "~" else "").replace("\\", "/"),
                 "line":f[1],
                 "method":f[2].lstrip("<").rstrip(">")
@@ -215,7 +217,8 @@ class Log(object):
                 for f, d, in p.stats.iteritems()
             ]
             CNV.list2tab(stats)
-            File("profile.tab").write(CNV.list2tab(stats))
+            filename = "profile "+CNV.datetime2string(datetime.now(), "%Y%m%d-%H%M%S")+".tab"
+            File(filename).write(CNV.list2tab(stats))
 
         cls.main_log.stop()
 
