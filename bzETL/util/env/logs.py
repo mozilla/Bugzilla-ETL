@@ -47,15 +47,22 @@ class Log(object):
                 from .log_usingLogger import Log_usingLogger
                 return Log_usingLogger(settings)
             else:
-                from .log_usingLogger import make_log_from_settings
-                return make_log_from_settings(settings)
-        if settings.file:
+                try:
+                    from .log_usingLogger import make_log_from_settings
+                    return make_log_from_settings(settings)
+                except Exception, e:
+                    pass  # OH WELL :(
+
+        if settings.log_type=="file" or settings.file:
             return Log_usingFile(file)
-        if settings.filename:
+        if settings.log_type=="file" or settings.filename:
             return Log_usingFile(settings.filename)
-        if settings.stream:
+        if settings.log_type=="stream" or settings.stream:
             from .log_usingStream import Log_usingStream
             return Log_usingStream(settings.stream)
+        if settings.log_type=="elasticsearch" or settings.stream:
+            from .log_usingElasticSearch import Log_usingElasticSearch
+            return Log_usingElasticSearch(settings)
 
     @classmethod
     def add_log(cls, log):
