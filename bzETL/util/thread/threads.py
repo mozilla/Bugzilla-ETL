@@ -377,7 +377,7 @@ class ThreadedQueue(Queue):
     DISPATCH TO ANOTHER (SLOWER) queue IN BATCHES OF GIVEN size
     """
 
-    def __init__(self, queue, size, max=None):
+    def __init__(self, queue, size=None, max=None, period=None):
         if max == None:
             #REASONABLE DEFAULT
             max = size * 2

@@ -42,6 +42,7 @@ class ElasticSearch(object):
 
     """
     def __init__(self, settings):
+        settings = wrap(settings)
         assert settings.host
         assert settings.index
         assert settings.type
@@ -203,7 +204,12 @@ class ElasticSearch(object):
             )
 
     def extend(self, records):
-        # ADD LINE WITH COMMAND
+        """
+        records - MUST HAVE FORM OF
+            [{"value":value}, ... {"value":value}] OR
+            [{"json":json}, ... {"json":json}]
+            OPTIONAL "id" PROPERTY IS ALSO ACCEPTED
+        """
         lines = []
         for r in records:
             id = r.get("id", None)
@@ -282,8 +288,8 @@ class ElasticSearch(object):
                 "query": query
             }, e)
 
-    def threaded_queue(self, size):
-        return ThreadedQueue(self, size)
+    def threaded_queue(self, size=None, period=None):
+        return ThreadedQueue(self, size=size, period=period)
 
     @staticmethod
     def post(*args, **kwargs):

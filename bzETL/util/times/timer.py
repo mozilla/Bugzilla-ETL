@@ -23,22 +23,25 @@ class Timer:
         doing hard time took 45.468 sec
     """
 
-    def __init__(self, description, param=None):
+    def __init__(self, description, param=None, debug=True):
         self.template = description
         self.param = nvl(param, Struct())
+        self.debug = debug
 
     def __enter__(self):
-        Log.note("Timer start: " + self.template, self.param, stack_depth=1)
+        if self.debug:
+            Log.note("Timer start: " + self.template, self.param, stack_depth=1)
+            self.start = clock()
 
-        self.start = clock()
         return self
 
     def __exit__(self, type, value, traceback):
-        self.end = clock()
-        self.interval = self.end - self.start
-        param = wrap(self.param)
-        param.duration = timedelta(seconds=self.interval)
-        Log.note("Timer end  : " + self.template + " (took {{duration}})", self.param, stack_depth=1)
+        if self.debug:
+            self.end = clock()
+            self.interval = self.end - self.start
+            param = wrap(self.param)
+            param.duration = timedelta(seconds=self.interval)
+            Log.note("Timer end  : " + self.template + " (took {{duration}})", self.param, stack_depth=1)
 
     @property
     def duration(self):

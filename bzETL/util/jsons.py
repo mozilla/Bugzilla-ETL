@@ -13,7 +13,7 @@ import json
 from math import floor
 import re
 import time
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from decimal import Decimal
 import sys
 
@@ -156,6 +156,8 @@ def _value2json(value, _buffer):
         append(_buffer, unicode(long(time.mktime(value.timetuple()) * 1000)))
     elif type is datetime:
         append(_buffer, unicode(long(time.mktime(value.timetuple()) * 1000)))
+    elif type is timedelta:
+        append(_buffer, unicode(value.total_seconds())+"second")
     elif hasattr(value, '__iter__'):
         _iter2json(value, _buffer)
     elif hasattr(value, '__json__'):
@@ -231,6 +233,8 @@ def _scrub(value):
         return long(time.mktime(value.timetuple()) * 1000)
     elif type is datetime:
         return long(time.mktime(value.timetuple()) * 1000)
+    elif type is timedelta:
+        return unicode(value.total_seconds())+"second"
     elif type is str:
         return unicode(value.decode("utf8"))
     elif type is dict:
