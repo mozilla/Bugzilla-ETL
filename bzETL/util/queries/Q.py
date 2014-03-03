@@ -234,7 +234,7 @@ def select(data, field_name):
             flat_list._select1(data, keys, 0, output)
             return output
     elif isinstance(field_name, list):
-        keys = [_select_a_field(f) for f in field_name]
+        keys = [_select_a_field(wrap(f)) for f in field_name]
         return _select(Struct(), unwrap(data), keys, 0)
     else:
         keys = [_select_a_field(field_name)]

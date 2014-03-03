@@ -76,9 +76,10 @@ class TestLookForLeaks(unittest.TestCase):
             )
 
             if leaked_bugs:
-                self.public.delete_record(
-                    {"terms":{"bug_id":leaked_bugs.bug_id}}
-                )
+                if self.settings.delete:
+                    self.public.delete_record(
+                        {"terms":{"bug_id":leaked_bugs.bug_id}}
+                    )
 
                 Log.note("{{num}} leaks!! {{bugs}}", {
                     "num": len(leaked_bugs),
@@ -103,9 +104,10 @@ class TestLookForLeaks(unittest.TestCase):
                 limit=20
             )
             if leaked_comments:
-                self.public_comments.delete_record(
-                    {"terms":{"bug_id":leaked_comments.bug_id}}
-                )
+                if self.settings.delete:
+                    self.public_comments.delete_record(
+                        {"terms":{"bug_id":leaked_comments.bug_id}}
+                    )
 
                 Log.error("{{num}} comments marked private have leaked!\n{{comments|indent}}", {
                     "num": len(leaked_comments),
@@ -151,7 +153,10 @@ class TestLookForLeaks(unittest.TestCase):
                     {"terms": {"attachments.isprivate": ['1', True, 1]}}
                 ]}
             })
-            private_attachments = [int(v) for v in private_attachments]
+            try:
+                private_attachments = [int(v) for v in private_attachments]
+            except Exception, e:
+                pass
 
             Log.note("Ensure {{num}} attachments did not leak", {
                 "num": len(private_attachments)
@@ -177,9 +182,10 @@ class TestLookForLeaks(unittest.TestCase):
             #
 
             if leaked_bugs:
-                self.public.delete_record(
-                    {"terms":{"bug_id":leaked_bugs.bug_id}}
-                )
+                if self.settings.delete:
+                    self.public.delete_record(
+                        {"terms":{"bug_id":leaked_bugs.bug_id}}
+                    )
 
                 Log.note("{{num}} bugs with private attachments have leaked!", {"num": len(leaked_bugs)})
                 for b in leaked_bugs:
@@ -197,9 +203,10 @@ class TestLookForLeaks(unittest.TestCase):
             limit=20
         )
         if leaked_comments:
-            self.public_comments.delete_record(
-                {"terms":{"bug_id":leaked_comments.bug_id}}
-            )
+            if self.settings.delete:
+                self.public_comments.delete_record(
+                    {"terms":{"bug_id":leaked_comments.bug_id}}
+                )
 
             Log.error("{{num}} comments marked private have leaked!\n{{comments|indent}}", {
                 "num": len(leaked_comments),
