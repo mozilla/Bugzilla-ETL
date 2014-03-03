@@ -102,16 +102,15 @@ class CNV:
         try:
             if u == None:
                 return None
+            if u == 9999999999: # PYPY BUG https://bugs.pypy.org/issue1697
+                return datetime.datetime(2286, 11, 20, 17, 46, 39)
             return datetime.datetime.utcfromtimestamp(u)
         except Exception, e:
             Log.error("Can not convert {{value}} to datetime", {"value": u}, e)
 
     @staticmethod
     def milli2datetime(u):
-        if u == None:
-            return None
-        return datetime.datetime.utcfromtimestamp(u / 1000)
-
+        return CNV.unix2datetime(u/1000)
 
     @staticmethod
     def dict2Multiset(dic):
