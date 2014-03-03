@@ -35,18 +35,26 @@
         "schema_file": "./resources/json/bug_comments.json"
     },
     "debug": {
-		"log":[{
-			"class": "logging.handlers.RotatingFileHandler",
-			"filename": "./results/logs/bugzilla_etl.log",
-			"maxBytes": 10000000,
-			"backupCount": 200,
-			"encoding": "utf8"
-		},{
-			"class":"bzETL.util.env.logs.Log_usingStream",
-			"stream":"sys.stdout"
-		}]
+        "trace": true,
+        "log": [
+            {
+                "class": "logging.handlers.RotatingFileHandler",
+                "filename": "./results/logs/bz_etl.log",
+                "maxBytes": 10000000,
+                "backupCount": 200,
+                "encoding": "utf8"
+            },
+            {
+                "log_type": "stream",
+                "stream": "sys.stdout"
+            },
+            {
+                "log_type": "elasticsearch",
+                "host": "http://klahnakoski-es.corp.tor1.mozilla.com",
+                "index": "debug",
+                "type": "bz_etl"
+            }
+        ]
 
     }
-
-
 }
