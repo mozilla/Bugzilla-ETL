@@ -39,7 +39,6 @@
 from __future__ import unicode_literals
 import re
 import math
-import time
 from bzETL.util import struct, strings
 from bzETL.util.collections import MIN
 from bzETL.util.strings import apply_diff

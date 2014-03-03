@@ -2,7 +2,6 @@ from datetime import datetime
 import unittest
 from pymysql.times import TimeDelta
 from bzETL.extract_bugzilla import SCREENED_WHITEBOARD_BUG_GROUPS
-from bzETL.parse_bug_history import MAX_TIME, MAX_DATETIME
 from bzETL.util.env import startup
 from bzETL.util import struct
 from bzETL.util.cnv import CNV
