@@ -2,6 +2,7 @@ from datetime import datetime
 import unittest
 from pymysql.times import TimeDelta
 from bzETL.extract_bugzilla import SCREENED_WHITEBOARD_BUG_GROUPS
+from bzETL.parse_bug_history import MAX_TIME
 from bzETL.util.env import startup
 from bzETL.util import struct
 from bzETL.util.cnv import CNV
@@ -275,6 +276,8 @@ def milli2datetime(r):
         elif isinstance(r, basestring):
             return r
         elif Math.is_number(r):
+            if r == MAX_TIME:
+                return datetime.max
             #                       1382068456000
             if CNV.value2number(r) > 800000000000:
                 return CNV.datetime2string(CNV.milli2datetime(r), "%Y-%m-%d %H:%M:%S")

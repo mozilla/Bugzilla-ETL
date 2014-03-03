@@ -535,6 +535,7 @@ class BugHistoryParser():
     def findFlag(self, flag_list, flag):
         for f in flag_list:
             if (
+                f.request_type and flag.request_type and
                 deformat(f.request_type) == deformat(flag.request_type) and
                 f.request_status == flag.request_status and
                 (
@@ -546,6 +547,13 @@ class BugHistoryParser():
 
         for f in flag_list:
             if f.value == flag.value:
+                return f  # PROBABLY NEVER HAPPENS, IF THE FLAG CAN'T BE MATCHED, IT'S BECAUSE IT CAN'T BE PARSED, WHICH IS BECAUSE IT HAS BEEN CHOPPED OFF BY THE 255 CHAR LIMIT IN BUGS_ACTIVIY TABLE
+
+        # BUGS_ACTIVITY HAS LOTS OF GARBAGE (255 CHAR LIMIT WILL CUT OFF REVIEW REQUEST LISTS)
+        # TRY A LESS STRICT MATCH
+        for f in flag_list:
+            min_len=min(len(f.value), len(flag.value))
+            if f.value[:min_len] == flag.value[:min_len]:
                 return f
 
         return Null
@@ -615,7 +623,7 @@ class BugHistoryParser():
             if len(candidates) > 1:
                 # Multiple matches - use the best one.
                 if DEBUG_FLAG_MATCHES:
-                    Log.note("[Bug {{bug_id}}]: Matched added flag {{flag}} to multiple removed flags {{candidates}}.  Using the best.", {
+                    Log.note("[Bug {{bug_id}}]: Matched added flag {{flag}} to multiple removed flags {{candidates}}.  Finding the best...", {
                         "flag": added_flag,
                         "candidates": candidates,
                         "bug_id": self.currBugState.bug_id
@@ -638,13 +646,19 @@ class BugHistoryParser():
                         "requestee": added_flag
                     })
                 elif len(matched_ts) == 1 or (not matched_req and matched_ts):
-                    if DEBUG_FLAG_MATCHES:
-                        Log.note("[Bug {{bug_id}}]: Matching on modified_ts fixed it", {"bug_id": self.currBugState.bug_id})
                     chosen_one = matched_ts[0]
-                elif not matched_ts and matched_req:
                     if DEBUG_FLAG_MATCHES:
-                        Log.note("[Bug {{bug_id}}]: Matching on requestee fixed it", {"bug_id": self.currBugState.bug_id})
+                        Log.note("[Bug {{bug_id}}]: Matching on modified_ts:\n{{best|indent}}", {
+                            "bug_id": self.currBugState.bug_id,
+                            "best": chosen_one
+                        })
+                elif not matched_ts and matched_req:
                     chosen_one = matched_req[0]  #PICK ANY
+                    if DEBUG_FLAG_MATCHES:
+                        Log.note("[Bug {{bug_id}}]: Matching on requestee", {
+                            "bug_id": self.currBugState.bug_id,
+                            "best": chosen_one
+                        })
                 else:
                     matched_both = [
                         element
@@ -921,7 +935,7 @@ class BugHistoryParser():
             else:
                 Log.note("[Bug {{bug_id}}]: PROBLEM Unable to find {{type}} FLAG: {{object}}.{{field_name}}: (All {{missing}}" + " not in : {{existing}})", {
                     "type": target_type,
-                    "object": target,
+                    "object": nvl(target.attach_id, target.bug_id),
                     "field_name": "flags",
                     "missing": v,
                     "existing": total,
