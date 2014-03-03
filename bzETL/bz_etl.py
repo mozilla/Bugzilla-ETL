@@ -479,10 +479,8 @@ def start():
             "dest": "restart"
         }])
 
-        Log.note("args {{args}}", {"args":settings.args})
         with startup.SingleInstance(flavor_id=settings.args.filename):
             if settings.args.restart:
-                Log.note("resetting files {{param}}", {"param":settings.param})
                 for l in struct.listwrap(settings.debug.log):
                     if l.filename:
                         File(l.filename).parent.delete()
