@@ -19,6 +19,8 @@ from bzETL.util.struct import Struct
 
 
 #ALL BUGS IN PRIVATE ETL HAVE SCREENED FIELDS
+from bzETL.util.times.timer import Timer
+
 SCREENED_FIELDDEFS = [
     19, #bug_file_loc
     24, #short_desc
@@ -70,7 +72,7 @@ def get_current_time(db):
 
 def milli2string(db, value):
     """
-    CONVERT GMT MILLI TO BUGZILLA DATETIME STRING
+    CONVERT GMT MILLI TO BUGZILLA DATETIME STRING (NEED TZ TABLES)
     """
     value = max(value, 0)
 
@@ -130,8 +132,9 @@ def get_private_bugs(db, param):
         return {0}
 
     try:
-        private_bugs = db.query("SELECT DISTINCT bug_id FROM bug_group_map")
-        return set(private_bugs.bug_id) | {0}
+        with Timer("get all private bug ids"):
+            private_bugs = db.query("SELECT DISTINCT bug_id FROM bug_group_map")
+            return set(private_bugs.bug_id) | {0}
     except Exception, e:
         Log.error("problem getting private bugs", e)
 
