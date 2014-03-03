@@ -171,3 +171,18 @@ class File(object):
             return os.path.exists(self._filename)
         except Exception, e:
             return False
+
+    def __bool__(self):
+        return self.__nonzero__()
+
+
+    def __nonzero__(self):
+        """
+        USED FOR FILE EXISTENCE TESTING
+        """
+        if self._filename in ["", "."]:
+            return True
+        try:
+            return os.path.exists(self._filename)
+        except Exception, e:
+            return False
