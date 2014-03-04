@@ -403,7 +403,7 @@ class ThreadedQueue(Queue):
                 except Exception, e:
                     from ..env.logs import Log
 
-                    Log.error("Problem with pushing {{num}} items to data sink", {"num": len(g)}, e)
+                    Log.warning("Problem with pushing {{num}} items to data sink", {"num": len(g)}, e)
 
         self.thread = Thread.run("threaded queue", size_pusher)
 

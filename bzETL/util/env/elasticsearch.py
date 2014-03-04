@@ -231,7 +231,8 @@ class ElasticSearch(object):
         response = ElasticSearch.post(
             self.path + "/_bulk",
             data=("\n".join(lines) + "\n").encode("utf8"),
-            headers={"Content-Type": "text"}
+            headers={"Content-Type": "text"},
+            timeout=self.settings.timeout
         )
         items = response["items"]
 
@@ -281,7 +282,11 @@ class ElasticSearch(object):
                 else:
                     show_query = query
                 Log.note("Query:\n{{query|indent}}", {"query": show_query})
-            return ElasticSearch.post(self.path + "/_search", data=CNV.object2JSON(query).encode("utf8"))
+            return ElasticSearch.post(
+                self.path + "/_search",
+                data=CNV.object2JSON(query).encode("utf8"),
+                timeout=self.settings.timeout
+            )
         except Exception, e:
             Log.error("Problem with search (path={{path}}):\n{{query|indent}}", {
                 "path": self.path + "/_search",
