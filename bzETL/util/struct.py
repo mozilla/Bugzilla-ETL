@@ -190,7 +190,7 @@ class Struct(dict):
         return d.keys()
 
     def setdefault(self, k, d=None):
-        if not self[k]:
+        if self[k] == None:
             self[k]=d
 
 # KEEP TRACK OF WHAT ATTRIBUTES ARE REQUESTED, MAYBE SOME (BUILTIN) ARE STILL USEFUL

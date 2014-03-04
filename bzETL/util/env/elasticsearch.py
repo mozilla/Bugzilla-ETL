@@ -19,7 +19,7 @@ from ..thread.threads import ThreadedQueue
 from ..maths import Math
 from ..cnv import CNV
 from ..env.logs import Log
-from ..struct import nvl, Null, wrap
+from ..struct import nvl, Null, wrap, unwrap
 from ..struct import Struct, StructList
 
 
@@ -302,7 +302,9 @@ class ElasticSearch(object):
             Log.error("data must be utf8 encoded string")
 
         try:
+            kwargs = wrap(kwargs)
             kwargs.setdefault("timeout", 600)
+            kwargs = unwrap(kwargs)
             response = requests.post(*args, **kwargs)
             if DEBUG:
                 Log.note(response.content[:130])
@@ -322,7 +324,8 @@ class ElasticSearch(object):
     @staticmethod
     def get(*args, **kwargs):
         try:
-            kwargs.setdefault("timeout", 30)
+            kwargs = wrap(kwargs)
+            kwargs.setdefault("timeout", 600)
             response = requests.get(*args, **kwargs)
             if DEBUG:
                 Log.note(response.content[:130])
@@ -336,6 +339,7 @@ class ElasticSearch(object):
     @staticmethod
     def put(*args, **kwargs):
         try:
+            kwargs = wrap(kwargs)
             kwargs.setdefault("timeout", 30)
             response = requests.put(*args, **kwargs)
             if DEBUG:
