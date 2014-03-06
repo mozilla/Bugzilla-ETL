@@ -255,16 +255,20 @@
                 "changes": {
                     "properties": {
                         "attach_id": {
-                            "type": "integer"
+                            "type": "integer",
+                            "index": "not_analyzed"
                         },
                         "field_name": {
-                            "type": "string"
+                            "type": "string",
+                            "index": "not_analyzed"
                         },
                         "new_value": {
-                            "type": "string"
+                            "type": "string",
+                            "index": "not_analyzed"
                         },
                         "old_value": {
-                            "type": "string"
+                            "type": "string",
+                            "index": "not_analyzed"
                         }
                     },
                     "type": "nested",
