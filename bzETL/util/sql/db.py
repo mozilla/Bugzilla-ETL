@@ -11,9 +11,11 @@
 from __future__ import unicode_literals
 
 from datetime import datetime
+import json
 import subprocess
 from pymysql import connect, InterfaceError
 from .. import struct
+from ..jsons import json_scrub
 from ..maths import Math
 from ..strings import expand_template
 from ..struct import nvl, wrap
@@ -512,9 +514,9 @@ class DB(object):
             elif isinstance(value, datetime):
                 return "str_to_date('" + value.strftime("%Y%m%d%H%M%S") + "', '%Y%m%d%H%i%s')"
             elif hasattr(value, '__iter__'):
-                return self.db.literal(CNV.object2JSON(value))
+                return self.db.literal(json_encode(value))
             elif isinstance(value, dict):
-                return self.db.literal(CNV.object2JSON(value))
+                return self.db.literal(json_encode(value))
             elif Math.is_number(value):
                 return unicode(value)
             else:
@@ -536,7 +538,7 @@ class DB(object):
             elif isinstance(value, basestring):
                 return value
             elif isinstance(value, dict):
-                return self.db.literal(CNV.object2JSON(value))
+                return self.db.literal(json_encode(value))
             elif hasattr(value, '__iter__'):
                 return "(" + ",".join([self.quote_sql(vv) for vv in value]) + ")"
             else:
@@ -683,3 +685,22 @@ class Transaction(object):
             self.db.rollback()
         else:
             self.db.commit()
+
+
+# FOR PUTTING JSON INTO DATABASE (sort_keys=True)
+# dicts CAN BE USED AS KEYS
+def json_encode(value):
+    return unicode(json_encoder.encode(json_scrub(value)))
+
+json_encoder = json.JSONEncoder(
+    skipkeys=False,
+    ensure_ascii=False,  # DIFF FROM DEFAULTS
+    check_circular=True,
+    allow_nan=True,
+    indent=None,
+    separators=None,
+    encoding='utf-8',
+    default=None,
+    sort_keys=True
+)
+

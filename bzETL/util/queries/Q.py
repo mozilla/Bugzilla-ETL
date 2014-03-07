@@ -91,6 +91,7 @@ def unique_index(data, keys=None):
         try:
             o.add(d)
         except Exception, e:
+            o.add(d)
             Log.error("index {{index}} is not unique {{key}} maps to both {{value1}} and {{value2}}", {
                 "index": keys,
                 "key": select([d], keys)[0],
@@ -220,6 +221,9 @@ def select(data, field_name):
     if isinstance(data, FlatList):
         return data.select(field_name)
 
+    if isinstance(data, UniqueIndex):
+        data = data._data.values()  # THE SELECT ROUTINE REQUIRES dicts, NOT Struct WHILE ITERATING
+
     if isinstance(field_name, dict) and field_name.value:
         # SIMPLIFY {"value":value} AS STRING
         field_name = field_name.value
@@ -256,6 +260,9 @@ def _select(template, data, fields, depth):
     deep_path = None
     deep_fields = []
     for d in data:
+        if isinstance(d, Struct):
+            Log.error("programmer error, _select can not handle Struct")
+
         record = template.copy()
         for f in fields:
             index, children = _select_deep(d, f, depth, record)

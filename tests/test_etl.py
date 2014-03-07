@@ -7,22 +7,18 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-import cProfile
 
 from datetime import datetime
-from pstats import Stats
-import pstats
 import unittest
 
-import sys
 from bzETL import extract_bugzilla, bz_etl
 from bzETL.bz_etl import etl
 from bzETL.extract_bugzilla import get_current_time, SCREENED_WHITEBOARD_BUG_GROUPS
 from bzETL.util.cnv import CNV
-from bzETL.util.collections import MIN, OR
+from bzETL.util.collections import MIN
 from bzETL.util.queries.db_query import esfilter2sqlwhere
 from bzETL.util.sql.db import DB, all_db
-from bzETL.util.env.logs import Log, extract_stack
+from bzETL.util.env.logs import Log
 from bzETL.util.env.elasticsearch import ElasticSearch
 from bzETL.util.env.files import File
 from bzETL.util.queries import Q
@@ -30,10 +26,11 @@ from bzETL.util.maths.randoms import Random
 from bzETL.util.env import startup
 from bzETL.util import struct
 from bzETL.util.struct import Struct, Null
+from bzETL.util.testing import elasticsearch
 from bzETL.util.thread.threads import ThreadedQueue
 from bzETL.util.times.timer import Timer
 
-from util import compare_es, database, elasticsearch
+from util import compare_es, database
 from util.compare_es import get_all_bug_versions
 from util.database import diff
 

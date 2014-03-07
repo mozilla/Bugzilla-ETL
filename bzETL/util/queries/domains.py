@@ -9,28 +9,31 @@
 #
 from __future__ import unicode_literals
 import re
-from .. import struct
 from ..cnv import CNV
+from dzAlerts.util.collections import UNION
+from .index import UniqueIndex
 from ..env.logs import Log
-from ..struct import Struct, nvl, wrap
+from ..struct import Struct, nvl, wrap, unwrap
 
 
-ALGEBRAIC = ["time", "duration", "numeric", "count", "datetime"]  # DOMAINS THAT HAVE ALGEBRAIC OPERATIONS DEFINED
-KNOWN = ["set", "boolean", "duration", "time", "numeric"]    # DOMAINS THAT HAVE A KNOWN NUMBER FOR PARTS AT QUERY TIME
-PARTITION = ["set", "boolean"]    # DIMENSIONS WITH CLEAR PARTS
+ALGEBRAIC = {"time", "duration", "numeric", "count", "datetime"}  # DOMAINS THAT HAVE ALGEBRAIC OPERATIONS DEFINED
+KNOWN = {"set", "boolean", "duration", "time", "numeric"}    # DOMAINS THAT HAVE A KNOWN NUMBER FOR PARTS AT QUERY TIME
+PARTITION = {"uid", "set", "boolean"}    # DIMENSIONS WITH CLEAR PARTS
 
 
 class Domain(object):
     def __new__(cls, **desc):
         desc = wrap(desc)
         if desc.type == "value":
-            return ValueDomain(**struct.unwrap(desc))
+            return ValueDomain(**unwrap(desc))
         elif desc.type == "default":
-            return DefaultDomain(**struct.unwrap(desc))
+            return DefaultDomain(**unwrap(desc))
         elif desc.type == "set":
             if isinstance(desc.key, (list, tuple)):
                 Log.error("multi key not supported yet")
-            return SetDomain(**struct.unwrap(desc))
+            return SetDomain(**unwrap(desc))
+        elif desc.type == "uid":
+            return DefaultDomain(**unwrap(desc))
         else:
             Log.error("Do not know domain of type {{type}}", {"type": desc.type})
 
@@ -149,14 +152,20 @@ class SetDomain(Domain):
 
         self.NULL = Struct(value=None)
         self.partitions = []
-        self.map = dict()
-        self.map[None] = self.NULL
+        if desc.partitions and isinstance(desc.partitions[0][desc.key], dict):
+            keys = UNION(set(d[desc.key].keys()) for d in desc.partitions)
+            self.map = UniqueIndex(keys=keys)
+        else:
+            self.map = dict()
+            self.map[None] = self.NULL
+
         self.label = nvl(self.label, "name")
 
         if not isinstance(desc.partitions, list):
             Log.error("expecting a list of partitions")
 
         if isinstance(desc.partitions[0], basestring):
+            # ASSMUE PARTS ARE STRINGS, CONVERT TO REAL PART OBJECTS
             for p in desc.partitions:
                 part = {"name": p, "value": p}
                 self.partitions.append(part)

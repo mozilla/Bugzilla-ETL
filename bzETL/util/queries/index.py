@@ -9,10 +9,8 @@
 #
 
 from __future__ import unicode_literals
-from .. import struct
 from ..env.logs import Log
-from ..strings import indent, expand_template
-from ..struct import Null, wrap
+from ..struct import unwrap, wrap
 
 
 class UniqueIndex(object):
@@ -24,66 +22,45 @@ class UniqueIndex(object):
 
     def __init__(self, keys):
         self._data = {}
-        self._keys = struct.unwrap(keys)
+        self._keys = unwrap(keys)
         self.count = 0
-        self.lookup = lookup_method(len(keys), True)
-
 
     def __getitem__(self, key):
         try:
-            if isinstance(key, dict):
-                key = wrap(key)
-                key = [key[k] for k in self._keys]
-            elif not isinstance(key, (list, tuple)):
-                key = [key]
-
-            d = self._data
-            for k in key:
-                if k is None:
-                    for i, k in enumerate(key):
-                        if k == None:
-                            Log.error("can not handle when {{key}} == None", {"key": self._keys[i]})
-                d = d.get(k, Null)
-
-            if len(key) < len(self._keys):
-                # RETURN ANOTHER Index
-                output = UniqueIndex(self._keys[len(key):])
-                output._data = d
-                return output
-            else:
-                return d
+            key = value2key(self._keys, key)
+            d = self._data.get(key, None)
+            return wrap(d)
         except Exception, e:
             Log.error("something went wrong", e)
 
     def __setitem__(self, key, value):
-        Log.error("Not implemented")
+        try:
+            key = value2key(self._keys, key)
+            d = self._data.get(key, None)
+            if d != None:
+                Log.error("key already filled")
+
+            self._data[key] = unwrap(value)
+            self.count += 1
+
+        except Exception, e:
+            Log.error("something went wrong", e)
 
 
     def add(self, val):
-        if not isinstance(val, dict):
-            val = {self._keys[0]: val}
-        val = wrap(val)
-        d = self._data
-        for k in self._keys[0:-1]:
-            v = val[k]
-            if v == None:
-                Log.error("can not handle when {{key}} == None", {"key": k})
-            if v not in d:
-                e = {}
-                d[v] = e
-            d = d[v]
-        v = val[self._keys[-1]]
-        if v in d:
+        key = value2key(self._keys, val)
+        d = self._data.get(key, None)
+        if d != None:
             Log.error("key already filled")
-        d[v] = val
-        self.count += 1
 
+        self._data[key] = unwrap(val)
+        self.count += 1
 
     def __contains__(self, key):
         return self[key] != None
 
     def __iter__(self):
-        return self.lookup(self._data)
+        return (wrap(v) for v in self._data.itervalues())
 
     def __sub__(self, other):
         output = UniqueIndex(self._keys)
@@ -115,28 +92,6 @@ class UniqueIndex(object):
 
     def intersect(self, other):
         return self.__and__(other)
-
-
-def lookup_method(depth, is_unique):
-    code = "def lookup(d0):\n"
-    for i in range(depth):
-        code = code + indent(expand_template(
-            "for k{{next}}, d{{next}} in d{{curr}}.items():\n", {
-                "next": i + 1,
-                "curr": i
-            }), prefix="    ", indent=i + 1)
-    if not is_unique:
-        code = code + indent(expand_template(
-            "for d{{next}} in d{{curr}}:\n", {
-                "next": depth + 1,
-                "curr": depth
-            }), prefix="    ", indent=depth + 1)
-        depth += 1
-
-    code = code + indent(expand_template("yield wrap(d{{curr}})", {"curr": depth}), prefix="    ", indent=depth + 1)
-    lookup = None
-    exec code
-    return lookup
 
 
 class Index(object):
@@ -146,38 +101,25 @@ class Index(object):
 
     def __init__(self, keys):
         self._data = {}
-        self._keys = struct.unwrap(keys)
+        self._keys = unwrap(keys)
         self.count = 0
-        self.lookup = lookup_method(len(keys), False)
-
 
     def __getitem__(self, key):
         try:
-            if isinstance(key, dict):
-                key = struct.unwrap(key)
-                key = [key.get(k, None) for k in self._keys]
-            elif isinstance(key, tuple):
-                pass
-            elif not isinstance(key, list):
-                key = [key]
-
-            d = self._data
-            for k in key:
-                if k is None:
-                    for i, k in enumerate(key):
-                        if k == None:
-                            Log.error("can not handle when {{key}} == None", {"key": self._keys[i]})
-                d = d.get(k, Null)
-                if d == None:
-                    return Null
-
-            if len(key) < len(self._keys):
+            if isinstance(key, (list, tuple)) and len(key)<len(self._keys):
                 # RETURN ANOTHER Index
-                output = Index(self._keys[len(key):])
-                output._data = d
+                filter_key = self._keys[0:len(key):]
+                filter_value = value2key(filter_key, key)
+                new_key = self._keys[len(key)::]
+                output = Index(new_key)
+                for d in self:
+                    if value2key(filter_key, d) == filter_value:
+                        output.add(d)
                 return output
-            else:
-                return list(d)
+
+            key = value2key(self._keys, key)
+            d = self._data.get(key, None)
+            return wrap(list(d))
         except Exception, e:
             Log.error("something went wrong", e)
 
@@ -186,22 +128,13 @@ class Index(object):
 
 
     def add(self, val):
-        if not isinstance(val, dict):
-            val = {self._keys[0]: val}
-        val = wrap(val)
-        d = self._data
-        for k in self._keys[0:-1]:
-            v = val[k]
-            if v == None:
-                Log.error("can not handle when {{key}} == None", {"key": k})
-            if v not in d:
-                e = {}
-                d[v] = e
-            d = d[v]
-        v = val[self._keys[-1]]
-        if v not in d:
-            d[v] = list()
-        d[v].append(val)
+        key = value2key(self._keys, wrap(val))
+
+        d = self._data.get(key, None)
+        if d == None:
+            d = list()
+            self._data[key] = d
+        d.append(unwrap(val))
         self.count += 1
 
 
@@ -209,7 +142,11 @@ class Index(object):
     #     return self[key] != None
 
     def __iter__(self):
-        return self.lookup(self._data)
+        def itr():
+            for v in self._data.values():
+                for vv in v:
+                    yield wrap(vv)
+        return itr()
 
     def __sub__(self, other):
         output = UniqueIndex(self._keys)
@@ -226,8 +163,10 @@ class Index(object):
 
     def __or__(self, other):
         output = UniqueIndex(self._keys)
-        for v in self: output.add(v)
-        for v in other: output.add(v)
+        for v in self:
+            output.add(v)
+        for v in other:
+            output.add(v)
         return output
 
     def __len__(self):
@@ -241,3 +180,12 @@ class Index(object):
 
     def intersect(self, other):
         return self.__and__(other)
+
+
+def value2key(keys, val):
+    if isinstance(val, dict):
+        return wrap({k: val[k] for k in keys})
+    elif isinstance(val, (list, tuple)):
+        return wrap(dict(zip(keys, val)))
+    else:
+        return wrap(val)

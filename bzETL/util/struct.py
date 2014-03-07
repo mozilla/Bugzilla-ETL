@@ -78,7 +78,7 @@ class Struct(dict):
 
     def __setitem__(self, key, value):
         if key == "":
-            from ...env.logs import Log
+            from .env.logs import Log
 
             Log.error("key is empty string.  Probably a bad idea")
         if isinstance(key, str):
@@ -132,6 +132,30 @@ class Struct(dict):
         else:
             object.__setattr__(self, ukey, value)
         return self
+
+    def __hash__(self):
+        d = _get(self, "__dict__")
+        return hash_value(d)
+
+    def __eq__(self, other):
+        if not isinstance(other, dict):
+            return False
+        e = unwrap(other)
+        d = _get(self, "__dict__")
+        for k, v in d.items():
+            if e.get(k, None) != v:
+                return False
+        for k, v in e.items():
+            if d.get(k, None) != v:
+                return False
+        return True
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+
+
+
 
     def items(self):
         d = _get(self, "__dict__")
@@ -500,7 +524,6 @@ class StructList(list):
             return EmptyList
         return StructList(_get(self, "list")[:-num:])
 
-
     def last(self):
         """
         RETURN LAST ELEMENT IN StructList
@@ -616,6 +639,16 @@ def listwrap(value):
         return wrap([value])
 
 
+def tuplewrap(value):
+    """
+    INTENDED TO TURN lists INTO tuples FOR USE AS KEYS
+    """
+    if isinstance(value, (list, tuple, GeneratorType)):
+        return tuple(tuplewrap(v) for v in value)
+    return unwrap(value)
+
+
+
 def split_field(field):
     """
     RETURN field AS ARRAY OF DOT-SEPARATED FIELDS
@@ -633,6 +666,14 @@ def join_field(field):
     """
     return ".".join([f.replace(".", "\.") for f in field])
 
+
+def hash_value(v):
+    if isinstance(v, (set, tuple, list)):
+        return hash(tuple(hash_value(vv) for vv in v))
+    elif not isinstance(v, dict):
+        return hash(v)
+    else:
+        return hash(tuple(sorted(hash_value(vv) for vv in v.values())))
 
 
 

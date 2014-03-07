@@ -17,8 +17,8 @@ from bzETL.util.sql.db import DB, all_db
 from bzETL.util.env.logs import Log
 from bzETL.util.env import startup
 from bzETL.util.struct import Struct
+from bzETL.util.testing import elasticsearch
 from bzETL.util.thread.threads import ThreadedQueue
-from util import elasticsearch
 
 
 class TestOneETL(unittest.TestCase):

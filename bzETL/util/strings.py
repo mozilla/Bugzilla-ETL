@@ -9,7 +9,8 @@
 #
 
 from __future__ import unicode_literals
-from datetime import timedelta
+from datetime import timedelta, date
+from datetime import datetime as builtin_datetime
 import re
 
 from . import struct
@@ -19,7 +20,7 @@ from .struct import wrap
 def datetime(value):
     from .cnv import CNV
 
-    if isinstance(value, datetime):
+    if isinstance(value, (date, builtin_datetime)):
         CNV.datetime2string(value, "%Y-%m-%d %H:%M:%S")
 
     if value < 10000000000:
@@ -28,6 +29,10 @@ def datetime(value):
         value = CNV.milli2datetime(value)
 
     return CNV.datetime2string(value, "%Y-%m-%d %H:%M:%S")
+
+
+def upper(value):
+    return value.upper()
 
 
 def newline(value):
