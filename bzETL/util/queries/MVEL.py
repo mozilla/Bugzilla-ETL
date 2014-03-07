@@ -13,7 +13,7 @@ from datetime import datetime
 import re
 from .. import struct
 from ..cnv import CNV
-from ..collections import reverse
+from ..collections import reverse, AND
 from ..env.logs import Log
 from ..maths import Math
 from ..queries.filters import TRUE_FILTER
@@ -443,7 +443,7 @@ keyword_pattern = re.compile(r"\w+(?:\.\w+)*")
 
 def isKeyword(value):
     """
-    RETURN TRUE IF THE value IS JUST A NAME OF A FIELD (OR A VALUE)
+    RETURN TRUE IF THE value IS JUST A NAME OF A FIELD, A LIST OF FIELDS, (OR A VALUE)
     """
     if not value or not isinstance(value, basestring):
         Log.error("Expecting a string")

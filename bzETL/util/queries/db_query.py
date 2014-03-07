@@ -10,13 +10,15 @@
 from __future__ import unicode_literals
 
 from .. import struct
+import json
 from ..cnv import CNV
 from ..collections.matrix import Matrix
+from dzAlerts.util.jsons import json_scrub
 from .query import Query
 from ..sql.db import int_list_packer, SQL, DB
 from ..env.logs import Log
 from ..strings import indent, expand_template
-from ..struct import nvl, wrap
+from ..struct import nvl, wrap, listwrap
 
 
 class DBQuery(object):
@@ -204,8 +206,15 @@ class DBQuery(object):
         if isinstance(query.select, list):
             # RETURN BORING RESULT SET
             selects = []
-            for s in query.select:
-                selects.append(s.value + " AS " + self.db.quote_column(s.name))
+            for s in listwrap(query.select):
+                if isinstance(s.value, dict):
+                    for k, v in s.value.items:
+                        selects.append(v + " AS " + self.db.quote_column(s.name+"."+k))
+                if isinstance(s.value, list):
+                    for i, ss in enumerate(s.value):
+                        selects.append(s.value + " AS " + self.db.quote_column(s.name+","+str(i)))
+                else:
+                    selects.append(s.value + " AS " + self.db.quote_column(s.name))
 
             sql = expand_template("""
                 SELECT
@@ -223,11 +232,34 @@ class DBQuery(object):
                 "sort": self._sort2sql(query.sort)
             })
 
-            return sql, lambda sql: self.db.query(sql)  # RETURN BORING RESULT SET
+            def post_process(sql):
+                result = self.db.query(sql)
+                for s in listwrap(query.select):
+                    if isinstance(s.value, dict):
+                        for r in result:
+                            r[s.name] = {}
+                            for k, v in s.value:
+                                r[s.name][k] = r[s.name+"."+k]
+                                r[s.name+"."+k] = None
+
+                    if isinstance(s.value, list):
+                        #REWRITE AS TUPLE
+                        for r in result:
+                            r[s.name] = tuple(r[s.name + "," + str(i)] for i, ss in enumerate(s.value))
+                            for i, ss in enumerate(s.value):
+                                r[s.name + "," + str(i)] = None
+
+                expand_json(result)
+                return result
+
+            return sql, post_process  # RETURN BORING RESULT SET
         else:
             # RETURN LIST OF VALUES
-            name = query.select.name
-            select = query.select.value + " AS " + self.db.quote_column(name)
+            if query.select.value == "*":
+                select = "*"
+            else:
+                name = query.select.name
+                select = query.select.value + " AS " + self.db.quote_column(name)
 
             sql = expand_template("""
                 SELECT
@@ -245,7 +277,15 @@ class DBQuery(object):
                 "sort": self._sort2sql(query.sort)
             })
 
-            return sql, lambda sql: [r[name] for r in self.db.query(sql)]  # RETURNING LIST OF VALUES
+            if query.select.value == "*":
+                def post(sql):
+                    result = self.db.query(sql)
+                    expand_json(result)
+                    return result
+
+                return sql, post
+            else:
+                return sql, lambda sql: [r[name] for r in self.db.query(sql)]  # RETURNING LIST OF VALUES
 
     def _sort2sql(self, sort):
         """
@@ -354,6 +394,18 @@ def _esfilter2sqlwhere(db, esfilter):
         return "1=1"
     else:
         Log.error("Can not convert esfilter to SQL: {{esfilter}}", {"esfilter": esfilter})
+
+
+def expand_json(rows):
+    #CONVERT JSON TO VALUES
+    for r in rows:
+        for k, json in list(r.items()):
+            if isinstance(json, basestring) and json[0:1] in ("[", "{"):
+                try:
+                    value = CNV.JSON2object(json)
+                    r[k] = value
+                except Exception, e:
+                    pass
 
 
 #MAP NAME TO SQL FUNCTION

@@ -18,7 +18,7 @@ from ..queries.filters import simplify, TRUE_FILTER
 from ..env.logs import Log
 from ..queries import MVEL, filters
 from ..queries.cube import Cube
-from ..struct import split_field, unwrap, nvl
+from ..struct import split_field, unwrap, nvl, join_field
 
 
 def is_fieldop(query):
@@ -27,8 +27,8 @@ def is_fieldop(query):
     select = struct.listwrap(query.select)
     if not query.edges:
         isDeep = len(split_field(query.frum.name)) > 1  # LOOKING INTO NESTED WILL REQUIRE A SCRIPT
-        isSimple = AND([s.value != None and MVEL.isKeyword(s.value) for s in select])
-        noAgg = AND([s.aggregate == "none" for s in select])
+        isSimple = AND(s.value != None and isKeyword(s.value) for s in select)
+        noAgg = AND(s.aggregate == "none" for s in select)
 
         if not isDeep and isSimple and noAgg:
             return True
@@ -38,6 +38,14 @@ def is_fieldop(query):
             return True
 
     return False
+
+def isKeyword(value):
+    if isinstance(value, dict):
+        return AND(isKeyword(v) for k, v in value.items())
+    if isinstance(value, list):
+        return AND(isKeyword(v) for v in value)
+    return MVEL.isKeyword(value)
+
 
 def es_fieldop(es, query):
     esQuery = es_query_util.buildESQuery(query)
@@ -50,8 +58,15 @@ def es_fieldop(es, query):
             "filter": filters.simplify(query.where)
         }
     }
-    esQuery.size = query.limit
-    esQuery.fields = select.value
+    esQuery.size = nvl(query.limit, 200000)
+    esQuery.fields = []
+    for s in select.value:
+        if isinstance(s, list):
+            esQuery.fields.extend(s)
+        elif isinstance(s, dict):
+            esQuery.fields.extend(s.values())
+        else:
+            esQuery.fields.append(s)
     esQuery.sort = [{s.field: "asc" if s.sort >= 0 else "desc"} for s in query.sort]
 
     data = es_query_util.post(es, esQuery, query.limit)
@@ -61,6 +76,12 @@ def es_fieldop(es, query):
     for s in select:
         if s.value == "*":
             matricies[s.name] = Matrix.wrap([t._source for t in T])
+        elif isinstance(s.value, dict):
+            # for k, v in s.value.items():
+            #     matricies[join_field(split_field(s.name)+[k])] = Matrix.wrap([unwrap(t.fields)[v] for t in T])
+            matricies[s.name] = Matrix.wrap([{k: unwrap(t.fields)[v] for k, v in s.value.items()}for t in T])
+        elif isinstance(s.value, list):
+            matricies[s.name] = Matrix.wrap([tuple(unwrap(t.fields)[ss] for ss in s.value) for t in T])
         elif not s.value:
             matricies[s.name] = Matrix.wrap([unwrap(t.fields)[s.value] for t in T])
         else:
@@ -96,24 +117,31 @@ def es_setop(es, mvel, query):
     isDeep = len(split_field(query.frum.name)) > 1  # LOOKING INTO NESTED WILL REQUIRE A SCRIPT
     isComplex = OR([s.value == None and s.aggregate not in ("count", "none") for s in select])   # CONVERTING esfilter DEFINED PARTS WILL REQUIRE SCRIPT
 
-    if not isDeep and not isComplex and len(select)==1 and MVEL.isKeyword(select[0].value):
-        esQuery.facets.mvel = {
-            "terms": {
-                "field": select[0].value,
-                "size": nvl(query.limit, 200000)
-            },
-            "facet_filter": simplify(query.where)
-        }
-        if query.sort:
-            s = query.sort
-            if len(s) > 1:
-                Log.error("can not sort by more than one field")
+    if not isDeep and not isComplex and len(select) == 1:
+        if not select[0].value:
+            esQuery.query = {"filtered": {
+                "query": {"match_all": {}},
+                "filter": simplify(query.where)
+            }}
+            esQuery.size = 1 # PREVENT QUERY CHECKER FROM THROWING ERROR
+        elif MVEL.isKeyword(select[0].value):
+            esQuery.facets.mvel = {
+                "terms": {
+                    "field": select[0].value,
+                    "size": nvl(query.limit, 200000)
+                },
+                "facet_filter": simplify(query.where)
+            }
+            if query.sort:
+                s = query.sort
+                if len(s) > 1:
+                    Log.error("can not sort by more than one field")
 
-            s0 = s[0]
-            if s0.field != select[0].value:
-                Log.error("can not sort by anything other than count, or term")
+                s0 = s[0]
+                if s0.field != select[0].value:
+                    Log.error("can not sort by anything other than count, or term")
 
-            esQuery.facets.mvel.terms.order = "term" if s0.sort >= 0 else "reverse_term"
+                esQuery.facets.mvel.terms.order = "term" if s0.sort >= 0 else "reverse_term"
     elif not isDeep:
         simple_query = query.copy()
         simple_query.where = TRUE_FILTER  #THE FACET FILTER IS FASTER
@@ -135,11 +163,16 @@ def es_setop(es, mvel, query):
 
     data = es_query_util.post(es, esQuery, query.limit)
 
-    if len(select) == 1 and MVEL.isKeyword(select[0].value):
-        # SPECIAL CASE FOR SINGLE TERM
-        T = data.facets.mvel.terms
-        output = Matrix.wrap([t.term for t in T])
-        cube = Cube(query.select, [], {select[0].name: output})
+    if len(select) == 1:
+        if not select[0].value:
+            # SPECIAL CASE FOR SINGLE COUNT
+            output = Matrix(value=data.hits.total)
+            cube = Cube(query.select, [], {select[0].name: output})
+        elif MVEL.isKeyword(select[0].value):
+            # SPECIAL CASE FOR SINGLE TERM
+            T = data.facets.mvel.terms
+            output = Matrix.wrap([t.term for t in T])
+            cube = Cube(query.select, [], {select[0].name: output})
     else:
         data_list = MVEL.unpack_terms(data.facets.mvel, select)
         if not data_list:

@@ -47,7 +47,7 @@ class CNV:
 
             return wrap(json_decoder.decode(json_string))
         except Exception, e:
-            Log.error("Can not decode JSON:\n\t" + json_string, e)
+            Log.error("Can not decode JSON:\n\t" + str(json_string), e)
 
 
     @staticmethod

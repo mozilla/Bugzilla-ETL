@@ -96,6 +96,9 @@ class cPythonJSONEncoder(object):
         )
 
     def encode(self, value, pretty=False):
+        if value == None:
+            return "null"
+
         if pretty:
             return pretty_json(value)
 
