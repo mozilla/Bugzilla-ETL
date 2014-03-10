@@ -6,7 +6,7 @@ from bzETL.util.env.elasticsearch import ElasticSearch
 from bzETL.util.env.logs import Log
 from bzETL.util.env.files import File
 from bzETL.util.queries import Q
-from bzETL.util.struct import Struct, nvl
+from bzETL.util.struct import Struct, wrap, unwrap
 
 
 def make_test_instance(name, settings):
@@ -34,6 +34,7 @@ def open_test_instance(name, settings):
 
 class Fake_ES():
     def __init__(self, settings):
+        self.settings = wrap({"host":"fake", "index":"fake"})
         self.filename = settings.filename
         try:
             self.data = CNV.JSON2object(File(self.filename).read())
@@ -42,13 +43,13 @@ class Fake_ES():
 
 
     def search(self, query):
-        query=struct.wrap(query)
+        query=wrap(query)
         f = CNV.esfilter2where(query.query.filtered.filter)
-        filtered=struct.wrap([{"_id": i, "_source": d} for i, d in self.data.items() if f(d)])
+        filtered=wrap([{"_id": i, "_source": d} for i, d in self.data.items() if f(d)])
         if query.fields:
-            return struct.wrap({"hits": {"total":len(filtered), "hits": [{"_id":d._id, "fields":Q.select([d._source], query.fields)[0]} for d in filtered]}})
+            return wrap({"hits": {"total":len(filtered), "hits": [{"_id":d._id, "fields":unwrap(Q.select([unwrap(d._source)], query.fields)[0])} for d in filtered]}})
         else:
-            return struct.wrap({"hits": {"total":len(filtered), "hits": filtered}})
+            return wrap({"hits": {"total":len(filtered), "hits": filtered}})
 
     def extend(self, records):
         """
@@ -70,7 +71,7 @@ class Fake_ES():
 
     def delete_record(self, filter):
         f = CNV.esfilter2where(filter)
-        self.data = struct.wrap({k: v for k, v in self.data.items() if not f(v)})
+        self.data = wrap({k: v for k, v in self.data.items() if not f(v)})
 
     def set_refresh_interval(self, seconds):
         pass

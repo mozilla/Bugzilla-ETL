@@ -10,9 +10,7 @@
 
 
 from __future__ import unicode_literals
-import cProfile
 from datetime import datetime
-import pstats
 import sys
 
 from .. import struct
@@ -193,6 +191,8 @@ class Log(object):
             Log.add_log(Log.new_instance(log))
 
         if settings.profile:
+            import cProfile
+
             cls.profiler = cProfile.Profile()
             cls.profiler.enable()
 
@@ -200,8 +200,11 @@ class Log(object):
     @classmethod
     def stop(cls):
         if cls.profiler:
+            cls.profiler.disable()
+
             from ..cnv import CNV
             from .files import File
+            import pstats
 
             p = pstats.Stats(cls.profiler)
             stats = [{

@@ -160,7 +160,9 @@ def _value2json(value, _buffer):
     elif type is datetime:
         append(_buffer, unicode(long(time.mktime(value.timetuple()) * 1000)))
     elif type is timedelta:
-        append(_buffer, unicode(value.total_seconds())+"second")
+        append(_buffer, "\"")
+        append(_buffer, unicode(value.total_seconds()))
+        append(_buffer, "second\"")
     elif hasattr(value, '__iter__'):
         _iter2json(value, _buffer)
     elif hasattr(value, '__json__'):
@@ -235,7 +237,7 @@ def _scrub(value):
     if type in (date, datetime):
         return datetime2milli(value)
     elif type is timedelta:
-        return unicode(value.total_seconds())+"second"
+        return "\"" + unicode(value.total_seconds()) + "second\""
     elif type is str:
         return unicode(value.decode("utf8"))
     elif type is dict:
@@ -404,4 +406,4 @@ def datetime2milli(d):
         diff = d - epoch
         return long(diff.total_seconds()) * 1000L + long(diff.microseconds / 1000)
     except Exception, e:
-        raise Exception("Can not convert "+repr(d)+" to json")
+        raise Exception("Can not convert "+repr(d)+" to json", e)

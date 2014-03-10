@@ -76,7 +76,7 @@ class TestLookForLeaks(unittest.TestCase):
             )
 
             if leaked_bugs:
-                if self.settings.delete:
+                if self.settings.param.delete:
                     self.public.delete_record(
                         {"terms":{"bug_id":leaked_bugs.bug_id}}
                     )
@@ -104,7 +104,7 @@ class TestLookForLeaks(unittest.TestCase):
                 limit=20
             )
             if leaked_comments:
-                if self.settings.delete:
+                if self.settings.param.delete:
                     self.public_comments.delete_record(
                         {"terms":{"bug_id":leaked_comments.bug_id}}
                     )
@@ -189,7 +189,7 @@ class TestLookForLeaks(unittest.TestCase):
             #
 
             if leaked_bugs:
-                if self.settings.delete:
+                if self.settings.param.delete:
                     self.public.delete_record(
                         {"terms":{"bug_id":leaked_bugs.bug_id}}
                     )
@@ -210,7 +210,7 @@ class TestLookForLeaks(unittest.TestCase):
             limit=20
         )
         if leaked_comments:
-            if self.settings.delete:
+            if self.settings.param.delete:
                 self.public_comments.delete_record(
                     {"terms":{"bug_id":leaked_comments.bug_id}}
                 )
