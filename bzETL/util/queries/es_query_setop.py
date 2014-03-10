@@ -27,7 +27,7 @@ def is_fieldop(query):
     select = struct.listwrap(query.select)
     if not query.edges:
         isDeep = len(split_field(query.frum.name)) > 1  # LOOKING INTO NESTED WILL REQUIRE A SCRIPT
-        isSimple = AND(s.value != None and isKeyword(s.value) for s in select)
+        isSimple = AND(s.value != None and (s.value == "*" or isKeyword(s.value)) for s in select)
         noAgg = AND(s.aggregate == "none" for s in select)
 
         if not isDeep and isSimple and noAgg:
@@ -61,7 +61,9 @@ def es_fieldop(es, query):
     esQuery.size = nvl(query.limit, 200000)
     esQuery.fields = []
     for s in select.value:
-        if isinstance(s, list):
+        if s == "*":
+            esQuery.fields = None
+        elif isinstance(s, list):
             esQuery.fields.extend(s)
         elif isinstance(s, dict):
             esQuery.fields.extend(s.values())
@@ -79,13 +81,16 @@ def es_fieldop(es, query):
         elif isinstance(s.value, dict):
             # for k, v in s.value.items():
             #     matricies[join_field(split_field(s.name)+[k])] = Matrix.wrap([unwrap(t.fields)[v] for t in T])
-            matricies[s.name] = Matrix.wrap([{k: unwrap(t.fields)[v] for k, v in s.value.items()}for t in T])
+            matricies[s.name] = Matrix.wrap([{k: unwrap(t.fields).get(v, None) for k, v in s.value.items()}for t in T])
         elif isinstance(s.value, list):
-            matricies[s.name] = Matrix.wrap([tuple(unwrap(t.fields)[ss] for ss in s.value) for t in T])
+            matricies[s.name] = Matrix.wrap([tuple(unwrap(t.fields).get(ss, None) for ss in s.value) for t in T])
         elif not s.value:
-            matricies[s.name] = Matrix.wrap([unwrap(t.fields)[s.value] for t in T])
+            matricies[s.name] = Matrix.wrap([unwrap(t.fields).get(s.value, None) for t in T])
         else:
-            matricies[s.name] = Matrix.wrap([unwrap(t.fields)[s.value] for t in T])
+            try:
+                matricies[s.name] = Matrix.wrap([unwrap(t.fields).get(s.value, None) for t in T])
+            except Exception, e:
+                Log.error("", e)
 
     cube = Cube(query.select, query.edges, matricies, frum=query)
     cube.frum = query

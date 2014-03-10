@@ -293,6 +293,8 @@ def _select_deep(v, field, depth, record):
 
     for i, f in enumerate(field.value[depth:len(field.value) - 1:]):
         v = v.get(f, None)
+        if v is None:
+            return 0, None
         if isinstance(v, list):
             return depth + i + 1, v
 
@@ -375,6 +377,9 @@ def filter(data, where):
     """
     where  - a function that accepts (record, rownum, rows) and returns boolean
     """
+    if where == TRUE_FILTER:
+        return data
+
     if isinstance(data, Cube):
         Log.error("Do not know how to handle")
 
@@ -636,16 +641,25 @@ def window(data, param):
     """
     name = param.name            # column to assign window function result
     edges = param.edges          # columns to gourp by
+    where = param.where          # DO NOT CONSIDER THESE VALUES
     sortColumns = param.sort            # columns to sort by
     calc_value = wrap_function(param.value) # function that takes a record and returns a value (for aggregation)
     aggregate = param.aggregate  # WindowFunction to apply
     _range = param.range          # of form {"min":-10, "max":0} to specify the size and relative position of window
+
+    data = filter(data, where)
+
+    if sortColumns:
+        data = sort(data, sortColumns)
 
     if not aggregate and not edges:
         #SIMPLE CALCULATED VALUE
         for rownum, r in enumerate(data):
             r[name] = calc_value(r, rownum, data)
         return
+
+
+
 
     for rownum, r in enumerate(data):
         r["__temp__"] = calc_value(r, rownum, data)

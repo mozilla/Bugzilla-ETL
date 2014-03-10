@@ -10,7 +10,7 @@
 from __future__ import unicode_literals
 import re
 from ..cnv import CNV
-from dzAlerts.util.collections import UNION
+from ..collections import UNION
 from .index import UniqueIndex
 from ..env.logs import Log
 from ..struct import Struct, nvl, wrap, unwrap

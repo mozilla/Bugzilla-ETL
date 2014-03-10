@@ -11,11 +11,12 @@ from __future__ import unicode_literals
 from .. import struct
 from .dimensions import Dimension
 from .domains import Domain
-from dzAlerts.util.collections import AND
+from ..collections import AND, reverse
 from ..env.logs import Log
 from ..queries import MVEL
 from ..queries.filters import TRUE_FILTER, simplify
-from ..struct import nvl, Struct, EmptyList, wrap
+from ..struct import nvl, Struct, EmptyList, wrap, split_field, join_field, StructList
+from .es_query_util import INDEX_CACHE
 
 
 class Query(object):
@@ -156,7 +157,8 @@ def _normalize_window(window, schema=None):
         edges=[_normalize_edge(e, schema) for e in struct.listwrap(window.edges)],
         sort=_normalize_sort(window.sort),
         aggregate=window.aggregate,
-        range=_normalize_range(window.range)
+        range=_normalize_range(window.range),
+        where=_normalize_where(window.where, schema=schema)
     )
 
 
@@ -175,68 +177,107 @@ def _normalize_where(where, schema=None):
         return TRUE_FILTER
     if schema == None:
         return where
-    where = simplify(_where_terms(where, schema))
+    where = simplify(_where_terms(where, where, schema))
     return where
 
 
-def _where_terms(where, schema):
+def _map_term_using_schema(master, where, schema):
+    """
+    IF THE WHERE CLAUSE REFERS TO FIELDS IN THE SCHEMA, THEN EXPAND THEM
+    """
+    output = []
+    for k, v in where.term.items():
+        dimension = schema.edges[k]
+        if dimension:
+            domain = schema.edges[k].getDomain()
+            if dimension.fields:
+                if isinstance(dimension.fields, dict):
+                    # EXPECTING A TUPLE
+                    for local_field, es_field in dimension.fields.items():
+                        local_value = v[local_field]
+                        if local_value == None:
+                            output.append({"missing": {"field": es_field}})
+                        else:
+                            output.append({"term": {es_field: local_value}})
+                    continue
+
+                if len(dimension.fields) == 1 and MVEL.isKeyword(dimension.fields[0]):
+                    # SIMPLE SINGLE-VALUED FIELD
+                    if domain.getPartByKey(v) is domain.NULL:
+                        output.append({"missing": {"field": dimension.fields[0]}})
+                    else:
+                        output.append({"term": {dimension.fields[0]: v}})
+                    continue
+
+                if AND(MVEL.isKeyword(f) for f in dimension.fields):
+                    # EXPECTING A TUPLE
+                    if not isinstance(v, tuple):
+                        Log.error("expecing {{name}}={{value}} to be a tuple", {"name": k, "value": v})
+                    for i, f in enumerate(dimension.fields):
+                        vv = v[i]
+                        if vv == None:
+                            output.append({"missing": {"field": f}})
+                        else:
+                            output.append({"term": {f: vv}})
+                    continue
+            if len(dimension.fields) == 1 and MVEL.isKeyword(dimension.fields[0]):
+                if domain.getPartByKey(v) is domain.NULL:
+                    output.append({"missing": {"field": dimension.fields[0]}})
+                else:
+                    output.append({"term": {dimension.fields[0]: v}})
+                continue
+            if domain.partitions:
+                part = domain.getPartByKey(v)
+                if part is domain.NULL or not part.esfilter:
+                    Log.error("not expected to get NULL")
+                output.append(part.esfilter)
+                continue
+            else:
+                Log.error("not expected")
+        output.append({"term": {k: v}})
+    return {"and": output}
+
+def _move_nested_term(master, where, schema):
+    """
+    THE WHERE CLAUSE CAN CONTAIN NESTED PROPERTY REFERENCES, THESE MUST BE MOVED
+    TO A NESTED FILTER
+    """
+    items = where.term.items()
+    if len(items) != 1:
+        Log.error("Expecting only one term")
+    k, v = items[0]
+    nested_path = _get_nested_path(k, schema)
+    if nested_path:
+        return {"nested": {
+            "path": nested_path,
+            "query": {"filtered": {
+                "query": {"match_all": {}},
+                "filter": {"and": [
+                    {"term": {k: v}}
+                ]}
+            }}
+        }}
+    return where
+
+def _get_nested_path(field, schema):
+    if MVEL.isKeyword(field):
+        field = join_field([schema.es.alias]+split_field(field))
+        for i, f in reverse(enumerate(split_field(field))):
+            path = join_field(split_field(field)[0:i+1:])
+            if path in INDEX_CACHE:
+                return join_field(split_field(path)[1::])
+    return None
+
+def _where_terms(master, where, schema):
     """
     USE THE SCHEMA TO CONVERT DIMENSION NAMES TO ES FILTERS
+    master - TOP LEVEL WHERE (FOR PLACING NESTED FILTERS)
     """
     if isinstance(where, dict):
         if where.term:
             #MAP TERM
-            output = []
-            for k, v in where.term.items():
-                dimension = schema.edges[k]
-                if dimension:
-                    domain = schema.edges[k].getDomain()
-                    if dimension.fields:
-                        if isinstance(dimension.fields, dict):
-                            # EXPECTING A TUPLE
-                            for local_field, es_field in dimension.fields.items():
-                                local_value = v[local_field]
-                                if local_value == None:
-                                    output.append({"missing": {"field": es_field}})
-                                else:
-                                    output.append({"term": {es_field: local_value}})
-                            continue
-
-                        if len(dimension.fields) == 1 and MVEL.isKeyword(dimension.fields[0]):
-                            # SIMPLE SINGLE-VALUED FIELD
-                            if domain.getPartByKey(v) is domain.NULL:
-                                output.append({"missing": {"field": dimension.fields[0]}})
-                            else:
-                                output.append({"term": {dimension.fields[0]: v}})
-                            continue
-
-                        if AND(MVEL.isKeyword(f) for f in dimension.fields):
-                            # EXPECTING A TUPLE
-                            if not isinstance(v, tuple):
-                                Log.error("expecing {{name}}={{value}} to be a tuple", {"name": k, "value": v})
-                            for i, f in enumerate(dimension.fields):
-                                vv = v[i]
-                                if vv == None:
-                                    output.append({"missing": {"field": f}})
-                                else:
-                                    output.append({"term": {f: vv}})
-                            continue
-                    if len(dimension.fields) == 1 and MVEL.isKeyword(dimension.fields[0]):
-                        if domain.getPartByKey(v) is domain.NULL:
-                            output.append({"missing": {"field": dimension.fields[0]}})
-                        else:
-                            output.append({"term": {dimension.fields[0]: v}})
-                        continue
-                    if domain.partitions:
-                        part = domain.getPartByKey(v)
-                        if part is domain.NULL or not part.esfilter:
-                            Log.error("not expected to get NULL")
-                        output.append(part.esfilter)
-                        continue
-                    else:
-                        Log.error("not expected")
-                output.append({"term": {k: v}})
-            return {"and": output}
+            output = _map_term_using_schema(master, where, schema)
+            return output
         elif where.terms:
             #MAP TERM
             output = []
@@ -261,10 +302,10 @@ def _where_terms(where, schema):
                     if domain.partitions:
                         output.append({"or": [domain.getPartByKey(vv).esfilter for vv in v]})
                         continue
-                output.append({"term": {k: v}})
+                output.append({"terms": {k: v}})
             return {"and": output}
         elif where["and"] or where["or"]:
-            return {k: [_where_terms(vv, schema) for vv in v] for k, v in where.items()}
+            return {k: [_where_terms(master, vv, schema) for vv in v] for k, v in where.items()}
     return where
 
 

@@ -13,7 +13,6 @@ from bzETL.bz_etl import etl
 from bzETL.extract_bugzilla import get_current_time
 from bzETL.util.cnv import CNV
 from bzETL.util.sql.db import DB, all_db
-
 from bzETL.util.env.logs import Log
 from bzETL.util.env import startup
 from bzETL.util.struct import Struct

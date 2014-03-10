@@ -54,6 +54,7 @@ class DB(object):
         TRANSACTION BEFORE YOU DO
         """
         if settings == None:
+            Log.warning("No settings provided")
             return
 
         all_db.append(self)

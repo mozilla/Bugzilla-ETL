@@ -138,6 +138,14 @@ def parseColumns(index_name, parent_path, esProperties):
 
         childColumns = None
 
+        if property.type == "nested" and property.properties:
+            # NESTED TYPE IS A NEW TYPE DEFINITION
+            if path not in INDEX_CACHE:
+                INDEX_CACHE[path] = INDEX_CACHE[parent_path].copy()
+                INDEX_CACHE[path].name = path
+            INDEX_CACHE[path].columns = childColumns
+            continue
+
         if property.properties:
             childColumns = parseColumns(index_name, path, property.properties)
             columns.extend(childColumns)
@@ -146,14 +154,6 @@ def parseColumns(index_name, parent_path, esProperties):
                 "type": "object",
                 "useSource": True
             })
-
-        if property.type == "nested" and property.properties:
-            # NESTED TYPE IS A NEW TYPE DEFINITION
-            if path not in INDEX_CACHE:
-                INDEX_CACHE[path] = INDEX_CACHE[parent_path].copy()
-                INDEX_CACHE[path].name = path
-            INDEX_CACHE[path].columns = childColumns
-            continue
 
         if property.dynamic:
             continue
@@ -446,6 +446,7 @@ def fix_es_stats(s):
     """
     ES RETURNS BAD DEFAULT VALUES FOR STATS
     """
+    s = wrap(s)
     if s.count == 0:
         return stats.zero
     return s

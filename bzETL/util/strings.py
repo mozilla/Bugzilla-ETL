@@ -14,6 +14,8 @@ from datetime import datetime as builtin_datetime
 import re
 
 from . import struct
+import math
+import __builtin__
 from .struct import wrap
 
 
@@ -70,6 +72,13 @@ def outdent(value):
 
         Log.error("can not outdent value", e)
 
+def round(value, decimal=None, digits=None):
+    if digits != None:
+        m = pow(10, math.ceil(math.log10(abs(value))))
+        return __builtin__.round(value / m, digits) * m
+
+    return __builtin__.round(value, decimal)
+
 
 def between(value, prefix, suffix):
     value = toString(value)
@@ -100,8 +109,7 @@ def find_first(value, find_arr, start=0):
     return i
 
 
-pattern = re.compile(r"\{\{([\w_\.]+(\|[\w_]+)*)\}\}")
-
+pattern = re.compile(r"\{\{([\w_\.]+(\|[^\}^\|]+)*)\}\}")
 
 def expand_template(template, value):
     """
@@ -155,7 +163,11 @@ def _simple_expand(template, seq):
         try:
             val = seq[-depth][var]
             for filter in ops[1:]:
-                val = eval(filter + "(val)")
+                parts = filter.split('(')
+                if len(parts) > 1:
+                    val = eval(parts[0] + "(val, " + ("(".join(parts[1::])))
+                else:
+                    val = eval(filter + "(val)")
             val = toString(val)
             return val
         except Exception, e:
