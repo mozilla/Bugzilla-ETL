@@ -84,7 +84,7 @@ class Math(object):
     @staticmethod
     def round(value, decimal=None, digits=None):
         if digits != None:
-            m = pow(10, math.floor(math.log10(digits)))
+            m = pow(10, math.ceil(math.log10(value)))
             return __builtin__.round(value / m, digits) * m
 
         return __builtin__.round(value, decimal)

@@ -153,9 +153,9 @@ class Struct(dict):
     def __ne__(self, other):
         return not self.__eq__(other)
 
-
-
-
+    def get(self, key, default):
+        d = _get(self, "__dict__")
+        return d.get(key, default)
 
     def items(self):
         d = _get(self, "__dict__")
@@ -241,6 +241,8 @@ def _all_default(d, default):
     ANY VALUE NOT SET WILL BE SET BY THE default
     THIS IS RECURSIVE
     """
+    if default is None:
+        return
     for k, default_value in default.items():
         existing_value = d.get(k, None)
         if existing_value is None:
@@ -390,6 +392,9 @@ class _Null(object):
     def keys(self):
         return set()
 
+    def items(self):
+        return []
+
     def pop(self, key, default=None):
         return Null
 
@@ -407,6 +412,13 @@ Null = _Null()
 EmptyList = Null
 
 ZeroList = []
+def return_zero_list():
+    return []
+
+def return_zero_set():
+    return set()
+
+
 
 
 class StructList(list):
@@ -537,7 +549,7 @@ class StructList(list):
             output = _get(self, key)
             return output
         except Exception, e:
-            return StructList([v[key] for v in _get(self, "list")])
+            return StructList([v.get(key, None) for v in _get(self, "list")])
 
 def wrap(v):
     v_type = v.__class__
@@ -648,6 +660,12 @@ def tuplewrap(value):
     return unwrap(value)
 
 
+
+def literal_field(field):
+    """
+    RETURN SAME WITH . ESCAPED
+    """
+    return field.replace(".", "\.")
 
 def split_field(field):
     """

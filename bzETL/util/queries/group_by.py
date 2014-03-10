@@ -11,7 +11,7 @@
 from __future__ import unicode_literals
 import sys
 from .cube import Cube
-from dzAlerts.util.queries.index import value2key
+from ..queries.index import value2key
 from ..struct import listwrap, StructList, wrap, Struct
 from ..env.logs import Log
 from ..collections.multiset import Multiset

@@ -12,6 +12,7 @@ from __future__ import unicode_literals
 from .. import struct
 from ..collections.matrix import Matrix
 from ..collections import AND
+from ..struct import unwrap
 from ..queries import es_query_util
 from ..queries.es_query_util import aggregates, fix_es_stats, buildESQuery
 from ..queries.filters import simplify
@@ -40,14 +41,14 @@ def es_aggop(es, mvel, query):
     for s in select:
         if s.value not in value2facet:
             if MVEL.isKeyword(s.value):
-                esQuery.facets[s.name] = {
+                unwrap(esQuery.facets)[s.name] = {
                     "statistical": {
                         "field": s.value
                     },
                     "facet_filter": simplify(query.where)
                 }
             else:
-                esQuery.facets[s.name] = {
+                unwrap(esQuery.facets)[s.name] = {
                     "statistical": {
                         "script": mvel.compile_expression(s.value, query)
                     },
@@ -58,7 +59,7 @@ def es_aggop(es, mvel, query):
 
     data = es_query_util.post(es, esQuery, query.limit)
 
-    matricies = {s.name: Matrix(value=fix_es_stats(data.facets[s.name])[aggregates[s.aggregate]]) for s in select}
+    matricies = {s.name: Matrix(value=fix_es_stats(unwrap(data.facets)[s.name])[aggregates[s.aggregate]]) for s in select}
     cube = Cube(query.select, [], matricies)
     cube.frum = query
     return cube

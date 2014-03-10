@@ -105,12 +105,33 @@ class Cube(object):
         return self.value > other
 
     def __eq__(self, other):
-        return self.value == other
-
-    def __eq__(self, other):
         if other == None:
             return False
         return self.value == other
+
+    def __add__(self, other):
+        return self.value + other
+
+    def __radd__(self, other):
+        return other + self.value
+
+    def __sub__(self, other):
+        return self.value - other
+
+    def __rsub__(self, other):
+        return other - self.value
+
+    def __mul__(self, other):
+        return self.value * other
+
+    def __rmul__(self, other):
+        return other * self.value
+
+    def __div__(self, other):
+        return self.value / other
+
+    def __rdiv__(self, other):
+        return other / self.value
 
     def __getitem__(self, item):
         return self.data[item]

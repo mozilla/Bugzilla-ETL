@@ -200,8 +200,8 @@ class Log(object):
     @classmethod
     def stop(cls):
         if cls.profiler:
-            from bzETL.util.cnv import CNV
-            from bzETL.util.env.files import File
+            from ..cnv import CNV
+            from .files import File
 
             p = pstats.Stats(cls.profiler)
             stats = [{

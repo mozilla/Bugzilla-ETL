@@ -29,7 +29,6 @@ from bzETL.util.struct import Struct, Null
 from bzETL.util.testing import elasticsearch
 from bzETL.util.thread.threads import ThreadedQueue
 from bzETL.util.times.timer import Timer
-
 from util import compare_es, database
 from util.compare_es import get_all_bug_versions
 from util.database import diff

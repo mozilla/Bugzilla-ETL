@@ -110,7 +110,7 @@ class CNV:
 
     @staticmethod
     def milli2datetime(u):
-        return CNV.unix2datetime(u/1000)
+        return CNV.unix2datetime(u/1000.0)
 
     @staticmethod
     def dict2Multiset(dic):
