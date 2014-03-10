@@ -396,10 +396,10 @@ def datetime2milli(d):
     try:
         if d == None:
             return None
-        elif isinstance(d, datetime.datetime):
-            epoch = datetime.datetime(1970, 1, 1)
-        elif isinstance(d, datetime.date):
-            epoch = datetime.date(1970, 1, 1)
+        elif isinstance(d, datetime):
+            epoch = datetime(1970, 1, 1)
+        elif isinstance(d, date):
+            epoch = date(1970, 1, 1)
         else:
             raise Exception("Can not convert "+repr(d)+" to json")
 

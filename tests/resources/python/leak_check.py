@@ -44,6 +44,8 @@ class TestLookForLeaks(unittest.TestCase):
         return reversed(list(Q.intervals(0, max_bug_id, self.settings.param.increment)))
 
     def test_private_bugs_not_leaking(self):
+        bad_news = False
+
         # FOR ALL BUG BLOCKS
         for min_id, max_id in self.blocks_of_bugs():
             results = get(
@@ -76,6 +78,7 @@ class TestLookForLeaks(unittest.TestCase):
             )
 
             if leaked_bugs:
+                bad_news = True
                 if self.settings.param.delete:
                     self.public.delete_record(
                         {"terms":{"bug_id":leaked_bugs.bug_id}}
@@ -95,7 +98,6 @@ class TestLookForLeaks(unittest.TestCase):
                         "bug_group": private_ids[b.bug_id],
                         "version": milli2datetime(b)
                     })
-                Log.error("Bugs have leaked!")
 
             #CHECK FOR LEAKED COMMENTS, BEYOND THE ONES LEAKED BY BUG
             leaked_comments = get(
@@ -104,15 +106,21 @@ class TestLookForLeaks(unittest.TestCase):
                 limit=20
             )
             if leaked_comments:
+                bad_news = True
+
                 if self.settings.param.delete:
                     self.public_comments.delete_record(
                         {"terms":{"bug_id":leaked_comments.bug_id}}
                     )
 
-                Log.error("{{num}} comments marked private have leaked!\n{{comments|indent}}", {
+                Log.warning("{{num}} comments marked private have leaked!\n{{comments|indent}}", {
                     "num": len(leaked_comments),
                     "comments": leaked_comments
                 })
+
+        if bad_news:
+            Log.error("Bugs have leaked!")
+
 
 
     def test_private_attachments_not_leaking(self):
@@ -318,6 +326,7 @@ def main():
     finally:
         pass
 
+
 def error(results):
     settings = startup.read_settings()
 
@@ -326,7 +335,6 @@ def error(results):
         content.append("FAIL: "+str(e[0]._testMethodName))
     for f in results.failures:
         content.append("FAIL:  "+str(f[0]._testMethodName))
-
 
     Emailer(settings.email).send_email(
         text_data = "\n".join(content)
