@@ -10,10 +10,8 @@
 from __future__ import unicode_literals
 
 from .. import struct
-import json
 from ..cnv import CNV
 from ..collections.matrix import Matrix
-from dzAlerts.util.jsons import json_scrub
 from .query import Query
 from ..sql.db import int_list_packer, SQL, DB
 from ..env.logs import Log

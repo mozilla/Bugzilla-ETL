@@ -77,5 +77,5 @@ def time_delta_pusher(please_stop, es, queue, interval):
             try:
                 es.extend([{"value":v} for v in logs[0:last]])
             except Exception, e:
-                sys.stderr.write("Trouble with appender: " + e.message)
+                sys.stderr.write("Trouble with ES appender: " + e.message)
 

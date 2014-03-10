@@ -11,7 +11,7 @@
 from __future__ import unicode_literals
 from math import sqrt
 from ..cnv import CNV
-from dzAlerts.util.collections import OR
+from ..collections import OR
 from ..struct import nvl, Struct, Null
 from ..env.logs import Log
 
