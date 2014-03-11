@@ -34,7 +34,7 @@ def fix_json(json):
 
 
 def extract_from_file(source_settings, destination):
-    with File(source_settings.filename).iter() as handle:
+    with File(source_settings.filename) as handle:
         for g, d in Q.groupby(handle, size=BATCH_SIZE):
             try:
                 d2 = map(
