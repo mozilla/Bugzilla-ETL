@@ -10,18 +10,18 @@
 
 
 from datetime import datetime, timedelta
-from bzETL.util.maths import Math
+from bzETL.util.collections import MIN
 from bzETL.util.struct import nvl
-from bzETL.util.threads import ThreadedQueue
-from bzETL.util.timer import Timer
+from bzETL.util.thread.threads import ThreadedQueue
+from bzETL.util.times.timer import Timer
 import transform_bugzilla
 from bzETL.util.cnv import CNV
-from bzETL.util.logs import Log
+from bzETL.util.env.logs import Log
 from bzETL.util.queries import Q
-from bzETL.util import startup
-from bzETL.util.files import File
-from bzETL.util.multiset import Multiset
-from bzETL.util.elasticsearch import ElasticSearch
+from bzETL.util.env import startup
+from bzETL.util.env.files import File
+from bzETL.util.collections.multiset import Multiset
+from bzETL.util.env.elasticsearch import ElasticSearch
 
 
 far_back = datetime.utcnow() - timedelta(weeks=52)
@@ -118,7 +118,7 @@ def get_or_create_index(destination_settings, source):
         schema = source.get_schema()
         assert schema.settings
         assert schema.mappings
-        ElasticSearch.create_index(destination_settings, schema)
+        ElasticSearch.create_index(destination_settings, schema, limit_replicas=True)
     elif len(indexes) > 1:
         Log.error("do not know how to replicate to more than one index")
     elif indexes[0].alias != None:
@@ -168,7 +168,7 @@ def main(settings):
         if transform_bugzilla.USE_ATTACHMENTS_DOT:
             schema = CNV.JSON2object(CNV.object2JSON(schema).replace("attachments_", "attachments."))
 
-        dest = ElasticSearch.create_index(settings.destination, schema)
+        dest = ElasticSearch.create_index(settings.destination, schema, limit_replicas=True)
         dest.set_refresh_interval(-1)
         extract_from_file(settings.source, dest)
         dest.set_refresh_interval(1)
@@ -187,7 +187,7 @@ def main(settings):
     if time_file.exists:
         from_file = CNV.milli2datetime(CNV.value2int(time_file.read()))
     from_es = get_last_updated(destination)
-    last_updated = nvl(Math.min(from_file, from_es), CNV.milli2datetime(0))
+    last_updated = nvl(MIN(from_file, from_es), CNV.milli2datetime(0))
     current_time = datetime.utcnow()
 
     pending = get_pending(source, last_updated)

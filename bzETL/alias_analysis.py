@@ -1,13 +1,14 @@
 from bzETL.extract_bugzilla import get_all_cc_changes
-from bzETL.util import startup, struct, crypto
+from bzETL.util.env import startup
+from bzETL.util import struct
 from bzETL.util.cnv import CNV
-from bzETL.util.db import DB
-from bzETL.util.files import File
-from bzETL.util.logs import Log
-from bzETL.util.multiset import Multiset
+from bzETL.util.sql.db import DB
+from bzETL.util.env.files import File
+from bzETL.util.env.logs import Log
+from bzETL.util.collections.multiset import Multiset
 from bzETL.util.queries import Q
 from bzETL.util.struct import nvl, Struct, Null
-from bzETL.util.timer import Timer
+from bzETL.util.times.timer import Timer
 
 bugs = {}
 aliases = {}
@@ -29,19 +30,18 @@ def main(settings, bug_list=None, please_stop=None, restart=False):
         loadAliases(settings)
 
     if bug_list:
-        with DB(settings.bugzilla) as db:
+        with DB(settings.bugzilla, readonly=True) as db:
             data = get_all_cc_changes(db, bug_list)
             aggregator(data)
             analysis(settings, True, please_stop)
         return
 
-    with DB(settings.bugzilla) as db:
+    with DB(settings.bugzilla, readonly=True) as db:
         start = nvl(settings.param.start, 0)
         end = nvl(settings.param.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
 
         #Perform analysis on blocks of bugs, in case we crash partway through
-        for s in range(start, end, settings.param.alias_increment):
-            e = s + settings.param.alias_increment
+        for s, e in Q.intervals(start, end, settings.param.alias_increment):
             Log.note("Load range {{start}}-{{end}}", {
                 "start": s,
                 "end": e

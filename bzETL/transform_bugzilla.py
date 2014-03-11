@@ -3,13 +3,14 @@
 from datetime import datetime, date
 import re
 from bzETL.util.cnv import CNV
-from bzETL.util.elasticsearch import ElasticSearch
-from bzETL.util.logs import Log
+from bzETL.util.env.elasticsearch import ElasticSearch
+from bzETL.util.env.logs import Log
 from bzETL.util.queries import Q
 
 
 USE_ATTACHMENTS_DOT = True
 
+DIFF_FIELDS = ["cf_user_story"]
 MULTI_FIELDS = ["cc", "blocked", "dependson", "dupe_by", "dupe_of", "flags", "keywords", "bug_group", "see_also"]
 NUMERIC_FIELDS=[      "blocked", "dependson", "dupe_by", "dupe_of",
     "votes",

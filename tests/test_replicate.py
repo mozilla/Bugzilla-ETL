@@ -9,10 +9,10 @@
 #
 
 from bzETL import replicate
-from bzETL.util import startup
+from bzETL.util.env import startup
 from bzETL.util.cnv import CNV
-from bzETL.util.elasticsearch import ElasticSearch
-from bzETL.util.logs import Log
+from bzETL.util.env.elasticsearch import ElasticSearch
+from bzETL.util.env.logs import Log
 
 
 def test_replication():

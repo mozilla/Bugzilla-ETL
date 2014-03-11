@@ -1,32 +1,33 @@
 {
     "param": {
-        "increment": 100000
+        "increment": 10000,
+        "delete": false
     },
     "public": {
-        "host": "http://elasticsearch1.bugs.scl3.mozilla.com",
+        "host": "http://elasticsearch-zlb.bugs.scl3.mozilla.com",
         "port": "9200",
         "index": "public_bugs",
         "type": "bug_version",
         "debug": false
     },
     "public_comments": {
-        "host": "http://elasticsearch1.bugs.scl3.mozilla.com",
+        "host": "http://elasticsearch-zlb.bugs.scl3.mozilla.com",
         "port": "9200",
         "index": "public_comments",
         "type": "bug_comment",
         "debug": false
     },
     "private": {
-        "host": "http://elasticsearch4.bugs.scl3.mozilla.com",
+        "host": "http://elasticsearch-private.bugs.scl3.mozilla.com",
         "port": "9200",
-        "index": "private_bugs20140114_151004",
+        "index": "private_bugs",
         "type": "bug_version",
         "debug": false
     },
     "private_comments": {
-        "host": "http://elasticsearch4.bugs.scl3.mozilla.com",
+        "host": "http://elasticsearch-private.bugs.scl3.mozilla.com",
         "port": "9200",
-        "index": "private_comments20140114_151006",
+        "index": "private_comments",
         "type": "bug_comment",
         "debug": false
     },
@@ -41,6 +42,7 @@
         "use_ssl": 1
     },
     "debug": {
+        "trace":true,
         "log": [
             {
                 "class": "logging.handlers.RotatingFileHandler",
@@ -50,12 +52,9 @@
                 "encoding": "utf8"
             },
             {
-                "class": "bzETL.util.logs.Log_usingStream",
+                "class": "bzETL.util.env.logs.Log_usingStream",
                 "stream": "sys.stdout"
             }
         ]
-
     }
-
-
 }

@@ -10,48 +10,67 @@
 
 from __future__ import unicode_literals
 import __builtin__
+
 from . import group_by
+from ..collections import UNION
+from ..queries import flat_list, query
+from ..queries.filters import TRUE_FILTER, FALSE_FILTER
+from ..queries.query import Query, _normalize_selects
+from ..queries.cube import Cube
 from .index import UniqueIndex, Index
 from .flat_list import FlatList
 from ..maths import Math
-from ..logs import Log
-from ..struct import nvl, listwrap, EmptyList
+from ..env.logs import Log
+from ..struct import nvl, listwrap, EmptyList, split_field, unwrap, wrap
 from .. import struct
-from ..struct import Struct, Null
+from ..struct import Struct, Null, StructList
 
 
 # A COLLECTION OF DATABASE OPERATORS (RELATIONAL ALGEBRA OPERATORS)
 
 
 def run(query):
-    query = struct.wrap(query)
-    if isinstance(query["from"], list):
-        _from = query["from"]
+    query = Query(query)
+    frum = query["from"]
+    if isinstance(frum, list):
+        pass
+    elif isinstance(frum, Cube):
+        pass
+    elif isinstance(frum, Query):
+        frum = run(frum)
     else:
-        _from = run(query["from"])
+        Log.error("Do ont know how to handle")
 
-    if query.edges != None:
+    if query.edges:
         Log.error("not implemented yet")
 
-    if query.filter != None or query.esfilter != None:
-        Log.error("use 'where' clause")
+    try:
+        if query.filter != None or query.esfilter != None:
+            Log.error("use 'where' clause")
+    except Exception, e:
+        pass
 
-    for param in listwrap(query.window):
-        window(_from, param)
+    if query.window:
+        if isinstance(frum, Cube):
+            frum = StructList(list(frum))  # TRY TO CAST TO LIST OF RECORDS
 
-    if query.where != None:
-        _from = filter(_from, query.where)
+        for param in query.window:
+            window(frum, param)
 
-    if query.sort != None:
-        _from = sort(_from, query.sort)
+    if query.where is not TRUE_FILTER:
+        frum = filter(frum, query.where)
 
-    if query.select != None:
-        _from = select(_from, query.select)
+    if query.sort:
+        frum = sort(frum, query.sort)
 
-    return _from
+    if query.select:
+        frum = select(frum, query.select)
+
+    return frum
 
 
 groupby = group_by.groupby
+
 
 def index(data, keys=None):
 #return dict that uses keys to index data
@@ -72,6 +91,7 @@ def unique_index(data, keys=None):
         try:
             o.add(d)
         except Exception, e:
+            o.add(d)
             Log.error("index {{index}} is not unique {{key}} maps to both {{value1}} and {{value2}}", {
                 "index": keys,
                 "key": select([d], keys)[0],
@@ -118,29 +138,16 @@ def map2set(data, relation):
             Log.error("Expecting a dict with lists in codomain", e)
     return Null
 
-def select(data, field_name):
-#return list with values from field_name
+
+def tuple(data, field_name):
+    """
+    RETURN LIST  OF TUPLES
+    """
     if isinstance(data, Cube):
-        Log.error("Do not know how to deal with cubes yet")
+        Log.error("not supported yet")
 
     if isinstance(data, FlatList):
-        if isinstance(field_name, basestring):
-            # RETURN LIST OF VALUES
-            if field_name.find(".") < 0:
-                if data.path[0] == field_name:
-                    return [d[1] for d in data.data]
-                else:
-                    return [d[0][field_name] for d in data.data]
-            else:
-                keys = struct.split_field(field_name)
-                depth = nvl(Math.min([i for i, (k, p) in enumerate(zip(keys, data.path)) if k != p]), len(data.path)) #LENGTH OF COMMON PREFIX
-                short_keys = keys[depth:]
-
-                output = []
-                _select1((d[depth] for d in data.data), short_keys, 0, output)
-                return output
-
-        Log.error("multiselect over FlatList not supported")
+        Log.error("not supported yet")
 
     if isinstance(field_name, dict) and "value" in field_name:
         # SIMPLIFY {"value":value} AS STRING
@@ -148,25 +155,104 @@ def select(data, field_name):
 
     # SIMPLE PYTHON ITERABLE ASSUMED
     if isinstance(field_name, basestring):
-        if field_name.find(".") < 0:
-            return [d[field_name] for d in data]
+        if len(split_field(field_name)) == 1:
+            return [(d[field_name], ) for d in data]
         else:
-            keys = struct.split_field(field_name)
+            path = split_field(field_name)
             output = []
-            _select1(data, keys, 0, output)
+            flat_list._tuple1(data, path, 0, output)
             return output
+    elif isinstance(field_name, list):
+        paths = [_select_a_field(f) for f in field_name]
+        output = []
+        _tuple((), unwrap(data), paths, 0, output)
+        return output
+    else:
+        paths = [_select_a_field(field_name)]
+        output = []
+        _tuple((), data, paths, 0, output)
+        return output
 
-    keys = [_select_a_field(f) for f in field_name]
-    return _select(Struct(), data, keys, 0)
+
+def _tuple(template, data, fields, depth, output):
+    deep_path = None
+    deep_fields = []
+    for d in data:
+        record = template
+        for f in fields:
+            index, children, record = _tuple_deep(d, f, depth, record)
+            if index:
+                path = f.value[0:index:]
+                deep_fields.append(f)
+                if deep_path and path != deep_path:
+                    Log.error("Dangerous to select into more than one branch at time")
+        if not children:
+            output.append(record)
+        else:
+            _tuple(record, children, deep_fields, depth + 1, output)
+
+    return output
+
+
+def _tuple_deep(v, field, depth, record):
+    """
+    field = {"name":name, "value":["attribute", "path"]}
+    r[field.name]=v[field.value], BUT WE MUST DEAL WITH POSSIBLE LIST IN field.value PATH
+    """
+    if hasattr(field.value, '__call__'):
+        return 0, None, record + (field.value(v), )
+
+    for i, f in enumerate(field.value[depth:len(field.value) - 1:]):
+        v = v.get(f, None)
+        if isinstance(v, list):
+            return depth + i + 1, v, record
+
+    f = field.value.last()
+    return 0, None, record + (v.get(f, None), )
+
+
+
+
+def select(data, field_name):
+#return list with values from field_name
+    if isinstance(data, Cube):
+        return data._select(_normalize_selects(field_name))
+
+    if isinstance(data, FlatList):
+        return data.select(field_name)
+
+    if isinstance(data, UniqueIndex):
+        data = data._data.values()  # THE SELECT ROUTINE REQUIRES dicts, NOT Struct WHILE ITERATING
+
+    if isinstance(field_name, dict) and field_name.value:
+        # SIMPLIFY {"value":value} AS STRING
+        field_name = field_name.value
+
+    # SIMPLE PYTHON ITERABLE ASSUMED
+    if isinstance(field_name, basestring):
+        if len(split_field(field_name)) == 1:
+            return StructList([d[field_name] for d in data])
+        else:
+            keys = split_field(field_name)
+            output = []
+            flat_list._select1(data, keys, 0, output)
+            return output
+    elif isinstance(field_name, list):
+        keys = [_select_a_field(wrap(f)) for f in field_name]
+        return _select(Struct(), unwrap(data), keys, 0)
+    else:
+        keys = [_select_a_field(field_name)]
+        return _select(Struct(), unwrap(data), keys, 0)
 
 
 def _select_a_field(field):
     if isinstance(field, basestring):
-        return struct.wrap({"name": field, "value": struct.split_field(field)})
+        return wrap({"name": field, "value": split_field(field)})
+    elif isinstance(wrap(field).value, basestring):
+        field = wrap(field)
+        return wrap({"name": field.name, "value": split_field(field.value)})
     else:
-        field = struct.wrap(field)
-        return struct.wrap({"name": field.name, "value": struct.split_field(field.value)})
-
+        return wrap({"name": field.name, "value": field.value})
 
 
 def _select(template, data, fields, depth):
@@ -174,11 +260,14 @@ def _select(template, data, fields, depth):
     deep_path = None
     deep_fields = []
     for d in data:
+        if isinstance(d, Struct):
+            Log.error("programmer error, _select can not handle Struct")
+
         record = template.copy()
         for f in fields:
-            index, children = go_deep(d, f, depth, record)
+            index, children = _select_deep(d, f, depth, record)
             if index:
-                path = f.value[0:index]
+                path = f.value[0:index:]
                 deep_fields.append(f)
                 if deep_path and path != deep_path:
                     Log.error("Dangerous to select into more than one branch at time")
@@ -190,125 +279,32 @@ def _select(template, data, fields, depth):
     return output
 
 
-def go_deep(v, field, depth, record):
+def _select_deep(v, field, depth, record):
     """
     field = {"name":name, "value":["attribute", "path"]}
     r[field.name]=v[field.value], BUT WE MUST DEAL WITH POSSIBLE LIST IN field.value PATH
     """
-    for i, f in enumerate(field.value[depth:-1:]):
-        v = v[f]
+    if hasattr(field.value, '__call__'):
+        try:
+            record[field.name] = field.value(wrap(v))
+        except Exception, e:
+            record[field.name] = None
+        return 0, None
+
+    for i, f in enumerate(field.value[depth:len(field.value) - 1:]):
+        v = v.get(f, None)
+        if v is None:
+            return 0, None
         if isinstance(v, list):
             return depth + i + 1, v
 
     f = field.value.last()
-    record[field.name] = v[f]
+    record[field.name] = v.get(f, None)
     return 0, None
 
 
-def _select1(data, field, depth, output):
-    """
-    SELECT A SINGLE FIELD
-    """
-    for d in data:
-        for i, f in enumerate(field[depth:]):
-            d = d[f]
-            if d == None:
-                output.append(None)
-                break
-            elif isinstance(d, list):
-                _select1(d, field, i + 1, output)
-                break
-        else:
-            output.append(d)
-
 def get_columns(data):
-    output = {}
-    for d in data:
-        for k, v in d.items():
-            if k not in output:
-                c = {"name": k, "domain": Null}
-                output[k] = c
-
-                # IT WOULD BE NICE TO ADD DOMAIN ANALYSIS HERE
-
-    return [{"name": n} for n in output]
-
-
-def stack(data, name=None, value_column=None, columns=None):
-    """
-    STACK ALL CUBE DATA TO A SINGLE COLUMN, WITH ONE COLUMN PER DIMENSION
-    >>> s
-          a   b
-     one  1   2
-     two  3   4
-
-    >>> stack(s)
-     one a    1
-     one b    2
-     two a    3
-     two b    4
-
-    STACK LIST OF HASHES, OR 'MERGE' SEPARATE CUBES
-    data - expected to be a list of dicts
-    name - give a name to the new column
-    value_column - Name given to the new, single value column
-    columns - explicitly list the value columns (USE SELECT INSTEAD)
-    """
-
-    assert value_column != None
-    if isinstance(data, Cube):
-        Log.error("Do not know how to deal with cubes yet")
-
-    if columns == None:
-        columns = data.get_columns()
-    data = data.select(columns)
-
-    name = nvl(name, data.name)
-
-    output = []
-
-    parts = set()
-    for r in data:
-        for c in columns:
-            v = r[c]
-            parts.add(c)
-            output.append({"name": c, "value": v})
-
-    edge = struct.wrap({"domain": {"type": "set", "partitions": parts}})
-
-
-#UNSTACKING CUBES WILL BE SIMPLER BECAUSE THE keys ARE IMPLIED (edges-column)
-
-def unstack(data, keys=None, column=None, value=None):
-    assert keys != None
-    assert column != None
-    assert value != None
-    if isinstance(data, Cube):
-        Log.error("Do not know how to deal with cubes yet")
-
-    output = []
-    for key, values in groupby(data, keys):
-        for v in values:
-            key[v[column]] = v[value]
-        output.append(key)
-
-    return struct.wrap(output)
-
-
-def normalize_sort_parameters(fieldnames):
-    """
-    CONVERT SORT PARAMETERS TO A NORMAL FORM SO EASIER TO USE
-    """
-    if fieldnames == None:
-        return EmptyList
-
-    formal = []
-    for f in listwrap(fieldnames):
-        if isinstance(f, basestring):
-            f = {"field": f, "sort": 1}
-        formal.append(f)
-
-    return struct.wrap(formal)
+    return [{"name": n} for n in UNION(set(d.keys()) for d in data)]
 
 
 def sort(data, fieldnames=None):
@@ -320,24 +316,25 @@ def sort(data, fieldnames=None):
             return EmptyList
 
         if fieldnames == None:
-            return struct.wrap(sorted(data))
+            return wrap(sorted(data))
 
-        if not isinstance(fieldnames, list):
+        fieldnames = struct.listwrap(fieldnames)
+        if len(fieldnames) == 1:
+            fieldnames = fieldnames[0]
             #SPECIAL CASE, ONLY ONE FIELD TO SORT BY
             if isinstance(fieldnames, basestring):
                 def comparer(left, right):
                     return cmp(nvl(left, Struct())[fieldnames], nvl(right, Struct())[fieldnames])
 
-                return struct.wrap(sorted(data, cmp=comparer))
+                return wrap(sorted(data, cmp=comparer))
             else:
                 #EXPECTING {"field":f, "sort":i} FORMAT
                 def comparer(left, right):
-                    return fieldnames["sort"] * cmp(nvl(left, Struct())[fieldnames["field"]],
-                        nvl(right, Struct())[fieldnames["field"]])
+                    return fieldnames["sort"] * cmp(nvl(left, Struct())[fieldnames["field"]], nvl(right, Struct())[fieldnames["field"]])
 
-                return struct.wrap(sorted(data, cmp=comparer))
+                return wrap(sorted(data, cmp=comparer))
 
-        formal = normalize_sort_parameters(fieldnames)
+        formal = query._normalize_sort(fieldnames)
 
         def comparer(left, right):
             left = nvl(left, Struct())
@@ -352,15 +349,17 @@ def sort(data, fieldnames=None):
             return 0
 
         if isinstance(data, list):
-            output = struct.wrap(sorted(data, cmp=comparer))
+            output = wrap(sorted(data, cmp=comparer))
         elif hasattr(data, "__iter__"):
-            output = struct.wrap(sorted(list(data), cmp=comparer))
+            output = wrap(sorted(list(data), cmp=comparer))
         else:
             Log.error("Do not know how to handle")
 
         return output
     except Exception, e:
         Log.error("Problem sorting\n{{data}}", {"data": data}, e)
+
+
 
 
 def add(*values):
@@ -378,6 +377,12 @@ def filter(data, where):
     """
     where  - a function that accepts (record, rownum, rows) and returns boolean
     """
+    if where == TRUE_FILTER:
+        return data
+
+    if isinstance(data, Cube):
+        Log.error("Do not know how to handle")
+
     return drill_filter(where, data)
 
 
@@ -394,7 +399,7 @@ def drill_filter(esfilter, data):
         """
         RETURN (first, rest) OF fieldname
         """
-        col = struct.split_field(fieldname)
+        col = split_field(fieldname)
         d = data[col[0]]
         if isinstance(d, list) and len(col) > 1:
             if len(primary_column) <= depth:
@@ -422,6 +427,11 @@ def drill_filter(esfilter, data):
         """
         PARTIAL EVALUATE THE filter BASED ON data GIVEN
         """
+        if filter is TRUE_FILTER:
+            return True
+        if filter is FALSE_FILTER:
+            return False
+
         if "and" in filter:
             result = True
             output = []
@@ -595,7 +605,7 @@ def drill_filter(esfilter, data):
 
     if not max:
         #SIMPLE LIST AS RESULT
-        return struct.wrap([u[0] for u in uniform_output])
+        return wrap([u[0] for u in uniform_output])
 
     return FlatList(primary_column[0:max], uniform_output)
 
@@ -626,25 +636,33 @@ def wrap_function(func):
 
 def window(data, param):
     """
-    MAYBE WE CAN DO THIS WITH NUMPY (no, the edges of windows are not graceful with numpy??
+    MAYBE WE CAN DO THIS WITH NUMPY (no, the edges of windows are not graceful with numpy)
     data - list of records
     """
     name = param.name            # column to assign window function result
     edges = param.edges          # columns to gourp by
+    where = param.where          # DO NOT CONSIDER THESE VALUES
     sortColumns = param.sort            # columns to sort by
-    value = wrap_function(param.value) # function that takes a record and returns a value (for aggregation)
+    calc_value = wrap_function(param.value) # function that takes a record and returns a value (for aggregation)
     aggregate = param.aggregate  # WindowFunction to apply
     _range = param.range          # of form {"min":-10, "max":0} to specify the size and relative position of window
 
-    if aggregate == None and sortColumns == None and edges == None:
+    data = filter(data, where)
+
+    if sortColumns:
+        data = sort(data, sortColumns)
+
+    if not aggregate and not edges:
         #SIMPLE CALCULATED VALUE
         for rownum, r in enumerate(data):
-            r[name] = value(r, rownum, data)
-
+            r[name] = calc_value(r, rownum, data)
         return
 
+
+
+
     for rownum, r in enumerate(data):
-        r["__temp__"] = value(r, rownum, data)
+        r["__temp__"] = calc_value(r, rownum, data)
 
     for keys, values in groupby(data, edges):
         if not values:
@@ -669,43 +687,9 @@ def window(data, param):
         r["__temp__"] = None  #CLEANUP
 
 
-class Cube():
-    def __init__(self, data=None, edges=None, name=None):
-        if isinstance(data, Cube):
-            Log.error("do not know how to handle cubes yet")
-
-        columns = get_columns(data)
-
-        if edges == None:
-            self.edges = [{"name": "index", "domain": {"type": "numeric", "min": 0, "max": len(data), "interval": 1}}]
-            self.data = data
-            self.select = columns
-            return
-
-        self.name = name
-        self.edges = edges
-        self.select = Null
 
 
-    def get_columns(self):
-        return self.columns
 
-
-class Domain():
-    def __init__(self):
-        pass
-
-
-    def part2key(self, part):
-        pass
-
-
-    def part2label(self, part):
-        pass
-
-
-    def part2value(self, part):
-        pass
 
 
 def intervals(_min, _max=None, size=1):

@@ -2,10 +2,11 @@
 #
 from bzETL.extract_bugzilla import milli2string, get_current_time
 from bzETL.util.cnv import CNV
-from bzETL.util.db import DB
-from bzETL.util.logs import Log
+from bzETL.util.queries.db_query import esfilter2sqlwhere
+from bzETL.util.sql.db import DB
+from bzETL.util.env.logs import Log
 from bzETL.util.struct import Struct
-from bzETL.util.timer import Timer
+from bzETL.util.times.timer import Timer
 
 
 def make_test_instance(db_settings):
@@ -26,6 +27,18 @@ def make_test_instance(db_settings):
             #FILL SCHEMA
             Log.note("Fill {{schema}} schema with data", {"schema":db_settings.schema})
             DB.execute_file(db_settings, db_settings.filename)
+
+            #ADD MISSING TABLES
+            with DB(db_settings) as db:
+                db.execute("""
+                CREATE TABLE `longdescs_tags` (
+                  `id` mediumint(9) NOT NULL AUTO_INCREMENT,
+                  `comment_id` int(11) DEFAULT NULL,
+                  `tag` varchar(24) NOT NULL,
+                  PRIMARY KEY (`id`),
+                  UNIQUE KEY `longdescs_tags_idx` (`comment_id`,`tag`),
+                  CONSTRAINT `fk_longdescs_tags_comment_id_longdescs_comment_id` FOREIGN KEY (`comment_id`) REFERENCES `longdescs` (`comment_id`) ON DELETE CASCADE ON UPDATE CASCADE
+                ) DEFAULT CHARSET=utf8""")
         except Exception, e:
             Log.error("Can not setup test database", e)
 
@@ -115,6 +128,6 @@ def diff(db, table, old_record, new_record):
 
     db.execute("UPDATE bugs SET delta_ts={{now}} WHERE {{where}}", {
         "now":now,
-        "where":db.esfilter2sqlwhere({"term":{"bug_id":old_record.bug_id}})
+        "where":esfilter2sqlwhere(db, {"term":{"bug_id":old_record.bug_id}})
     })
 

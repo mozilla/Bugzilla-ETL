@@ -34,7 +34,7 @@ then install requirements:
 Installation with PyPy
 ----------------------
 
-PyPy will execute 4 to 5 times faster then CPython.  PyPy maintains its own environment, and it's own version of the module binaries.  This means running SetupTools is just a little different.  After
+PyPy will execute 4 to 5 times faster then CPython.  PyPy maintains its own environment, and its own version of the module binaries.  This means running SetupTools is just a little different.  After
 
     git clone https://github.com/klahnakoski/Bugzilla-ETL.git
 
@@ -50,7 +50,7 @@ Setup
 -----
 
 You must prepare a ```settings.json``` file to reference the resources,
-and it's filename must be provided as an argument in the command line.
+and its filename must be provided as an argument in the command line.
 Examples of settings files can be found in [resources/settings](resources/settings)
 
 ### Inter-Run State ###

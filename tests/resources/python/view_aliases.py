@@ -2,10 +2,10 @@
 #
 from bzETL.util import struct
 from bzETL.util.cnv import CNV
-from bzETL.util.files import File
-from bzETL.util.logs import Log
+from bzETL.util.env.files import File
+from bzETL.util.env.logs import Log
 from bzETL.util.queries import Q
-from bzETL.util import startup
+from bzETL.util.env import startup
 
 
 def main(settings):

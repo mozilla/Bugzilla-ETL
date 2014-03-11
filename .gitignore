@@ -1,5 +1,6 @@
 *.pyc
 *.log
+*.tab
 *settings.json
 out
 results/*
