@@ -9,6 +9,7 @@
         },
         "first_run_time": "./results/data/first_run_time.txt",
         "last_run_time": "./results/data/last_run_time.txt",
+        "look_back": 3600000, //1hour
         "allow_private_bugs": false
     },
     "bugzilla": {

@@ -237,7 +237,7 @@ def _scrub(value):
     if type in (date, datetime):
         return datetime2milli(value)
     elif type is timedelta:
-        return "\"" + unicode(value.total_seconds()) + "second\""
+        return unicode(value.total_seconds()) + "second"
     elif type is str:
         return unicode(value.decode("utf8"))
     elif type is dict:

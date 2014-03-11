@@ -9,7 +9,6 @@
 #
 from __future__ import unicode_literals
 from datetime import timedelta, datetime
-import sys
 from .elasticsearch import ElasticSearch
 from ..struct import wrap
 from ..thread.threads import Thread, Queue
@@ -26,7 +25,7 @@ class Log_usingElasticSearch(BaseLog):
 
     def write(self, template, params):
         try:
-            if "template" in params:
+            if params.get("template", None):
                 #DETECTED INNER TEMPLATE, ASSUME TRACE IS ON, SO DO NOT NEED THE OUTER TEMPLATE
                 self.queue.add(params)
             else:
@@ -65,17 +64,14 @@ def time_delta_pusher(please_stop, es, queue, interval):
         next_run = datetime.utcnow() + interval
         logs = queue.pop_all()
         if logs:
-            last = 0
-            for i, log in enumerate(logs):
-                try:
+            try:
+                last = len(logs)
+                for i, log in enumerate(logs):
                     if log is Thread.STOP:
                         please_stop.go()
                         last = i
                         next_run = datetime.utcnow()
-                except Exception, e:
-                    sys.stderr.write("Trouble formatting logs: " + e.message)
-            try:
-                es.extend([{"value":v} for v in logs[0:last]])
+                if last > 0:
+                    es.extend([{"value":v} for v in logs[0:last]])
             except Exception, e:
-                sys.stderr.write("Trouble with ES appender: " + e.message)
-
+                Log.error("problem logging to es", e)
