@@ -13,6 +13,7 @@ import base64
 import datetime
 import re
 import time
+from bzETL.util import jsons
 from .collections.multiset import Multiset
 from .jsons import json_decoder, json_encoder, replace, ESCAPE
 from .env.logs import Log
@@ -34,7 +35,7 @@ class CNV:
             Log.error("Can not encode into JSON: {{value}}", {"value": repr(obj)}, e)
 
     @staticmethod
-    def JSON2object(json_string, params=None, flexible=False):
+    def JSON2object(json_string, params=None, flexible=False, paths=False):
         try:
             #REMOVE """COMMENTS""", #COMMENTS, //COMMENTS, AND \n \r
             if flexible:
@@ -45,7 +46,13 @@ class CNV:
                 params = dict([(k, CNV.value2quote(v)) for k, v in params.items()])
                 json_string = expand_template(json_string, params)
 
-            return wrap(json_decoder.decode(json_string))
+            value = wrap(json_decoder.decode(json_string))
+
+            if paths:
+                value = jsons.expand_dot(value)
+
+            return value
+
         except Exception, e:
             Log.error("Can not decode JSON:\n\t" + str(json_string), e)
 
