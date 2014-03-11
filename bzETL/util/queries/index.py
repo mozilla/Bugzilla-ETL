@@ -183,9 +183,14 @@ class Index(object):
 
 
 def value2key(keys, val):
-    if isinstance(val, dict):
-        return wrap({k: val[k] for k in keys})
-    elif isinstance(val, (list, tuple)):
-        return wrap(dict(zip(keys, val)))
+    if len(keys)==1:
+        if isinstance(val, dict):
+            return val[keys[0]]
+        return val
     else:
-        return wrap(val)
+        if isinstance(val, dict):
+            return wrap({k: val[k] for k in keys})
+        elif isinstance(val, (list, tuple)):
+            return wrap(dict(zip(keys, val)))
+        else:
+            Log.error("do not know what to do here")
