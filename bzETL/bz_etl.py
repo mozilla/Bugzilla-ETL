@@ -80,7 +80,7 @@ def etl(db, output_queue, param, please_stop):
                     db = DB(db)
                     db_cache.append(db)
 
-    db_results = Queue()
+    db_results = Queue(max=2**30)
     with db_cache_lock:
         # ASYMMETRIC MULTI THREADING TO GET RECORDS FROM DB
         with AllThread() as all:
