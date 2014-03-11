@@ -10,11 +10,14 @@
 
 from __future__ import unicode_literals
 import functools
-from dzAlerts.util import stats
-from ..logs import Log
+from ..maths import stats
+from ..collections import MIN, MAX
+from ..env.logs import Log
 from ..maths import Math
-from ..multiset import Multiset
-from ..stats import Z_moment, stats2z_moment, z_moment2stats
+from ..collections.multiset import Multiset
+from ..maths.stats import Z_moment, stats2z_moment, z_moment2stats
+
+# A VARIETY OF SLIDING WINDOW FUNCTIONS
 
 
 class AggregationFunction(object):
@@ -127,12 +130,12 @@ class _SimpleStats(WindowFunction):
     def add(self, value):
         if value == None:
             return
-        self.total += stats2z_moment(value)
+        self.total += Z_moment.new_instance([value])
 
     def sub(self, value):
         if value == None:
             return
-        self.total -= stats2z_moment(value)
+        self.total -= Z_moment.new_instance([value])
 
     def merge(self, agg):
         self.total += agg.total
@@ -159,7 +162,7 @@ class Min(WindowFunction):
         self.total.remove(value)
 
     def end(self):
-        return Math.min(self.total)
+        return MIN(self.total)
 
 
 class Max(WindowFunction):
@@ -179,7 +182,7 @@ class Max(WindowFunction):
         self.total.remove(value)
 
     def end(self):
-        return Math.max(*self.total)
+        return MAX(*self.total)
 
 
 class Count(WindowFunction):

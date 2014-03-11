@@ -12,13 +12,12 @@ from bzETL import extract_bugzilla, bz_etl
 from bzETL.bz_etl import etl
 from bzETL.extract_bugzilla import get_current_time
 from bzETL.util.cnv import CNV
-from bzETL.util.db import DB, all_db
-
-from bzETL.util.logs import Log
-from bzETL.util import startup
+from bzETL.util.sql.db import DB, all_db
+from bzETL.util.env.logs import Log
+from bzETL.util.env import startup
 from bzETL.util.struct import Struct
-from bzETL.util.threads import ThreadedQueue
-from util import elasticsearch
+from bzETL.util.testing import elasticsearch
+from bzETL.util.thread.threads import ThreadedQueue
 
 
 class TestOneETL(unittest.TestCase):
@@ -32,6 +31,12 @@ class TestOneETL(unittest.TestCase):
 
 
     def tearDown(self):
+        #CLOSE THE CACHED DB CONNECTIONS
+        bz_etl.close_db_connections()
+
+        if all_db:
+            Log.error("not all db connections are closed")
+
         Log.stop()
 
 
@@ -56,11 +61,6 @@ class TestOneETL(unittest.TestCase):
             with ThreadedQueue(candidate, size=1000) as output:
                 etl(db, output, param, please_stop=None)
 
-            #CLOSE THE CACHED DB CONNECTIONS
-            bz_etl.close_db_connections()
-
-        if all_db:
-            Log.error("not all db connections are closed")
 
         #TODO: INCLUDE OPTION TO USE REAL ES (AND ENSURE REALLY WORKING)
         # es_settings=Struct(**{

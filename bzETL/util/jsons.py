@@ -7,26 +7,29 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
+from __future__ import unicode_literals
 
-# THIS FILE EXISTS TO SERVE AS A FAST REPLACMENT FOR JSON ENCODING
+import json
+from math import floor
+import re
+import time
+from datetime import datetime, date, timedelta
+from decimal import Decimal
+import sys
+
+from .collections import AND, MAX
+from .struct import Struct
+
+
+# THIS FILE EXISTS TO SERVE AS A FAST REPLACEMENT FOR JSON ENCODING
 # THE DEFAULT JSON ENCODERS CAN NOT HANDLE A DIVERSITY OF TYPES *AND* BE FAST
 #
-# 1) WHEN USING CPython, WE HAVE NO COMPILER OPTIMIZATIONS: THE BEST STRATEGY IS TO
+# 1) WHEN USING cPython, WE HAVE NO COMPILER OPTIMIZATIONS: THE BEST STRATEGY IS TO
 #    CONVERT THE MEMORY STRUCTURE TO STANDARD TYPES AND SEND TO THE INSANELY FAST
 #    DEFAULT JSON ENCODER
 # 2) WHEN USING PYPY, WE USE CLEAR AND SIMPLE PROGRAMMING SO THE OPTIMIZER CAN DO
 #    ITS JOB.  ALONG WITH THE UnicodeBuilder WE GET NEAR C SPEEDS
 
-
-from __future__ import unicode_literals
-import json
-import re
-import time
-from datetime import datetime, date
-from decimal import Decimal
-import sys
-from bzETL.util import struct
-from bzETL.util.struct import Struct
 
 use_pypy = False
 try:
@@ -59,23 +62,47 @@ class PyPyJSONEncoder(object):
 
     def encode(self, value, pretty=False):
         if pretty:
-            return unicode(json.dumps(json_scrub(value), indent=4, sort_keys=True, separators=(',', ': ')))
+            return pretty_json(value)
 
-        _buffer = UnicodeBuilder(1024)
-        _value2json(value, _buffer)
-        output = _buffer.build()
-        return output
+        try:
+            _buffer = UnicodeBuilder(1024)
+            _value2json(value, _buffer)
+            output = _buffer.build()
+            return output
+        except Exception, e:
+            #THE PRETTY JSON WILL PROVIDE MORE DETAIL ABOUT THE SERIALIZATION CONCERNS
+            from .env.logs import Log
+
+            try:
+                pretty_json(value)
+            except Exception, f:
+                Log.error("problem serializing object", f)
 
 
 class cPythonJSONEncoder(object):
     def __init__(self):
         object.__init__(self)
 
-    def encode(self, value, pretty=False):
-        if pretty:
-            return unicode(json.dumps(json_scrub(value), ensure_ascii=False, indent=4, sort_keys=True, separators=(',', ': ')))
+        self.encoder = json.JSONEncoder(
+            skipkeys=False,
+            ensure_ascii=False,  # DIFF FROM DEFAULTS
+            check_circular=True,
+            allow_nan=True,
+            indent=None,
+            separators=None,
+            encoding='utf-8',
+            default=None,
+            sort_keys=False
+        )
 
-        return unicode(json.dumps(json_scrub(value), ensure_ascii=False))
+    def encode(self, value, pretty=False):
+        if value == None:
+            return "null"
+
+        if pretty:
+            return pretty_json(value)
+
+        return unicode(self.encoder.encode(json_scrub(value)))
 
 
 # OH HUM, cPython with uJSON, OR pypy WITH BUILTIN JSON?
@@ -119,7 +146,7 @@ def _value2json(value, _buffer):
             append(_buffer, v)
             append(_buffer, u"\"")
         except Exception, e:
-            from util.logs import Log
+            from .env.logs import Log
 
             Log.error(value, e)
     elif type in (int, long, Decimal):
@@ -132,8 +159,14 @@ def _value2json(value, _buffer):
         append(_buffer, unicode(long(time.mktime(value.timetuple()) * 1000)))
     elif type is datetime:
         append(_buffer, unicode(long(time.mktime(value.timetuple()) * 1000)))
+    elif type is timedelta:
+        append(_buffer, "\"")
+        append(_buffer, unicode(value.total_seconds()))
+        append(_buffer, "second\"")
     elif hasattr(value, '__iter__'):
         _iter2json(value, _buffer)
+    elif hasattr(value, '__json__'):
+        append(value.__json__(), _buffer)
     else:
         raise Exception(repr(value) + " is not JSON serializable")
 
@@ -148,6 +181,7 @@ def _list2json(value, _buffer):
             sep = u", "
             _value2json(v, _buffer)
         append(_buffer, u"]")
+
 
 def _iter2json(value, _buffer):
     append(_buffer, u"[")
@@ -165,8 +199,8 @@ def _dict2json(value, _buffer):
         append(_buffer, prefix)
         prefix = u", \""
         if isinstance(k, str):
-            k = unicode(k.decode("utf8"))
-        append(_buffer, ESCAPE.sub(replace, k))
+            k = k.decode("utf8")
+        append(_buffer, ESCAPE.sub(replace, unicode(k)))
         append(_buffer, u"\": ")
         _value2json(v, _buffer)
     append(_buffer, u"}")
@@ -200,10 +234,10 @@ def _scrub(value):
         return None
 
     type = value.__class__
-    if type is date:
-        return long(time.mktime(value.timetuple()) * 1000)
-    elif type is datetime:
-        return long(time.mktime(value.timetuple()) * 1000)
+    if type in (date, datetime):
+        return datetime2milli(value)
+    elif type is timedelta:
+        return "\"" + unicode(value.total_seconds()) + "second\""
     elif type is str:
         return unicode(value.decode("utf8"))
     elif type is dict:
@@ -214,6 +248,14 @@ def _scrub(value):
         return output
     elif type is Decimal:
         return float(value)
+    elif type is list:
+        output = []
+        for v in value:
+            v = _scrub(v)
+            output.append(v)
+        return output
+    elif hasattr(value, '__json__'):
+        return json._default_decoder.decode(value.__json__())
     elif hasattr(value, '__iter__'):
         output = []
         for v in value:
@@ -235,7 +277,7 @@ def expand_dot(value):
     elif isinstance(value, dict):
         output = Struct()
         for k, v in value.iteritems():
-            output[k]=expand_dot(v)
+            output[k] = expand_dot(v)
         return output
     elif hasattr(value, '__iter__'):
         output = []
@@ -247,8 +289,121 @@ def expand_dot(value):
         return value
 
 
+ARRAY_ROW_LENGTH = 80
+ARRAY_ITEM_MAX_LENGTH = 30
+ARRAY_MAX_COLUMNS = 10
+INDENT = "    "
+
+def pretty_json(value):
+    try:
+        if value == None:
+            return "null"
+        elif isinstance(value, dict):
+            try:
+                if not value:
+                    return "{}"
+                items = list(value.items())
+                if len(items) == 1:
+                    return "{\"" + items[0][0] + "\": " + pretty_json(items[0][1]).strip() + "}"
+
+                items = sorted(items, lambda a, b: value_compare(a[0], b[0]))
+                values = ["\"" + ESCAPE.sub(replace, unicode(k)) + "\": " + indent(pretty_json(v)).strip() for k, v in items if v != None]
+                return "{\n" + INDENT + (",\n"+INDENT).join(values) + "\n}"
+            except Exception, e:
+                from .env.logs import Log
+                from .collections import OR
+
+                if OR(not isinstance(k, basestring) for k in value.keys()):
+                    Log.error("JSON must have string keys: {{keys}}:", {
+                        "keys": [k for k in value.keys()]
+                    }, e)
+
+                Log.error("problem making dict pretty: keys={{keys}}:", {
+                    "keys": [k for k in value.keys()]
+                }, e)
+        elif isinstance(value, list):
+            if not value:
+                return "[]"
+
+            if ARRAY_MAX_COLUMNS==1:
+                return "[\n" + ",\n".join([indent(pretty_json(v)) for v in value]) + "\n]"
+
+            if len(value) == 1:
+                j = pretty_json(value[0])
+                if j.find("\n") >= 0:
+                    return "[\n" + indent(j) + "\n]"
+                else:
+                    return "[" + j + "]"
+
+            js = [pretty_json(v) for v in value]
+            max_len = MAX(len(j) for j in js)
+            if max_len<=ARRAY_ITEM_MAX_LENGTH and AND(j.find("\n")==-1 for j in js):
+                #ALL TINY VALUES
+                num_columns = max(1, min(ARRAY_MAX_COLUMNS, int(floor((ARRAY_ROW_LENGTH + 2.0)/float(max_len+2))))) # +2 TO COMPENSATE FOR COMMAS
+                if len(js)<=num_columns:  # DO NOT ADD \n IF ONLY ONE ROW
+                    return "[" + ", ".join(js) + "]"
+                if num_columns == 1:  # DO NOT rjust IF THERE IS ONLY ONE COLUMN
+                    return "[\n" + ",\n".join([indent(pretty_json(v)) for v in value]) + "\n]"
+
+                content = ",\n".join(
+                    ", ".join(j.rjust(max_len) for j in js[r:r+num_columns])
+                    for r in xrange(0, len(js), num_columns)
+                )
+                return "[\n" + indent(content) + "\n]"
+
+            return "[\n" + ",\n".join([indent(pretty_json(v)) for v in value]) + "\n]"
+        elif hasattr(value, '__json__'):
+            j = value.__json__()
+            return pretty_json(json_decoder.decode(j))
+        elif hasattr(value, '__iter__'):
+            return pretty_json(list(value))
+        else:
+            return json_encoder.encode(value)
+
+    except Exception, e:
+        from .env.logs import Log
+
+        Log.error("Problem turning value to json", e)
 
 
+def indent(value, prefix=INDENT):
+    try:
+        content = value.rstrip()
+        suffix = value[len(content):]
+        lines = content.splitlines()
+        return prefix + (u"\n" + prefix).join(lines) + suffix
+    except Exception, e:
+        raise Exception(u"Problem with indent of value (" + e.message + u")\n" + value)
 
 
+def value_compare(a, b):
+    if a == None:
+        if b == None:
+            return 0
+        return -1
+    elif b == None:
+        return 1
 
+    if a > b:
+        return 1
+    elif a < b:
+        return -1
+    else:
+        return 0
+
+
+def datetime2milli(d):
+    try:
+        if d == None:
+            return None
+        elif isinstance(d, datetime):
+            epoch = datetime(1970, 1, 1)
+        elif isinstance(d, date):
+            epoch = date(1970, 1, 1)
+        else:
+            raise Exception("Can not convert "+repr(d)+" to json")
+
+        diff = d - epoch
+        return long(diff.total_seconds()) * 1000L + long(diff.microseconds / 1000)
+    except Exception, e:
+        raise Exception("Can not convert "+repr(d)+" to json", e)

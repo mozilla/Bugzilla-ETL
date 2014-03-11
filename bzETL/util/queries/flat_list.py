@@ -9,6 +9,10 @@
 #
 
 from __future__ import unicode_literals
+from ..collections import MIN
+from ..env.logs import Log
+from ..struct import nvl, split_field, wrap
+
 
 class FlatList(list):
     """
@@ -41,3 +45,42 @@ class FlatList(list):
                 temp[self.path[-i - 1]] = r
                 r = temp
             yield r
+
+    def select(self, field_name):
+        if isinstance(field_name, dict):
+            field_name=field_name.value
+
+        if isinstance(field_name, basestring):
+            # RETURN LIST OF VALUES
+            if len(split_field(field_name)) == 1:
+                if self.path[0] == field_name:
+                    return [d[1] for d in self.data]
+                else:
+                    return [d[0][field_name] for d in self.data]
+            else:
+                keys = split_field(field_name)
+                depth = nvl(MIN([i for i, (k, p) in enumerate(zip(keys, self.path)) if k != p]), len(self.path))  # LENGTH OF COMMON PREFIX
+                short_keys = keys[depth:]
+
+                output = []
+                _select1((wrap(d[depth]) for d in self.data), short_keys, 0, output)
+                return output
+
+        Log.error("multiselect over FlatList not supported")
+
+
+def _select1(data, field, depth, output):
+    """
+    SELECT A SINGLE FIELD
+    """
+    for d in data:
+        for i, f in enumerate(field[depth:]):
+            d = d[f]
+            if d == None:
+                output.append(None)
+                break
+            elif isinstance(d, list):
+                _select1(d, field, i + 1, output)
+                break
+        else:
+            output.append(d)

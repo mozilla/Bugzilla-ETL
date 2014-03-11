@@ -11,24 +11,25 @@
 from datetime import datetime
 import unittest
 
-import sys
 from bzETL import extract_bugzilla, bz_etl
 from bzETL.bz_etl import etl
 from bzETL.extract_bugzilla import get_current_time, SCREENED_WHITEBOARD_BUG_GROUPS
 from bzETL.util.cnv import CNV
-from bzETL.util.db import DB, all_db
-from bzETL.util.logs import Log
-from bzETL.util.elasticsearch import ElasticSearch
-from bzETL.util.files import File
-from bzETL.util.maths import Math
+from bzETL.util.collections import MIN
+from bzETL.util.queries.db_query import esfilter2sqlwhere
+from bzETL.util.sql.db import DB, all_db
+from bzETL.util.env.logs import Log
+from bzETL.util.env.elasticsearch import ElasticSearch
+from bzETL.util.env.files import File
 from bzETL.util.queries import Q
-from bzETL.util.randoms import Random
-from bzETL.util import startup, struct
+from bzETL.util.maths.randoms import Random
+from bzETL.util.env import startup
+from bzETL.util import struct
 from bzETL.util.struct import Struct, Null
-from bzETL.util.threads import ThreadedQueue
-from bzETL.util.timer import Timer
-
-from util import compare_es, database, elasticsearch
+from bzETL.util.testing import elasticsearch
+from bzETL.util.thread.threads import ThreadedQueue
+from bzETL.util.times.timer import Timer
+from util import compare_es, database
 from util.compare_es import get_all_bug_versions
 from util.database import diff
 
@@ -40,7 +41,14 @@ class TestETL(unittest.TestCase):
         self.settings = startup.read_settings(filename="test_settings.json")
         Log.start(self.settings.debug)
 
+
     def tearDown(self):
+        #CLOSE THE CACHED DB CONNECTIONS
+        bz_etl.close_db_connections()
+
+        if all_db:
+            Log.error("not all db connections are closed")
+
         Log.stop()
 
 
@@ -73,11 +81,6 @@ class TestETL(unittest.TestCase):
             #COMPARE ALL BUGS
             compare_both(candidate, reference, self.settings, self.settings.param.bugs)
 
-            #CLOSE THE CACHED DB CONNECTIONS
-            bz_etl.close_db_connections()
-
-        if all_db:
-            Log.error("not all db connections are closed")
 
 
     def random_sample_of_bugs(self):
@@ -103,6 +106,8 @@ class TestETL(unittest.TestCase):
 
             while True:
                 some_bugs = [b for b in [Random.int(MAX_BUG_ID) for i in range(NUM_TO_TEST)] if b not in private_bugs]
+
+                Log.note("Test with the following bug_ids: {{bugs}}", {"bugs":some_bugs})
 
                 #SETUP RUN PARAMETERS
                 param = Struct()
@@ -150,7 +155,7 @@ class TestETL(unittest.TestCase):
                 if can[i] != ref[i]:
                     found = i
                     break
-            Log.error("Comments do not match reference\n{{sample}}", {"sample": can[Math.min([0, found - 100]):found + 100]})
+            Log.error("Comments do not match reference\n{{sample}}", {"sample": can[MIN([0, found - 100]):found + 100]})
 
     def test_public_etl(self):
         """
@@ -177,7 +182,7 @@ class TestETL(unittest.TestCase):
                 if can[i] != ref[i]:
                     found = i
                     break
-            Log.error("Comments do not match reference\n{{sample}}", {"sample": can[Math.min(0, found - 100):found + 100:]})
+            Log.error("Comments do not match reference\n{{sample}}", {"sample": can[MIN(0, found - 100):found + 100:]})
 
     def test_private_bugs_do_not_show(self):
         self.settings.param.allow_private_bugs = False
@@ -229,7 +234,7 @@ class TestETL(unittest.TestCase):
             implied_private_comments = db.query("""
                 SELECT comment_id FROM longdescs WHERE {{where}}
             """, {
-                "where": db.esfilter2sqlwhere({"terms":{"bug_id":private_bugs}})
+                "where": esfilter2sqlwhere(db, {"terms":{"bug_id":private_bugs}})
             }).comment_id
             private_comments = marked_private_comments + implied_private_comments
             Log.note("The private comments are {{comments}}", {"comments": private_comments})
@@ -323,7 +328,9 @@ class TestETL(unittest.TestCase):
         File(self.settings.param.first_run_time).delete()
         File(self.settings.param.last_run_time).delete()
 
-        private_bugs = set(Random.sample(self.settings.param.bugs, 3))
+        # private_bugs = set(Random.sample(self.settings.param.bugs, 3))
+        private_bugs = set([692436, 1869])
+
         Log.note("The private bugs for this test are {{bugs}}", {"bugs": private_bugs})
 
         database.make_test_instance(self.settings.bugzilla)
@@ -409,12 +416,6 @@ class TestETL(unittest.TestCase):
                         if v[f] != "fixed":
                             Log.error("813650 should have {{flag}}=='fixed'", {"flag": f})
 
-            #CLOSE THE CACHED DB CONNECTIONS
-            bz_etl.close_db_connections()
-
-        if all_db:
-            Log.error("not all db connections are closed")
-
     def test_whiteboard_screened(self):
         GOOD_BUG_TO_TEST=1046
 
@@ -445,13 +446,6 @@ class TestETL(unittest.TestCase):
             for v in versions:
                 if v.status_whiteboard not in (None, "", "[screened]"):
                     Log.error("Expecting whiteboard to be screened")
-
-            #CLOSE THE CACHED DB CONNECTIONS
-            bz_etl.close_db_connections()
-
-        if all_db:
-            Log.error("not all db connections are closed")
-
 
     def test_ambiguous_whiteboard_screened(self):
         GOOD_BUG_TO_TEST=1046
@@ -486,13 +480,6 @@ class TestETL(unittest.TestCase):
                 if v.status_whiteboard not in (None, "", "[screened]"):
                     Log.error("Expecting whiteboard to be screened")
 
-            #CLOSE THE CACHED DB CONNECTIONS
-            bz_etl.close_db_connections()
-
-        if all_db:
-            Log.error("not all db connections are closed")
-
-
     def test_incremental_has_correct_expires_on(self):
         # 813650, 726635 BOTH HAVE CHANGES IN 2013
         bugs = struct.wrap([813650, 726635])
@@ -525,12 +512,6 @@ class TestETL(unittest.TestCase):
 
             with ThreadedQueue(es, size=1000) as output:
                 etl(db, output, param, please_stop=None)
-
-            #CLOSE THE CACHED DB CONNECTIONS
-            bz_etl.close_db_connections()
-
-        if all_db:
-            Log.error("not all db connections are closed")
 
         for b in bugs:
             results = es.search({
@@ -650,7 +631,6 @@ def compare_both(candidate, reference, settings, some_bugs):
             Log.error("DIFFERENCES FOUND (Differences shown in {{path}})", {
                 "path": [try_dir, ref_dir]}
             )
-
 
 if __name__ == "__main__":
     unittest.main()

@@ -10,14 +10,17 @@
 #
 from bzETL.parse_bug_history import MAX_TIME
 from bzETL.util.cnv import CNV
-from bzETL.util.db import SQL
+from bzETL.util.queries.db_query import esfilter2sqlwhere
+from bzETL.util.sql.db import SQL
 
-from bzETL.util.logs import Log
+from bzETL.util.env.logs import Log
 from bzETL.util.queries import Q
 from bzETL.util.struct import Struct
 
 
 #ALL BUGS IN PRIVATE ETL HAVE SCREENED FIELDS
+from bzETL.util.times.timer import Timer
+
 SCREENED_FIELDDEFS = [
     19, #bug_file_loc
     24, #short_desc
@@ -69,7 +72,7 @@ def get_current_time(db):
 
 def milli2string(db, value):
     """
-    CONVERT GMT MILLI TO BUGZILLA DATETIME STRING
+    CONVERT GMT MILLI TO BUGZILLA DATETIME STRING (NEED TZ TABLES)
     """
     value = max(value, 0)
 
@@ -85,7 +88,7 @@ def milli2string(db, value):
 def get_screened_whiteboard(db):
     if not SCREENED_BUG_GROUP_IDS:
         groups = db.query("SELECT id FROM groups WHERE {{where}}", {
-            "where": db.esfilter2sqlwhere({"terms": {"name": SCREENED_WHITEBOARD_BUG_GROUPS}})
+            "where": esfilter2sqlwhere(db, {"terms": {"name": SCREENED_WHITEBOARD_BUG_GROUPS}})
         })
         globals()["SCREENED_BUG_GROUP_IDS"] = Q.select(groups, "id")
 
@@ -129,8 +132,9 @@ def get_private_bugs(db, param):
         return {0}
 
     try:
-        private_bugs = db.query("SELECT DISTINCT bug_id FROM bug_group_map")
-        return set(Q.select(private_bugs, "bug_id")) | {0}
+        with Timer("get all private bug ids"):
+            private_bugs = db.query("SELECT DISTINCT bug_id FROM bug_group_map")
+            return set(private_bugs.bug_id) | {0}
     except Exception, e:
         Log.error("problem getting private bugs", e)
 
@@ -224,8 +228,8 @@ def get_bugs(db, param):
 
         param.bugs_columns = Q.select(bugs_columns, "column_name")
         param.bugs_columns_SQL = SQL(",\n".join([lower(c) for c in bugs_columns]))
-        param.bug_filter = db.esfilter2sqlwhere({"terms": {"b.bug_id": param.bug_list}})
-        param.screened_whiteboard = db.esfilter2sqlwhere({"and": [
+        param.bug_filter = esfilter2sqlwhere(db, {"terms": {"b.bug_id": param.bug_list}})
+        param.screened_whiteboard = esfilter2sqlwhere(db, {"and": [
             {"exists": "m.bug_id"},
             {"terms": {"m.group_id": SCREENED_BUG_GROUP_IDS}}
         ]})
@@ -297,13 +301,13 @@ def flatten_bugs_record(r, output):
 
 
 def get_dependencies(db, param):
-    param.blocks_filter = db.esfilter2sqlwhere({"terms": {"blocked": param.bug_list}})
-    param.dependson_filter = db.esfilter2sqlwhere({"terms": {"dependson": param.bug_list}})
+    param.blocks_filter = esfilter2sqlwhere(db, {"terms": {"blocked": param.bug_list}})
+    param.dependson_filter = esfilter2sqlwhere(db, {"terms": {"dependson": param.bug_list}})
 
     return db.query("""
         SELECT blocked AS bug_id
             , CAST(null AS signed) AS modified_ts
-            , CAST(null AS char(255)) AS modified_by
+            , CAST(null AS CHAR) AS modified_by
             , 'dependson' AS field_name
             , CAST(dependson AS SIGNED) AS new_value
             , CAST(null AS SIGNED) AS old_value
@@ -329,13 +333,13 @@ def get_dependencies(db, param):
 
 
 def get_duplicates(db, param):
-    param.dupe_filter = db.esfilter2sqlwhere({"terms": {"dupe": param.bug_list}})
-    param.dupe_of_filter = db.esfilter2sqlwhere({"terms": {"dupe_of": param.bug_list}})
+    param.dupe_filter = esfilter2sqlwhere(db, {"terms": {"dupe": param.bug_list}})
+    param.dupe_of_filter = esfilter2sqlwhere(db, {"terms": {"dupe_of": param.bug_list}})
 
     return db.query("""
         SELECT dupe AS bug_id
             , CAST(null AS signed) AS modified_ts
-            , CAST(null AS char(255)) AS modified_by
+            , CAST(null AS CHAR) AS modified_by
             , 'dupe_of' AS field_name
             , CAST(dupe_of AS SIGNED) AS new_value
             , CAST(null AS SIGNED) AS old_value
@@ -361,15 +365,15 @@ def get_duplicates(db, param):
 
 
 def get_bug_groups(db, param):
-    param.bug_filter = db.esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
+    param.bug_filter = esfilter2sqlwhere(db, {"terms": {"bug_id": param.bug_list}})
 
     return db.query("""
         SELECT bug_id
             , CAST(null AS signed) AS modified_ts
-            , CAST(null AS char(255)) AS modified_by
+            , CAST(null AS CHAR) AS modified_by
             , 'bug_group' AS field_name
-            , lower(CAST(g.`name` AS char(255))) AS new_value
-            , CAST(null AS char(255)) AS old_value
+            , lower(CAST(g.`name` AS CHAR)) AS new_value
+            , CAST(null AS CHAR) AS old_value
             , CAST(null AS signed) AS attach_id
             , 2 AS _merge_order
         FROM bug_group_map bg
@@ -380,15 +384,15 @@ def get_bug_groups(db, param):
 
 
 def get_cc(db, param):
-    param.bug_filter = db.esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
+    param.bug_filter = esfilter2sqlwhere(db, {"terms": {"bug_id": param.bug_list}})
 
     return db.query("""
         SELECT bug_id
             , CAST(null AS signed) AS modified_ts
-            , CAST(null AS char(255)) AS modified_by
+            , CAST(null AS CHAR) AS modified_by
             , 'cc' AS field_name
-            , lower(CAST(p.login_name AS char(255))) AS new_value
-            , CAST(null AS char(255)) AS old_value
+            , lower(CAST(p.login_name AS CHAR)) AS new_value
+            , CAST(null AS CHAR) AS old_value
             , CAST(null AS signed) AS attach_id
             , 2 AS _merge_order
         FROM
@@ -410,8 +414,8 @@ def get_all_cc_changes(db, bug_list):
             SELECT
                 bug_id,
                 CAST({{max_time}} AS signed) AS modified_ts,
-                CAST(null AS char(255)) AS new_value,
-                lower(CAST(p.login_name AS CHAR(255) CHARACTER SET utf8)) AS old_value
+                CAST(null AS CHAR) AS new_value,
+                lower(CAST(p.login_name AS CHAR CHARACTER SET utf8)) AS old_value
             FROM
                 cc
             LEFT JOIN
@@ -432,12 +436,12 @@ def get_all_cc_changes(db, bug_list):
     """, {
         "max_time": MAX_TIME,
         "cc_field_id": CC_FIELD_ID,
-        "bug_filter": db.esfilter2sqlwhere({"terms": {"bug_id": bug_list}})
+        "bug_filter": esfilter2sqlwhere(db, {"terms": {"bug_id": bug_list}})
     })
 
 
 def get_tracking_flags(db, param):
-    param.bug_filter = db.esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
+    param.bug_filter = esfilter2sqlwhere(db, {"terms": {"bug_id": param.bug_list}})
 
     return db.query("""
         SELECT
@@ -458,7 +462,7 @@ def get_tracking_flags(db, param):
 
 
 def get_keywords(db, param):
-    param.bug_filter = db.esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
+    param.bug_filter = esfilter2sqlwhere(db, {"terms": {"bug_id": param.bug_list}})
 
     return db.query("""
         SELECT bug_id
@@ -486,7 +490,7 @@ def get_attachments(db, param):
     else:
         param.attachments_filter = SQL("isprivate=0")
 
-    param.bug_filter = db.esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
+    param.bug_filter = esfilter2sqlwhere(db, {"terms": {"bug_id": param.bug_list}})
 
     output = db.query("""
         SELECT bug_id
@@ -531,15 +535,15 @@ def flatten_attachments(data):
 
 
 def get_bug_see_also(db, param):
-    param.bug_filter = db.esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
+    param.bug_filter = esfilter2sqlwhere(db, {"terms": {"bug_id": param.bug_list}})
 
     return db.query("""
         SELECT bug_id
             , CAST(null AS signed) AS modified_ts
-            , CAST(null AS char(255)) AS modified_by
+            , CAST(null AS CHAR) AS modified_by
             , 'see_also' AS field_name
-            , CAST(`value` AS char(255)) AS new_value
-            , CAST(null AS char(255)) AS old_value
+            , CAST(`value` AS CHAR) AS new_value
+            , CAST(null AS CHAR) AS old_value
             , CAST(null AS signed) AS attach_id
             , 2 AS _merge_order
         FROM bug_see_also
@@ -558,10 +562,10 @@ def get_new_activities(db, param):
         param.screened_fields = SQL([-1])
 
     #TODO: CF_LAST_RESOLVED IS IN PDT, FIX IT
-    param.bug_filter = db.esfilter2sqlwhere({"terms": {"a.bug_id": param.bug_list}})
+    param.bug_filter = esfilter2sqlwhere(db, {"terms": {"a.bug_id": param.bug_list}})
     param.mixed_case_fields = SQL(MIXED_CASE)
-    param.screened_whiteboard = db.esfilter2sqlwhere({"terms": {"m.group_id": SCREENED_BUG_GROUP_IDS}})
-    param.whiteboard_field=STATUS_WHITEBOARD_FIELD_ID
+    param.screened_whiteboard = esfilter2sqlwhere(db, {"terms": {"m.group_id": SCREENED_BUG_GROUP_IDS}})
+    param.whiteboard_field = STATUS_WHITEBOARD_FIELD_ID
 
     output = db.query("""
         SELECT
@@ -611,7 +615,7 @@ def get_new_activities(db, param):
 
 
 def get_flags(db, param):
-    param.bug_filter = db.esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
+    param.bug_filter = esfilter2sqlwhere(db, {"terms": {"bug_id": param.bug_list}})
 
     return db.query("""
         SELECT bug_id
@@ -619,7 +623,7 @@ def get_flags(db, param):
             , ps.login_name AS modified_by
             , 'flagtypes_name' AS field_name
             , CONCAT(ft.`name`,status,IF(requestee_id IS NULL,'',CONCAT('(',pr.login_name,')'))) AS new_value
-            , CAST(null AS char(255)) AS old_value
+            , CAST(null AS CHAR) AS old_value
             , attach_id
             , 8 AS _merge_order
         FROM
@@ -640,12 +644,12 @@ def get_comments(db, param):
 
     if param.allow_private_bugs:
         param.comment_field = SQL("'[screened]' comment")
-        param.bug_filter = db.esfilter2sqlwhere({"and": [
+        param.bug_filter = esfilter2sqlwhere(db, {"and": [
             {"terms": {"bug_id": param.bug_list}}
         ]})
     else:
         param.comment_field = SQL("c.thetext comment")
-        param.bug_filter = db.esfilter2sqlwhere({"and": [
+        param.bug_filter = esfilter2sqlwhere(db, {"and": [
             {"terms": {"bug_id": param.bug_list}},
             {"term": {"isprivate": 0}}
         ]})
@@ -663,6 +667,8 @@ def get_comments(db, param):
                 longdescs c
             LEFT JOIN
                 profiles p ON c.who = p.userid
+            LEFT JOIN
+                longdescs_tags t ON t.comment_id=c.comment_id AND t.tag <> 'deleted'
             WHERE
                 {{bug_filter}} AND
                 bug_when >= {{start_time_str}}
@@ -680,7 +686,7 @@ def get_comments_by_id(db, comments, param):
     if param.allow_private_bugs:
         return []
 
-    param.comments_filter = db.esfilter2sqlwhere({"and": [
+    param.comments_filter = esfilter2sqlwhere(db, {"and": [
         {"term": {"isprivate": 0}},
         {"terms": {"c.comment_id": comments}}
     ]})
@@ -698,6 +704,8 @@ def get_comments_by_id(db, comments, param):
                 longdescs c
             LEFT JOIN
                 profiles p ON c.who = p.userid
+            LEFT JOIN
+                longdescs_tags t ON t.comment_id=c.comment_id AND t.tag <> 'deleted'
             WHERE
                 {{comments_filter}}
             """, param)

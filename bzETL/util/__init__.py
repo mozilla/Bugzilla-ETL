@@ -1,3 +1,1 @@
-
-
-from . import stats
+from .maths import stats

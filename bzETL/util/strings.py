@@ -9,14 +9,21 @@
 #
 
 from __future__ import unicode_literals
-from datetime import timedelta
+from datetime import timedelta, date
+from datetime import datetime as builtin_datetime
 import re
-from .jsons import json_encoder
+
 from . import struct
+import math
+import __builtin__
+from .struct import wrap
 
 
 def datetime(value):
     from .cnv import CNV
+
+    if isinstance(value, (date, builtin_datetime)):
+        CNV.datetime2string(value, "%Y-%m-%d %H:%M:%S")
 
     if value < 10000000000:
         value = CNV.unix2datetime(value)
@@ -24,6 +31,10 @@ def datetime(value):
         value = CNV.milli2datetime(value)
 
     return CNV.datetime2string(value, "%Y-%m-%d %H:%M:%S")
+
+
+def upper(value):
+    return value.upper()
 
 
 def newline(value):
@@ -57,9 +68,16 @@ def outdent(value):
                 num = min(num, len(l) - len(l.lstrip()))
         return u"\n".join([l[num:] for l in lines])
     except Exception, e:
-        from .logs import Log
+        from ...env.logs import Log
 
         Log.error("can not outdent value", e)
+
+def round(value, decimal=None, digits=None):
+    if digits != None:
+        m = pow(10, math.ceil(math.log10(abs(value))))
+        return __builtin__.round(value / m, digits) * m
+
+    return __builtin__.round(value, decimal)
 
 
 def between(value, prefix, suffix):
@@ -91,15 +109,14 @@ def find_first(value, find_arr, start=0):
     return i
 
 
-pattern = re.compile(r"\{\{([\w_\.]+(\|[\w_]+)*)\}\}")
-
+pattern = re.compile(r"\{\{([\w_\.]+(\|[^\}^\|]+)*)\}\}")
 
 def expand_template(template, value):
     """
     template IS A STRING WITH {{variable_name}} INSTANCES, WHICH WILL
     BE EXPANDED TO WHAT IS IS IN THE value dict
     """
-    value = struct.wrap(value)
+    value = wrap(value)
     if isinstance(template, basestring):
         return _simple_expand(template, (value,))
 
@@ -113,7 +130,7 @@ def _expand(template, seq):
     if isinstance(template, basestring):
         return _simple_expand(template, seq)
     elif isinstance(template, dict):
-        template = struct.wrap(template)
+        template = wrap(template)
         assert template["from"], "Expecting template to have 'from' attribute"
         assert template.template, "Expecting template to have 'template' attribute"
 
@@ -126,7 +143,7 @@ def _expand(template, seq):
     elif isinstance(template, list):
         return "".join(_expand(t, seq) for t in template)
     else:
-        from .logs import Log
+        from ...env.logs import Log
 
         Log.error("can not handle")
 
@@ -146,18 +163,22 @@ def _simple_expand(template, seq):
         try:
             val = seq[-depth][var]
             for filter in ops[1:]:
-                val = eval(filter + "(val)")
+                parts = filter.split('(')
+                if len(parts) > 1:
+                    val = eval(parts[0] + "(val, " + ("(".join(parts[1::])))
+                else:
+                    val = eval(filter + "(val)")
             val = toString(val)
             return val
         except Exception, e:
             try:
-                if e.message.find(u"is not JSON serializable"):
+                if e.message.find("is not JSON serializable"):
                     #WORK HARDER
                     val = toString(val)
                     return val
             except Exception, f:
-                from logs import Log
-
+                from .env.logs import Log
+                val = toString(val)
                 Log.error(u"Can not expand " + "|".join(ops) + u" in template:\n" + indent(template), e)
 
     return pattern.sub(replacer, template)
@@ -167,10 +188,13 @@ def toString(val):
     if val == None:
         return u""
     elif isinstance(val, (dict, list, set)):
+        from .jsons import json_encoder
+
         return json_encoder.encode(val, pretty=True)
     elif isinstance(val, timedelta):
         duration = val.total_seconds()
         return unicode(round(duration, 3))+" seconds"
+
     return unicode(val)
 
 
@@ -197,3 +221,67 @@ def edit_distance(s1, s2):
         previous_row = current_row
 
     return float(previous_row[-1]) / len(s1)
+
+
+DIFF_PREFIX = re.compile(r"@@ -(\d+(?:\s*,\d+)?) \+(\d+(?:\s*,\d+)?) @@")
+def apply_diff(text, diff, reverse=False):
+    """
+    SOME EXAMPLES OF diff
+    #@@ -1 +1 @@
+    #-before china goes live, the content team will have to manually update the settings for the china-ready apps currently in marketplace.
+    #+before china goes live (end January developer release, June general audience release) , the content team will have to manually update the settings for the china-ready apps currently in marketplace.
+    @@ -0,0 +1,3 @@
+    +before china goes live, the content team will have to manually update the settings for the china-ready apps currently in marketplace.
+    +
+    +kward has the details.
+    @@ -1 +1 @@
+    -before china goes live (end January developer release, June general audience release), the content team will have to manually update the settings for the china-ready apps currently in marketplace.
+    +before china goes live , the content team will have to manually update the settings for the china-ready apps currently in marketplace.
+    @@ -3 +3 ,6 @@
+    -kward has the details.+kward has the details.
+    +
+    +Target Release Dates :
+    +https://mana.mozilla.org/wiki/display/PM/Firefox+OS+Wave+Launch+Cross+Functional+View
+    +
+    +Content Team Engagement & Tasks : https://appreview.etherpad.mozilla.org/40
+    """
+    if not diff:
+        return text
+    if diff[0].strip() == "":
+        return text
+
+    matches = DIFF_PREFIX.match(diff[0].strip())
+    if not matches:
+        from .env.logs import Log
+
+        Log.error("Can not handle {{diff}}\n", {"diff": diff[0]})
+
+    remove = [int(i.strip()) for i in matches.group(1).split(",")]
+    if len(remove) == 1:
+        remove = [remove[0], 1]  # DEFAULT 1
+    add = [int(i.strip()) for i in matches.group(2).split(",")]
+    if len(add) == 1:
+        add = [add[0], 1]
+
+    # UNUSUAL CASE WHERE @@ -x +x, n @@ AND FIRST LINE HAS NOT CHANGED
+    half = len(diff[1]) / 2
+    first_half = diff[1][:half]
+    last_half = diff[1][half:half * 2]
+    if remove[1] == 1 and add[0] == remove[0] and first_half[1:] == last_half[1:]:
+        diff[1] = first_half
+        diff.insert(2, last_half)
+
+    if not reverse:
+        if remove[1] != 0:
+            text = text[:remove[0] - 1] + text[remove[0] + remove[1] - 1:]
+        text = text[:add[0] - 1] + [d[1:] for d in diff[1 + remove[1]:1 + remove[1] + add[1]]] + text[add[0] - 1:]
+        text = apply_diff(text, diff[add[1]+remove[1]+1:], reverse=reverse)
+    else:
+        text = apply_diff(text, diff[add[1]+remove[1]+1:], reverse=reverse)
+        if add[1] != 0:
+            text = text[:add[0] - 1] + text[add[0] + add[1] - 1:]
+        text = text[:remove[0] - 1] + [d[1:] for d in diff[1:1 + remove[1]]] + text[remove[0] - 1:]
+
+    return text
+
+

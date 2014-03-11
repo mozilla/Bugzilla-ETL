@@ -13,11 +13,10 @@ import argparse
 import os
 import tempfile
 import sys
-import struct
-from .struct import listwrap
-from .cnv import CNV
-from .logs import Log
-from .files import File
+from ..struct import listwrap, wrap, unwrap
+from ..cnv import CNV
+from ..env.logs import Log
+from ..env.files import File
 
 
 #PARAMETERS MATCH argparse.ArgumentParser.add_argument()
@@ -40,10 +39,10 @@ def _argparse(defs):
         args = d.copy()
         name = args.name
         args.name = None
-        parser.add_argument(*listwrap(name).list, **struct.unwrap(args))
+        parser.add_argument(*unwrap(listwrap(name)), **unwrap(args))
     namespace = parser.parse_args()
     output = {k: getattr(namespace, k) for k in vars(namespace)}
-    return struct.wrap(output)
+    return wrap(output)
 
 
 def read_settings(filename=None, defs=None):

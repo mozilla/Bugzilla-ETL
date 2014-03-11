@@ -13,11 +13,12 @@ import base64
 import datetime
 import re
 import time
-from .multiset import Multiset
-from .jsons import json_decoder, json_encoder
-from .logs import Log
-import struct
+from .collections.multiset import Multiset
+from .jsons import json_decoder, json_encoder, replace, ESCAPE
+from .env.logs import Log
+from . import struct
 from .strings import expand_template
+from .struct import wrap
 
 
 class CNV:
@@ -44,14 +45,16 @@ class CNV:
                 params = dict([(k, CNV.value2quote(v)) for k, v in params.items()])
                 json_string = expand_template(json_string, params)
 
-            return struct.wrap(json_decoder.decode(json_string))
+            return wrap(json_decoder.decode(json_string))
         except Exception, e:
-            Log.error("Can not decode JSON:\n\t" + json_string, e)
+            Log.error("Can not decode JSON:\n\t" + str(json_string), e)
 
 
     @staticmethod
     def string2datetime(value, format):
         ## http://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
+        if value == None:
+            return None
         try:
             return datetime.datetime.strptime(value, format)
         except Exception, e:
@@ -76,7 +79,9 @@ class CNV:
     @staticmethod
     def datetime2milli(d):
         try:
-            if isinstance(d, datetime.datetime):
+            if d == None:
+                return None
+            elif isinstance(d, datetime.datetime):
                 epoch = datetime.datetime(1970, 1, 1)
             elif isinstance(d, datetime.date):
                 epoch = datetime.date(1970, 1, 1)
@@ -89,18 +94,23 @@ class CNV:
             Log.error("Can not convert {{value}}", {"value": d}, e)
 
     @staticmethod
+    def timedelta2milli(v):
+        return v.total_seconds()
+
+    @staticmethod
     def unix2datetime(u):
         try:
             if u == None:
                 return None
+            if u == 9999999999: # PYPY BUG https://bugs.pypy.org/issue1697
+                return datetime.datetime(2286, 11, 20, 17, 46, 39)
             return datetime.datetime.utcfromtimestamp(u)
         except Exception, e:
             Log.error("Can not convert {{value}} to datetime", {"value": u}, e)
 
     @staticmethod
     def milli2datetime(u):
-        return datetime.datetime.utcfromtimestamp(u / 1000)
-
+        return CNV.unix2datetime(u/1000.0)
 
     @staticmethod
     def dict2Multiset(dic):
@@ -120,13 +130,25 @@ class CNV:
             return None
         return dict(value.dic)
 
-
     @staticmethod
     def table2list(
             column_names, #tuple of columns names
             rows          #list of tuples
     ):
-        return struct.wrap([dict(zip(column_names, r)) for r in rows])
+        return wrap([dict(zip(column_names, r)) for r in rows])
+
+    @staticmethod
+    def list2tab(rows):
+        columns = set()
+        for r in rows:
+            columns |= set(r.keys())
+        keys = list(columns)
+
+        output = []
+        for r in rows:
+            output.append("\t".join(CNV.object2JSON(r[k]) for k in keys))
+
+        return "\t".join(keys)+"\n"+"\n".join(output)
 
 
     #PROPER NULL HANDLING
@@ -147,8 +169,14 @@ class CNV:
 
     @staticmethod
     def string2quote(value):
-        # return repr(value)
-        return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+        return "\""+ESCAPE.sub(replace, value)+"\""
+
+    @staticmethod
+    def quote2string(value):
+        if value[0] == "\"" and value[-1] == "\"":
+            value = value[1:-1]
+
+        return value.replace("\\\\", "\\").replace("\\\"", "\"").replace("\\'", "'").replace("\\\n", "\n").replace("\\\t", "\t")
 
     #RETURN PYTHON CODE FOR THE SAME
     @staticmethod
@@ -256,8 +284,53 @@ class CNV:
         return output
 
 
+    @staticmethod
+    def pipe2value(value):
+        type = value[0]
+        if type == '0':
+            return None
+        if type == 'n':
+            return CNV.value2number(value[1::])
+
+        if type != 's' and type != 'a':
+            Log.error("unknown pipe type")
+
+        # EXPECTING MOST STRINGS TO NOT HAVE ESCAPED CHARS
+        output = unPipe(value)
+        if type == 's':
+            return output
+
+        return [CNV.pipe2value(v) for v in output.split("|")]
+
+
+def unPipe(value):
+    s = value.find("\\", 1)
+    if s < 0:
+        return value[1::]
+
+    result = ""
+    e = 1
+    while True:
+        c = value[s + 1]
+        if c == 'p':
+            result = result + value[e:s] + '|'
+            s += 2
+            e = s
+        elif c == '\\':
+            result = result + value[e:s] + '\\'
+            s += 2
+            e = s
+        else:
+            s += 1
+
+        s = value.find("\\", s)
+        if s < 0:
+            break
+    return result + value[e::]
+
+
 def _filter(esfilter, row, rownum, rows):
-    esfilter = struct.wrap(esfilter)
+    esfilter = wrap(esfilter)
 
     if esfilter[u"and"]:
         for a in esfilter[u"and"]:

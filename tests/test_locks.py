@@ -10,8 +10,8 @@
 
 import sys
 import threading
-from bzETL.util import threads
-from bzETL.util.randoms import Random
+from bzETL.util.thread import threads
+from bzETL.util.maths.randoms import Random
 
 
 num_thread = 800

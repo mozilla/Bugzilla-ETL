@@ -10,19 +10,21 @@
 
 from __future__ import unicode_literals
 from math import sqrt
-from .cnv import CNV
-from .struct import nvl, Struct, Null
-from .logs import Log
+from ..cnv import CNV
+from ..collections import OR
+from ..struct import nvl, Struct, Null
+from ..env.logs import Log
 
 
 DEBUG = True
 EPSILON = 0.000001
 
 
+
 def stats2z_moment(stats):
     # MODIFIED FROM http://statsmodels.sourceforge.net/devel/_modules/statsmodels/stats/moment_helpers.html
     # ADDED count
-    mc0, mc1, mc2, skew, kurt = stats.count, stats.mean, stats.variance, stats.skew, stats.kurtosis
+    mc0, mc1, mc2, skew, kurt = stats.count, nvl(stats.mean, 0), nvl(stats.variance, 0), nvl(stats.skew, 0), nvl(stats.kurtosis, 0)
 
     mz0 = mc0
     mz1 = mc1 * mc0
@@ -71,19 +73,24 @@ def z_moment2stats(z_moment, unbiased=True):
     Z3 = Z[3] / N
     Z4 = Z[4] / N
 
-    variance = (Z2 - mean * mean)
-    error = -EPSILON * (abs(Z2) + 1)  # EXPECTED FLOAT ERROR
-
-    if error < variance <= 0:  # TODO: MAKE THIS A TEST ON SIGNIFICANT DIGITS
+    if N == 1:
+        variance = None
         skew = None
         kurtosis = None
-    elif variance < error:
-        Log.error("variance can not be negative ({{var}})", {"var": variance})
     else:
-        mc3 = (Z3 - (3 * mean * variance + mean ** 3))  # 3rd central moment
-        mc4 = (Z4 - (4 * mean * mc3 + 6 * mean * mean * variance + mean ** 4))
-        skew = mc3 / (variance ** 1.5)
-        kurtosis = (mc4 / (variance ** 2.0)) - 3.0
+        variance = (Z2 - mean * mean)
+        error = -EPSILON * (abs(Z2) + 1)  # EXPECTED FLOAT ERROR
+
+        if error < variance <= 0:  # TODO: MAKE THIS A TEST ON SIGNIFICANT DIGITS
+            skew = None
+            kurtosis = None
+        elif variance < error:
+            Log.error("variance can not be negative ({{var}})", {"var": variance})
+        else:
+            mc3 = (Z3 - (3 * mean * variance + mean ** 3))  # 3rd central moment
+            mc4 = (Z4 - (4 * mean * mc3 + 6 * mean * mean * variance + mean ** 4))
+            skew = mc3 / (variance ** 1.5)
+            kurtosis = (mc4 / (variance ** 2.0)) - 3.0
 
     stats = Stats(
         count=N,
@@ -96,6 +103,7 @@ def z_moment2stats(z_moment, unbiased=True):
 
     if DEBUG:
         globals()["DEBUG"] = False
+        v=Null
         try:
             v = stats2z_moment(stats)
             for i in range(5):
@@ -105,7 +113,7 @@ def z_moment2stats(z_moment, unbiased=True):
                 "from": Z,
                 "stats": stats,
                 "expected": v.S
-            })
+            }, e)
         globals()["DEBUG"] = True
 
     return stats
@@ -126,14 +134,14 @@ class Stats(Struct):
 
         if "count" not in kwargs:
             self.count = 0
-            self.mean = 0
-            self.variance = 0
+            self.mean = None
+            self.variance = None
             self.skew = None
             self.kurtosis = None
         elif "mean" not in kwargs:
             self.count = kwargs["count"]
-            self.mean = 0
-            self.variance = 0
+            self.mean = None
+            self.variance = None
             self.skew = None
             self.kurtosis = None
         elif "variance" not in kwargs and "std" not in kwargs:
@@ -228,14 +236,21 @@ def z_moment2dict(z):
 setattr(CNV, "z_moment2dict", staticmethod(z_moment2dict))
 
 
-def median(values, simple=True):
+def median(values, simple=True, mean_weight=0.0):
     """
     RETURN MEDIAN VALUE
 
     IF simple=False THEN IN THE EVENT MULTIPLE INSTANCES OF THE
-    MEDIAN VALUE, THE MEDIAN IS INTERPOLATED BASED ON IT'S POSITION
+    MEDIAN VALUE, THE MEDIAN IS INTERPOLATED BASED ON ITS POSITION
     IN THE MEDIAN RANGE
+
+    mean_weight IS TO PICK A MEDIAN VALUE IN THE ODD CASE THAT IS
+    CLOSER TO THE MEAN (PICK A MEDIAN BETWEEN TWO MODES IN BIMODAL CASE)
     """
+
+    if OR(v == None for v in values):
+        Log.error("median is not ready to handle None")
+
     try:
         if not values:
             return Null
@@ -260,13 +275,20 @@ def median(values, simple=True):
         while stop_index < l and _sorted[stop_index] == _median:
             stop_index += 1
 
+        num_middle = stop_index - start_index
+
         if l % 2 == 0:
-            if start_index == stop_index:
-                return float(_sorted[middle - 1] + median) / 2
+            if num_middle == 1:
+                return float(_sorted[middle - 1] + _median) / 2
             else:
-                return (_median - 0.5) + float(middle - start_index) / float(stop_index - start_index)
+                return (_median - 0.5) + float(middle - start_index) / float(num_middle)
         else:
-            middle += 0.5
-            return (_median - 0.5) + float(middle - start_index) / float(stop_index - start_index)
+            if num_middle == 1:
+                return (1 - mean_weight) * _median + mean_weight * (_sorted[middle - 1] + _sorted[middle + 1]) / 2
+            else:
+                return (_median - 0.5) + float(middle + 0.5 - start_index) / float(num_middle)
     except Exception, e:
-        Log.error("problem with median", e)
+        Log.error("problem with median of {{values}}", {"values": values}, e)
+
+
+zero = Stats()

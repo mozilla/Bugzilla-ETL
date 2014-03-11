@@ -9,13 +9,19 @@
 #
 from __future__ import unicode_literals
 import math
-from numbers import Number
-from .struct import Null, nvl
-from .logs import Log
-from .strings import find_first
+import __builtin__
+from ..struct import Null, nvl
+from ..env.logs import Log
+from ..strings import find_first
 
 
 class Math(object):
+    """
+    MATH FUNCTIONS THAT ASSUME NONE IMPLY *NOT APPLICABLE* RATHER THAN *MISSING*
+    """
+
+
+
     @staticmethod
     def bayesian_add(*args):
         a = args[0]
@@ -34,13 +40,19 @@ class Math(object):
         return Math.bayesian_add(a, 1 - b)
 
 
-    # FOR GOODNESS SAKE - IF YOU PROVIDE A METHOD abs(), PLEASE PROVIDE IT'S COMPLEMENT
+    @staticmethod
+    def abs(v):
+        if v == None:
+            return Null
+        return abs(v)
+
+    # FOR GOODNESS SAKE - IF YOU PROVIDE A METHOD abs(), PLEASE PROVIDE ITS COMPLEMENT
     # x = abs(x)*sign(x)
     # FOUND IN numpy, BUT WE USUALLY DO NOT NEED TO BRING IN A BIG LIB FOR A SIMPLE DECISION
     @staticmethod
     def sign(v):
         if v == None:
-            return None
+            return Null
         if v < 0:
             return -1
         if v > 0:
@@ -57,6 +69,10 @@ class Math(object):
             return False
 
     @staticmethod
+    def is_nan(s):
+        return math.isnan(s)
+
+    @staticmethod
     def is_integer(s):
         try:
             if float(s) == round(float(s), 0):
@@ -66,12 +82,12 @@ class Math(object):
             return False
 
     @staticmethod
-    def round_sci(value, decimal=None, digits=None):
+    def round(value, decimal=None, digits=None):
         if digits != None:
-            m = pow(10, math.floor(math.log10(digits)))
-            return round(value / m, digits) * m
+            m = pow(10, math.ceil(math.log10(value)))
+            return __builtin__.round(value / m, digits) * m
 
-        return round(value, decimal)
+        return __builtin__.round(value, decimal)
 
 
     @staticmethod
@@ -96,40 +112,8 @@ class Math(object):
 
         return Math.round_sci(value, decimal=i - d - 1)
 
-
-    @staticmethod
-    def min(*values):
-        if isinstance(values, tuple) and len(values) == 1 and isinstance(values[0], (list, set, tuple)):
-            values = values[0]
-        output = Null
-        for v in values:
-            if v == None:
-                continue
-            if isinstance(v, float) and math.isnan(v):
-                continue
-            if output == None:
-                output = v
-                continue
-            output = min(output, v)
-        return output
-
-
-    @staticmethod
-    def max(*values):
-        if isinstance(values, tuple) and len(values) == 1 and isinstance(values[0], (list, set, tuple)):
-            values = values[0]
-        output = Null
-        for v in values:
-            if v == None:
-                continue
-            if math.isnan(v):
-                continue
-            if output == None:
-                output = v
-                continue
-            output = max(output, v)
-        return output
-
     @staticmethod
     def ceiling(value):
         return int(math.ceil(value))
+
+

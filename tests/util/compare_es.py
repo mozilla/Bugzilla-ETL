@@ -18,7 +18,7 @@ from bzETL.util.queries import Q
 
 
 #PULL ALL BUG DOCS FROM ONE ES
-from bzETL.util.timer import Timer
+from bzETL.util.times.timer import Timer
 
 
 def get_all_bug_versions(es, bug_id, max_time=None):
@@ -110,7 +110,10 @@ def old2new(bug, max_date):
         bug.votes = 3
 
     try:
-        bug.cf_last_resolved = CNV.datetime2milli(CNV.string2datetime(bug.cf_last_resolved, "%Y-%m-%d %H:%M:%S"))
+        if Math.is_number(bug.cf_last_resolved):
+            bug.cf_last_resolved = long(bug.cf_last_resolved)
+        else:
+            bug.cf_last_resolved = CNV.datetime2milli(CNV.string2datetime(bug.cf_last_resolved, "%Y-%m-%d %H:%M:%S"))
     except Exception, e:
         pass
 

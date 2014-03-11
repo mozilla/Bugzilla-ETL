@@ -9,22 +9,25 @@
 #
 
 from __future__ import unicode_literals
-from dzAlerts.util import struct
+from ..queries.db_query import esfilter2sqlwhere
+from ..struct import wrap
 
 
-def find_holes(db, table_name, column_name, filter, _range):
+def find_holes(db, table_name, column_name, _range, filter=None):
     """
     FIND HOLES IN A DENSE COLUMN OF INTEGERS
     RETURNS A LIST OF {"min"min, "max":max} OBJECTS
     """
+    if not filter:
+        filter = {"match_all": {}}
 
-    _range = struct.wrap(_range)
+    _range = wrap(_range)
     params = {
         "min": _range.min,
         "max": _range.max - 1,
         "column_name": db.quote_column(column_name),
         "table_name": db.quote_column(table_name),
-        "filter": db.esfilter2sqlwhere(filter)
+        "filter": esfilter2sqlwhere(db, filter)
     }
 
     min_max=db.query("""

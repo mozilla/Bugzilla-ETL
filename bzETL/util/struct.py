@@ -8,6 +8,7 @@
 #
 
 from __future__ import unicode_literals
+from types import NoneType, GeneratorType
 
 _get = object.__getattribute__
 
@@ -17,12 +18,17 @@ class Struct(dict):
     Struct is an anonymous class with some properties good for manipulating JSON
 
     0) a.b==a["b"]
-    1) the IDE does tab completion, so my spelling mistakes get found at "compile time"
+    1) the IDE does tab completion, and my spelling mistakes get found at "compile time"
     2) it deals with missing keys gracefully, so I can put it into set operations (database
        operations) without choking
     2b) missing keys is important when dealing with JSON, which is often almost anything
-    3) you can access JSON paths as a variable:   a["b.c"]==a.b.c
-    4) attribute names (keys) are corrected to unicode - it appears Python object.getattribute()
+    3) you can access paths as a variable:   a["b.c"]==a.b.c
+    4) you can set paths to values, missing objects along the path are created:
+       a = wrap({})
+       > a == {}
+       a["b.c"] = 42
+       > a == {"b": {"c": 42}}
+    5) attribute names (keys) are corrected to unicode - it appears Python object.getattribute()
        is called with str() even when using from __future__ import unicode_literals
 
     MORE ON MISSING VALUES: http://www.numpy.org/NA-overview.html
@@ -40,7 +46,7 @@ class Struct(dict):
     def __init__(self, **map):
         """
         THIS WILL MAKE A COPY, WHICH IS UNLIKELY TO BE USEFUL
-        USE struct.wrap() INSTEAD
+        USE wrap() INSTEAD
         """
         dict.__init__(self)
         object.__setattr__(self, "__dict__", map)  #map IS A COPY OF THE PARAMETERS
@@ -65,14 +71,14 @@ class Struct(dict):
             key = key.replace("\.", "\a")
             seq = [k.replace("\a", ".") for k in key.split(".")]
             for n in seq:
-                d = getdefault(d, n)
+                d = _getdefault(d, n)
             return wrap(d)
 
         return getdefaultwrapped(d, key)
 
     def __setitem__(self, key, value):
         if key == "":
-            from .logs import Log
+            from .env.logs import Log
 
             Log.error("key is empty string.  Probably a bad idea")
         if isinstance(key, str):
@@ -91,7 +97,7 @@ class Struct(dict):
             key = key.replace("\.", "\a")
             seq = [k.replace("\a", ".") for k in key.split(".")]
             for k in seq[:-1]:
-                d = getdefault(d, k)
+                d = _getdefault(d, k)
             if value == None:
                 d.pop(seq[-1], None)
             else:
@@ -115,15 +121,41 @@ class Struct(dict):
 
     def __setattr__(self, key, value):
         if isinstance(key, str):
-            key = key.decode("utf8")
+            ukey = key.decode("utf8")
+        else:
+            ukey = key
 
         value = unwrap(value)
         if value is None:
             d = _get(self, "__dict__")
             d.pop(key, None)
         else:
-            object.__setattr__(self, key, value)
+            object.__setattr__(self, ukey, value)
         return self
+
+    def __hash__(self):
+        d = _get(self, "__dict__")
+        return hash_value(d)
+
+    def __eq__(self, other):
+        if not isinstance(other, dict):
+            return False
+        e = unwrap(other)
+        d = _get(self, "__dict__")
+        for k, v in d.items():
+            if e.get(k, None) != v:
+                return False
+        for k, v in e.items():
+            if d.get(k, None) != v:
+                return False
+        return True
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def get(self, key, default):
+        d = _get(self, "__dict__")
+        return d.get(key, default)
 
     def items(self):
         d = _get(self, "__dict__")
@@ -181,11 +213,15 @@ class Struct(dict):
         d = _get(self, "__dict__")
         return d.keys()
 
+    def setdefault(self, k, d=None):
+        if self[k] == None:
+            self[k]=d
+
 # KEEP TRACK OF WHAT ATTRIBUTES ARE REQUESTED, MAYBE SOME (BUILTIN) ARE STILL USEFUL
 requested = set()
 
 
-def setdefault(obj, key, value):
+def _setdefault(obj, key, value):
     """
     DO NOT USE __dict__.setdefault(obj, key, value), IT DOES NOT CHECK FOR obj[key] == None
     """
@@ -196,7 +232,26 @@ def setdefault(obj, key, value):
     return v
 
 
-def getdefault(obj, key):
+def set_default(original, default):
+    return wrap(_all_default(unwrap(original), unwrap(default)))
+
+
+def _all_default(d, default):
+    """
+    ANY VALUE NOT SET WILL BE SET BY THE default
+    THIS IS RECURSIVE
+    """
+    if default is None:
+        return
+    for k, default_value in default.items():
+        existing_value = d.get(k, None)
+        if existing_value is None:
+            d[k] = default_value
+        elif isinstance(existing_value, dict) and isinstance(default_value, dict):
+            _all_default(existing_value, default_value)
+
+
+def _getdefault(obj, key):
     try:
         return obj[key]
     except Exception, e:
@@ -218,12 +273,12 @@ def _assign(null, key, value, force=True):
     if isinstance(o, _Null):
         o = _assign(o, d["path"], {}, False)
     else:
-        o = setdefault(o, d["path"], {})
+        o = _setdefault(o, d["path"], {})
 
     if force:
         o[key] = value
     else:
-        value = setdefault(o, key, value)
+        value = _setdefault(o, key, value)
     return value
 
 
@@ -244,6 +299,30 @@ class _Null(object):
 
     def __nonzero__(self):
         return False
+
+    def __add__(self, other):
+        return Null
+
+    def __radd__(self, other):
+        return Null
+
+    def __sub__(self, other):
+        return Null
+
+    def __rsub__(self, other):
+        return Null
+
+    def __mul__(self, other):
+        return Null
+
+    def __rmul__(self, other):
+        return Null
+
+    def __div__(self, other):
+        return Null
+
+    def __rdiv__(self, other):
+        return Null
 
     def __gt__(self, other):
         return False
@@ -313,17 +392,33 @@ class _Null(object):
     def keys(self):
         return set()
 
+    def items(self):
+        return []
+
     def pop(self, key, default=None):
-        return None
+        return Null
 
     def __str__(self):
         return "None"
+
+    def __repr__(self):
+        return "Null"
+
+    def __class__(self):
+        return NoneType
 
 
 Null = _Null()
 EmptyList = Null
 
 ZeroList = []
+def return_zero_list():
+    return []
+
+def return_zero_set():
+    return set()
+
+
 
 
 class StructList(list):
@@ -346,7 +441,7 @@ class StructList(list):
         if isinstance(index, slice):
             # IMPLEMENT FLAT SLICES (for i not in range(0, len(self)): assert self[i]==None)
             if index.step is not None:
-                from .logs import Log
+                from ...env.logs import Log
                 Log.error("slice step must be None, do not know how to deal with values")
             length = len(_get(self, "list"))
 
@@ -387,9 +482,12 @@ class StructList(list):
         return list
 
     def __getslice__(self, i, j):
-        from .logs import Log
+        from .env.logs import Log
 
         Log.error("slicing is broken in Python 2.7: a[i:j] == a[i+len(a), j] sometimes.  Use [start:stop:step]")
+
+    def copy(self):
+        return StructList(list(_get(self, "list")))
 
     def remove(self, x):
         _get(self, "list").remove(x)
@@ -401,7 +499,7 @@ class StructList(list):
         return self
 
     def pop(self):
-        return _get(self, "list").pop()
+        return wrap(_get(self, "list").pop())
 
     def __add__(self, value):
         output = list(_get(self, "list"))
@@ -413,6 +511,11 @@ class StructList(list):
         output.append(value)
         return StructList(vals=output)
 
+    def __radd__(self, other):
+        output = list(other)
+        output.extend(_get(self, "list"))
+        return StructList(vals=output)
+
     def right(self, num=None):
         """
         WITH SLICES BEING FLAT, WE NEED A SIMPLE WAY TO SLICE FROM THE RIGHT
@@ -422,6 +525,16 @@ class StructList(list):
         if num <= 0:
             return EmptyList
         return StructList(_get(self, "list")[-num])
+
+    def leftBut(self, num):
+        """
+        WITH SLICES BEING FLAT, WE NEED A SIMPLE WAY TO SLICE FROM THE LEFT [:-num:]
+        """
+        if num == None:
+            return StructList([_get(self, "list")[:-1:]])
+        if num <= 0:
+            return EmptyList
+        return StructList(_get(self, "list")[:-num:])
 
     def last(self):
         """
@@ -436,19 +549,40 @@ class StructList(list):
             output = _get(self, key)
             return output
         except Exception, e:
-            return StructList([v[key] for v in _get(self, "list")])
+            return StructList([v.get(key, None) for v in _get(self, "list")])
 
 def wrap(v):
-    if v is None:
-        return Null
-    if isinstance(v, (Struct, _Null, StructList)):
-        return v
-    if isinstance(v, dict):
+    v_type = v.__class__
+
+    if v_type is dict:
+        if isinstance(v, Struct):
+            return v
         m = Struct()
         object.__setattr__(m, "__dict__", v)  # INJECT m.__dict__=v SO THERE IS NO COPY
         return m
-    if isinstance(v, list):
+
+    if v_type is list:
+        if isinstance(v, StructList):
+            return v
+
+        for vv in v:
+            # IN PRACTICE WE DO NOT EXPECT TO GO THROUGH THIS LIST, IF ANY ARE WRAPPED, THE FIRST IS PROBABLY WRAPPED
+            if vv is not unwrap(vv):
+                #MUST KEEP THE LIST
+                temp = [unwrap(vv) for vv in v]
+                del v[:]
+                v.extend(temp)
+                return StructList(v)
         return StructList(v)
+
+    if v_type is NoneType:
+        if v is None:
+            return Null
+        return v
+
+    if v_type is GeneratorType:
+        return (wrap(vv) for vv in v)
+
     return v
 
 
@@ -480,6 +614,11 @@ def nvl(*args):
             return a
     return Null
 
+def zip(keys, values):
+    output = Struct()
+    for i, k in enumerate(keys):
+        output[k] = values[i]
+    return output
 
 def listwrap(value):
     """
@@ -512,6 +651,22 @@ def listwrap(value):
         return wrap([value])
 
 
+def tuplewrap(value):
+    """
+    INTENDED TO TURN lists INTO tuples FOR USE AS KEYS
+    """
+    if isinstance(value, (list, tuple, GeneratorType)):
+        return tuple(tuplewrap(v) for v in value)
+    return unwrap(value)
+
+
+
+def literal_field(field):
+    """
+    RETURN SAME WITH . ESCAPED
+    """
+    return field.replace(".", "\.")
+
 def split_field(field):
     """
     RETURN field AS ARRAY OF DOT-SEPARATED FIELDS
@@ -522,6 +677,21 @@ def split_field(field):
     else:
         return [field]
 
+
+def join_field(field):
+    """
+    RETURN field SEQUENCE AS STRING
+    """
+    return ".".join([f.replace(".", "\.") for f in field])
+
+
+def hash_value(v):
+    if isinstance(v, (set, tuple, list)):
+        return hash(tuple(hash_value(vv) for vv in v))
+    elif not isinstance(v, dict):
+        return hash(v)
+    else:
+        return hash(tuple(sorted(hash_value(vv) for vv in v.values())))
 
 
 
