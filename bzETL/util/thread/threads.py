@@ -44,6 +44,7 @@ class Lock(object):
             timeout = (datetime.utcnow() - till).total_seconds()
             if timeout < 0:
                 return
+        self.monitor.notify()
         self.monitor.wait(timeout=timeout)
 
     def notify_all(self):
