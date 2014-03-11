@@ -328,8 +328,7 @@ class TestETL(unittest.TestCase):
         File(self.settings.param.first_run_time).delete()
         File(self.settings.param.last_run_time).delete()
 
-        # private_bugs = set(Random.sample(self.settings.param.bugs, 3))
-        private_bugs = set([692436, 1869])
+        private_bugs = set(Random.sample(self.settings.param.bugs, 3))
 
         Log.note("The private bugs for this test are {{bugs}}", {"bugs": private_bugs})
 

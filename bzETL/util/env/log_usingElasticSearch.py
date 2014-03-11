@@ -9,6 +9,7 @@
 #
 from __future__ import unicode_literals
 from datetime import timedelta, datetime
+from ..cnv import CNV
 from .elasticsearch import ElasticSearch
 from ..struct import wrap
 from ..thread.threads import Thread, Queue
@@ -19,6 +20,12 @@ class Log_usingElasticSearch(BaseLog):
     def __init__(self, settings):
         settings = wrap(settings)
         self.es = ElasticSearch(settings)
+
+        aliases = self.es.get_aliases()
+        if settings.index not in [a.index for a in aliases]:
+            schema = CNV.JSON2object(CNV.object2JSON(SCHEMA), paths=True)
+            self.es = ElasticSearch.create_index(settings, schema, limit_replicas=True)
+
         self.queue = Queue()
         self.thread = Thread("log to " + settings.index, time_delta_pusher, es=self.es, queue=self.queue, interval=timedelta(seconds=1))
         self.thread.start()
@@ -74,4 +81,54 @@ def time_delta_pusher(please_stop, es, queue, interval):
                 if last > 0:
                     es.extend([{"value":v} for v in logs[0:last]])
             except Exception, e:
+                # THREAD WILL END IF
                 Log.error("problem logging to es", e)
+
+
+
+SCHEMA = {
+    "settings": {
+        "index.number_of_shards": 3,
+        "index.number_of_replicas": 2,
+        "index.store.throttle.type": "merge",
+        "index.store.throttle.max_bytes_per_sec": "2mb",
+        "index.cache.filter.expire": "1m",
+        "index.cache.field.type": "soft",
+    },
+    "mappings": {
+        "_default_": {
+            "dynamic_templates": [
+                {
+                    "values_strings": {
+                        "match": "*",
+                        "match_mapping_type" : "string",
+                        "mapping": {
+                            "type": "string",
+                            "index": "not_analyzed"
+                        }
+                    }
+                }
+            ],
+            "_all": {
+                "enabled": False
+            },
+            "_source": {
+                "compress": True,
+                "enabled": True
+            },
+            "properties": {
+                "timestamp": {
+                    "type": "long",
+                    "index": "not_analyzed",
+                    "store": "yes"
+                },
+                "params": {
+                    "type": "object",
+                    "enabled": False,
+                    "index": "no",
+                    "store": "yes"
+                }
+            }
+        }
+    }
+}

@@ -59,7 +59,7 @@ class Queue(object):
         """
         max - LIMIT THE NUMBER IN THE QUEUE, IF TOO MANY add() AND extend() WILL BLOCK
         """
-        self.max = nvl(max, 2 ** 30)
+        self.max = nvl(max, 2 ** 10)
         self.keep_running = True
         self.lock = Lock("lock for queue")
         self.queue = []
@@ -81,6 +81,8 @@ class Queue(object):
             if self.keep_running:
                 self.queue.append(value)
             while self.keep_running and len(self.queue) > self.max:
+                from ..env.logs import Log
+                Log.warning("Queue is full ({{num}}} items), waiting", {"num": len(self.queue)})
                 self.lock.wait()
         return self
 
@@ -89,6 +91,8 @@ class Queue(object):
             if self.keep_running:
                 self.queue.extend(values)
             while self.keep_running and len(self.queue) > self.max:
+                from ..env.logs import Log
+                Log.warning("Queue is full ({{num}}} items), waiting", {"num": len(self.queue)})
                 self.lock.wait()
 
     def __len__(self):
