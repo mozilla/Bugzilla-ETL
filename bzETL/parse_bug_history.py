@@ -750,7 +750,7 @@ class BugHistoryParser():
             removed = total & add
 
             #WE CAN NOT REMOVE VALUES WE KNOW TO BE THERE AFTER
-            if removed and (field_name != 'cc' or DEBUG_CC_CHANGES):
+            if removed and (field_name != 'cc' or DEBUG_CC_CHANGES) and field_name not in KNOWN_MISSING_KEYWORDS:
                 Log.note("[Bug {{bug_id}}]: PROBLEM: Found {{type}} {{field_name}} value: (Removing {{removed}} can not result in {{existing}})", {
                     "bug_id": target.bug_id,
                     "type": valueType,

@@ -154,25 +154,25 @@ def setup_es(settings, db, es, es_comments):
         # START ETL FROM BEGINNING, MAKE NEW INDEX
         last_run_time = 0
         if not es:
+            # BUG VERSIONS
             schema = File(settings.es.schema_file).read()
-            #TODO: ADD SWITCH TO ENABLE SINGLE SHARD MODE
-            # schema.index.number_of_shards=1
-            # schema.index.number_of_replicas=0
-
             if transform_bugzilla.USE_ATTACHMENTS_DOT:
                 schema = schema.replace("attachments_", "attachments.")
             schema=CNV.JSON2object(schema)
             schema.settings=jsons.expand_dot(schema.settings)
-
             if not settings.es.alias:
                 settings.es.alias = settings.es.index
                 settings.es.index = ElasticSearch.proto_name(settings.es.alias)
             es = ElasticSearch.create_index(settings.es, schema, limit_replicas=True)
 
+            # BUG COMMENTS
+            comment_schema = File(settings.es_comments.schema_file).read()
+            comment_schema=CNV.JSON2object(comment_schema)
+            comment_schema.settings=jsons.expand_dot(comment_schema.settings)
             if not settings.es_comments.alias:
                 settings.es_comments.alias = settings.es_comments.index
                 settings.es_comments.index = ElasticSearch.proto_name(settings.es_comments.alias)
-            es_comments = ElasticSearch.create_index(settings.es_comments, File(settings.es_comments.schema_file).read(), limit_replicas=True)
+            es_comments = ElasticSearch.create_index(settings.es_comments, comment_schema, limit_replicas=True)
 
         File(settings.param.first_run_time).write(unicode(CNV.datetime2milli(current_run_time)))
 
