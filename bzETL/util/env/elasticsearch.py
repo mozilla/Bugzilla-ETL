@@ -221,7 +221,7 @@ class ElasticSearch(object):
                 Log.error("Expecting every record given to have \"value\" or \"json\" property")
 
             if id == None:
-                id = sha.new(json).hexdigest()
+                id = sha.new(json.encode("utf8")).hexdigest()
 
             lines.append('{"index":{"_id":' + CNV.object2JSON(id) + '}}')
             lines.append(json)
