@@ -371,7 +371,7 @@ class Log_usingThread(BaseLog):
         #DELAYED LOAD FOR THREADS MODULE
         from ..thread.threads import Queue
 
-        self.queue = Queue()
+        self.queue = Queue(max=10000, silent=True)
         self.logger = logger
 
         def worker(please_stop):
