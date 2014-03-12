@@ -128,7 +128,7 @@ def analysis(settings, last_run, please_stop):
                 "problem": problem.email,
                 "score": problem.count,
                 "solution": best_solution.email,
-                "matches": CNV.object2JSON(Q.select(solutions, "count")[:10])
+                "matches": CNV.object2JSON(Q.select(solutions, "count")[:10:])
             })
             try_again = True
             add_alias(problem.email, best_solution.email)
