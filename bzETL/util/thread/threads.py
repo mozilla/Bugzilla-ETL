@@ -83,10 +83,12 @@ class Queue(object):
             if self.keep_running:
                 self.queue.append(value)
             while self.keep_running and len(self.queue) > self.max:
-                if not self.silent:
+                if self.silent:
+                    self.lock.wait()
+                else:
+                    self.lock.wait(5)
                     from ..env.logs import Log
-                    Log.warning("Queue is full ({{num}}} items), waiting", {"num": len(self.queue)})
-                self.lock.wait()
+                    Log.warning("Queue is full ({{num}}} items), been waiting 5 sec", {"num": len(self.queue)})
         return self
 
     def extend(self, values):
@@ -95,8 +97,12 @@ class Queue(object):
                 self.queue.extend(values)
             while self.keep_running and len(self.queue) > self.max:
                 if not self.silent:
-                    from ..env.logs import Log
-                    Log.warning("Queue is full ({{num}}} items), waiting", {"num": len(self.queue)})
+                    if self.silent:
+                        self.lock.wait()
+                    else:
+                        self.lock.wait(5)
+                        from ..env.logs import Log
+                        Log.warning("Queue is full ({{num}}} items), been waiting 5 sec", {"num": len(self.queue)})
                 self.lock.wait()
 
     def __len__(self):
