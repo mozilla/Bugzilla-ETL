@@ -127,9 +127,9 @@ def get_bugs_table_columns(db, schema_name):
         globals()["bugs_columns"] = columns
 
 
-def get_private_bugs(db, param):
+def get_private_bugs_for_delete(db, param):
     if param.allow_private_bugs:
-        return {0}
+        return {0}  # NO BUGS TO DELETE
 
     try:
         with Timer("get all private bug ids"):
@@ -501,6 +501,7 @@ def get_attachments(db, param):
             , ispatch AS 'attachments_ispatch'
             , isobsolete AS 'attachments_isobsolete'
             , isprivate AS 'attachments_isprivate'
+            , mimetype AS 'attachments_mimetype'
             , attach_id
         FROM
             attachments a

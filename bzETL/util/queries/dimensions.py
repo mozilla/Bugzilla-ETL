@@ -287,7 +287,7 @@ class Dimension(object):
 
 def addParts(parentPart, childPath, count, index):
     """
-    BUILD A HIERARCHY BY REPEATEDLY CALLING self METHOD WITH VARIOUS childPaths
+    BUILD A hierarchy BY REPEATEDLY CALLING self METHOD WITH VARIOUS childPaths
     count IS THE NUMBER FOUND FOR self PATH
     """
     if index == None:

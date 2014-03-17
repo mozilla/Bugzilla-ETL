@@ -23,7 +23,7 @@ class File(object):
     ASSUMES ALL FILE CONTENT IS UTF8 ENCODED STRINGS
     """
 
-    def __init__(self, filename, buffering=2 ** 14):
+    def __init__(self, filename, buffering=2 ** 14, suffix=None):
         """
         YOU MAY SET filename TO {"path":p, "key":k} FOR CRYPTO FILES
         """
@@ -40,6 +40,9 @@ class File(object):
             self._filename = "/".join(filename.path.split(os.sep))  # USE UNIX STANDARD
             self.buffering = buffering
 
+        if suffix:
+            self._filename = File.add_suffix(self._filename, suffix)
+
     @property
     def filename(self):
         return self._filename.replace("/", os.sep)
@@ -48,20 +51,25 @@ class File(object):
     def abspath(self):
         return os.path.abspath(self._filename)
 
+    @staticmethod
+    def add_suffix(filename, suffix):
+        """
+        ADD suffix TO THE filename (NOT INCLUDING THE FILE EXTENSION)
+        """
+        path = filename.split("/")
+        parts = path[-1].split(".")
+        i = max(len(parts)-2, 0)
+        parts[i]=parts[i]+suffix
+        path[-1]=".".join(parts)
+        return "/".join(path)
+
+
     def backup_name(self, timestamp=None):
         """
         RETURN A FILENAME THAT CAN SERVE AS A BACKUP FOR THIS FILE
         """
         suffix = CNV.datetime2string(nvl(timestamp, datetime.now()), "%Y%m%d_%H%M%S")
-        parts = self._filename.split(".")
-        if len(parts) == 1:
-            output = self._filename + "." + suffix
-        elif len(parts) > 1 and parts[-2][-1] == "/":
-            output = self._filename + "." + suffix
-        else:
-            parts.insert(-1, suffix)
-            output = ".".join(parts)
-        return output
+        return File.add_suffix(self._filename, suffix)
 
     def read(self, encoding="utf8"):
         with open(self._filename, "rb") as f:

@@ -326,13 +326,13 @@ def sort(data, fieldnames=None):
                 def comparer(left, right):
                     return cmp(nvl(left, Struct())[fieldnames], nvl(right, Struct())[fieldnames])
 
-                return wrap(sorted(data, cmp=comparer))
+                return StructList([unwrap(d) for d in sorted(data, cmp=comparer)])
             else:
                 #EXPECTING {"field":f, "sort":i} FORMAT
                 def comparer(left, right):
                     return fieldnames["sort"] * cmp(nvl(left, Struct())[fieldnames["field"]], nvl(right, Struct())[fieldnames["field"]])
 
-                return wrap(sorted(data, cmp=comparer))
+                return StructList([unwrap(d) for d in sorted(data, cmp=comparer)])
 
         formal = query._normalize_sort(fieldnames)
 
@@ -349,9 +349,9 @@ def sort(data, fieldnames=None):
             return 0
 
         if isinstance(data, list):
-            output = wrap(sorted(data, cmp=comparer))
+            output = StructList([unwrap(d) for d in sorted(data, cmp=comparer)])
         elif hasattr(data, "__iter__"):
-            output = wrap(sorted(list(data), cmp=comparer))
+            output = StructList([unwrap(d) for d in sorted(list(data), cmp=comparer)])
         else:
             Log.error("Do not know how to handle")
 
@@ -696,11 +696,13 @@ def intervals(_min, _max=None, size=1):
     """
     RETURN (min, max) PAIRS OF GIVEN SIZE, WHICH COVER THE _min, _max RANGE
     THE LAST PAIR MAY BE SMALLER
+    (Yes!  It's just like range(), only cooler!
     """
     if _max == None:
         _max = _min
         _min = 0
     _max = int(Math.ceiling(_max))
+    _min = int(Math.floor(_min))
 
     output = ((x, min(x + size, _max)) for x in __builtin__.range(_min, _max, size))
     return output

@@ -98,6 +98,9 @@ class Cube(object):
             Log.error("can not get value of multi-valued cubes")
         return self.data[self.select.name].cube
 
+    def __float__(self):
+        return self.value
+
     def __lt__(self, other):
         return self.value < other
 
@@ -106,8 +109,13 @@ class Cube(object):
 
     def __eq__(self, other):
         if other == None:
+            if self.value == None:
+                return True
             return False
         return self.value == other
+
+    def __ne__(self, other):
+        return not Cube.__eq__(self, other)
 
     def __add__(self, other):
         return self.value + other

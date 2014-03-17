@@ -199,7 +199,7 @@ class BugHistoryParser():
         #WE FORCE ADD ALL SETS, AND WE WILL scrub() THEM OUT LATER IF NOT USED
         for f in MULTI_FIELDS:
             self.currBugState[f] = set([])
-        self.currBugState.flags = []   #FLAGS ARE MULTI_FIELDS, BUT ARE ALSO STRUCTS, SO MUST BE IN AN ARRAY
+        self.currBugState.flags = StructList()  #FLAGS ARE MULTI_FIELDS, BUT ARE ALSO STRUCTS, SO MUST BE IN AN ARRAY
 
         if row_in._merge_order != 1:
             # Problem: No entry found in the 'bugs' table.
@@ -562,7 +562,7 @@ class BugHistoryParser():
     def processFlagChange(self, target, change, modified_ts, modified_by):
         if target.flags == None:
             Log.note("[Bug {{bug_id}}]: PROBLEM  processFlagChange called with unset 'flags'", {"bug_id": self.currBugState.bug_id})
-            target.flags = []
+            target.flags = StructList()
 
         addedFlags = BugHistoryParser.getMultiFieldValue("flags", change.new_value)
         removedFlags = BugHistoryParser.getMultiFieldValue("flags", change.old_value)

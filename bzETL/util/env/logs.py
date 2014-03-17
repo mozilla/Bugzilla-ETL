@@ -14,6 +14,7 @@ from datetime import datetime
 import sys
 
 from .. import struct
+from ..jsons import json_encoder
 from ..thread import threads
 from ..struct import listwrap, nvl, Struct, wrap
 from ..strings import indent, expand_template
@@ -34,7 +35,7 @@ class Log(object):
     main_log = None
     logging_multi = None
     profiler = None
-
+    error_mode = False  # prevent error loops
 
     @classmethod
     def new_instance(cls, settings):
@@ -110,8 +111,17 @@ class Log(object):
         if cause and not isinstance(cause, Except):
             cause = Except(WARNING, unicode(cause), trace=extract_tb(0))
 
-        e = Except(WARNING, template, params, cause, extract_stack(1))
-        Log.note(unicode(e))
+        trace = extract_stack(1)
+        e = Except(WARNING, template, params, cause, trace)
+        Log.note(unicode(e), {
+            "warning": {
+                "template": template,
+                "params": params,
+                "cause": cause,
+                "trace": trace
+            }
+        })
+
 
     @classmethod
     def error(
@@ -167,7 +177,25 @@ class Log(object):
 
         trace = extract_stack(1 + offset)
         e = Except(ERROR, template, params, cause, trace)
-        sys.stderr.write(str(e))
+        str_e = unicode(e)
+
+        error_mode = cls.error_mode
+        try:
+            if not error_mode:
+                cls.error_mode = True
+                Log.note(str_e, {
+                    "error": {
+                        "template": template,
+                        "params": params,
+                        "cause": cause,
+                        "trace": trace
+                    }
+                })
+        except Exception, f:
+            pass
+        cls.error_mode = error_mode
+
+        sys.stderr.write(str_e)
 
 
     #RUN ME FIRST TO SETUP THE THREADED LOGGING
@@ -177,6 +205,7 @@ class Log(object):
         if not settings:
             return
 
+        cls.settings = settings
         cls.trace = cls.trace | nvl(settings.trace, False)
         if cls.trace:
             from ..thread.threads import Thread
@@ -191,38 +220,21 @@ class Log(object):
             Log.add_log(Log.new_instance(log))
 
         if settings.profile:
-            import cProfile
+            if isinstance(settings.profile, bool):
+                settings.profile = {"enabled":True, "filename":"profile.tab"}
 
-            cls.profiler = cProfile.Profile()
-            cls.profiler.enable()
+            if settings.profile.enabled:
+                import cProfile
+
+                cls.profiler = cProfile.Profile()
+                cls.profiler.enable()
 
 
     @classmethod
     def stop(cls):
         if cls.profiler:
             cls.profiler.disable()
-
-            from ..cnv import CNV
-            from .files import File
-            import pstats
-
-            p = pstats.Stats(cls.profiler)
-            stats = [{
-                "num_calls":d[1],
-                "self_time":d[2],
-                "total_time":d[3],
-                "self_time_per_call":d[2]/d[1],
-                "total_time_per_call":d[3]/d[1],
-                "file":(f[0] if f[0] != "~" else "").replace("\\", "/"),
-                "line":f[1],
-                "method":f[2].lstrip("<").rstrip(">")
-            }
-                for f, d, in p.stats.iteritems()
-            ]
-            CNV.list2tab(stats)
-            filename = "profile "+CNV.datetime2string(datetime.now(), "%Y%m%d-%H%M%S")+".tab"
-            File(filename).write(CNV.list2tab(stats))
-
+            write_profile(cls.settings.profile, cls.profiler)
         cls.main_log.stop()
 
 
@@ -334,6 +346,15 @@ class Except(Exception):
             output += "\ncaused by\n\t" + "\nand caused by\n\t".join([c.__str__() for c in self.cause])
 
         return output + "\n"
+
+    def __json__(self):
+        return json_encoder.encode(Struct(
+            type = self.type,
+            template = self.template,
+            params = self.params,
+            cause = self.cause,
+            trace = self.trace
+        ))
 
 
 class BaseLog(object):
@@ -448,6 +469,35 @@ class Log_usingMulti(BaseLog):
                 pass
 
 
+def write_profile(profile_settings, profiler):
+    from ..cnv import CNV
+    from .files import File
+    import pstats
+
+    p = pstats.Stats(profiler)
+    stats = [{
+            "num_calls": d[1],
+            "self_time": d[2],
+            "total_time": d[3],
+            "self_time_per_call": d[2] / d[1],
+            "total_time_per_call": d[3] / d[1],
+            "file": (f[0] if f[0] != "~" else "").replace("\\", "/"),
+            "line": f[1],
+            "method": f[2].lstrip("<").rstrip(">")
+        }
+        for f, d, in p.stats.iteritems()
+    ]
+    stats_file = File(profile_settings.filename, suffix=CNV.datetime2string(datetime.now(), "_%Y%m%d_%H%M%S"))
+    stats_file.write(CNV.list2tab(stats))
+
+
+
+
+
 if not Log.main_log:
     from log_usingStream import Log_usingStream
     Log.main_log = Log_usingStream("sys.stdout")
+
+
+
+

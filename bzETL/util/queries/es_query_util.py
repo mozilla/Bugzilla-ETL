@@ -41,7 +41,7 @@ def loadColumns(es, frum):
         )
     else:
         if not frum.name:
-            Log.error("Expecting name")
+            Log.error("Expecting from clause to have a name")
 
         if frum.name in INDEX_CACHE:
             return INDEX_CACHE[frum.name]

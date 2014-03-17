@@ -111,6 +111,8 @@
                     "store": "yes"
                 },
                 "attachments": {
+                    "type": "nested",
+                    "dynamic": "strict",
                     "properties": {
                         "attach_id": {
                             "index": "not_analyzed",
@@ -124,6 +126,8 @@
                             "type": "long"
                         },
                         "flags": {
+                            "type": "nested",
+                            "dynamic": "strict",
                             "properties": {
                                 "modified_by": {
                                     "index": "not_analyzed",
@@ -166,10 +170,7 @@
                                 "duration_days": {
                                     "type": "integer"
                                 }
-                            },
-                            "index_name": "flag",
-                            "type": "nested",
-                            "dynamic": "strict"
+                            }
                         },
                         "modified_by": {
                             "index": "not_analyzed",
@@ -178,41 +179,40 @@
                         "modified_ts": {
                             "type": "long"
                         },
-                        "attachments.ispatch": {
+                        "attachments\\.ispatch": {
                             "type": "boolean"
-                        },
-                        "attachments.isobsolete": {
-                            "type": "boolean"
-                        },
-                        "attachments.isprivate": {
-                            "type": "boolean"
-                        },
-                        "attachments_description": {
-                            "enabled": false,
-                            "type": "string"
-                        },
-                        "attachments_mimetype": {
-                            "enabled": false,
-                            "type": "string"
-                        },
-                        "attachments_filename": {
-                            "enabled": false,
-                            "type": "string"
                         },
                         "ispatch": {
+                            "type": "boolean"
+                        },
+                        "attachments\\.isobsolete": {
                             "type": "boolean"
                         },
                         "isobsolete": {
                             "type": "boolean"
                         },
+                        "attachments\\.isprivate": {
+                            "type": "boolean"
+                        },
                         "isprivate": {
                             "type": "boolean"
+                        },
+                        "attachments\\.mimetype": {
+                            "type": "boolean"
+                        },
+                        "mimetype": {
+                            "enabled": false,
+                            "type": "string"
+                        },
+                        "attachments\\.description": {
+                            "enabled": false,
+                            "type": "string"
                         },
                         "description": {
                             "enabled": false,
                             "type": "string"
                         },
-                        "mimetype": {
+                        "attachments\\.filename": {
                             "enabled": false,
                             "type": "string"
                         },
@@ -223,9 +223,7 @@
                         "previous_values": {
                             "type": "object"
                         }
-                    },
-                    "type": "nested",
-                    "dynamic": "strict"
+                    }
                 },
                 "blocked": {
                     "index_name": "blocked_by",

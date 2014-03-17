@@ -128,6 +128,9 @@ class Matrix(object):
             return [self.cube].__iter__()
         return _iter(self.cube, self.num)
 
+    def __float__(self):
+        return self.value
+
     def groupby(self, io_select):
         """
         SLICE THIS MATRIX INTO ONES WITH LESS DIMENSIONALITY

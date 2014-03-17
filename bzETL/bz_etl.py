@@ -11,7 +11,7 @@
 # REPLACES THE KETTLE FLOW CONTROL PROGRAM, AND BASH SCRIPT
 
 
-import gc
+
 from bzETL.util.maths import Math
 from bzETL.util import struct, jsons
 from bzETL.util.env.logs import Log
@@ -26,7 +26,7 @@ from bzETL.util.sql.db import DB
 
 from bzETL import parse_bug_history, transform_bugzilla, extract_bugzilla, alias_analysis
 from bzETL.util.times.timer import Timer
-from extract_bugzilla import get_private_bugs, get_recent_private_attachments, get_recent_private_comments, get_comments, get_comments_by_id, get_recent_private_bugs, get_current_time, get_bugs, get_dependencies, get_flags, get_new_activities, get_bug_see_also, get_attachments, get_tracking_flags, get_keywords, get_cc, get_bug_groups, get_duplicates
+from extract_bugzilla import get_private_bugs_for_delete, get_recent_private_attachments, get_recent_private_comments, get_comments, get_comments_by_id, get_recent_private_bugs, get_current_time, get_bugs, get_dependencies, get_flags, get_new_activities, get_bug_see_also, get_attachments, get_tracking_flags, get_keywords, get_cc, get_bug_groups, get_duplicates
 from parse_bug_history import BugHistoryParser
 
 
@@ -62,8 +62,9 @@ def etl_comments(db, es, param, please_stop):
         Log.note("Read comments from database")
         comments = get_comments(comment_db_cache[0], param)
 
-    with Timer("Write {{num}} comments to ElasticSearch", {"num": len(comments)}):
-        es.extend({"id": c.comment_id, "value": c} for c in comments)
+    for g, c in Q.groupby(comments, size=500):
+        with Timer("Write {{num}} comments to ElasticSearch", {"num": len(c)}):
+            es.extend({"id": cc.comment_id, "value": cc} for cc in c)
 
 
 def etl(db, output_queue, param, please_stop):
@@ -136,15 +137,16 @@ def setup_es(settings, db, es, es_comments):
             current_run_time = long(File(settings.param.first_run_time).read())
             if not es:
                 if not settings.es.alias:
+                    temp = ElasticSearch(settings.es).get_proto(settings.es.index)
                     settings.es.alias = settings.es.index
-                    temp = ElasticSearch(settings.es).get_proto(settings.es.alias)
-                    settings.es.index = temp[-1]
+                    settings.es.index = temp.last()
                 es = ElasticSearch(settings.es)
-                es.set_refresh_interval(1)
+                es.set_refresh_interval(1)  #REQUIRED SO WE CAN SEE WHAT BUGS HAVE BEEN LOADED ALREADY
 
                 if not settings.es_comments.alias:
+                    temp = ElasticSearch(settings.es_comments).get_proto(settings.es_comments.index)
                     settings.es_comments.alias = settings.es_comments.index
-                    settings.es_comments.index = ElasticSearch(settings.es_comments).get_proto(settings.es_comments.alias)[-1]
+                    settings.es_comments.index = temp.last()
                 es_comments = ElasticSearch(settings.es_comments)
         except Exception, e:
             Log.warning("can not resume ETL, restarting", e)
@@ -157,8 +159,8 @@ def setup_es(settings, db, es, es_comments):
             # BUG VERSIONS
             schema = File(settings.es.schema_file).read()
             if transform_bugzilla.USE_ATTACHMENTS_DOT:
-                schema = schema.replace("attachments_", "attachments.")
-            schema=CNV.JSON2object(schema)
+                schema = schema.replace("attachments_", "attachments\\.")
+            schema=CNV.JSON2object(schema, paths=True)
             schema.settings=jsons.expand_dot(schema.settings)
             if not settings.es.alias:
                 settings.es.alias = settings.es.index
@@ -167,7 +169,7 @@ def setup_es(settings, db, es, es_comments):
 
             # BUG COMMENTS
             comment_schema = File(settings.es_comments.schema_file).read()
-            comment_schema=CNV.JSON2object(comment_schema)
+            comment_schema=CNV.JSON2object(comment_schema, paths=True)
             comment_schema.settings=jsons.expand_dot(comment_schema.settings)
             if not settings.es_comments.alias:
                 settings.es_comments.alias = settings.es_comments.index
@@ -186,7 +188,8 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
     ####################################################################
 
     #REMOVE PRIVATE BUGS
-    private_bugs = get_private_bugs(db, param)
+    private_bugs = get_private_bugs_for_delete(db, param)
+    Log.note("Ensure the following private bugs are deleted:\n{{private_bugs|indent}}", {"private_bugs": private_bugs})
     for g, delete_bugs in Q.groupby(private_bugs, size=1000):
         still_existing = get_bug_ids(es, {"terms": {"bug_id": delete_bugs}})
         if still_existing:
@@ -236,7 +239,7 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
     es_comments.extend({"id": c.comment_id, "value": c} for c in changed_comments)
 
     #GET LIST OF CHANGED BUGS
-    with Timer("time to get bug list"):
+    with Timer("time to get changed bug list"):
         if param.allow_private_bugs:
             bug_list = Q.select(db.query("""
                 SELECT
@@ -293,22 +296,14 @@ def full_etl(resume_from_last_run, settings, param, db, es, es_comments, output_
 
         #TWO WORKERS IS MORE THAN ENOUGH FOR A SINGLE THREAD
         # with Multithread([run_both_etl, run_both_etl]) as workers:
-        for b in range(start, end, settings.param.increment):
-            if settings.args.quick and b < end - settings.param.increment and b != 0:
+        for min, max in Q.intervals(start, end, settings.param.increment):
+            if settings.args.quick and min < end - settings.param.increment and min != 0:
                 #--quick ONLY DOES FIRST AND LAST BLOCKS
                 continue
 
-            # WITHOUT gc.collect() PYPY MEMORY USAGE GROWS UNTIL 2gig LIMIT IS HIT AND CRASH
-            # WITH THIS LINE IT SEEMS TO TOP OUT AT 1.2gig
-            #UPDATE 2013 OCT 30: SOMETIMES THERE IS A MEMORY EXPLOSION, SOMETIMES NOT
-            #UPDATE 2013 NOV 25: THE MEMORY PROBLEM MAY BE THAT THE DATA SINK (ES) IS NOT FAST ENOUGH
-            #                    TO ACCEPT THE RECORDS GENERATED.  (MAYBE INDEXING IS ON?)
-            #                    MITIGATED WITH Thread(max=) TO SLOW DOWN DATA SOURCE
-            gc.collect()
-            (min, max) = (b, b + settings.param.increment)
             try:
                 #GET LIST OF CHANGED BUGS
-                with Timer("time to get bug list"):
+                with Timer("time to get {{min}}..{{max}} bug list", {"min":min, "max":max}):
                     if param.allow_private_bugs:
                         bug_list = Q.select(db.query("""
                             SELECT
@@ -370,7 +365,7 @@ def main(settings, es=None, es_comments=None):
         with DB(settings.bugzilla, readonly=True) as db:
             current_run_time, es, es_comments, last_run_time = setup_es(settings, db, es, es_comments)
 
-            with ThreadedQueue(es, size=1000) as output_queue:
+            with ThreadedQueue(es, size=500, silent=True) as output_queue:
                 #SETUP RUN PARAMETERS
                 param = Struct()
                 param.end_time = CNV.datetime2milli(get_current_time(db))
@@ -383,9 +378,11 @@ def main(settings, es=None, es_comments=None):
                 param.allow_private_bugs = settings.param.allow_private_bugs
 
                 if last_run_time > 0:
-                    incremental_etl(settings, param, db, es, es_comments, output_queue)
+                    with Timer("run incremental etl"):
+                        incremental_etl(settings, param, db, es, es_comments, output_queue)
                 else:
-                    full_etl(resume_from_last_run, settings, param, db, es, es_comments, output_queue)
+                    with Timer("run full etl"):
+                        full_etl(resume_from_last_run, settings, param, db, es, es_comments, output_queue)
 
                 output_queue.add(Thread.STOP)
 

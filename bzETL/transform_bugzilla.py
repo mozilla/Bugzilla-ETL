@@ -1,6 +1,6 @@
 # encoding: utf-8
 #
-from datetime import datetime, date
+from datetime import date
 import re
 from bzETL.util.cnv import CNV
 from bzETL.util.env.elasticsearch import ElasticSearch

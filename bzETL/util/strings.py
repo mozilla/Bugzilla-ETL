@@ -44,6 +44,10 @@ def newline(value):
     return "\n" + toString(value).lstrip("\n")
 
 
+def quote(value):
+    return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+
+
 def indent(value, prefix=u"\t", indent=None):
     if indent != None:
         prefix = prefix * indent
@@ -143,7 +147,7 @@ def _expand(template, seq):
     elif isinstance(template, list):
         return "".join(_expand(t, seq) for t in template)
     else:
-        from ...env.logs import Log
+        from .env.logs import Log
 
         Log.error("can not handle")
 
@@ -178,19 +182,24 @@ def _simple_expand(template, seq):
                     return val
             except Exception, f:
                 from .env.logs import Log
-                val = toString(val)
-                Log.error(u"Can not expand " + "|".join(ops) + u" in template:\n" + indent(template), e)
+
+                Log.warning("Can not expand " + "|".join(ops) + " in template: {{template}}", {
+                    "template": template
+                }, e)
+        return "[template expansion error: ("+str(e.message)+")]"
 
     return pattern.sub(replacer, template)
 
 
 def toString(val):
     if val == None:
-        return u""
+        return ""
     elif isinstance(val, (dict, list, set)):
         from .jsons import json_encoder
 
         return json_encoder.encode(val, pretty=True)
+    elif hasattr(val, "__json__"):
+        return val.__json__()
     elif isinstance(val, timedelta):
         duration = val.total_seconds()
         return unicode(round(duration, 3))+" seconds"

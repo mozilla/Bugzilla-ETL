@@ -27,7 +27,12 @@ def open_test_instance(name, settings):
             "host": settings.host,
             "type": name
         })
-        return ElasticSearch(settings)
+
+        ElasticSearch.delete_index(settings)
+
+        schema = CNV.JSON2object(File(settings.schema_file).read(), flexible=True, paths=True)
+        es = ElasticSearch.create_index(settings, schema, limit_replicas=True)
+        return es
 
 
 
