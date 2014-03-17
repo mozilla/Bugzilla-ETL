@@ -26,14 +26,16 @@
         "port": "9200",
         "index": "public_bugs",
         "type": "bug_version",
-        "schema_file": "./resources/json/bug_version.json"
+        "schema_file": "./resources/json/bug_version.json",
+        "timeout":60
     },
     "es_comments": {
         "host": "http://localhost",
         "port": "9200",
         "index": "public_comments",
         "type": "bug_comment",
-        "schema_file": "./resources/json/bug_comments.json"
+        "schema_file": "./resources/json/bug_comments.json",
+        "timeout":60
     },
     "debug": {
         "trace": true,

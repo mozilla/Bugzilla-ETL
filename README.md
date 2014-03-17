@@ -15,7 +15,7 @@ Requirements
   * PyPy >= 2.1.0 using Python 2.7  (PyPy version must have fix https://bugs.pypy.org/issue1392 (applied June2013))
   * A MySQL/Maria database with Mozilla's Bugzilla schema ([old public version can be found here](http://people.mozilla.com/~mhoye/bugzilla/))
   * A timezone database ([instructions](./tests/resources/mySQL/README.md))
-  * An ElasticSearch (v 0.20.5) cluster to hold the bug version documents
+  * An ElasticSearch (v 0.90) cluster to hold the bug version documents
 
 Installation
 ------------
@@ -83,7 +83,7 @@ Asuming your ```settings.json``` file is in ```~/Bugzilla_ETL```:
 Use ```--help``` for more options, and see [example command line script](resources/scripts/bz_etl.bat)
 
 Got it working?
---------------
+---------------
 
 The initial ETL will take over two hours.  If you want something
 quicker to confirm your configuration is correct, use ```--reset
@@ -108,6 +108,7 @@ The Git clone will include test code.  You can run those tests, but you must...
 
   * Have MySQL installed (no Bugzilla schema required)
   * Have timezone database installed ([instructions](./tests/resources/mySQL/README.md))
+  * Have an ElasticSearch (v 0.90) cluster to hold the test results
   * A complete ```test_settings.json``` file to point to the resources ([example](./resources/settings/test_settings.json))
   * Use pypy for 4x the speed: ```pypy .\tests\test_etl.py --settings=test_settings.json```
 
