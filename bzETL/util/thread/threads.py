@@ -10,8 +10,8 @@
 from __future__ import unicode_literals
 
 from datetime import datetime, timedelta
-import threading
 import thread
+import threading
 import time
 import sys
 from ..struct import nvl, Struct
