@@ -12,6 +12,8 @@ from types import NoneType, GeneratorType
 
 _get = object.__getattribute__
 
+DEBUG = True
+
 
 class Struct(dict):
     """
@@ -21,6 +23,12 @@ class Struct(dict):
     1) the IDE does tab completion, and my spelling mistakes get found at "compile time"
     2) it deals with missing keys gracefully, so I can put it into set operations (database
        operations) without choking
+       a = wrap({})
+       > a == {}
+       a.b is Null
+       > True
+       a.b.c == None
+       > True
     2b) missing keys is important when dealing with JSON, which is often almost anything
     3) you can access paths as a variable:   a["b.c"]==a.b.c
     4) you can set paths to values, missing objects along the path are created:
@@ -60,7 +68,7 @@ class Struct(dict):
 
     def __str__(self):
         try:
-            return dict.__str__(_get(self, "__dict__"))
+            return "Struct("+dict.__str__(_get(self, "__dict__"))+")"
         except Exception, e:
             return "{}"
 
@@ -71,13 +79,15 @@ class Struct(dict):
         d = _get(self, "__dict__")
 
         if key.find(".") >= 0:
-            key = key.replace("\.", "\a")
-            seq = [k.replace("\a", ".") for k in key.split(".")]
+            seq = split_field(key)
             for n in seq:
                 d = _getdefault(d, n)
             return wrap(d)
 
-        return getdefaultwrapped(d, key)
+        o = d.get(key, None)
+        if o == None:
+            return NullType(d, key)
+        return wrap(o)
 
     def __setitem__(self, key, value):
         if key == "":
@@ -97,8 +107,7 @@ class Struct(dict):
                     d[key] = value
                 return self
 
-            key = key.replace("\.", "\a")
-            seq = [k.replace("\a", ".") for k in key.split(".")]
+            seq = split_field(key)
             for k in seq[:-1]:
                 d = _getdefault(d, k)
             if value == None:
@@ -195,8 +204,7 @@ class Struct(dict):
             return
 
         d = _get(self, "__dict__")
-        key = key.replace("\.", "\a")
-        seq = [k.replace("\a", ".") for k in key.split(".")]
+        seq = split_field(key)
         for k in seq[:-1]:
             d = d[k]
         d.pop(seq[-1], None)
@@ -272,12 +280,6 @@ def _getdefault(obj, key):
         return obj[key]
     except Exception, e:
         return NullType(obj, key)
-
-def getdefaultwrapped(obj, key):
-    o = obj.get(key, None)
-    if o == None:
-        return NullType(obj, key)
-    return wrap(o)
 
 
 def _assign(null, key, value, force=True):
@@ -393,8 +395,7 @@ class NullType(object):
                 _assign(self, key, value)
                 return self
 
-            key = key.replace("\.", "\a")
-            seq = [k.replace("\a", ".") for k in key.split(".")]
+            seq = split_field(key)
             d = _assign(self, seq[0], {}, False)
             for k in seq[1:-1]:
                 o = {}
@@ -574,18 +575,19 @@ def wrap(v):
     elif type is StructList:
         return v
     elif type is list:
-        for sv in v:
-            # IN PRACTICE WE DO NOT EXPECT TO GO THROUGH THIS LIST, IF ANY ARE WRAPPED, THE FIRST IS PROBABLY WRAPPED
-            # WARNING!  THIS IS VERY SLOW
-            if sv is not unwrap(sv):
-                #MUST KEEP THE LIST
-                temp = [unwrap(sv) for sv in v]
-                del v[:]
-                v.extend(temp)
-                # from .env.logs import Log
+        if DEBUG:
+            for sv in v:
+                # IN PRACTICE WE DO NOT EXPECT TO GO THROUGH THIS LIST, IF ANY ARE WRAPPED, THE FIRST IS PROBABLY WRAPPED
+                # WARNING!  THIS IS VERY SLOW
+                if isinstance(sv, (Struct, StructList)):
+                    #MUST KEEP THE LIST
+                    temp = [unwrap(sv) for sv in v]
+                    del v[:]
+                    v.extend(temp)
+                    from .env.logs import Log
 
-                # Log.warning("Please unwrap members of list before wrapping list.  Fixed for now.")
-                return StructList(v)
+                    Log.warning("Please unwrap members of list before wrapping list.  Fixed for now.")
+                    return StructList(v)
         return StructList(v)
     elif type is GeneratorType:
         return (wrap(vv) for vv in v)
@@ -680,15 +682,35 @@ def literal_field(field):
     """
     return field.replace(".", "\.")
 
-def split_field(field):
+def cpython_split_field(field):
     """
     RETURN field AS ARRAY OF DOT-SEPARATED FIELDS
     """
     if field.find(".") >= 0:
         field = field.replace("\.", "\a")
-        return [k.replace("\a", "\.") for k in field.split(".")]
+        return [k.replace("\a", ".") for k in field.split(".")]
     else:
         return [field]
+
+def pypy_split_field(field):
+    """
+    RETURN field AS ARRAY OF DOT-SEPARATED FIELDS
+    """
+    output = []
+    start = 0
+    for e, c in enumerate(field):
+        if c == ".":
+            if output[e - 1] != "\\":
+                output.append(field[start:e - 1].replace("\.", "."))
+                start = e + 1
+    output.append(field[start:e])
+    return output
+
+# try:
+#     import __pypy__
+#     split_field = pypy_split_field
+# except ImportError:
+split_field = cpython_split_field
 
 
 def join_field(field):
@@ -706,18 +728,4 @@ def hash_value(v):
     else:
         return hash(tuple(sorted(hash_value(vv) for vv in v.values())))
 
-
-
-def deeper_than(depth):
-    """
-    RETURN TRUE IF DEEPER THAN depth
-    """
-    import sys
-
-    while True:
-        try:
-            sys._getframe(depth)
-            return True
-        except ValueError:
-            return False
 

@@ -233,7 +233,7 @@ def saveAliases(settings):
         file = File(settings.param.alias_file)
         file.write(alias_json)
 
-        Log.note("{{num}} of {{total}} aliases saved", {
+        Log.note("Aliases saved: {{num}} of {{total}}", {
             "num": len(compressed.keys()),
             "total": len(aliases.keys())
         })

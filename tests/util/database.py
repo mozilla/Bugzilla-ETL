@@ -28,17 +28,6 @@ def make_test_instance(db_settings):
             Log.note("Fill {{schema}} schema with data", {"schema":db_settings.schema})
             DB.execute_file(db_settings, db_settings.filename)
 
-            #ADD MISSING TABLES
-            with DB(db_settings) as db:
-                db.execute("""
-                CREATE TABLE `longdescs_tags` (
-                  `id` mediumint(9) NOT NULL AUTO_INCREMENT,
-                  `comment_id` int(11) DEFAULT NULL,
-                  `tag` varchar(24) NOT NULL,
-                  PRIMARY KEY (`id`),
-                  UNIQUE KEY `longdescs_tags_idx` (`comment_id`,`tag`),
-                  CONSTRAINT `fk_longdescs_tags_comment_id_longdescs_comment_id` FOREIGN KEY (`comment_id`) REFERENCES `longdescs` (`comment_id`) ON DELETE CASCADE ON UPDATE CASCADE
-                ) DEFAULT CHARSET=utf8""")
         except Exception, e:
             Log.error("Can not setup test database", e)
 

@@ -189,11 +189,11 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
 
     #REMOVE PRIVATE BUGS
     private_bugs = get_private_bugs_for_delete(db, param)
-    Log.note("Ensure the following private bugs are deleted:\n{{private_bugs|indent}}", {"private_bugs": private_bugs})
+    Log.note("Ensure the following private bugs are deleted:\n{{private_bugs|indent}}", {"private_bugs": sorted(private_bugs)})
     for g, delete_bugs in Q.groupby(private_bugs, size=1000):
         still_existing = get_bug_ids(es, {"terms": {"bug_id": delete_bugs}})
         if still_existing:
-            Log.note("Ensure the following private bugs are deleted:\n{{private_bugs|indent}}", {"private_bugs": still_existing})
+            Log.note("Ensure the following existing private bugs are deleted:\n{{private_bugs|indent}}", {"private_bugs": sorted(still_existing)})
         es.delete_record({"terms": {"bug_id": delete_bugs}})
         es_comments.delete_record({"terms": {"bug_id": delete_bugs}})
 
@@ -230,6 +230,7 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
             Log.error("Problem with etl using parameters {{parameters}}", {
                 "parameters": refresh_param
             }, e)
+
 
     #REFRESH COMMENTS WITH PRIVACY CHANGE
     private_comments = get_recent_private_comments(db, param)

@@ -134,7 +134,7 @@ def get_private_bugs_for_delete(db, param):
     try:
         with Timer("get all private bug ids"):
             private_bugs = db.query("SELECT DISTINCT bug_id FROM bug_group_map")
-            return sorted(set(private_bugs.bug_id) | {0})
+            return set(private_bugs.bug_id) | {0}
     except Exception, e:
         Log.error("problem getting private bugs", e)
 

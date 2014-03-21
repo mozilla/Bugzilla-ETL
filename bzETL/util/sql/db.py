@@ -356,17 +356,19 @@ class DB(object):
             "-p{0}".format(settings.password),
             "{0}".format(settings.schema)
         ]
-
-        proc = subprocess.Popen(
-            args,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            bufsize=-1
-        )
-        if isinstance(sql, unicode):
-            sql = sql.encode("utf8")
-        (output, _) = proc.communicate(sql)
+        try:
+            proc = subprocess.Popen(
+                args,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                bufsize=-1
+            )
+            if isinstance(sql, unicode):
+                sql = sql.encode("utf8")
+            (output, _) = proc.communicate(sql)
+        except Exception, e:
+            Log.error("Can not call \"mysql\"", e)
 
         if proc.returncode:
             if len(sql) > 10000:

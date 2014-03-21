@@ -127,6 +127,12 @@ you may either
 1.  run ```bz_etl.py``` with the ```--reset--``` flag directly, or
 2.  remove the ```first_run_time``` file (and the next cron event will tigger a full ETL)
 
+Submitting Bugs
+---------------
+
+We use Bugzilla for tracking bugs.  If you want to submit a bug or feature
+request, please [add a dependency to BZ ETL Metabug](https://bugzilla.mozilla.org/showdependencytree.cgi?id=959670&hide_resolved=0)
+
 
 More on ElasticSearch
 ---------------------

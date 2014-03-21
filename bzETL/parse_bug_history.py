@@ -42,7 +42,7 @@ import math
 from bzETL.util import struct, strings
 from bzETL.util.collections import MIN
 from bzETL.util.strings import apply_diff
-from bzETL.util.struct import nvl, StructList
+from bzETL.util.struct import nvl, StructList, unwrap, wrap
 from bzETL.util.cnv import CNV
 from bzETL.util.env.logs import Log
 from bzETL.util.queries import Q
@@ -251,7 +251,7 @@ class BugHistoryParser():
                 "modified_ts": row_in.modified_ts,
                 "created_ts": row_in.created_ts,
                 "modified_by": row_in.modified_by,
-                "flags": []
+                "flags": StructList()
             }
             self.currBugAttachmentsMap[unicode(row_in.attach_id)] = att
 
@@ -608,11 +608,11 @@ class BugHistoryParser():
 
             added_flag = self.makeFlag(flagStr, modified_ts, modified_by)
 
-            candidates = [element for element in target.flags if
+            candidates = wrap([unwrap(element) for element in target.flags if
                           element["value"] == None    #SPECIAL INDICATOR
                           and added_flag["request_type"] == element["request_type"]
                           and added_flag["request_status"] != element["previous_status"] # Skip "r?(dre@mozilla)" -> "r?(mark@mozilla)"
-            ]
+            ])
 
             if not candidates:
                 # No matching candidate. Totally new flag.
@@ -930,7 +930,12 @@ class BugHistoryParser():
 
             found = self.findFlag(total, flag)
             if found:
-                total = [a for a in total if tuple(a.items()) != tuple(found.items())]  # COMPARE DICTS
+                before=len(total)
+                total.remove(found)
+                after = len(total)
+                if before != after+1:
+                    Log.error("")
+                # total = wrap([unwrap(a) for a in total if tuple(a.items()) != tuple(found.items())])  # COMPARE DICTS
                 added_values.append(found)
             else:
                 Log.note("[Bug {{bug_id}}]: PROBLEM Unable to find {{type}} FLAG: {{object}}.{{field_name}}: (All {{missing}}" + " not in : {{existing}})", {
