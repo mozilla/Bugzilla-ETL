@@ -41,6 +41,10 @@ class ElasticSearch(object):
 
     """
     def __init__(self, settings=None):
+        """
+        settings.explore_metadata == True - IF PROBING THE CLUSTER FOR METATDATA IS ALLOWED
+        """
+
         if settings is None:
             self.debug = DEBUG
             return
@@ -49,6 +53,7 @@ class ElasticSearch(object):
         assert settings.host
         assert settings.index
         assert settings.type
+        settings.setdefault("explore_metadata", True)
 
         if settings.index == settings.alias:
             Log.error("must have a unique index name")
@@ -57,10 +62,14 @@ class ElasticSearch(object):
             settings.port = 9200
         self.debug = nvl(settings.debug, DEBUG)
         self.settings = settings
-        index = self.get_index(settings.index)
-        if index:
-            settings.alias = settings.index
-            settings.index = index
+        try:
+            index = self.get_index(settings.index)
+            if index:
+                settings.alias = settings.index
+                settings.index = index
+        except Exception, e:
+            # EXPLORING (get_metadata()) IS NOT ALLOWED ON THE PUBLIC CLUSTER
+            pass
 
         self.path = settings.host + ":" + unicode(settings.port) + "/" + settings.index + "/" + settings.type
 
@@ -124,18 +133,29 @@ class ElasticSearch(object):
         return wrap(output)
 
     def get_metadata(self):
-        if not self.cluster_metadata:
-            response = self.get(self.settings.host + ":" + unicode(self.settings.port) + "/_cluster/state")
-            self.cluster_metadata = response.metadata
-            self.node_metatdata = self.get(self.settings.host + ":" + unicode(self.settings.port) + "/")
+        if self.settings.explore_metadata:
+            if not self.cluster_metadata:
+                response = self.get(self.settings.host + ":" + unicode(self.settings.port) + "/_cluster/state")
+                self.cluster_metadata = response.metadata
+                self.node_metatdata = self.get(self.settings.host + ":" + unicode(self.settings.port) + "/")
+        else:
+            Log.error("Metadata exploration has been disabled")
         return self.cluster_metadata
 
+
     def get_schema(self):
-        indices = self.get_metadata().indices
-        index = indices[self.settings.index]
-        if not index.mappings[self.settings.type]:
-            Log.error("{{index}} does not have type {{type}}", self.settings)
-        return index.mappings[self.settings.type]
+        if self.settings.explore_metadata:
+            indices = self.get_metadata().indices
+            index = indices[self.settings.index]
+            if not index.mappings[self.settings.type]:
+                Log.error("{{index}} does not have type {{type}}", self.settings)
+            return index.mappings[self.settings.type]
+        else:
+            mapping = self.get(self.settings.host + ":" + unicode(self.settings.port) + "/" + self.settings.index +"/" + self.settings.type + "/_mapping")
+            if not mapping[self.settings.type]:
+                Log.error("{{index}} does not have type {{type}}", self.settings)
+            return wrap({"mappings":mapping[self.settings.type]})
+
 
     #DELETE ALL INDEXES WITH GIVEN PREFIX, EXCEPT name
     def delete_all_but(self, prefix, name):

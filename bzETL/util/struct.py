@@ -663,7 +663,7 @@ def listwrap(value):
     elif isinstance(value, list):
         return wrap(value)
     else:
-        return wrap([value])
+        return wrap([unwrap(value)])
 
 
 def tuplewrap(value):

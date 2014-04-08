@@ -11,6 +11,7 @@
 
 from datetime import datetime, timedelta
 from bzETL.util.collections import MIN
+from bzETL.util.queries.es_query import ESQuery
 from bzETL.util.struct import nvl
 from bzETL.util.thread.threads import ThreadedQueue
 from bzETL.util.times.timer import Timer
@@ -81,25 +82,47 @@ def get_last_updated(es):
 
 def get_pending(es, since):
     result = es.search({
-        "query": {"filtered": {
-            "query": {"match_all": {}},
-            "filter": {
-            "range": {"modified_ts": {"gte": CNV.datetime2milli(since)}}}
-        }},
+        "query": {"match_all": {}},
         "from": 0,
         "size": 0,
         "sort": [],
-        "facets": {"default": {"terms": {"field": "bug_id", "size": 200000}}}
+        "facets": {"default": {"statistical": {"field": "bug_id"}}}
     })
 
-    if len(result.facets.default.terms) >= 200000:
-        Log.error("Can not handle more than 200K bugs changed")
+    max_bug = int(result.facets.default.max)
 
-    pending_bugs = Multiset(
-        result.facets.default.terms,
-        key_field="term",
-        count_field="count"
-    )
+
+    pending_bugs = None
+
+    for s, e in Q.intervals(0, max_bug+1, 100000):
+        Log.note("Collect history for bugs from {{start}}..{{end}}", {"start":s, "end":e})
+        result = es.search({
+            "query": {"filtered": {
+                "query": {"match_all": {}},
+                "filter": {"and":[
+                    {"range": {"modified_ts": {"gte": CNV.datetime2milli(since)}}},
+                    {"range": {"bug_id": {"gte": s, "lte": e}}}
+                ]}
+            }},
+            "from": 0,
+            "size": 0,
+            "sort": [],
+            "facets": {"default": {"terms": {"field": "bug_id", "size": 200000}}}
+        })
+
+        temp = Multiset(
+            result.facets.default.terms,
+            key_field="term",
+            count_field="count"
+        )
+
+        if pending_bugs is None:
+            pending_bugs = temp
+        else:
+            pending_bugs = pending_bugs + temp
+
+
+
     Log.note("Source has {{num}} bug versions for updating", {
         "num": len(pending_bugs)
     })
@@ -112,10 +135,10 @@ def get_or_create_index(destination_settings, source):
     es = ElasticSearch(destination_settings)
     aliases = es.get_aliases()
 
-    indexes = [a for a in aliases if a.alias == destination_settings.index]
+    indexes = [a for a in aliases if a.alias == destination_settings.index or a.index == destination_settings.index]
     if not indexes:
         #CREATE INDEX
-        schema = source.get_schema()
+        schema = CNV.JSON2object(File(destination_settings.schema_file).read(), paths=True)
         assert schema.settings
         assert schema.mappings
         ElasticSearch.create_index(destination_settings, schema, limit_replicas=True)
@@ -186,8 +209,8 @@ def main(settings):
     from_file = None
     if time_file.exists:
         from_file = CNV.milli2datetime(CNV.value2int(time_file.read()))
-    from_es = get_last_updated(destination)
-    last_updated = nvl(MIN(from_file, from_es), CNV.milli2datetime(0))
+    from_es = get_last_updated(destination) - timedelta(hours=1)
+    last_updated = MIN(nvl(from_file, CNV.milli2datetime(0)), from_es)
     current_time = datetime.utcnow()
 
     pending = get_pending(source, last_updated)

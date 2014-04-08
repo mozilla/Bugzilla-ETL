@@ -605,7 +605,7 @@ def drill_filter(esfilter, data):
 
     if not max:
         #SIMPLE LIST AS RESULT
-        return wrap([u[0] for u in uniform_output])
+        return wrap([unwrap(u[0]) for u in uniform_output])
 
     return FlatList(primary_column[0:max], uniform_output)
 

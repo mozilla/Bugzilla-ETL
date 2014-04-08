@@ -109,8 +109,13 @@ class _Multiset(Multiset):
 
     def __add__(self, other):
         output = self.copy()
-        for o in other:
-            output.add(o)
+
+        if isinstance(other, Multiset):
+            for k, c in other.dic.items():
+                output.dic[k] = output.dic.get(k, 0) + c
+        else:
+            for o in other:
+                output.add(o)
         return output
 
     def __set__(self, other):
