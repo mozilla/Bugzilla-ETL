@@ -65,6 +65,15 @@ class ElasticSearch(object):
         self.path = settings.host + ":" + unicode(settings.port) + "/" + settings.index + "/" + settings.type
 
 
+    @staticmethod
+    def get_or_create_index(settings, schema, limit_replicas=False):
+        es = ElasticSearch(settings)
+        aliases = es.get_aliases()
+        if settings.index not in [a.index for a in aliases]:
+            schema = CNV.JSON2object(CNV.object2JSON(schema), paths=True)
+            es = ElasticSearch.create_index(settings, schema, limit_replicas=limit_replicas)
+        return es
+
 
     @staticmethod
     def create_index(settings, schema, limit_replicas=False):

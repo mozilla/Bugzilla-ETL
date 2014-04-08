@@ -103,7 +103,7 @@ def unique_index(data, keys=None):
 
 def map2set(data, relation):
     """
-    EXPECTING A dict THAT MAPS VALUES TO lists
+    EXPECTING A isinstance(relation, dict) THAT MAPS VALUES TO lists
     THE LISTS ARE EXPECTED TO POINT TO MEMBERS OF A SET
     A set() IS RETURNED
     """

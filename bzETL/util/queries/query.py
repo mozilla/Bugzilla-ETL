@@ -15,7 +15,7 @@ from ..collections import AND, reverse
 from ..env.logs import Log
 from ..queries import MVEL
 from ..queries.filters import TRUE_FILTER, simplify
-from ..struct import nvl, Struct, EmptyList, wrap, split_field, join_field, StructList
+from ..struct import nvl, Struct, EmptyList, wrap, split_field, join_field, StructList, unwrap
 from .es_query_util import INDEX_CACHE
 
 
@@ -39,7 +39,7 @@ class Query(object):
 
         select = query.select
         if isinstance(select, list):
-            select = wrap([_normalize_select(s, schema=schema) for s in select])
+            select = wrap([unwrap(_normalize_select(s, schema=schema)) for s in select])
         elif select:
             select = _normalize_select(select, schema=schema)
         else:

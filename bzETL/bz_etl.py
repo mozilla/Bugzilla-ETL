@@ -270,7 +270,7 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
     if not bug_list:
         return
 
-    with Thread.run("alias analysis", alias_analysis.main, settings=settings, bug_list=bug_list):
+    with Thread.run("alias analysis", alias_analysis.full_analysis, settings=settings, bug_list=bug_list):
         Log.note("Updating {{num}} bugs:\n{{bug_list|indent}}", {
             "num": len(bug_list),
             "bug_list": bug_list
@@ -285,7 +285,7 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
 
 
 def full_etl(resume_from_last_run, settings, param, db, es, es_comments, output_queue):
-    with Thread.run("alias_analysis", alias_analysis.main, settings=settings):
+    with Thread.run("alias_analysis", alias_analysis.full_analysis, settings=settings):
         end = nvl(settings.param.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
         start = nvl(settings.param.start, 0)
         if resume_from_last_run:
