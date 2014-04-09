@@ -67,12 +67,12 @@ def get_last_updated(es):
             "from": 0,
             "size": 0,
             "sort": [],
-            "facets": {"0": {"statistical": {"field": "modified_ts"}}}
+            "facets": {"modified_ts": {"statistical": {"field": "modified_ts"}}}
         })
 
-        if results.facets["0"].count == 0:
-            return datetime.min
-        return CNV.milli2datetime(results.facets["0"].max)
+        if results.facets.modified_ts.count == 0:
+            return CNV.milli2datetime(0)
+        return CNV.milli2datetime(results.facets.modified_ts.max)
     except Exception, e:
         Log.error("Can not get_last_updated from {{host}}/{{index}}",{
             "host": es.settings.host,
