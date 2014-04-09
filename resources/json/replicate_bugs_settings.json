@@ -14,7 +14,7 @@
             "schema_file":"./resources/json/bug_version.json"
 		},
 		"param":{
-			"last_replication_time":"./results/data/last_replication_time.txt"
+			"last_replication_time":"./results/data/last_bug_replication_time.txt"
 		},
 		"debug":{
 			"log":[{
