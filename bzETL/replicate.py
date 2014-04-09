@@ -25,6 +25,15 @@ from bzETL.util.collections.multiset import Multiset
 from bzETL.util.env.elasticsearch import ElasticSearch
 
 
+# REPLICATION
+#
+# Replication has a few benefits:
+# 1) The slave can have scripting enabled, allowing more powerful set of queries
+# 2) Physical proximity increases the probability of reduced latency
+# 3) The slave can be configured with better hardware
+# 4) The slave's exclusivity increases availability (Mozilla's public cluster my have time of high load)
+
+
 far_back = datetime.utcnow() - timedelta(weeks=52)
 BATCH_SIZE = 1000
 
@@ -145,7 +154,7 @@ def get_or_create_index(destination_settings, source):
     elif len(indexes) > 1:
         Log.error("do not know how to replicate to more than one index")
     elif indexes[0].alias != None:
-        destination_settings.alias = destination_settings.index
+        destination_settings.alias = indexes[0].alias
         destination_settings.index = indexes[0].index
 
     return ElasticSearch(destination_settings)
