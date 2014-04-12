@@ -66,11 +66,8 @@ def extract_from_file(source_settings, destination):
 
 def get_last_updated(es):
 
-    try:
-        if es.file:
-            return CNV.milli2datetime(0)
-    except Exception, e:
-        Log.warning("file not used", e)
+    if not isinstance(es, ElasticSearch):
+        return CNV.milli2datetime(0)
 
     try:
         results = es.search({
