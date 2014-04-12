@@ -70,7 +70,7 @@ def get_last_updated(es):
         if es.file:
             return CNV.milli2datetime(0)
     except Exception, e:
-        pass
+        Log.warning("file not used", e)
 
     try:
         results = es.search({
