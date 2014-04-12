@@ -12,7 +12,7 @@
 from datetime import datetime, timedelta
 from bzETL.util.collections import MIN
 from bzETL.util.queries.es_query import ESQuery
-from bzETL.util.struct import nvl
+from bzETL.util.struct import nvl, Struct
 from bzETL.util.thread.threads import ThreadedQueue
 from bzETL.util.times.timer import Timer
 import transform_bugzilla
@@ -66,7 +66,7 @@ def extract_from_file(source_settings, destination):
 
 def get_last_updated(es):
 
-    if isinstance(es, File):
+    if es.file:
         return CNV.milli2datetime(0)
 
     try:
@@ -221,7 +221,11 @@ def main(settings):
 
     # USE A DESTINATION FILE
     if settings.destination.filename:
-        destination = File(settings.destination.filename)
+        file = File(settings.destination.filename)
+        destination = Struct(
+            extend=lambda x: file.extend(x.map(CNV.object2JSON)),
+            file=file
+        )
     else:
         destination=get_or_create_index(settings["destination"], source)
 
