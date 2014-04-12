@@ -224,9 +224,10 @@ def main(settings):
 
     # USE A DESTINATION FILE
     if settings.destination.filename:
+        Log.note("Sending records to file: {{filename}}", {"filename":settings.destination.filename})
         file = File(settings.destination.filename)
         destination = Struct(
-            extend=lambda x: file.extend([CNV.object2JSON(v.value) for v in x]),
+            extend=lambda x: file.extend([CNV.object2JSON(v["value"]) for v in x]),
             file=file
         )
     else:
