@@ -74,7 +74,7 @@ groupby = group_by.groupby
 
 def index(data, keys=None):
 #return dict that uses keys to index data
-    o = Index(listwrap(keys))
+    o = Index(keys)
     for d in data:
         o.add(d)
     return o

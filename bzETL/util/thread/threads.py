@@ -95,8 +95,7 @@ class Queue(object):
 
     def extend(self, values):
         with self.lock:
-            if self.keep_running:
-                self.queue.extend(values)
+            # ONCE THE queue IS BELOW LIMIT, ALLOW ADDING MORE
             while self.keep_running and len(self.queue) > self.max:
                 if self.silent:
                     self.lock.wait()
@@ -105,6 +104,8 @@ class Queue(object):
                     if len(self.queue) > self.max:
                         from ..env.logs import Log
                         Log.warning("Queue is full ({{num}}} items), been waiting 5 sec", {"num": len(self.queue)})
+            if self.keep_running:
+                self.queue.extend(values)
 
     def __len__(self):
         with self.lock:

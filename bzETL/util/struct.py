@@ -282,22 +282,35 @@ def _getdefault(obj, key):
         return NullType(obj, key)
 
 
-def _assign(null, key, value, force=True):
+def _assign(obj, path, value, force=True):
     """
-    value IS ONLY ASSIGNED IF self.obj[self.path][key] DOES NOT EXIST
+    value IS ASSIGNED TO obj[self.path][key]
+    force=False IF YOU PREFER TO use setDefault()
     """
-    d = _get(null, "__dict__")
-    o = d["obj"]
-    if isinstance(o, NullType):
-        o = _assign(o, d["path"], {}, False)
-    else:
-        o = _setdefault(o, d["path"], {})
+    if isinstance(obj, NullType):
+        d = _get(obj, "__dict__")
+        o = d["obj"]
+        p = d["path"]
+        s = split_field(p)+path
+        return _assign(o, s, value)
 
-    if force:
-        o[key] = value
-    else:
-        value = _setdefault(o, key, value)
-    return value
+    path0 = path[0]
+
+    if len(path) == 1:
+        if force:
+            obj[path0] = value
+        else:
+            _setdefault(obj, path0, value)
+        return
+
+    old_value = obj.get(path0, None)
+    if old_value == None:
+        if value == None:
+            return
+        else:
+            old_value = {}
+            obj[path0] = old_value
+    _assign(old_value, path[1:], value)
 
 
 class NullType(object):
@@ -305,6 +318,8 @@ class NullType(object):
     Structural Null provides closure under the dot (.) operator
         Null[x] == Null
         Null.x == Null
+
+    Null INSTANCES WILL TRACK THE
     """
 
     def __init__(self, obj=None, path=None):
@@ -390,19 +405,12 @@ class NullType(object):
 
     def __setitem__(self, key, value):
         try:
-            value = unwrap(value)
-            if key.find(".") == -1:
-                _assign(self, key, value)
-                return self
+            d = _get(self, "__dict__")
+            o = d["obj"]
+            path = d["path"]
+            seq = split_field(path)+split_field(key)
 
-            seq = split_field(key)
-            d = _assign(self, seq[0], {}, False)
-            for k in seq[1:-1]:
-                o = {}
-                d[k] = o
-                d = o
-            d[seq[-1]] = value
-            return self
+            _assign(o, seq, value)
         except Exception, e:
             raise e
 
@@ -554,6 +562,13 @@ class StructList(list):
             return wrap(_get(self, "list")[-1])
         return Null
 
+    def map(self, oper, includeNone=True):
+        if includeNone:
+            return StructList([oper(v) for v in _get(self, "list")])
+        else:
+            return StructList([oper(v) for v in _get(self, "list") if v != None])
+
+
     def __getattribute__(self, key):
         try:
             if key != "index":
@@ -671,8 +686,8 @@ def tuplewrap(value):
     INTENDED TO TURN lists INTO tuples FOR USE AS KEYS
     """
     if isinstance(value, (list, tuple, GeneratorType)):
-        return tuple(tuplewrap(v) for v in value)
-    return unwrap(value)
+        return tuple(tuplewrap(v) if isinstance(v, (list, tuple, GeneratorType)) else v for v in value)
+    return unwrap(value),
 
 
 
@@ -696,14 +711,29 @@ def pypy_split_field(field):
     """
     RETURN field AS ARRAY OF DOT-SEPARATED FIELDS
     """
+    from dz2es.util.jsons import UnicodeBuilder
+
+    if not field:
+        return []
+
     output = []
-    start = 0
-    for e, c in enumerate(field):
-        if c == ".":
-            if output[e - 1] != "\\":
-                output.append(field[start:e - 1].replace("\.", "."))
-                start = e + 1
-    output.append(field[start:e])
+    curr = UnicodeBuilder()
+    i = 0
+    while i < len(field):
+        c = field[i]
+        i += 1
+        if c == "\\":
+            c = field[i]
+            i += 1
+            if c == ".":
+                curr.append(".")
+            else:
+                curr.append("\\")
+                curr.append(c)
+        elif c == ".":
+            output.append(curr.build())
+            curr = UnicodeBuilder()
+    output.append(curr.build())
     return output
 
 # try:

@@ -65,6 +65,10 @@ def extract_from_file(source_settings, destination):
 
 
 def get_last_updated(es):
+
+    if isinstance(es, File):
+        return CNV.milli2datetime(0)
+
     try:
         results = es.search({
             "query": {"filtered": {
@@ -192,7 +196,9 @@ def replicate(source, destination, pending, last_updated):
 
 
 def main(settings):
-    #USE A FILE
+    current_time = datetime.utcnow()
+
+    #USE A SOURCE FILE
     if settings.source.filename != None:
         settings.destination.alias = settings.destination.index
         settings.destination.index = ElasticSearch.proto_name(settings.destination.alias)
@@ -211,7 +217,13 @@ def main(settings):
 
     # SYNCH WITH source ES INDEX
     source=ElasticSearch(settings.source)
-    destination=get_or_create_index(settings["destination"], source)
+
+
+    # USE A DESTINATION FILE
+    if settings.destination.filename:
+        destination = File(settings.destination.filename)
+    else:
+        destination=get_or_create_index(settings["destination"], source)
 
     # GET LAST UPDATED
     time_file = File(settings.param.last_replication_time)
@@ -220,7 +232,7 @@ def main(settings):
         from_file = CNV.milli2datetime(CNV.value2int(time_file.read()))
     from_es = get_last_updated(destination) - timedelta(hours=1)
     last_updated = MIN(nvl(from_file, CNV.milli2datetime(0)), from_es)
-    current_time = datetime.utcnow()
+    Log.note("updating records with modified_ts>={{last_updated}}", {"last_updated":last_updated})
 
     pending = get_pending(source, last_updated)
     with ThreadedQueue(destination, size=1000) as data_sink:

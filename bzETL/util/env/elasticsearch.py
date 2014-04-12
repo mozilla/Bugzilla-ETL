@@ -308,10 +308,10 @@ class ElasticSearch(object):
             data="{\"index.refresh_interval\":\"" + interval + "\"}"
         )
 
-        result = CNV.JSON2object(response.content)
+        result = CNV.JSON2object(response.content.decode("utf-8"))
         if not result.ok:
             Log.error("Can not set refresh interval ({{error}})", {
-                "error": response.content
+                "error": response.content.decode("utf-8")
             })
 
     def search(self, query):
@@ -349,8 +349,8 @@ class ElasticSearch(object):
             kwargs = unwrap(kwargs)
             response = requests.post(*args, **kwargs)
             if self.debug:
-                Log.note(response.content[:130])
-            details = CNV.JSON2object(response.content)
+                Log.note(response.content.decode("utf-8")[:130])
+            details = CNV.JSON2object(response.content.decode("utf-8"))
             if details.error:
                 Log.error(CNV.quote2string(details.error))
             if details._shards.failed > 0:
@@ -373,8 +373,8 @@ class ElasticSearch(object):
             kwargs.setdefault("timeout", 600)
             response = requests.get(*args, **kwargs)
             if self.debug:
-                Log.note(response.content[:130])
-            details = wrap(CNV.JSON2object(response.content))
+                Log.note(response.content.decode("utf-8")[:130])
+            details = wrap(CNV.JSON2object(response.content.decode("utf-8")))
             if details.error:
                 Log.error(details.error)
             return details
@@ -387,7 +387,7 @@ class ElasticSearch(object):
             kwargs.setdefault("timeout", 30)
             response = requests.put(*args, **kwargs)
             if self.debug:
-                Log.note(response.content)
+                Log.note(response.content.decode("utf-8"))
             return response
         except Exception, e:
             Log.error("Problem with call to {{url}}", {"url": args[0]}, e)
@@ -397,7 +397,7 @@ class ElasticSearch(object):
             kwargs.setdefault("timeout", 30)
             response = requests.delete(*args, **kwargs)
             if self.debug:
-                Log.note(response.content)
+                Log.note(response.content.decode("utf-8"))
             return response
         except Exception, e:
             Log.error("Problem with call to {{url}}", {"url": args[0]}, e)

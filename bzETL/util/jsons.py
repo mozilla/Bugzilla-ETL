@@ -21,6 +21,8 @@ import sys
 from .collections import AND, MAX
 from .struct import Struct, StructList
 
+json_decoder = json.JSONDecoder().decode
+
 
 # THIS FILE EXISTS TO SERVE AS A FAST REPLACEMENT FOR JSON ENCODING
 # THE DEFAULT JSON ENCODERS CAN NOT HANDLE A DIVERSITY OF TYPES *AND* BE FAST
@@ -53,31 +55,26 @@ except Exception, e:
 append = UnicodeBuilder.append
 
 
-class PyPyJSONEncoder(object):
+def encode(value, pretty=False):
     """
     pypy DOES NOT OPTIMIZE GENERATOR CODE WELL
     """
+    if pretty:
+        return pretty_json(value)
 
-    def __init__(self):
-        object.__init__(self)
-
-    def encode(self, value, pretty=False):
-        if pretty:
-            return pretty_json(value)
-
+    try:
+        _buffer = UnicodeBuilder(1024)
+        _value2json(value, _buffer)
+        output = _buffer.build()
+        return output
+    except Exception, e:
+        #THE PRETTY JSON WILL PROVIDE MORE DETAIL ABOUT THE SERIALIZATION CONCERNS
+        from .env.logs import Log
+        Log.warning("Serialization of JSON problems", e)
         try:
-            _buffer = UnicodeBuilder(1024)
-            _value2json(value, _buffer)
-            output = _buffer.build()
-            return output
-        except Exception, e:
-            #THE PRETTY JSON WILL PROVIDE MORE DETAIL ABOUT THE SERIALIZATION CONCERNS
-            from .env.logs import Log
-            Log.warning("Serialization of JSON problems", e)
-            try:
-                pretty_json(value)
-            except Exception, f:
-                Log.error("problem serializing object", f)
+            pretty_json(value)
+        except Exception, f:
+            Log.error("problem serializing object", f)
 
 
 class cPythonJSONEncoder(object):
@@ -104,17 +101,6 @@ class cPythonJSONEncoder(object):
             return pretty_json(value)
 
         return unicode(self.encoder.encode(json_scrub(value)))
-
-
-# OH HUM, cPython with uJSON, OR pypy WITH BUILTIN JSON?
-# http://liangnuren.wordpress.com/2012/08/13/python-json-performance/
-# http://morepypy.blogspot.ca/2011/10/speeding-up-json-encoding-in-pypy.html
-if use_pypy:
-    json_encoder = PyPyJSONEncoder()
-    json_decoder = json._default_decoder
-else:
-    json_encoder = cPythonJSONEncoder()
-    json_decoder = json._default_decoder
 
 
 def _value2json(value, _buffer):
@@ -358,11 +344,11 @@ def pretty_json(value):
             j = value.__json__()
             if j == None:
                 return "   null   "  # TODO: FIND OUT WHAT CAUSES THIS
-            return pretty_json(json_decoder.decode(j))
+            return pretty_json(json_decoder(j))
         elif hasattr(value, '__iter__'):
             return pretty_json(list(value))
         else:
-            return json_encoder.encode(value)
+            return json_encoder(value)
 
     except Exception, e:
         from .env.logs import Log
@@ -411,3 +397,14 @@ def datetime2milli(d):
         return long(diff.total_seconds()) * 1000L + long(diff.microseconds / 1000)
     except Exception, e:
         raise Exception("Can not convert "+repr(d)+" to json", e)
+
+
+
+
+# OH HUM, cPython with uJSON, OR pypy WITH BUILTIN JSON?
+# http://liangnuren.wordpress.com/2012/08/13/python-json-performance/
+# http://morepypy.blogspot.ca/2011/10/speeding-up-json-encoding-in-pypy.html
+if use_pypy:
+    json_encoder = encode
+else:
+    json_encoder = cPythonJSONEncoder().encode

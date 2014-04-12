@@ -14,6 +14,7 @@ from datetime import datetime
 import sys
 
 from .. import struct
+from ..env import profiles
 from ..jsons import json_encoder
 from ..thread import threads
 from ..struct import listwrap, nvl, Struct, wrap
@@ -224,17 +225,13 @@ class Log(object):
                 settings.profile = {"enabled":True, "filename":"profile.tab"}
 
             if settings.profile.enabled:
-                import cProfile
-
-                cls.profiler = cProfile.Profile()
-                cls.profiler.enable()
+                profiles.ON=True
 
 
     @classmethod
     def stop(cls):
-        if cls.profiler:
-            cls.profiler.disable()
-            write_profile(cls.settings.profile, cls.profiler)
+        if profiles.ON and hasattr(cls, "settings"):
+            profiles.write(cls.settings.profile)
         cls.main_log.stop()
 
 
