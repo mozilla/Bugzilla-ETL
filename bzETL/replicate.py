@@ -226,7 +226,7 @@ def main(settings):
     if settings.destination.filename:
         file = File(settings.destination.filename)
         destination = Struct(
-            extend=lambda x: file.extend(map(CNV.object2JSON, x)),
+            extend=lambda x: file.extend(map(CNV.object2JSON, x.value)),
             file=file
         )
     else:
