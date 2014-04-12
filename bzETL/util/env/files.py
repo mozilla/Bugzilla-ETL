@@ -135,7 +135,11 @@ class File(object):
             self.parent.create()
         with open(self._filename, "a") as output_file:
             for c in content:
-                output_file.write(c)
+                if isinstance(c, str):
+                    from .logs import Log
+                    Log.error("expecting to write unicode only")
+
+                output_file.write(c.encode("utf-8"))
 
 
     def delete(self):
