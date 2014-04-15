@@ -13,7 +13,7 @@ from ..cnv import CNV
 from ..collections import UNION
 from .index import UniqueIndex
 from ..env.logs import Log
-from ..struct import Struct, nvl, wrap, unwrap
+from ..struct import Struct, nvl, wrap, unwrap, StructList
 
 
 ALGEBRAIC = {"time", "duration", "numeric", "count", "datetime"}  # DOMAINS THAT HAVE ALGEBRAIC OPERATIONS DEFINED
@@ -107,7 +107,7 @@ class DefaultDomain(Domain):
         Domain.__init__(self, **desc)
 
         self.NULL = Struct(value=None)
-        self.partitions = []
+        self.partitions = StructList()
         self.map = dict()
         self.map[None] = self.NULL
 
@@ -151,7 +151,7 @@ class SetDomain(Domain):
         desc = wrap(desc)
 
         self.NULL = Struct(value=None)
-        self.partitions = []
+        self.partitions = StructList()
         if desc.partitions and isinstance(desc.partitions[0][desc.key], dict):
             keys = UNION(set(d[desc.key].keys()) for d in desc.partitions)
             self.map = UniqueIndex(keys=keys)

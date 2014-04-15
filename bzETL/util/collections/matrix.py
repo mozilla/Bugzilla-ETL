@@ -124,9 +124,10 @@ class Matrix(object):
         return other / self.value
 
     def __iter__(self):
-        if self.num == 0:
-            return [self.cube].__iter__()
-        return _iter(self.cube, self.num)
+        def output():
+            for c in self._all_combos():
+                yield self[c]
+        return output()
 
     def __float__(self):
         return self.value
@@ -147,8 +148,14 @@ class Matrix(object):
             acc *= d
 
         if not new_dim:
-            output = [[None, None] for i in range(acc)]
-            _stack(self.cube, 0, offsets, 0, output, tuple())
+            # WHEN groupby ALL DIMENSIONS, ONLY THE VALUES REMAIN
+            # RETURN AN ITERATOR OF PAIRS (c, v), WHERE
+            # c - COORDINATES INTO THE CUBE
+            # v - VALUE AT GIVEN COORDINATES
+            def output():
+                for c in self._all_combos():
+                    yield c, self[c]
+            return output()
         else:
             output = [[None, Matrix(new_dim)] for i in range(acc)]
             _groupby(self.cube, 0, offsets, 0, output, tuple(), [])
@@ -161,6 +168,38 @@ class Matrix(object):
             Log.error("Aggregate of type {{type}} is not supported yet", {"type": type})
 
         return func(self.num, self.cube)
+
+
+    def forall(self, method):
+        """
+        IT IS EXPECTED THE method ACCEPTS (value, coord, cube), WHERE
+        value - VALUE FOUND AT ELEMENT
+        coord - THE COORDINATES OF THE ELEMENT (PLEASE, READ ONLY)
+        cube - THE WHOLE CUBE, FOR USE IN WINDOW FUNCTIONS
+        """
+        for c in self._all_combos():
+            method(self[c], c, self.cube)
+
+
+    def _all_combos(self):
+        """
+        RETURN AN ITERATOR OF ALL COORDINATES
+        """
+        num = self.num
+        dim = self.dims
+        c = [0]*num  # THE CORRECT SIZE
+
+        while True:
+            yield c
+
+            for i in range(num-1, -1, -1):
+                c[i] += 1
+                if c[i] < dim[i]:
+                    break
+                c[i] = 0
+            else:
+                break
+
 
     def __str__(self):
         return "Matrix " + CNV.object2JSON(self.dims) + ": " + str(self.cube)
@@ -232,17 +271,4 @@ def _groupby(cube, depth, intervals, offset, output, group, new_coord):
         for i, c in enumerate(cube):
             _groupby(c, depth + 1, intervals, offset, output, group + (-1, ), new_coord + [i])
 
-
-def _stack(cube, depth, intervals, offset, output, group):
-    """
-    WHEN groupby ALL DIMENSIONS, ONLY THE VALUES REMAIN
-    """
-    if depth == len(intervals):
-        output[offset][0] = group
-        output[offset][1] = cube
-        return
-
-    interval = intervals[depth]
-    for i, c in enumerate(cube):
-        _stack(c, depth + 1, intervals, offset + i * interval, output, group + (i, ))
 

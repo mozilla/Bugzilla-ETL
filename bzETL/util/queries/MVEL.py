@@ -70,7 +70,7 @@ class _MVEL(object):
     def frum(self, fromPath, indexName, loopVariablePrefix):
         """
         indexName NAME USED TO REFER TO HIGH LEVEL DOCUMENT
-        loopVariablePrefix PREFIX FOR LOOP VARABLES
+        loopVariablePrefix PREFIX FOR LOOP VARIABLES
         """
         loopCode = "if (<PATH> != null){ for(<VAR> : <PATH>){\n<CODE>\n}}\n"
         self.prefixMap = []
@@ -147,17 +147,23 @@ class _MVEL(object):
     def Parts2Term(self, domain):
         term = []
 
-        if len(split_field(self.fromData.name))==1 and domain.dimension and domain.dimension.fields:
+        if len(split_field(self.fromData.name))==1 and domain.dimension.fields:
             #NO LOOPS BECAUSE QUERY IS SHALLOW
             #DOMAIN IS FROM A DIMENSION, USE IT'S FIELD DEFS TO PULL
-            for f in domain.dimension.fields:
-                term.append('getDocValue('+CNV.string2quote(f)+').replace("\\\\", "\\\\\\\\").replace(".", "\\\\.")')
-            expr = '+"."+'.join(term)
+            if len(domain.dimension.fields) == 1:
+                return Struct(
+                    head="",
+                    body='getDocValue('+CNV.string2quote(domain.dimension.fields[0])+')'
+                )
+            else:
+                for f in domain.dimension.fields:
+                    term.append('Value2Pipe(getDocValue('+CNV.string2quote(f)+'))')
 
-            return Struct(
-                head="",
-                body=expr
-            )
+
+                return Struct(
+                    head="",
+                    body='+"|"+'.join(term)
+                )
         else:
             for v in domain.partitions:
                 term.append("if (" + _where(v.esfilter, lambda x: self._translate(x)) + ") " + value2MVEL(domain.getKey(v)) + "; else ")

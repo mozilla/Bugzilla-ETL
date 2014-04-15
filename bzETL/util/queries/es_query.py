@@ -10,7 +10,6 @@
 from __future__ import unicode_literals
 
 from ..cnv import CNV
-from ..env.elasticsearch import ElasticSearch
 from ..queries import MVEL
 from ..queries.es_query_aggop import is_aggop, es_aggop
 from ..queries.es_query_setop import is_fieldop, is_setop, is_deep, es_setop, es_deepop, es_fieldop
@@ -22,7 +21,7 @@ from ..queries.dimensions import Dimension
 from ..queries.query import Query, _normalize_where
 from ..env.logs import Log
 from ..queries.MVEL import _MVEL
-from ..struct import Struct, split_field, wrap, listwrap
+from ..struct import Struct, split_field, wrap, listwrap, StructList
 
 
 class ESQuery(object):
@@ -61,12 +60,14 @@ class ESQuery(object):
         elif is_terms(query):
             return es_terms(self.es, mvel, query)
         elif is_terms_stats(query):
-            return es_terms_stats(self.es, mvel, query)
+            return es_terms_stats(self, mvel, query)
 
         Log.error("Can not handle")
 
 
     def addDimension(self, dim):
+        if isinstance(dim, list):
+            Log.error("Expecting dimension to be a object, not a list:\n{{dim}}", {"dim":dim})
         self._addDimension(dim, [])
 
     def _addDimension(self, dim, path):
@@ -104,7 +105,7 @@ class ESQuery(object):
             "size": 200000
         })
 
-        scripts = []
+        scripts = StructList()
         for k, v in command.set.items():
             if not MVEL.isKeyword(k):
                 Log.error("Only support simple paths for now")

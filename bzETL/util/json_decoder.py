@@ -30,10 +30,9 @@ def decode(json):
     INEVITABLE JSON OUTPUT
     """
     var = ""
-    curr = []
+    curr = StructList()
     mode = ARRAY
-    stack = []
-
+    stack = StructList()
     # FIRST PASS SIMPLY GETS STRUCTURE
     i = 0
     while i < len(json):

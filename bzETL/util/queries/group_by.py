@@ -49,8 +49,8 @@ def groupby(data, keys=None, size=None, min_size=None, max_size=None, contiguous
             if not data:
                 return wrap([])
 
-            agg = []
-            acc = []
+            agg = StructList()
+            acc = StructList()
             curr_key = value2hash(data[0])
             for d in data:
                 key = value2hash(d)
@@ -88,10 +88,9 @@ def groupby_size(data, size):
     else:
         Log.error("do not know how to handle this type")
 
-    done = []
-
+    done = StructList()
     def more():
-        output = []
+        output = StructList()
         for i in range(size):
             try:
                 output.append(iterator.next())
@@ -153,13 +152,13 @@ def groupby_min_max_size(data, min_size=0, max_size=None, ):
     elif hasattr(data, "__iter__"):
         def _iter():
             g = 0
-            out = []
+            out = StructList()
             for i, d in enumerate(data):
                 out.append(d)
                 if (i + 1) % max_size == 0:
                     yield g, out
                     g += 1
-                    out = []
+                    out = StructList()
             if out:
                 yield g, out
 

@@ -115,17 +115,25 @@ class File(object):
         #http://stackoverflow.com/questions/8009882/how-to-read-large-file-line-by-line-in-python
         #http://effbot.org/zone/wide-finder.htm
         def output():
-            with io.open(self._filename, "rb") as f:
-                for line in f:
-                    yield line.decode("utf8")
+            try:
+                with io.open(self._filename, "rb") as f:
+                    for line in f:
+                        yield line.decode("utf8")
+            except Exception, e:
+                from .logs import Log
+                Log.error("Can not read line from {{filename}}", {"filename": self._filename}, e)
 
         return output()
 
     def append(self, content):
         if not self.parent.exists:
             self.parent.create()
-        with open(self._filename, "a") as output_file:
-            output_file.write(content)
+        with open(self._filename, "ab") as output_file:
+            if isinstance(content, str):
+                from .logs import Log
+                Log.error("expecting to write unicode only")
+            output_file.write(content.encode("utf-8"))
+            output_file.write(b"\n")
 
     def add(self, content):
         return self.append(content)
@@ -133,13 +141,14 @@ class File(object):
     def extend(self, content):
         if not self.parent.exists:
             self.parent.create()
-        with open(self._filename, "a") as output_file:
+        with open(self._filename, "ab") as output_file:
             for c in content:
                 if isinstance(c, str):
                     from .logs import Log
                     Log.error("expecting to write unicode only")
 
                 output_file.write(c.encode("utf-8"))
+                output_file.write(b"\n")
 
 
     def delete(self):

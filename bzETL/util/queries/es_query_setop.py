@@ -18,7 +18,7 @@ from ..queries.filters import simplify, TRUE_FILTER
 from ..env.logs import Log
 from ..queries import MVEL, filters
 from ..queries.cube import Cube
-from ..struct import split_field, unwrap, nvl, join_field
+from ..struct import split_field, unwrap, nvl, StructList
 
 
 def is_fieldop(query):
@@ -59,7 +59,7 @@ def es_fieldop(es, query):
         }
     }
     esQuery.size = nvl(query.limit, 200000)
-    esQuery.fields = []
+    esQuery.fields = StructList()
     for s in select.value:
         if s == "*":
             esQuery.fields = None
@@ -216,8 +216,7 @@ def es_deepop(es, mvel, query):
 
     temp_query = query.copy()
     temp_query.select = select
-    temp_query.edges = []
-
+    temp_query.edges = StructList()
     esQuery.facets.mvel = {
         "terms": {
             "script_field": mvel.code(temp_query),

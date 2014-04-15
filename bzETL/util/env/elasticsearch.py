@@ -148,7 +148,7 @@ class ElasticSearch(object):
             indices = self.get_metadata().indices
             index = indices[self.settings.index]
             if not index.mappings[self.settings.type]:
-                Log.error("{{index}} does not have type {{type}}", self.settings)
+                Log.error("ElasticSearch index ({{index}}) does not have type ({{type}})", self.settings)
             return index.mappings[self.settings.type]
         else:
             mapping = self.get(self.settings.host + ":" + unicode(self.settings.port) + "/" + self.settings.index +"/" + self.settings.type + "/_mapping")

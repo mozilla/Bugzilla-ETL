@@ -43,8 +43,7 @@ class Query(object):
         elif select:
             select = _normalize_select(select, schema=schema)
         else:
-            select = []
-
+            select = StructList()
         self.select2index = {}  # MAP FROM NAME TO data INDEX
         for i, s in enumerate(struct.listwrap(select)):
             self.select2index[s.name] = i
@@ -95,7 +94,7 @@ def _normalize_select(select, schema=None):
     else:
         if not select.name:
             select = select.copy()
-            select.name = select.value
+            select.name = nvl(select.value, select.aggregate)
 
         select.aggregate = nvl(select.aggregate, "none")
         return select
@@ -185,7 +184,7 @@ def _map_term_using_schema(master, where, schema):
     """
     IF THE WHERE CLAUSE REFERS TO FIELDS IN THE SCHEMA, THEN EXPAND THEM
     """
-    output = []
+    output = StructList()
     for k, v in where.term.items():
         dimension = schema.edges[k]
         if dimension:
@@ -280,7 +279,7 @@ def _where_terms(master, where, schema):
             return output
         elif where.terms:
             #MAP TERM
-            output = []
+            output = StructList()
             for k, v in where.terms.items():
                 if schema.edges[k]:
                     domain = schema.edges[k].getDomain()
@@ -305,7 +304,7 @@ def _where_terms(master, where, schema):
                 output.append({"terms": {k: v}})
             return {"and": output}
         elif where["and"] or where["or"]:
-            return {k: [_where_terms(master, vv, schema) for vv in v] for k, v in where.items()}
+            return {k: [unwrap(_where_terms(master, vv, schema)) for vv in v] for k, v in where.items()}
     return where
 
 
@@ -317,7 +316,7 @@ def _normalize_sort(sort=None):
     if not sort:
         return EmptyList
 
-    output = []
+    output = StructList()
     for s in struct.listwrap(sort):
         if isinstance(s, basestring):
             output.append({"field": s, "sort": 1})

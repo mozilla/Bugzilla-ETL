@@ -312,7 +312,7 @@ class CNV:
             return CNV.value2number(value[1::])
 
         if type != 's' and type != 'a':
-            Log.error("unknown pipe type")
+            Log.error("unknown pipe type ({{type}}) in {{value}}", {"type": type, "value": value})
 
         # EXPECTING MOST STRINGS TO NOT HAVE ESCAPED CHARS
         output = unPipe(value)

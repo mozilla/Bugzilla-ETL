@@ -11,7 +11,7 @@ from __future__ import unicode_literals
 
 from .. import struct
 from ..collections.matrix import Matrix
-from ..collections import COUNT
+from ..collections import COUNT, PRODUCT
 from ..queries import es_query_util
 from ..queries.cube import Cube
 from ..queries.es_query_util import aggregates, buildESQuery, compileEdges2Term
@@ -19,7 +19,7 @@ from ..queries.filters import simplify
 from ..env.logs import Log
 from ..queries import domains, MVEL, filters
 from ..queries.MVEL import UID
-from ..struct import nvl, StructList, wrap
+from ..struct import nvl, StructList, wrap, Struct, unwrap
 
 
 def is_terms_stats(query):
@@ -34,10 +34,10 @@ def is_terms_stats(query):
     return False
 
 
-def es_terms_stats(es, mvel, query):
+def es_terms_stats(esq, mvel, query):
     select = struct.listwrap(query.select)
     facetEdges = []    # EDGES THAT WILL REQUIRE A FACET FOR EACH PART
-    termsEdges = []
+    termsEdges = StructList()
     specialEdge = None
     special_index = -1
 
@@ -77,16 +77,43 @@ def es_terms_stats(es, mvel, query):
         facetEdges.pop(special_index)
         termsEdges.append(specialEdge)
 
-    esQuery = buildESQuery(query)
+    total_facets = PRODUCT(len(f.domain.partitions) for f in facetEdges)*len(select)
+    if total_facets > 100:
+        # WE GOT A PROBLEM, LETS COUNT THE SIZE OF REALITY:
+        counts = esq.query({
+            "from": query.frum,
+            "select": {"aggregate": "count"},
+            "edges": facetEdges,
+            "where": query.where
+        })
+
+        esFacets = []
+
+        def add_facet(value, coord, cube):
+            if value:
+                esFacets.append([e.domain.partitions[coord[i]] for i, e in enumerate(facetEdges)])
+
+        counts["count"].forall(add_facet)
+
+        Log.note("{{theory_count}} theoretical combinations, {{real_count}} actual combos found", {"real_count": len(esFacets), "theory_count":total_facets})
+
+    else:
+        # GENERATE ALL COMBOS
+        esFacets = getAllEdges(facetEdges)
 
     calcTerm = compileEdges2Term(mvel, termsEdges, StructList())
     term2parts = calcTerm.term2parts
 
-    esFacets = getAllEdges(facetEdges)
+    if len(esFacets) * len(select) > 1000:
+        # WE HAVE SOME SERIOUS PERMUTATIONS, WE MUST ISSUE MULTIPLE QUERIES
+        pass
+
+    esQuery = buildESQuery(query)
+
     for s in select:
         for parts in esFacets:
-            condition = []
-            constants = []
+            condition = StructList()
+            constants = StructList()
             name = [s.name]
             for f, fedge in enumerate(facetEdges):
                 name.append(str(parts[f].dataIndex))
@@ -106,11 +133,11 @@ def es_terms_stats(es, mvel, query):
             if condition:
                 esQuery.facets[name].facet_filter = simplify({"and": condition})
 
-    data = es_query_util.post(es, esQuery, query.limit)
+    data = es_query_util.post(esq.es, esQuery, query.limit)
 
     if specialEdge.domain.type not in domains.KNOWN:
         #WE BUILD THE PARTS BASED ON THE RESULTS WE RECEIVED
-        partitions = []
+        partitions = StructList()
         map = {}
         for facetName, parts in data.facets.items():
             for stats in parts.terms:
@@ -183,7 +210,7 @@ def _getAllEdges(facetEdges, edgeDepth):
 
     deeper = _getAllEdges(facetEdges, edgeDepth + 1)
 
-    output = []
+    output = StructList()
     partitions = edge.domain.partitions
     for part in partitions:
         for deep in deeper:

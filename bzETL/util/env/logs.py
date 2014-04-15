@@ -17,7 +17,7 @@ from .. import struct
 from ..env import profiles
 from ..jsons import json_encoder
 from ..thread import threads
-from ..struct import listwrap, nvl, Struct, wrap
+from ..struct import listwrap, nvl, Struct, wrap, StructList
 from ..strings import indent, expand_template
 from ..thread.threads import Thread
 
@@ -304,8 +304,9 @@ def extract_tb(start):
 
 def format_trace(tbs, start=0):
     trace = []
-    for d in tbs[start:]:
-        item = expand_template('at File {{file}}, line {{line}}, in {{method}}\n', d)
+    for d in tbs[start::]:
+        d["file"] = d["file"].replace("/", "\\")
+        item = expand_template('File "{{file}}", line {{line}}, in {{method}}\n', d)
         trace.append(item)
     return "".join(trace)
 
@@ -438,7 +439,6 @@ class Log_usingThread(BaseLog):
 class Log_usingMulti(BaseLog):
     def __init__(self):
         self.many = []
-
     def write(self, template, params):
         for m in self.many:
             try:
@@ -457,7 +457,6 @@ class Log_usingMulti(BaseLog):
 
     def clear_log(self):
         self.many = []
-
     def stop(self):
         for m in self.many:
             try:

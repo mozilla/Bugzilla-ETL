@@ -62,7 +62,7 @@ class FlatList(list):
                 depth = nvl(MIN([i for i, (k, p) in enumerate(zip(keys, self.path)) if k != p]), len(self.path))  # LENGTH OF COMMON PREFIX
                 short_keys = keys[depth:]
 
-                output = []
+                output = StructList()
                 _select1((wrap(d[depth]) for d in self.data), short_keys, 0, output)
                 return output
 

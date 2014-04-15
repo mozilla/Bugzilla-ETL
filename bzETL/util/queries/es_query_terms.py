@@ -16,7 +16,7 @@ from ..queries import es_query_util
 from ..queries.es_query_util import aggregates, buildESQuery, compileEdges2Term
 from ..queries.filters import simplify
 from ..queries.cube import Cube
-from ..struct import wrap
+from ..struct import wrap, nvl
 
 
 def is_terms(query):
@@ -44,7 +44,7 @@ def es_terms(es, mvel, query):
             "terms": {
                 "field": packed_term.field,
                 "script_field": packed_term.expression,
-                "size": query.limit
+                "size": nvl(query.limit, 200000)
             },
             "facet_filter": simplify(query.where)
         }

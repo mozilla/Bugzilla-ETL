@@ -12,7 +12,7 @@ from types import NoneType, GeneratorType
 
 _get = object.__getattribute__
 
-DEBUG = True
+DEBUG = False
 
 
 class Struct(dict):
@@ -57,7 +57,12 @@ class Struct(dict):
         USE wrap() INSTEAD
         """
         dict.__init__(self)
-        object.__setattr__(self, "__dict__", map)  #map IS A COPY OF THE PARAMETERS
+        if DEBUG:
+            d = _get(self, "__dict__")
+            for k, v in map.items():
+                d[literal_field(k)] = unwrap(v)
+        else:
+            object.__setattr__(self, "__dict__", map)
 
     def __bool__(self):
         return True
@@ -71,6 +76,17 @@ class Struct(dict):
             return "Struct("+dict.__str__(_get(self, "__dict__"))+")"
         except Exception, e:
             return "{}"
+
+    def __repr__(self):
+        try:
+            return "Struct("+dict.__repr__(_get(self, "__dict__"))+")"
+        except Exception, e:
+            return "Struct{}"
+
+    def __contains__(self, item):
+        if Struct.__getitem__(self, item):
+            return True
+        return False
 
     def __getitem__(self, key):
         if isinstance(key, str):
@@ -124,8 +140,6 @@ class Struct(dict):
 
         try:
             output = _get(self, key)
-            if key=="__dict__":
-                return output
             return wrap(output)
         except Exception:
             d = _get(self, "__dict__")
@@ -448,7 +462,6 @@ class StructList(list):
     ENCAPSULATES HANDING OF Nulls BY wrapING ALL MEMBERS AS NEEDED
     ENCAPSULATES FLAT SLICES ([::]) FOR USE IN WINDOW FUNCTIONS
     """
-
     def __init__(self, vals=None):
         """ USE THE vals, NOT A COPY """
         # list.__init__(self)
@@ -463,7 +476,7 @@ class StructList(list):
         if isinstance(index, slice):
             # IMPLEMENT FLAT SLICES (for i not in range(0, len(self)): assert self[i]==None)
             if index.step is not None:
-                from ...env.logs import Log
+                from .env.logs import Log
                 Log.error("slice step must be None, do not know how to deal with values")
             length = len(_get(self, "list"))
 
@@ -482,6 +495,15 @@ class StructList(list):
 
     def __setitem__(self, i, y):
         _get(self, "list")[i] = unwrap(y)
+
+    def __getattribute__(self, key):
+        try:
+            if key != "index":  # WE DO NOT WANT TO IMPLEMENT THE index METHOD
+                output = _get(self, key)
+                return output
+        except Exception, e:
+            pass
+        return StructList([v.get(key, None) for v in _get(self, "list")])
 
     def __iter__(self):
         return (wrap(v) for v in _get(self, "list"))
@@ -569,15 +591,6 @@ class StructList(list):
             return StructList([oper(v) for v in _get(self, "list") if v != None])
 
 
-    def __getattribute__(self, key):
-        try:
-            if key != "index":
-                output = _get(self, key)
-                return output
-        except Exception, e:
-            pass
-        return StructList([v.get(key, None) for v in _get(self, "list")])
-
 def wrap(v):
     type = v.__class__
 
@@ -595,13 +608,13 @@ def wrap(v):
                 # IN PRACTICE WE DO NOT EXPECT TO GO THROUGH THIS LIST, IF ANY ARE WRAPPED, THE FIRST IS PROBABLY WRAPPED
                 # WARNING!  THIS IS VERY SLOW
                 if isinstance(sv, (Struct, StructList)):
+                    from .env.logs import Log
+                    Log.warning("Please unwrap members of list before wrapping list.  Fixed for now.")
+
                     #MUST KEEP THE LIST
-                    temp = [unwrap(sv) for sv in v]
+                    temp = [unwrap(ssv) for ssv in v]
                     del v[:]
                     v.extend(temp)
-                    from .env.logs import Log
-
-                    Log.warning("Please unwrap members of list before wrapping list.  Fixed for now.")
                     return StructList(v)
         return StructList(v)
     elif type is GeneratorType:
@@ -615,7 +628,8 @@ def wrap(v):
 def unwrap(v):
     type = v.__class__
     if type is Struct:
-        return _get(v, "__dict__")
+        d = _get(v, "__dict__")
+        return d
     elif type is StructList:
         return v.list
     elif type is NullType:
@@ -685,7 +699,7 @@ def tuplewrap(value):
     """
     INTENDED TO TURN lists INTO tuples FOR USE AS KEYS
     """
-    if isinstance(value, (list, tuple, GeneratorType)):
+    if isinstance(value, (list, set, tuple, GeneratorType)):
         return tuple(tuplewrap(v) if isinstance(v, (list, tuple, GeneratorType)) else v for v in value)
     return unwrap(value),
 
@@ -711,7 +725,7 @@ def pypy_split_field(field):
     """
     RETURN field AS ARRAY OF DOT-SEPARATED FIELDS
     """
-    from dz2es.util.jsons import UnicodeBuilder
+    from .jsons import UnicodeBuilder
 
     if not field:
         return []

@@ -81,9 +81,8 @@ class DBQuery(object):
             if s.aggregate not in aggregates:
                 Log.error("Expecting all columns to have an aggregate: {{select}}", {"select": s})
 
-        selects = []
-        groups = []
-
+        selects = StructList()
+        groups = StructList()
         edges = query.edges
         for e in edges:
             if e.domain.type != "default":
@@ -129,7 +128,7 @@ class DBQuery(object):
 
             # FILL THE DATA CUBE
             maps = [(struct.unwrap(e.domain.map), result[i]) for i, e in enumerate(edges)]
-            cubes = []
+            cubes = StructList()
             for c, s in enumerate(select):
                 data = Matrix(*[len(e.domain.partitions) + (1 if e.allow_nulls else 0) for e in edges])
                 for rownum, value in enumerate(result[c + num_edges]):
@@ -154,7 +153,7 @@ class DBQuery(object):
                 if s.aggregate not in aggregates:
                     Log.error("Expecting all columns to have an aggregate: {{select}}", {"select": s})
 
-            selects = []
+            selects = StructList()
             for s in query.select:
                 selects.append(aggregates[s.aggregate].replace("{{code}}", s.value) + " AS " + self.db.quote_column(s.name))
 
@@ -203,7 +202,7 @@ class DBQuery(object):
         """
         if isinstance(query.select, list):
             # RETURN BORING RESULT SET
-            selects = []
+            selects = StructList()
             for s in listwrap(query.select):
                 if isinstance(s.value, dict):
                     for k, v in s.value.items:

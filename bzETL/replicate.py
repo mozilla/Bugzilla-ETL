@@ -11,8 +11,7 @@
 
 from datetime import datetime, timedelta
 from bzETL.util.collections import MIN
-from bzETL.util.queries.es_query import ESQuery
-from bzETL.util.struct import nvl, Struct, wrap
+from bzETL.util.struct import nvl, Struct
 from bzETL.util.thread.threads import ThreadedQueue
 from bzETL.util.times.timer import Timer
 import transform_bugzilla
@@ -38,30 +37,26 @@ far_back = datetime.utcnow() - timedelta(weeks=52)
 BATCH_SIZE = 1000
 
 
-def fix_json(json):
-    json = json.replace("attachments.", "attachments_")
-    return json.decode('iso-8859-1').encode('utf8')
-
-
 def extract_from_file(source_settings, destination):
-    with File(source_settings.filename) as handle:
-        for g, d in Q.groupby(handle, size=BATCH_SIZE):
-            try:
-                d2 = map(
-                    lambda (x): {"id": x.id, "value": x},
-                    map(
-                        lambda(x): transform_bugzilla.normalize(CNV.JSON2object(fix_json(x))),
-                        d
-                    )
+    file = File(source_settings.filename)
+    for g, d in Q.groupby(file, size=BATCH_SIZE):
+        try:
+            d2 = map(
+                lambda (x): {"id": x.id, "value": x},
+                map(
+                    lambda(x): transform_bugzilla.normalize(CNV.JSON2object(x)),
+                    d
                 )
-                destination.add(d2)
-            except Exception, e:
-                filename = "Error_" + unicode(g) + ".txt"
-                File(filename).write(d)
-                Log.warning("Can not convert block {{block}} (file={{host}})", {
-                    "block": g,
-                    "filename": filename
-                }, e)
+            )
+            Log.note("add {{num}} records", {"num":len(d2)})
+            destination.extend(d2)
+        except Exception, e:
+            filename = "Error_" + unicode(g) + ".txt"
+            File(filename).write(d)
+            Log.warning("Can not convert block {{block}} (file={{host}})", {
+                "block": g,
+                "filename": filename
+            }, e)
 
 
 def get_last_updated(es):
@@ -197,12 +192,13 @@ def replicate(source, destination, pending, last_updated):
 
 def main(settings):
     current_time = datetime.utcnow()
+    time_file = File(settings.param.last_replication_time)
 
     #USE A SOURCE FILE
     if settings.source.filename != None:
         settings.destination.alias = settings.destination.index
         settings.destination.index = ElasticSearch.proto_name(settings.destination.alias)
-        schema = CNV.JSON2object(File(settings.source.schema_filename).read())
+        schema = CNV.JSON2object(File(settings.destination.schema_file).read(), paths=True, flexible=True)
         if transform_bugzilla.USE_ATTACHMENTS_DOT:
             schema = CNV.JSON2object(CNV.object2JSON(schema).replace("attachments_", "attachments."))
 
@@ -213,35 +209,34 @@ def main(settings):
 
         dest.delete_all_but(settings.destination.alias, settings.destination.index)
         dest.add_alias(settings.destination.alias)
-        return
 
-    # SYNCH WITH source ES INDEX
-    source=ElasticSearch(settings.source)
-
-
-    # USE A DESTINATION FILE
-    if settings.destination.filename:
-        Log.note("Sending records to file: {{filename}}", {"filename":settings.destination.filename})
-        file = File(settings.destination.filename)
-        destination = Struct(
-            extend=lambda x: file.extend([CNV.object2JSON(v["value"]) for v in x]),
-            file=file
-        )
     else:
-        destination=get_or_create_index(settings["destination"], source)
+        # SYNCH WITH source ES INDEX
+        source=ElasticSearch(settings.source)
 
-    # GET LAST UPDATED
-    time_file = File(settings.param.last_replication_time)
-    from_file = None
-    if time_file.exists:
-        from_file = CNV.milli2datetime(CNV.value2int(time_file.read()))
-    from_es = get_last_updated(destination) - timedelta(hours=1)
-    last_updated = MIN(nvl(from_file, CNV.milli2datetime(0)), from_es)
-    Log.note("updating records with modified_ts>={{last_updated}}", {"last_updated":last_updated})
 
-    pending = get_pending(source, last_updated)
-    with ThreadedQueue(destination, size=1000) as data_sink:
-        replicate(source, data_sink, pending, last_updated)
+        # USE A DESTINATION FILE
+        if settings.destination.filename:
+            Log.note("Sending records to file: {{filename}}", {"filename":settings.destination.filename})
+            file = File(settings.destination.filename)
+            destination = Struct(
+                extend=lambda x: file.extend([CNV.object2JSON(v["value"]) for v in x]),
+                file=file
+            )
+        else:
+            destination=get_or_create_index(settings["destination"], source)
+
+        # GET LAST UPDATED
+        from_file = None
+        if time_file.exists:
+            from_file = CNV.milli2datetime(CNV.value2int(time_file.read()))
+        from_es = get_last_updated(destination) - timedelta(hours=1)
+        last_updated = MIN(nvl(from_file, CNV.milli2datetime(0)), from_es)
+        Log.note("updating records with modified_ts>={{last_updated}}", {"last_updated":last_updated})
+
+        pending = get_pending(source, last_updated)
+        with ThreadedQueue(destination, size=1000) as data_sink:
+            replicate(source, data_sink, pending, last_updated)
 
     # RECORD LAST UPDATED
     time_file.write(unicode(CNV.datetime2milli(current_time)))

@@ -11,15 +11,16 @@ from __future__ import unicode_literals
 from datetime import datetime
 
 from .. import struct
+import functools
 from ..cnv import CNV
 from .. import strings
-from ..collections import COUNT
+from ..collections import COUNT, MAX
 from ..maths import stats
 from ..env.elasticsearch import ElasticSearch
 from ..env.logs import Log
 from ..maths import Math
 from ..queries import domains, MVEL, filters
-from ..struct import nvl, StructList, Struct, split_field, join_field, wrap
+from ..struct import nvl, StructList, Struct, split_field, join_field, wrap, Null
 from ..times import durations
 
 
@@ -129,7 +130,7 @@ def parseColumns(index_name, parent_path, esProperties):
     """
     RETURN THE COLUMN DEFINITIONS IN THE GIVEN esProperties OBJECT
     """
-    columns = []
+    columns = StructList()
     for name, property in esProperties.items():
         if parent_path:
             path = join_field(split_field(parent_path) + [name])
@@ -322,17 +323,14 @@ def compileString2Term(edge):
     value = edge.value
     if MVEL.isKeyword(value):
         value = strings.expand_template("getDocValue({{path}})", {"path": CNV.string2quote(value)})
-        # DO NOT DO THIS, PARENT DOCS MAY NOT BE IN THE doc[]
-        # path = split_field(value)
-        # value = "getDocValue(\"" + path[0] + "\")"
-        # for p in path[1::]:
-        #     value = "get("+value+", \""+p+"\")"
+    else:
+        Log.error("not handled")
 
     def fromTerm(value):
-        return edge.domain.getPartByKey(CNV.pipe2value(value))
+        return edge.domain.getPartByKey(value)
 
     return Struct(
-        toTerm={"head": "", "body": 'Value2Pipe(' + value + ')'},
+        toTerm={"head": "", "body": value},
         fromTerm=fromTerm
     )
 
@@ -374,6 +372,8 @@ def compileEdges2Term(mvel_compiler, edges, constants):
     CAN USE THE constants (name, value pairs)
     """
 
+    from ..queries import Q
+
     # IF THE QUERY IS SIMPLE ENOUGH, THEN DO NOT USE TERM PACKING
     edge0 = edges[0]
 
@@ -405,26 +405,46 @@ def compileEdges2Term(mvel_compiler, edges, constants):
             )
 
     mvel_terms = []     # FUNCTION TO PACK TERMS
-    fromTerm2Part = []   # UNPACK TERMS BACK TO PARTS
+    fromTerm2Part = []  # UNPACK TERMS BACK TO PARTS
     for e in edges:
-        if not e.value and e.domain.field:
-            Log.error("not expected")
+        domain = e.domain
+        fields = domain.dimension.fields
 
-        if e.domain.type == "time":
+        if e.domain.type == "set" and fields:
+            def fromTerm(domain, term):
+                fields = domain.dimension.fields
+                if len(fields) == 1:
+                    terms = [term]
+                else:
+                    terms = [CNV.pipe2value(t) for t in term.split("|")]
+
+                rec = Struct()
+                for f, t in zip(fields, terms):
+                    rec[f] = t  # f CAN HAVE DOTS TO INDICATE PATH
+
+                for p in domain.partitions:
+                    if Q.filter([rec], p.esfilter):
+                        return p
+                return Null
+
+            t = Struct(
+                toTerm=mvel_compiler.Parts2Term(e.domain),
+                fromTerm=functools.partial(fromTerm, domain)
+            )
+        elif not e.value and fields:
+            Log.error("not expected")
+        elif e.domain.type == "time":
             t = compileTime2Term(e)
         elif e.domain.type == "duration":
             t = compileDuration2Term(e)
         elif e.domain.type in domains.ALGEBRAIC:
             t = compileNumeric2Term(e)
-        elif e.domain.type == "set" and not e.domain.field:
+        elif e.domain.type == "set" and not fields:
             def fromTerm(term):
                 return e.domain.getPartByKey(term)
 
             t = Struct(
-                toTerm=mvel_terms.Parts2Term(
-                    query.frum,
-                    e.domain
-                ),
+                toTerm=mvel_terms.Parts2Term(e.domain),
                 fromTerm=fromTerm
             )
         else:
@@ -438,12 +458,13 @@ def compileEdges2Term(mvel_compiler, edges, constants):
 
     # REGISTER THE DECODE FUNCTION
     def temp(term):
-        terms = term.split('|')
-        output = StructList([fromTerm2Part[i](t) for i, t in enumerate(terms)])
+        terms = [CNV.pipe2value(t) for t in term.split('|')]
+
+        output = StructList([t2p(t) for t, t2p in zip(terms, fromTerm2Part)])
         return output
 
     return Struct(
-        expression=mvel_compiler.compile_expression("+'|'+".join(mvel_terms), constants),
+        expression=mvel_compiler.compile_expression("+'|'+".join(["Value2Pipe("+t+")" for t in mvel_terms]), constants),
         term2parts=temp
     )
 

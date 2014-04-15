@@ -197,7 +197,7 @@ def toString(val):
     elif isinstance(val, (dict, list, set)):
         from .jsons import json_encoder
 
-        return json_encoder.encode(val, pretty=True)
+        return json_encoder(val, pretty=True)
     elif hasattr(val, "__json__"):
         return val.__json__()
     elif isinstance(val, timedelta):
