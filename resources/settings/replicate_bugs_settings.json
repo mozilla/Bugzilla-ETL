@@ -11,7 +11,7 @@
 //            "filename":"results/all_bugs.txt",
 			"host":"http://localhost",
 			"port": 9200,
-			"index":"bugs20140412_000000",
+			"index":"bugs20140416_000000",
 			"type":"bug_version",
             "schema_file":"./resources/json/bug_version.json"
 		},

@@ -9,7 +9,7 @@
 		"destination":{
 			"host":"http://localhost",
 			"port": 9200,
-			"index":"comments",
+			"index":"comments20140416_000000",
 			"type":"bug_comment",
             "schema_file":"./resources/json/bug_comments.json"
 		},
