@@ -91,7 +91,7 @@ def normalize(bug, old_school=False):
         try:
             if isinstance(v, date):
                 bug[dateField] = CNV.datetime2milli(v)
-            elif isinstance(v, long) and len(unicode(v)) in [12, 13]:
+            elif isinstance(v, (long, int, float)) and len(unicode(v)) in [12, 13]:
                 bug[dateField] = v
             elif not isinstance(v, basestring):
                 Log.error("situation not handled")
