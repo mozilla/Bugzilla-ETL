@@ -111,7 +111,7 @@ def normalize(bug, old_school=False):
                 #          bug 726635 (cf_due_date)
                 bug[dateField] = CNV.datetime2milli(CNV.string2datetime(v[0:10], "%Y-%m-%d"))
         except Exception, e:
-            Log.error("problem with converting date to milli (value={{value}})", {"value":bug[dateField]}, e)
+            Log.error("problem with converting date to milli (type={{type}}, value={{value}})", {"value":bug[dateField], "type":type(bug[dateField]).name}, e)
 
     bug.votes = None
     bug.exists = True
