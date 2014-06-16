@@ -236,7 +236,8 @@ class ElasticSearch(object):
 
         self.delete(
             self.path + "/_query",
-            data=CNV.object2JSON(query)
+            data=CNV.object2JSON(query),
+            timeout=60
         )
 
     def extend(self, records):
