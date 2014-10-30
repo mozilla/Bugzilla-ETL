@@ -253,7 +253,7 @@ class TestLookForLeaks(unittest.TestCase):
                 {"not": {"terms": {"status_whiteboard": ["", "[screened]"]}}},
                 {"range": {"expires_on": {"gte": NOW}}}, #CURRENT RECORDS
                 {"range": {"modified_ts": {"lt": A_WHILE_AGO}}}, #OF A MINIMUM AGE
-                {"not":{"terms":{"bug_id": self.settings.param.ignore_bugs}}}
+                {"not":{"terms":{"bug_id": self.settings.param.ignore_bugs}}} if self.settings.param.ignore_bugs else {"match_all":{}}
             ]},
             fields=["bug_id", "product", "component", "status_whiteboard", "bug_group", "modified_ts"],
             limit=100
