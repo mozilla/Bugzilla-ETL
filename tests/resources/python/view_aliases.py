@@ -1,11 +1,11 @@
 # encoding: utf-8
 #
-from bzETL.util import struct
-from bzETL.util.cnv import CNV
-from bzETL.util.env.files import File
-from bzETL.util.env.logs import Log
-from bzETL.util.queries import Q
-from bzETL.util.env import startup
+from pyLibrary import struct
+from pyLibrary.cnv import CNV
+from pyLibrary.env.files import File
+from pyLibrary.env.logs import Log
+from pyLibrary.queries import Q
+from pyLibrary.env import startup
 
 
 def main(settings):

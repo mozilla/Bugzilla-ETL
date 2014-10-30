@@ -14,21 +14,21 @@ import unittest
 from bzETL import extract_bugzilla, bz_etl
 from bzETL.bz_etl import etl
 from bzETL.extract_bugzilla import get_current_time, SCREENED_WHITEBOARD_BUG_GROUPS
-from bzETL.util.cnv import CNV
-from bzETL.util.collections import MIN
-from bzETL.util.queries.db_query import esfilter2sqlwhere
-from bzETL.util.sql.db import DB, all_db
-from bzETL.util.env.logs import Log
-from bzETL.util.env.elasticsearch import ElasticSearch
-from bzETL.util.env.files import File
-from bzETL.util.queries import Q
-from bzETL.util.maths.randoms import Random
-from bzETL.util.env import startup
-from bzETL.util import struct
-from bzETL.util.struct import Struct, Null
-from bzETL.util.testing import elasticsearch
-from bzETL.util.thread.threads import ThreadedQueue, Thread
-from bzETL.util.times.timer import Timer
+from pyLibrary.cnv import CNV
+from pyLibrary.collections import MIN
+from pyLibrary.queries.db_query import esfilter2sqlwhere
+from pyLibrary.sql.db import DB, all_db
+from pyLibrary.env.logs import Log
+from pyLibrary.env.elasticsearch import ElasticSearch
+from pyLibrary.env.files import File
+from pyLibrary.queries import Q
+from pyLibrary.maths.randoms import Random
+from pyLibrary.env import startup
+from pyLibrary import struct
+from pyLibrary.struct import Struct, Null
+from pyLibrary.testing import elasticsearch
+from pyLibrary.thread.threads import ThreadedQueue, Thread
+from pyLibrary.times.timer import Timer
 from util import compare_es, database
 from util.compare_es import get_all_bug_versions
 from util.database import diff

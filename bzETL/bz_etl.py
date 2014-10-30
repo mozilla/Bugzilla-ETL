@@ -12,20 +12,20 @@
 
 
 
-from bzETL.util.maths import Math
-from bzETL.util import struct, jsons
-from bzETL.util.env.logs import Log
-from bzETL.util.struct import Struct, nvl
-from bzETL.util.env.files import File
-from bzETL.util.env import startup
-from bzETL.util.thread.threads import Queue, Thread, AllThread, Lock, ThreadedQueue
-from bzETL.util.cnv import CNV
-from bzETL.util.env.elasticsearch import ElasticSearch
-from bzETL.util.queries import Q
-from bzETL.util.sql.db import DB
+from pyLibrary.maths import Math
+from pyLibrary import struct, jsons
+from pyLibrary.env.logs import Log
+from pyLibrary.struct import Struct, nvl
+from pyLibrary.env.files import File
+from pyLibrary.env import startup
+from pyLibrary.thread.threads import Queue, Thread, AllThread, Lock, ThreadedQueue
+from pyLibrary.cnv import CNV
+from pyLibrary.env.elasticsearch import ElasticSearch
+from pyLibrary.queries import Q
+from pyLibrary.sql.db import DB
 
 from bzETL import parse_bug_history, transform_bugzilla, extract_bugzilla, alias_analysis
-from bzETL.util.times.timer import Timer
+from pyLibrary.times.timer import Timer
 from extract_bugzilla import get_private_bugs_for_delete, get_recent_private_attachments, get_recent_private_comments, get_comments, get_comments_by_id, get_recent_private_bugs, get_current_time, get_bugs, get_dependencies, get_flags, get_new_activities, get_bug_see_also, get_attachments, get_tracking_flags, get_keywords, get_cc, get_bug_groups, get_duplicates
 from parse_bug_history import BugHistoryParser
 

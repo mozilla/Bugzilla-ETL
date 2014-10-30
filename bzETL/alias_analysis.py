@@ -1,13 +1,12 @@
 from bzETL.extract_bugzilla import get_all_cc_changes
-from bzETL.util.env import startup
-from bzETL.util.cnv import CNV
-from bzETL.util.env.elasticsearch import ElasticSearch
-from bzETL.util.queries.es_query import ESQuery
-from bzETL.util.sql.db import DB
-from bzETL.util.env.logs import Log
-from bzETL.util.collections.multiset import Multiset
-from bzETL.util.queries import Q
-from bzETL.util.struct import nvl
+from pyLibrary.env import startup, elasticsearch
+from pyLibrary.cnv import CNV
+from pyLibrary.queries.es_query import ESQuery
+from pyLibrary.sql.db import DB
+from pyLibrary.env.logs import Log
+from pyLibrary.collections.multiset import Multiset
+from pyLibrary.queries import Q
+from pyLibrary.struct import nvl, set_default
 
 
 def full_analysis(settings, bug_list=None, please_stop=None):
@@ -55,8 +54,8 @@ class AliasAnalyzer(object):
         self.aliases={}
         self.not_aliases={}  # EXPLICIT LIST OF NON-MATCHES (HUMAN ADDED)
         try:
-            settings.elasticsearch.type = "alias"
-            self.es = ElasticSearch.get_or_create_index(settings.elasticsearch.copy(), ALIAS_SCHEMA, limit_replicas=True)
+            a = set_default({}, settings.elasticsearch, {"type":"alias"})
+            self.es = elasticsearch.Cluster(settings.elasticsearch).get_or_create_index(a, ALIAS_SCHEMA, limit_replicas=True)
             self.esq = ESQuery(self.es)
             result = self.esq.query({
                 "from":"bug_aliases",
@@ -68,8 +67,8 @@ class AliasAnalyzer(object):
             Log.note("{{num}} aliases loaded", {"num": len(self.aliases.keys())})
 
             # LOAD THE NON-MATCHES
-            settings.elasticsearch.type = "not_alias"
-            es = ElasticSearch(settings.elasticsearch.copy())
+            na = set_default({}, settings.elasticsearch, {"type":"not_alias"})
+            es = elasticsearch.Cluster(na).get_or_create_index(na)
             esq = ESQuery(es)
             result = esq.query({
                 "from":"bug_aliases",

@@ -11,13 +11,13 @@ import unittest
 from bzETL import extract_bugzilla, bz_etl
 from bzETL.bz_etl import etl
 from bzETL.extract_bugzilla import get_current_time
-from bzETL.util.cnv import CNV
-from bzETL.util.sql.db import DB, all_db
-from bzETL.util.env.logs import Log
-from bzETL.util.env import startup
-from bzETL.util.struct import Struct
-from bzETL.util.testing import elasticsearch
-from bzETL.util.thread.threads import ThreadedQueue
+from pyLibrary.cnv import CNV
+from pyLibrary.sql.db import DB, all_db
+from pyLibrary.env.logs import Log
+from pyLibrary.env import startup
+from pyLibrary.struct import Struct
+from pyLibrary.testing import elasticsearch
+from pyLibrary.thread.threads import ThreadedQueue
 
 
 class TestOneETL(unittest.TestCase):

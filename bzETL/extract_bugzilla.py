@@ -9,17 +9,17 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 from bzETL.parse_bug_history import MAX_TIME
-from bzETL.util.cnv import CNV
-from bzETL.util.queries.db_query import esfilter2sqlwhere
-from bzETL.util.sql.db import SQL
+from pyLibrary.cnv import CNV
+from pyLibrary.queries.db_query import esfilter2sqlwhere
+from pyLibrary.sql.db import SQL
 
-from bzETL.util.env.logs import Log
-from bzETL.util.queries import Q
-from bzETL.util.struct import Struct
+from pyLibrary.env.logs import Log
+from pyLibrary.queries import Q
+from pyLibrary.struct import Struct
 
 
 #ALL BUGS IN PRIVATE ETL HAVE SCREENED FIELDS
-from bzETL.util.times.timer import Timer
+from pyLibrary.times.timer import Timer
 
 SCREENED_FIELDDEFS = [
     19, #bug_file_loc

@@ -52,7 +52,7 @@
                 "encoding": "utf8"
             },
             {
-                "class": "bzETL.util.env.logs.Log_usingStream",
+                "class": "pyLibrary.env.logs.Log_usingStream",
                 "stream": "sys.stdout"
             }
         ]

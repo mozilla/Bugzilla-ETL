@@ -10,18 +10,18 @@
 
 
 from datetime import datetime, timedelta
-from bzETL.util.collections import MIN
-from bzETL.util.struct import nvl, Struct
-from bzETL.util.thread.threads import ThreadedQueue
-from bzETL.util.times.timer import Timer
+from pyLibrary.collections import MIN
+from pyLibrary.struct import nvl, Struct
+from pyLibrary.thread.threads import ThreadedQueue
+from pyLibrary.times.timer import Timer
 import transform_bugzilla
-from bzETL.util.cnv import CNV
-from bzETL.util.env.logs import Log
-from bzETL.util.queries import Q
-from bzETL.util.env import startup
-from bzETL.util.env.files import File
-from bzETL.util.collections.multiset import Multiset
-from bzETL.util.env.elasticsearch import ElasticSearch
+from pyLibrary.cnv import CNV
+from pyLibrary.env.logs import Log
+from pyLibrary.queries import Q
+from pyLibrary.env import startup
+from pyLibrary.env.files import File
+from pyLibrary.collections.multiset import Multiset
+from pyLibrary.env.elasticsearch import ElasticSearch
 
 
 # REPLICATION

@@ -10,15 +10,15 @@
 from datetime import datetime
 
 from bzETL import transform_bugzilla, parse_bug_history
-from bzETL.util import struct
-from bzETL.util.struct import nvl
-from bzETL.util.cnv import CNV
-from bzETL.util.maths import Math
-from bzETL.util.queries import Q
+from pyLibrary import struct
+from pyLibrary.struct import nvl
+from pyLibrary.cnv import CNV
+from pyLibrary.maths import Math
+from pyLibrary.queries import Q
 
 
 #PULL ALL BUG DOCS FROM ONE ES
-from bzETL.util.times.timer import Timer
+from pyLibrary.times.timer import Timer
 
 
 def get_all_bug_versions(es, bug_id, max_time=None):

@@ -1,12 +1,12 @@
 # encoding: utf-8
 #
 from bzETL.extract_bugzilla import milli2string, get_current_time
-from bzETL.util.cnv import CNV
-from bzETL.util.queries.db_query import esfilter2sqlwhere
-from bzETL.util.sql.db import DB
-from bzETL.util.env.logs import Log
-from bzETL.util.struct import Struct
-from bzETL.util.times.timer import Timer
+from pyLibrary.cnv import CNV
+from pyLibrary.queries.db_query import esfilter2sqlwhere
+from pyLibrary.sql.db import DB
+from pyLibrary.env.logs import Log
+from pyLibrary.struct import Struct
+from pyLibrary.times.timer import Timer
 
 
 def make_test_instance(db_settings):

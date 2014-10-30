@@ -1,17 +1,30 @@
 from datetime import datetime
+import functools
+from types import MethodType
 import unittest
 from pymysql.times import TimeDelta
 from bzETL.extract_bugzilla import SCREENED_WHITEBOARD_BUG_GROUPS
-from bzETL.util.env import startup
-from bzETL.util import struct
-from bzETL.util.cnv import CNV
-from bzETL.util.env.elasticsearch import ElasticSearch
-from bzETL.util.env.emailer import Emailer
-from bzETL.util.env.logs import Log
-from bzETL.util.maths import Math
-from bzETL.util.queries import Q
-from bzETL.util.struct import nvl
+from pyLibrary.env import startup, elasticsearch
+from pyLibrary import struct
+from pyLibrary.cnv import CNV
+from pyLibrary.env.emailer import Emailer
+from pyLibrary.env.logs import Log
+from pyLibrary.maths import Math
+from pyLibrary.queries import Q
+from pyLibrary.struct import nvl, Struct
 
+# WRAP Log.error TO SHOW THE SPECIFIC ERROR IN THE LOGFILE
+if not hasattr(Log, "old_error"):
+    Log.old_error = Log.error
+    def new_error(cls, *args):
+        try:
+            Log.old_error(*args, stack_depth=1)
+        except Exception, e:
+            Log.warning("testing error", e, stack_depth=1)
+            raise e
+
+    ##ASSIGN AS CLASS METHOD
+    Log.error=MethodType(new_error, Log)
 
 NOW = CNV.datetime2milli(datetime.utcnow())
 A_WHILE_AGO = int(NOW - TimeDelta(minutes=10).total_seconds()*1000)
@@ -22,9 +35,9 @@ class TestLookForLeaks(unittest.TestCase):
         settings = startup.read_settings(filename="leak_check_settings.json")
         Log.start(settings.debug)
         Log.note("Start Leak Check")
-        self.private = ElasticSearch(settings.private)
-        self.public = ElasticSearch(settings.public)
-        self.public_comments = ElasticSearch(settings.public_comments)
+        self.private = elasticsearch.Index(settings.private)
+        self.public = elasticsearch.Index(settings.public)
+        self.public_comments = elasticsearch.Index(settings.public_comments)
         self.settings = settings
 
     def tearDown(self):
@@ -46,6 +59,7 @@ class TestLookForLeaks(unittest.TestCase):
         return reversed(list(Q.intervals(0, max_bug_id, self.settings.param.increment)))
 
     def test_private_bugs_not_leaking(self):
+        Log.note(extract_stack(1)[0].method)
         bad_news = False
 
         # FOR ALL BUG BLOCKS
@@ -240,17 +254,17 @@ class TestLookForLeaks(unittest.TestCase):
                 {"not": {"terms": {"status_whiteboard": ["", "[screened]"]}}},
                 {"range": {"expires_on": {"gte": NOW}}}, #CURRENT RECORDS
                 {"range": {"modified_ts": {"lt": A_WHILE_AGO}}}, #OF A MINIMUM AGE
+                {"not":{"terms":{"bug_id": self.settings.param.ignore_bugs}}}
             ]},
             fields=["bug_id", "product", "component", "status_whiteboard", "bug_group", "modified_ts"],
             limit=100
-
         )
 
         if leaked_whiteboard:
             for l in leaked_whiteboard:
                 l.modified_ts=CNV.datetime2string(CNV.milli2datetime(l.modified_ts))
 
-            Log.error("Whiteboard leaking:\b{{leak}}", {"leak": leaked_whiteboard})
+            Log.error("Whiteboard leaking:\n{{leak|indent}}", {"leak": leaked_whiteboard})
 
 
 def get(es, esfilter, fields=None, limit=None):
@@ -324,7 +338,7 @@ def main():
         if results.errors or results.failures:
             error(results)
     except Exception, e:
-        error()
+        error(Struct(errors=[e]))
     finally:
         pass
 
@@ -334,7 +348,7 @@ def error(results):
 
     content = []
     for e in results.errors:
-        content.append("FAIL: "+str(e[0]._testMethodName))
+        content.append("ERROR: "+str(e[0]._testMethodName))
     for f in results.failures:
         content.append("FAIL:  "+str(f[0]._testMethodName))
 

@@ -1,8 +1,8 @@
 # encoding: utf-8
 #
-from bzETL.util.sql.db import DB, SQL
-from bzETL.util.env.logs import Log
-from bzETL.util.env import startup
+from pyLibrary.sql.db import DB, SQL
+from pyLibrary.env.logs import Log
+from pyLibrary.env import startup
 
 def main():
     """

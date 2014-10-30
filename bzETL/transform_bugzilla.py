@@ -2,10 +2,11 @@
 #
 from datetime import date
 import re
-from bzETL.util.cnv import CNV
-from bzETL.util.env.elasticsearch import ElasticSearch
-from bzETL.util.env.logs import Log
-from bzETL.util.queries import Q
+from pyLibrary.cnv import CNV
+from pyLibrary.env import elasticsearch
+
+from pyLibrary.env.logs import Log
+from pyLibrary.queries import Q
 
 
 USE_ATTACHMENTS_DOT = True
@@ -69,7 +70,7 @@ def normalize(bug, old_school=False):
         bug.changes = Q.sort(bug.changes, ["attach_id", "field_name"])
 
     #bug IS CONVERTED TO A 'CLEAN' COPY
-    bug = ElasticSearch.scrub(bug)
+    bug = elasticsearch.scrub(bug)
     # bug.attachments = nvl(bug.attachments, [])    # ATTACHMENTS MUST EXIST
 
 
@@ -116,5 +117,5 @@ def normalize(bug, old_school=False):
     bug.votes = None
     bug.exists = True
 
-    return ElasticSearch.scrub(bug)
+    return elasticsearch.scrub(bug)
 

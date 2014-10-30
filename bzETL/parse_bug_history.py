@@ -39,15 +39,15 @@
 from __future__ import unicode_literals
 import re
 import math
-from bzETL.util import struct, strings
-from bzETL.util.collections import MIN
-from bzETL.util.strings import apply_diff
-from bzETL.util.struct import nvl, StructList, unwrap, wrap
-from bzETL.util.cnv import CNV
-from bzETL.util.env.logs import Log
-from bzETL.util.queries import Q
-from bzETL.util.struct import Struct, Null
-from bzETL.util.env.files import File
+from pyLibrary import struct, strings
+from pyLibrary.collections import MIN
+from pyLibrary.strings import apply_diff
+from pyLibrary.struct import nvl, StructList, unwrap, wrap
+from pyLibrary.cnv import CNV
+from pyLibrary.env.logs import Log
+from pyLibrary.queries import Q
+from pyLibrary.struct import Struct, Null
+from pyLibrary.env.files import File
 
 from transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS, DIFF_FIELDS
 
