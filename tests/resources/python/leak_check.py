@@ -32,16 +32,18 @@ A_WHILE_AGO = int(NOW - TimeDelta(minutes=10).total_seconds()*1000)
 
 class TestLookForLeaks(unittest.TestCase):
     def setUp(self):
+        test_name = self._testMethodName
         settings = startup.read_settings(filename="leak_check_settings.json")
         Log.start(settings.debug)
-        Log.note("\nStart Leak Check")
+        Log.note("\nStart {{test_name}}", locals())
         self.private = elasticsearch.Index(settings.private)
         self.public = elasticsearch.Index(settings.public)
         self.public_comments = elasticsearch.Index(settings.public_comments)
         self.settings = settings
 
     def tearDown(self):
-        Log.note("Done Leak Check\n")
+        test_name = self._testMethodName
+        Log.note("Done {{test_name}}\n", locals())
         Log.stop()
 
     def blocks_of_bugs(self):
