@@ -67,7 +67,6 @@ class Struct(dict):
     http://www.saltycrane.com/blog/2012/08/python-data-object-motivated-desire-mutable-namedtuple-default-values/
 
     """
-
     def __init__(self, **map):
         """
         CALLING Struct(**something) WILL RESULT IN A COPY OF something, WHICH IS UNLIKELY TO BE USEFUL
@@ -247,8 +246,11 @@ class Struct(dict):
         return (wrap(v) for v in d.values())
 
     def copy(self):
+        """
+        SHALLOW COPY
+        """
         d = _get(self, "__dict__")
-        return Struct(**d)
+        return wrap(d.copy())
 
     def __delitem__(self, key):
         if isinstance(key, str):
@@ -280,6 +282,7 @@ class Struct(dict):
         if self[k] == None:
             self[k] = d
         return self
+
 
 # KEEP TRACK OF WHAT ATTRIBUTES ARE REQUESTED, MAYBE SOME (BUILTIN) ARE STILL USEFUL
 requested = set()
