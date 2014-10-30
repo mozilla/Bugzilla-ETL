@@ -8,7 +8,7 @@ from pyLibrary.env import startup, elasticsearch
 from pyLibrary import struct
 from pyLibrary.cnv import CNV
 from pyLibrary.env.emailer import Emailer
-from pyLibrary.env.logs import Log
+from pyLibrary.env.logs import Log, extract_stack
 from pyLibrary.maths import Math
 from pyLibrary.queries import Q
 from pyLibrary.struct import nvl, Struct
@@ -59,7 +59,6 @@ class TestLookForLeaks(unittest.TestCase):
         return reversed(list(Q.intervals(0, max_bug_id, self.settings.param.increment)))
 
     def test_private_bugs_not_leaking(self):
-        Log.note(extract_stack(1)[0].method)
         bad_news = False
 
         # FOR ALL BUG BLOCKS
