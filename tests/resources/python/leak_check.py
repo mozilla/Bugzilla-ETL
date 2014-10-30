@@ -34,14 +34,14 @@ class TestLookForLeaks(unittest.TestCase):
     def setUp(self):
         settings = startup.read_settings(filename="leak_check_settings.json")
         Log.start(settings.debug)
-        Log.note("Start Leak Check")
+        Log.note("\nStart Leak Check")
         self.private = elasticsearch.Index(settings.private)
         self.public = elasticsearch.Index(settings.public)
         self.public_comments = elasticsearch.Index(settings.public_comments)
         self.settings = settings
 
     def tearDown(self):
-        Log.note("Done Leak Check")
+        Log.note("Done Leak Check\n")
         Log.stop()
 
     def blocks_of_bugs(self):
