@@ -10,14 +10,17 @@
 
 from __future__ import unicode_literals
 from __future__ import division
+from __future__ import absolute_import
 import sys
 import math
-from .cube import Cube
-from ..queries.index import value2key
-from ..struct import StructList, Struct
-from ..structs.wraps import listwrap, wrap
-from ..env.logs import Log
-from ..collections.multiset import Multiset
+
+from pyLibrary.queries.containers.cube import Cube
+from pyLibrary.queries.index import value2key
+from pyLibrary.dot.dicts import Dict
+from pyLibrary.dot.lists import DictList
+from pyLibrary.dot import listwrap, wrap
+from pyLibrary.debugs.logs import Log
+from pyLibrary.collections.multiset import Multiset
 
 
 def groupby(data, keys=None, size=None, min_size=None, max_size=None, contiguous=False):
@@ -38,7 +41,7 @@ def groupby(data, keys=None, size=None, min_size=None, max_size=None, contiguous
 
     keys = listwrap(keys)
     def get_keys(d):
-        output = Struct()
+        output = Dict()
         for k in keys:
             output[k] = d[k]
         return output
@@ -48,8 +51,8 @@ def groupby(data, keys=None, size=None, min_size=None, max_size=None, contiguous
             if not data:
                 return wrap([])
 
-            agg = StructList()
-            acc = StructList()
+            agg = DictList()
+            acc = DictList()
             curr_key = value2key(keys, data[0])
             for d in data:
                 key = value2key(keys, d)
@@ -68,9 +71,9 @@ def groupby(data, keys=None, size=None, min_size=None, max_size=None, contiguous
         agg = {}
         for d in data:
             key = value2key(keys, d)
-            pair = agg.get(key, None)
+            pair = agg.get(key)
             if pair is None:
-                pair = (get_keys(d), StructList())
+                pair = (get_keys(d), DictList())
                 agg[key] = pair
             pair[1].append(d)
 
@@ -87,9 +90,9 @@ def groupby_size(data, size):
     else:
         Log.error("do not know how to handle this type")
 
-    done = StructList()
+    done = DictList()
     def more():
-        output = StructList()
+        output = DictList()
         for i in range(size):
             try:
                 output.append(iterator.next())
@@ -127,9 +130,11 @@ def groupby_Multiset(data, min_size, max_size):
             g = [k]
 
         if total >= max_size:
-            Log.error("({{min}}, {{max}}) range is too strict given step of {{increment}}", {
-                "min": min_size, "max": max_size, "increment": c
-            })
+            Log.error("({{min}}, {{max}}) range is too strict given step of {{increment}}",
+                min=min_size,
+                max=max_size,
+                increment=c
+            )
 
     if g:
         yield (i, g)
@@ -151,15 +156,21 @@ def groupby_min_max_size(data, min_size=0, max_size=None, ):
     elif hasattr(data, "__iter__"):
         def _iter():
             g = 0
-            out = StructList()
-            for i, d in enumerate(data):
-                out.append(d)
-                if (i + 1) % max_size == 0:
+            out = DictList()
+            try:
+                for i, d in enumerate(data):
+                    out.append(d)
+                    if (i + 1) % max_size == 0:
+                        yield g, out
+                        g += 1
+                        out = DictList()
+                if out:
                     yield g, out
-                    g += 1
-                    out = StructList()
-            if out:
-                yield g, out
+            except Exception, e:
+                if out:
+                    # AT LEAST TRY TO RETURN WHAT HAS BEEN PROCESSED SO FAR
+                    yield g, out
+                Log.error("Problem inside qb.groupby", e)
 
         return _iter()
     elif not isinstance(data, Multiset):

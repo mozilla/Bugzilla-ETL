@@ -7,23 +7,40 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
+# THIS THREADING MODULE IS PERMEATED BY THE please_stop SIGNAL.
+# THIS SIGNAL IS IMPORTANT FOR PROPER SIGNALLING WHICH ALLOWS
+# FOR FAST AND PREDICTABLE SHUTDOWN AND CLEANUP OF THREADS
+
 from __future__ import unicode_literals
 from __future__ import division
+from __future__ import absolute_import
 from collections import deque
-
+from copy import copy
 from datetime import datetime, timedelta
 import thread
 import threading
 import time
 import sys
 import gc
-from ..struct import nvl, Struct
 
-# THIS THREADING MODULE IS PERMEATED BY THE please_stop SIGNAL.
-# THIS SIGNAL IS IMPORTANT FOR PROPER SIGNALLING WHICH ALLOWS
-# FOR FAST AND PREDICTABLE SHUTDOWN AND CLEANUP OF THREADS
+from pyLibrary import strings
+from pyLibrary.dot import coalesce, Dict
+from pyLibrary.times.dates import Date
+from pyLibrary.times.durations import SECOND
 
+
+_Log = None
 DEBUG = True
+MAX_DATETIME = datetime(2286, 11, 20, 17, 46, 39)
+
+
+def _late_import():
+    global _Log
+
+    from pyLibrary.debugs.logs import Log as _Log
+
+    _ = _Log
+
 
 class Lock(object):
     """
@@ -32,9 +49,15 @@ class Lock(object):
 
     def __init__(self, name=""):
         self.monitor = threading.Condition()
-        self.name = name
+        # if not name:
+        # if "extract_stack" not in globals():
+        # from pyLibrary.debugs.logs import extract_stack
+        #
+        #     self.name = extract_stack(1)[0].method
+
 
     def __enter__(self):
+        # with pyLibrary.times.timer.Timer("get lock"):
         self.monitor.acquire()
         return self
 
@@ -55,18 +78,20 @@ class Lock(object):
 
 class Queue(object):
     """
-    SIMPLE MESSAGE QUEUE, multiprocessing.Queue REQUIRES SERIALIZATION, WHICH IS HARD TO USE JUST BETWEEN THREADS
+     SIMPLE MESSAGE QUEUE, multiprocessing.Queue REQUIRES SERIALIZATION, WHICH
+     IS DIFFICULT TO USE JUST BETWEEN THREADS (SERIALIZATION REQUIRED)
     """
 
-    def __init__(self, max=None, silent=False):
+    def __init__(self, name, max=None, silent=False):
         """
         max - LIMIT THE NUMBER IN THE QUEUE, IF TOO MANY add() AND extend() WILL BLOCK
         silent - COMPLAIN IF THE READERS ARE TOO SLOW
         """
-        self.max = nvl(max, 2 ** 10)
+        self.name = name
+        self.max = coalesce(max, 2 ** 10)
         self.silent = silent
         self.keep_running = True
-        self.lock = Lock("lock for queue")
+        self.lock = Lock("lock for queue " + name)
         self.queue = deque()
         self.next_warning = datetime.utcnow()  # FOR DEBUGGING
         self.gc_count = 0
@@ -78,13 +103,14 @@ class Queue(object):
                 if value is not Thread.STOP:
                     yield value
             except Exception, e:
-                from ..env.logs import Log
+                _Log.warning("Tell me about what happened here", e)
 
-                Log.warning("Tell me about what happened here", e)
+        _Log.note("queue iterator is done")
+
 
     def add(self, value):
         with self.lock:
-            self.wait_for_queue_space()
+            self._wait_for_queue_space()
             if self.keep_running:
                 self.queue.append(value)
         return self
@@ -92,12 +118,12 @@ class Queue(object):
     def extend(self, values):
         with self.lock:
             # ONCE THE queue IS BELOW LIMIT, ALLOW ADDING MORE
-            self.wait_for_queue_space()
+            self._wait_for_queue_space()
             if self.keep_running:
                 self.queue.extend(values)
         return self
 
-    def wait_for_queue_space(self):
+    def _wait_for_queue_space(self):
         """
         EXPECT THE self.lock TO BE HAD, WAITS FOR self.queue TO HAVE A LITTLE SPACE
         """
@@ -116,30 +142,62 @@ class Queue(object):
                     now = datetime.utcnow()
                     if self.next_warning < now:
                         self.next_warning = now + timedelta(seconds=wait_time)
-                        from ..env.logs import Log
-
-                        Log.warning("Queue is full ({{num}}} items), thread(s) have been waiting {{wait_time}} sec", {
-                            "num": len(self.queue),
-                            "wait_time": wait_time
-                        })
+                        _Log.alert("Queue {{name}} is full ({{num}} items), thread(s) have been waiting {{wait_time}} sec",
+                            name=self.name,
+                            num=len(self.queue),
+                            wait_time=wait_time
+                        )
 
     def __len__(self):
         with self.lock:
             return len(self.queue)
 
-    def pop(self):
+    def __nonzero__(self):
         with self.lock:
-            while self.keep_running:
-                if self.queue:
-                    value = self.queue.popleft()
-                    self.gc_count += 1
-                    if self.gc_count % 1000 == 0:
-                        gc.collect()
-                    if value is Thread.STOP:  # SENDING A STOP INTO THE QUEUE IS ALSO AN OPTION
-                        self.keep_running = False
-                    return value
-                self.lock.wait()
-            return Thread.STOP
+            return any(r != Thread.STOP for r in self.queue)
+
+    def pop(self, till=None):
+        """
+        WAIT FOR NEXT ITEM ON THE QUEUE
+        RETURN Thread.STOP IF QUEUE IS CLOSED
+        IF till IS PROVIDED, THEN pop() CAN TIMEOUT AND RETURN None
+        """
+        with self.lock:
+            if till == None:
+                while self.keep_running:
+                    if self.queue:
+                        value = self.queue.popleft()
+                        self.gc_count += 1
+                        if self.gc_count % 1000 == 0:
+                            gc.collect()
+                        if value is Thread.STOP:  # SENDING A STOP INTO THE QUEUE IS ALSO AN OPTION
+                            self.keep_running = False
+                        return value
+
+                    try:
+                        self.lock.wait()
+                    except Exception, e:
+                        pass
+            else:
+                while self.keep_running:
+                    if self.queue:
+                        value = self.queue.popleft()
+                        if value is Thread.STOP:  # SENDING A STOP INTO THE QUEUE IS ALSO AN OPTION
+                            self.keep_running = False
+                        return value
+                    elif Date.now() > till:
+                        break
+
+                    try:
+                        self.lock.wait(till=till)
+                    except Exception, e:
+                        pass
+                if self.keep_running:
+                    return None
+
+        _Log.note("queue stopped")
+        return Thread.STOP
+
 
     def pop_all(self):
         """
@@ -163,6 +221,15 @@ class Queue(object):
         with self.lock:
             self.keep_running = False
 
+    def commit(self):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
 
 class AllThread(object):
     """
@@ -170,6 +237,8 @@ class AllThread(object):
     """
 
     def __init__(self):
+        if not _Log:
+            _late_import()
         self.threads = []
 
     def __enter__(self):
@@ -187,14 +256,10 @@ class AllThread(object):
                 if "exception" in response:
                     exceptions.append(response["exception"])
         except Exception, e:
-            from ..env.logs import Log
-
-            Log.warning("Problem joining", e)
+            _Log.warning("Problem joining", e)
 
         if exceptions:
-            from ..env.logs import Log
-
-            Log.error("Problem in child threads", exceptions)
+            _Log.error("Problem in child threads", exceptions)
 
 
     def add(self, target, *args, **kwargs):
@@ -205,8 +270,37 @@ class AllThread(object):
         self.threads.append(t)
 
 
-ALL_LOCK = Lock()
-MAIN_THREAD = Struct(name="Main Thread", id=thread.get_ident())
+class MainThread(object):
+    def __init__(self):
+        self.name = "Main Thread"
+        self.id = thread.get_ident()
+        self.children = []
+
+    def add_child(self, child):
+        self.children.append(child)
+
+    def remove_child(self, child):
+        try:
+            self.children.remove(child)
+        except Exception, _:
+            pass
+
+    def stop(self):
+        """
+        BLOCKS UNTIL ALL THREADS HAVE STOPPED
+        """
+        children = copy(self.children)
+        for c in reversed(children):
+            if c.name:
+                _Log.note("Stopping thread {{name|quote}}", name=c.name)
+            c.stop()
+        for c in children:
+            c.join()
+
+
+MAIN_THREAD = MainThread()
+
+ALL_LOCK = Lock("threads ALL_LOCK")
 ALL = dict()
 ALL[thread.get_ident()] = MAIN_THREAD
 
@@ -223,19 +317,31 @@ class Thread(object):
 
 
     def __init__(self, name, target, *args, **kwargs):
+        if not _Log:
+            _late_import()
         self.id = -1
         self.name = name
         self.target = target
         self.response = None
-        self.synch_lock = Lock()
+        self.synch_lock = Lock("response synch lock")
         self.args = args
 
         # ENSURE THERE IS A SHARED please_stop SIGNAL
-        self.kwargs = kwargs.copy()
+        self.kwargs = copy(kwargs)
         self.kwargs["please_stop"] = self.kwargs.get("please_stop", Signal())
         self.please_stop = self.kwargs["please_stop"]
 
+        self.thread = None
         self.stopped = Signal()
+        self.cprofiler = None
+        self.children = []
+
+        if "parent_thread" in kwargs:
+            del self.kwargs["parent_thread"]
+            self.parent = kwargs["parent_thread"]
+        else:
+            self.parent = Thread.current()
+            self.parent.add_child(self)
 
 
     def __enter__(self):
@@ -250,81 +356,120 @@ class Thread(object):
         self.args = None
         self.kwargs = None
 
-
     def start(self):
-        try:
-            thread.start_new_thread(Thread._run, (self, ))
-        except Exception, e:
-            from ..env.logs import Log
+        if not _Log:
+            _late_import()
 
-            Log.error("Can not start thread", e)
+        try:
+            self.thread = thread.start_new_thread(Thread._run, (self, ))
+            return self
+        except Exception, e:
+            _Log.error("Can not start thread", e)
 
     def stop(self):
+        for c in copy(self.children):
+            c.stop()
         self.please_stop.go()
 
+    def add_child(self, child):
+        self.children.append(child)
+
+    def remove_child(self, child):
+        self.children.remove(child)
+
     def _run(self):
+        if _Log.cprofiler:
+            import cProfile
+
+            self.cprofiler = cProfile.Profile()
+            self.cprofiler.enable()
+
         self.id = thread.get_ident()
         with ALL_LOCK:
             ALL[self.id] = self
 
         try:
             if self.target is not None:
-                response = self.target(*self.args, **self.kwargs)
+                a, k, self.args, self.kwargs = self.args, self.kwargs, None, None
+                response = self.target(*a, **k)
                 with self.synch_lock:
-                    self.response = Struct(response=response)
+                    self.response = Dict(response=response)
         except Exception, e:
             with self.synch_lock:
-                self.response = Struct(exception=e)
+                self.response = Dict(exception=e)
             try:
-                from ..env.logs import Log
-
-                Log.fatal("Problem in thread {{name}}", {"name": self.name}, e)
+                _Log.fatal("Problem in thread {{name|quote}}", name=self.name, cause=e)
             except Exception, f:
                 sys.stderr.write("ERROR in thread: " + str(self.name) + " " + str(e) + "\n")
         finally:
+            children = copy(self.children)
+            for c in children:
+                c.stop()
+            for c in children:
+                try:
+                    c.join()
+                except Exception, _:
+                    pass
+
             self.stopped.go()
             del self.target, self.args, self.kwargs
             with ALL_LOCK:
                 del ALL[self.id]
 
+        if self.cprofiler:
+            import pstats
+
+            self.cprofiler.disable()
+            _Log.cprofiler_stats.add(pstats.Stats(self.cprofiler))
+            del self.cprofiler
+
     def is_alive(self):
         return not self.stopped
+
 
     def join(self, timeout=None, till=None):
         """
         RETURN THE RESULT {"response":r, "exception":e} OF THE THREAD EXECUTION (INCLUDING EXCEPTION, IF EXISTS)
         """
-        if not till and timeout:
-            till = datetime.utcnow() + timedelta(seconds=timeout)
+        if timeout is not None:
+            if till is None:
+                till = datetime.utcnow() + timedelta(seconds=timeout)
+            else:
+                _Log.error("Can not except both `timeout` and `till`")
+
+        children = copy(self.children)
+        for c in children:
+            c.join(till=till)
 
         if till is None:
             while True:
                 with self.synch_lock:
                     for i in range(10):
                         if self.stopped:
+                            self.parent.remove_child(self)
                             return self.response
                         self.synch_lock.wait(0.5)
 
                 if DEBUG:
-                    from ..env.logs import Log
-
-                    Log.note("Waiting on thread {{thread|json}}", {"thread": self.name})
+                    _Log.note("Waiting on thread {{thread|json}}", thread=self.name)
         else:
             self.stopped.wait_for_go(till=till)
             if self.stopped:
+                self.parent.remove_child(self)
                 return self.response
             else:
-                from ..env.logs import Except
+                from pyLibrary.debugs.logs import Except
 
                 raise Except(type=Thread.TIMEOUT)
 
     @staticmethod
     def run(name, target, *args, **kwargs):
+        if not _Log:
+            _late_import()
+
         # ENSURE target HAS please_stop ARGUMENT
         if "please_stop" not in target.__code__.co_varnames:
-            from ..env.logs import Log
-
-            Log.error("function must have please_stop argument for signalling emergency shutdown")
+            _Log.error("function must have please_stop argument for signalling emergency shutdown")
 
         Thread.num_threads += 1
 
@@ -333,13 +478,70 @@ class Thread(object):
         return output
 
     @staticmethod
-    def sleep(seconds=None, till=None):
+    def sleep(seconds=None, till=None, please_stop=None):
+
+        if please_stop is not None or isinstance(till, Signal):
+            if isinstance(till, Signal):
+                please_stop = till
+                till = MAX_DATETIME
+
+            if seconds is not None:
+                till = datetime.utcnow() + timedelta(seconds=seconds)
+            elif till is None:
+                till = MAX_DATETIME
+
+            while not please_stop:
+                time.sleep(1)
+                if till < datetime.utcnow():
+                    break
+            return
+
         if seconds is not None:
             time.sleep(seconds)
-        if till is not None:
-            duration = (till - datetime.utcnow()).total_seconds()
+        elif till is not None:
+            if isinstance(till, datetime):
+                duration = (till - datetime.utcnow()).total_seconds()
+            else:
+                duration = (till - datetime.utcnow()).total_seconds
+
             if duration > 0:
-                time.sleep(duration)
+                try:
+                    time.sleep(duration)
+                except Exception, e:
+                    raise e
+        else:
+            while True:
+                time.sleep(10)
+
+
+    @staticmethod
+    def wait_for_shutdown_signal(
+        please_stop=False,  # ASSIGN SIGNAL TO STOP EARLY
+        allow_exit=False  # ALLOW "exit" COMMAND ON CONSOLE TO ALSO STOP THE APP
+    ):
+        """
+        SLEEP UNTIL keyboard interrupt
+        """
+        if not isinstance(please_stop, Signal):
+            please_stop = Signal()
+
+        please_stop.on_go(lambda: MAIN_THREAD.stop())
+
+        if Thread.current() != MAIN_THREAD:
+            if not _Log:
+                _late_import()
+            _Log.error("Only the main thread can sleep forever (waiting for KeyboardInterrupt)")
+
+        try:
+            if allow_exit:
+                _wait_for_exit(please_stop)
+            else:
+                _wait_for_interrupt(please_stop)
+        except (KeyboardInterrupt, SystemExit), _:
+            please_stop.go()
+            _Log.alert("SIGINT Detected!  Stopping...")
+
+        MAIN_THREAD.stop()
 
     @staticmethod
     def current():
@@ -358,7 +560,7 @@ class Signal(object):
     go() - ACTIVATE SIGNAL (DOES NOTHING IF SIGNAL IS ALREADY ACTIVATED)
     wait_for_go() - PUT THREAD IN WAIT STATE UNTIL SIGNAL IS ACTIVATED
     is_go() - TEST IF SIGNAL IS ACTIVATED, DO NOT WAIT
-    on_go() - METHOD FOR OTHEr THREAD TO RUN WHEN ACTIVATING SIGNAL
+    on_go() - METHOD FOR OTHER THREAD TO RUN WHEN ACTIVATING SIGNAL
     """
 
     def __init__(self):
@@ -366,6 +568,8 @@ class Signal(object):
         self._go = False
         self.job_queue = []
 
+    def __str__(self):
+        return str(self._go)
 
     def __bool__(self):
         with self.lock:
@@ -400,7 +604,10 @@ class Signal(object):
             self.lock.notify_all()
 
         for j in jobs:
-            j()
+            try:
+                j()
+            except Exception, e:
+                _Log.warning("Trigger on Signal.go() failed!", e)
 
     def is_go(self):
         """
@@ -424,41 +631,108 @@ class ThreadedQueue(Queue):
     """
     TODO: Check that this queue is not dropping items at shutdown
     DISPATCH TO ANOTHER (SLOWER) queue IN BATCHES OF GIVEN size
-
-    queue          - THE SLOWER QUEUE
-    max            - SET THE MAXIMUM SIZE OF THE QUEUE, WRITERS WILL BLOCK IF QUEUE IS OVER THIS LIMIT
-    silent = False - WRITES WILL COMPLAIN IF THEY ARE WAITING TOO LONG
     """
 
-    def __init__(self, queue, size=None, max=None, period=None, silent=False):
-        if max == None:
-            # REASONABLE DEFAULT
-            max = size * 2
+    def __init__(
+        self,
+        name,
+        queue,  # THE SLOWER QUEUE
+        batch_size=None,  # THE MAX SIZE OF BATCHES SENT TO THE SLOW QUEUE
+        max_size=None,  # SET THE MAXIMUM SIZE OF THE QUEUE, WRITERS WILL BLOCK IF QUEUE IS OVER THIS LIMIT
+        period=None,  # MAX TIME BETWEEN FLUSHES TO SLOWER QUEUE
+        silent=False  # WRITES WILL COMPLAIN IF THEY ARE WAITING TOO LONG
+    ):
+        if not _Log:
+            _late_import()
 
-        Queue.__init__(self, max=max, silent=silent)
+        batch_size = coalesce(batch_size, int(coalesce(max_size, 0) / 2), 900)
+        max_size = coalesce(max_size, batch_size * 2)  # REASONABLE DEFAULT
+        period = coalesce(period, SECOND)
+        bit_more_time = 5 * SECOND
 
-        def size_pusher(please_stop):
-            please_stop.on_go(lambda: self.add(Thread.STOP))
+        Queue.__init__(self, name=name, max=max_size, silent=silent)
 
-            # queue IS A MULTI-THREADED QUEUE, SO THIS WILL BLOCK UNTIL THE size ARE READY
-            from ..queries import Q
+        def worker_bee(please_stop):
+            def stopper():
+                self.add(Thread.STOP)
 
-            for i, g in Q.groupby(self, size=size):
+            please_stop.on_go(stopper)
+
+            _buffer = []
+            next_time = Date.now() + period  # THE TIME WE SHOULD DO A PUSH
+
+            while not please_stop:
                 try:
-                    queue.extend(g)
-                    if please_stop:
-                        from ..env.logs import Log
+                    if not _buffer:
+                        item = self.pop()
+                        now = Date.now()
 
-                        Log.warning("ThreadedQueue stopped early, with {{num}} items left in queue", {
-                            "num": len(self)
-                        })
-                        return
+                        if item is Thread.STOP:
+                            queue.extend(_buffer)
+                            please_stop.go()
+                            break
+                        elif item is not None:
+                            _buffer.append(item)
+
+                        next_time = now + period  # NO NEED TO SEND TOO EARLY
+                        continue
+
+                    item = self.pop(till=next_time)
+                    now = Date.now()
+
+                    if item is Thread.STOP:
+                        queue.extend(_buffer)
+                        please_stop.go()
+                        break
+                    elif item is not None:
+                        _buffer.append(item)
+
                 except Exception, e:
-                    from ..env.logs import Log
+                    _Log.warning(
+                        "Unexpected problem",
+                        name=name,
+                        cause=e
+                    )
 
-                    Log.warning("Problem with pushing {{num}} items to data sink", {"num": len(g)}, e)
+                try:
+                    if len(_buffer) >= batch_size or now > next_time:
+                        next_time = now + period
+                        if _buffer:
+                            queue.extend(_buffer)
+                            _buffer = []
+                            # A LITTLE MORE TIME TO FILL THE NEXT BUFFER
+                            now = Date.now()
+                            if now > next_time:
+                                next_time = now + bit_more_time
 
-        self.thread = Thread.run("threaded queue " + unicode(id(self)), size_pusher)
+                except Exception, e:
+                    _Log.warning(
+                        "Problem with {{name}} pushing {{num}} items to data sink",
+                        name=name,
+                        num=len(_buffer),
+                        cause=e
+                    )
+
+            if _buffer:
+                # ONE LAST PUSH, DO NOT HAVE TIME TO DEAL WITH ERRORS
+                queue.extend(_buffer)
+
+        self.thread = Thread.run("threaded queue for " + name, worker_bee, parent_thread=self)
+
+    def add(self, value):
+        with self.lock:
+            self._wait_for_queue_space()
+            if self.keep_running:
+                self.queue.append(value)
+        return self
+
+    def extend(self, values):
+        with self.lock:
+            # ONCE THE queue IS BELOW LIMIT, ALLOW ADDING MORE
+            self._wait_for_queue_space()
+            if self.keep_running:
+                self.queue.extend(values)
+        return self
 
 
     def __enter__(self):
@@ -469,3 +743,48 @@ class ThreadedQueue(Queue):
         if isinstance(b, BaseException):
             self.thread.please_stop.go()
         self.thread.join()
+
+    def stop(self):
+        self.add(Thread.STOP)
+        self.thread.join()
+
+
+
+def _wait_for_exit(please_stop):
+    """
+    /dev/null SPEWS INFINITE LINES, DO NOT POLL AS OFTEN
+    """
+    cr_count = 0  # COUNT NUMBER OF BLANK LINES
+
+    while not please_stop:
+        # if DEBUG:
+        #     Log.note("inside wait-for-shutdown loop")
+        if cr_count > 30:
+            Thread.sleep(seconds=3, please_stop=please_stop)
+        try:
+            line = sys.stdin.readline()
+        except Exception, e:
+            if "Bad file descriptor" in e:
+                _wait_for_interrupt(please_stop)
+                break
+
+        # if DEBUG:
+        #     Log.note("read line {{line|quote}}, count={{count}}", line=line, count=cr_count)
+        if line == "":
+            cr_count += 1
+        else:
+            cr_count = -1000000  # NOT /dev/null
+
+        if strings.strip(line) == "exit":
+            _Log.alert("'exit' Detected!  Stopping...")
+            return
+
+
+def _wait_for_interrupt(please_stop):
+    while not please_stop:
+        if DEBUG:
+            _Log.note("inside wait-for-shutdown loop")
+        try:
+            Thread.sleep(please_stop=please_stop)
+        except Exception, _:
+            pass

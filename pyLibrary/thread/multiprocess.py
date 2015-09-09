@@ -8,10 +8,12 @@
 #
 from __future__ import unicode_literals
 from __future__ import division
+from __future__ import absolute_import
 
-from .threads import Queue
-from ..env.logs import Log
+from pyLibrary.debugs.logs import Log
+from pyLibrary.thread.threads import Queue
 
+# YOU ARE READING AN INCOMPLETE IMPLEMENTATION
 
 class worker(object):
     def __init__(func, inbound, outbound, logging):
@@ -30,12 +32,13 @@ class Log_usingInterProcessQueue(Log):
 class Multiprocess(object):
     # THE COMPLICATION HERE IS CONNECTING THE DISPARATE LOGGING TO
     # A CENTRAL POINT
+    # ONLY THE MAIN THREAD CAN CREATE AND COMMUNICATE WITH multiprocess.Process
 
 
     def __init__(self, functions):
-        self.outbound = Queue()
-        self.inbound = Queue()
-        self.inbound = Queue()
+        self.outbound = Queue("out to process")
+        self.inbound = Queue("in from stdin")
+        self.inbound = Queue("in from stderr")
 
         # MAKE
 

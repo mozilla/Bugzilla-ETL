@@ -9,15 +9,15 @@
 
 from __future__ import unicode_literals
 from __future__ import division
+from __future__ import absolute_import
 
-from .. import struct
-from ..cnv import CNV
-from ..env.elasticsearch import Index, Cluster
-from ..env.logs import Log
-from ..env.files import File
-from ..queries import Q
-from ..struct import Struct
-from ..structs.wraps import unwrap, wrap
+from pyLibrary import convert
+from pyLibrary.env.elasticsearch import Index, Cluster
+from pyLibrary.debugs.logs import Log
+from pyLibrary.env.files import File
+from pyLibrary.queries import qb
+from pyLibrary.dot.dicts import Dict
+from pyLibrary.dot import unwrap, wrap
 
 def make_test_instance(name, settings):
     if settings.filename:
@@ -27,21 +27,18 @@ def make_test_instance(name, settings):
 
 def open_test_instance(name, settings):
     if settings.filename:
-        Log.note("Using {{filename}} as {{type}}", {
-            "filename": settings.filename,
-            "type": name
-        })
+        Log.note("Using {{filename}} as {{type}}",
+            filename= settings.filename,
+            type= name)
         return Fake_ES(settings)
     else:
-        Log.note("Using ES cluster at {{host}} as {{type}}", {
-            "host": settings.host,
-            "type": name
-        })
+        Log.note("Using ES cluster at {{host}} as {{type}}",
+            host= settings.host,
+            type= name)
 
-        Index(settings).delete()
+        Index(read_only=False, settings=settings).delete()
 
-        schema = CNV.JSON2object(File(settings.schema_file).read(), flexible=True, paths=True)
-        es = Cluster(settings).create_index(settings, schema, limit_replicas=True)
+        es = Cluster(settings).create_index(settings, limit_replicas=True)
         return es
 
 
@@ -52,17 +49,17 @@ class Fake_ES():
         self.settings = wrap({"host":"fake", "index":"fake"})
         self.filename = settings.filename
         try:
-            self.data = CNV.JSON2object(File(self.filename).read())
+            self.data = convert.json2value(File(self.filename).read())
         except IOError:
-            self.data = Struct()
+            self.data = Dict()
 
 
     def search(self, query):
         query=wrap(query)
-        f = CNV.esfilter2where(query.query.filtered.filter)
+        f = convert.esfilter2where(query.query.filtered.filter)
         filtered=wrap([{"_id": i, "_source": d} for i, d in self.data.items() if f(d)])
         if query.fields:
-            return wrap({"hits": {"total":len(filtered), "hits": [{"_id":d._id, "fields":unwrap(Q.select([unwrap(d._source)], query.fields)[0])} for d in filtered]}})
+            return wrap({"hits": {"total":len(filtered), "hits": [{"_id":d._id, "fields":unwrap(qb.select([unwrap(d._source)], query.fields)[0])} for d in filtered]}})
         else:
             return wrap({"hits": {"total":len(filtered), "hits": filtered}})
 
@@ -72,12 +69,12 @@ class Fake_ES():
         """
         records = {v["id"]: v["value"] for v in records}
 
-        struct.unwrap(self.data).update(records)
+        unwrap(self.data).update(records)
 
-        data_as_json = CNV.object2JSON(self.data, pretty=True)
+        data_as_json = convert.value2json(self.data, pretty=True)
 
         File(self.filename).write(data_as_json)
-        Log.note("{{num}} documents added", {"num": len(records)})
+        Log.note("{{num}} documents added",  num= len(records))
 
     def add(self, record):
         if isinstance(record, list):
@@ -85,7 +82,7 @@ class Fake_ES():
         return self.extend([record])
 
     def delete_record(self, filter):
-        f = CNV.esfilter2where(filter)
+        f = convert.esfilter2where(filter)
         self.data = wrap({k: v for k, v in self.data.items() if not f(v)})
 
     def set_refresh_interval(self, seconds):

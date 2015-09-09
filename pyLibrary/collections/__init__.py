@@ -1,10 +1,20 @@
+# encoding: utf-8
+#
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this file,
+# You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Author: Kyle Lahnakoski (kyle@lahnakoski.com)
+#
+from __future__ import unicode_literals
+from __future__ import division
+from __future__ import absolute_import
+
 import types
 import math
-from ..collections.multiset import Multiset
-from ..struct import Null
-
-__author__ = 'klahnakoski'
-
+from pyLibrary.collections.multiset import Multiset
+from pyLibrary.dot import Null
 
 
 def reverse(values):
@@ -124,4 +134,16 @@ def UNION(*values):
             continue
         else:
             output.add(v)
+    return output
+
+
+def INTERSECT(*values):
+    if isinstance(values, tuple) and len(values) == 1 and isinstance(values[0], (list, set, tuple, Multiset, types.GeneratorType)):
+        values = values[0]
+
+    output = set(values[0])
+    for v in values[1:]:
+        output -= set(v)
+        if not output:
+            return output   # EXIT EARLY
     return output

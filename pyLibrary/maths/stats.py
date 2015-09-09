@@ -10,16 +10,18 @@
 
 from __future__ import unicode_literals
 from __future__ import division
+from __future__ import absolute_import
 
 import sys
 from math import sqrt
+import math
 
-from ..cnv import CNV
-from ..collections import OR
-from __init__ import Math, almost_equal
-from ..env.logs import Log
-from ..struct import nvl, Struct, Null
-from ..vendor import strangman
+from pyLibrary import convert
+from pyLibrary.collections import OR
+from pyLibrary.debugs.logs import Log
+from pyLibrary.dot import coalesce, Dict, Null
+from pyLibrary.maths import almost_equal, Math
+from pyLibrary.vendor import strangman
 
 
 DEBUG = True
@@ -46,7 +48,7 @@ def chisquare(f_obs, f_exp):
         Log.error("problem with call", e)
 
     if DEBUG_STRANGMAN:
-        from ..testing.fuzzytestcase import assertAlmostEqualValue
+        from pyLibrary.testing.fuzzytestcase import assertAlmostEqualValue
 
         sp_result = scipy.stats.chisquare(
             np.array(f_obs),
@@ -61,36 +63,36 @@ def chisquare(f_obs, f_exp):
 def Stats2ZeroMoment(stats):
     # MODIFIED FROM http://statsmodels.sourceforge.net/devel/_modules/statsmodels/stats/moment_helpers.html
     # ADDED count
-    mc0, mc1, mc2, skew, kurt = stats.count, nvl(stats.mean, 0), nvl(stats.variance, 0), nvl(stats.skew, 0), nvl(stats.kurtosis, 0)
+    mc0, mc1, mc2, skew, kurt = stats.count, coalesce(stats.mean, 0), coalesce(stats.variance, 0), coalesce(stats.skew, 0), coalesce(stats.kurtosis, 0)
 
     mz0 = mc0
     mz1 = mc1 * mc0
     mz2 = (mc2 + mc1 * mc1) * mc0
-    mc3 = nvl(skew, 0) * (mc2 ** 1.5) # 3rd central moment
+    mc3 = coalesce(skew, 0) * (mc2 ** 1.5) # 3rd central moment
     mz3 = (mc3 + 3 * mc1 * mc2 + mc1 ** 3) * mc0  # 3rd non-central moment
-    mc4 = (nvl(kurt, 0) + 3.0) * (mc2 ** 2.0) # 4th central moment
+    mc4 = (coalesce(kurt, 0) + 3.0) * (mc2 ** 2.0) # 4th central moment
     mz4 = (mc4 + 4 * mc1 * mc3 + 6 * mc1 * mc1 * mc2 + mc1 ** 4) * mc0
 
     m = ZeroMoment(mz0, mz1, mz2, mz3, mz4)
     if DEBUG:
-        from ..testing.fuzzytestcase import assertAlmostEqualValue
+        from pyLibrary.testing.fuzzytestcase import assertAlmostEqualValue
 
         globals()["DEBUG"] = False
         try:
-            v = ZeroMoment2Stats(m, unbiased=False)
-            assertAlmostEqualValue(v.count, stats.count)
-            assertAlmostEqualValue(v.mean, stats.mean)
-            assertAlmostEqualValue(v.variance, stats.variance)
-            assertAlmostEqualValue(v.skew, stats.skew)
-            assertAlmostEqualValue(v.kurtosis, stats.vkurtosis)
+            v = ZeroMoment2Stats(m)
+            assertAlmostEqualValue(v.count, stats.count, places=10)
+            assertAlmostEqualValue(v.mean, stats.mean, places=10)
+            assertAlmostEqualValue(v.variance, stats.variance, places=10)
+            assertAlmostEqualValue(v.skew, stats.skew, places=10)
+            assertAlmostEqualValue(v.kurtosis, stats.kurtosis, places=10)
         except Exception, e:
-            v = ZeroMoment2Stats(m, unbiased=False)
+            v = ZeroMoment2Stats(m)
             Log.error("programmer error")
         globals()["DEBUG"] = True
     return m
 
 
-def ZeroMoment2Stats(z_moment, unbiased=True):
+def ZeroMoment2Stats(z_moment):
     Z = z_moment.S
     N = Z[0]
     if N == 0:
@@ -122,33 +124,33 @@ def ZeroMoment2Stats(z_moment, unbiased=True):
         mean=mean,
         variance=variance,
         skew=skew,
-        kurtosis=kurtosis,
-        unbiased=unbiased
+        kurtosis=kurtosis
     )
 
     if DEBUG:
-        from ..testing.fuzzytestcase import assertAlmostEqualValue
+        from pyLibrary.testing.fuzzytestcase import assertAlmostEqualValue
 
         globals()["DEBUG"] = False
         v = Null
         try:
             v = Stats2ZeroMoment(stats)
             for i in range(5):
-                assertAlmostEqualValue(v.S[i], Z[i], digits=6)
+                assertAlmostEqualValue(v.S[i], Z[i], places=7)
         except Exception, e:
-            Log.error("Convertion failed.  Programmer error:\nfrom={{from|indent}},\nresult stats={{stats|indent}},\nexpected param={{expected|indent}}", {
-                "from": Z,
-                "stats": stats,
-                "expected": v.S
-            }, e)
+            Log.error("Conversion failed.  Programmer error:\nfrom={{from|indent}},\nresult stats={{stats|indent}},\nexpected param={{expected|indent}}",
+                {"from": Z},
+                stats=stats,
+                expected=v.S,
+                cause=e
+            )
         globals()["DEBUG"] = True
 
     return stats
 
 
-class Stats(Struct):
+class Stats(Dict):
     def __init__(self, **kwargs):
-        Struct.__init__(self)
+        Dict.__init__(self)
 
         self.count = 0
         self.mean = None
@@ -202,12 +204,6 @@ class Stats(Struct):
             self.skew = kwargs["skew"]
             self.kurtosis = kwargs["kurtosis"]
 
-        self.unbiased = \
-            kwargs["unbiased"] if "unbiased" in kwargs else \
-                not kwargs["biased"] if "biased" in kwargs else \
-                    False
-
-
     @property
     def std(self):
         return sqrt(self.variance)
@@ -215,9 +211,9 @@ class Stats(Struct):
     @property
     def __class__(self):
         """
-        TRICK JSON SERIALIZATION (AND OTHERS) THAT THIS IS JUST ANOTHER Struct
+        TRICK JSON SERIALIZATION (AND OTHERS) THAT THIS IS JUST ANOTHER Dict
         """
-        return Struct
+        return Dict
 
 
 class ZeroMoment(object):
@@ -279,12 +275,13 @@ class ZeroMoment(object):
         if values == None:
             return ZeroMoment()
 
+        vals = [v for v in values if v != None]
         return ZeroMoment(
-            len(values),
-            sum(values),
-            sum([pow(n, 2) for n in values]),
-            sum([pow(n, 3) for n in values]),
-            sum([pow(n, 4) for n in values])
+            len(vals),
+            sum(vals),
+            sum([pow(n, 2) for n in vals]),
+            sum([pow(n, 3) for n in vals]),
+            sum([pow(n, 4) for n in vals])
         )
 
     @property
@@ -293,19 +290,18 @@ class ZeroMoment(object):
 
 
 def add(a, b):
-    return nvl(a, 0) + nvl(b, 0)
+    return coalesce(a, 0) + coalesce(b, 0)
 
 
 def sub(a, b):
-    return nvl(a, 0) - nvl(b, 0)
+    return coalesce(a, 0) - coalesce(b, 0)
 
 
 def ZeroMoment2dict(z):
     # RETURN HASH OF SUMS
     return {u"s" + unicode(i): m for i, m in enumerate(z.S)}
 
-
-setattr(CNV, "ZeroMoment2dict", staticmethod(ZeroMoment2dict))
+setattr(convert, "ZeroMoment2dict", staticmethod(ZeroMoment2dict))
 
 
 def median(values, simple=True, mean_weight=0.0):
@@ -363,7 +359,27 @@ def median(values, simple=True, mean_weight=0.0):
             else:
                 return (_median - 0.5) + (middle + 0.5 - start_index) / num_middle
     except Exception, e:
-        Log.error("problem with median of {{values}}", {"values": values}, e)
+        Log.error("problem with median of {{values}}",  values= values, cause=e)
+
+
+def percentile(values, percent):
+    """
+    PERCENTILE WITH INTERPOLATION
+    RETURN VALUE AT, OR ABOVE, percentile OF THE VALUES
+
+    snagged from http://code.activestate.com/recipes/511478-finding-the-percentile-of-the-values/
+    """
+    N = sorted(values)
+    if not N:
+        return None
+    k = (len(N) - 1) * percent
+    f = int(math.floor(k))
+    c = int(math.ceil(k))
+    if f == c:
+        return N[int(k)]
+    d0 = N[f] * (c - k)
+    d1 = N[c] * (k - f)
+    return d0 + d1
 
 
 zero = Stats()

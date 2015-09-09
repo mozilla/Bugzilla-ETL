@@ -9,16 +9,18 @@
 
 from __future__ import unicode_literals
 from __future__ import division
+from __future__ import absolute_import
 
 from datetime import timedelta
 from time import clock
 
-from ..struct import nvl, Struct
-from ..structs.wraps import wrap
-from ..env.logs import Log
+from pyLibrary.dot import coalesce, Dict
+from pyLibrary.dot import wrap
+from pyLibrary.debugs.logs import Log
+from pyLibrary.times.durations import Duration
 
 
-class Timer:
+class Timer(object):
     """
     USAGE:
     with Timer("doing hard time"):
@@ -30,26 +32,30 @@ class Timer:
     debug - SET TO False TO DISABLE THIS TIMER
     """
 
-    def __init__(self, description, param=None, debug=True):
+    def __init__(self, description, param=None, debug=True, silent=False):
         self.template = description
-        self.param = nvl(wrap(param), Struct())
+        self.param = wrap(coalesce(param, {}))
         self.debug = debug
+        self.silent = silent
+        self.interval = None
 
     def __enter__(self):
         if self.debug:
-            Log.note("Timer start: " + self.template, self.param, stack_depth=1)
-            self.start = clock()
-
+            if not self.silent:
+                Log.note("Timer start: " + self.template, self.param, stack_depth=1)
+        self.start = clock()
         return self
 
     def __exit__(self, type, value, traceback):
+        self.end = clock()
+        self.interval = self.end - self.start
+
         if self.debug:
-            self.end = clock()
-            self.interval = self.end - self.start
             param = wrap(self.param)
             param.duration = timedelta(seconds=self.interval)
-            Log.note("Timer end  : " + self.template + " (took {{duration}})", self.param, stack_depth=1)
+            if not self.silent:
+                Log.note("Timer end  : " + self.template + " (took {{duration}})", self.param, stack_depth=1)
 
     @property
     def duration(self):
-        return self.interval
+        return Duration(self.interval)

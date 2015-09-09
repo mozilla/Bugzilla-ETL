@@ -10,6 +10,7 @@
 
 from __future__ import unicode_literals
 from __future__ import division
+from __future__ import absolute_import
 
 
 
@@ -33,7 +34,7 @@ class Multiset(object):
             else:
                 return _Multiset(list, key_field, count_field)
         except Exception, e:
-            from ..env.logs import Log
+            from pyLibrary.debugs.logs import Log
 
             Log.error("Not expected", e)
 
@@ -89,9 +90,9 @@ class _Multiset(Multiset):
 
     def remove(self, value):
         if value not in self.dic:
-            from ..env.logs import Log
+            from pyLibrary.debugs.logs import Log
 
-            Log.error("{{value}} is not in multiset", {"value": value})
+            Log.error("{{value}} is not in multiset",  value= value)
         self._remove(value)
 
     def copy(self):
@@ -101,7 +102,7 @@ class _Multiset(Multiset):
 
 
     def _remove(self, value):
-        count = self.dic.get(value, None)
+        count = self.dic.get(value)
         if count == None:
             return
 
@@ -175,7 +176,7 @@ class _NegMultiset(Multiset):
         return self.dic.keys()
 
     def add(self, value, amount=None):
-        count = self.dic.get(value, None)
+        count = self.dic.get(value)
         if amount == None:
             amount = 1
         elif amount == 0:

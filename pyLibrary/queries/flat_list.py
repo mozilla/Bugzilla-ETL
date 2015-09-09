@@ -10,12 +10,15 @@
 
 from __future__ import unicode_literals
 from __future__ import division
+from __future__ import absolute_import
+from collections import Mapping
 
 import functools
-from ..collections import MIN
-from ..env.logs import Log
-from ..struct import nvl, split_field, StructList, Struct
-from ..structs.wraps import wrap
+from pyLibrary.collections import MIN
+from pyLibrary.debugs.logs import Log
+from pyLibrary.dot import split_field, coalesce, Dict
+from pyLibrary.dot.lists import DictList
+from pyLibrary.dot import wrap
 
 
 class FlatList(list):
@@ -51,7 +54,7 @@ class FlatList(list):
             yield r
 
     def select(self, fields):
-        if isinstance(fields, dict):
+        if isinstance(fields, Mapping):
             fields=fields.value
 
         if isinstance(fields, basestring):
@@ -63,15 +66,15 @@ class FlatList(list):
                     return [d[0][fields] for d in self.data]
             else:
                 keys = split_field(fields)
-                depth = nvl(MIN([i for i, (k, p) in enumerate(zip(keys, self.path)) if k != p]), len(self.path))  # LENGTH OF COMMON PREFIX
+                depth = coalesce(MIN([i for i, (k, p) in enumerate(zip(keys, self.path)) if k != p]), len(self.path))  # LENGTH OF COMMON PREFIX
                 short_key = keys[depth:]
 
-                output = StructList()
+                output = DictList()
                 _select1((wrap(d[depth]) for d in self.data), short_key, 0, output)
                 return output
 
         if isinstance(fields, list):
-            output = StructList()
+            output = DictList()
 
             meta = []
             for f in fields:
@@ -81,7 +84,7 @@ class FlatList(list):
                     meta.append((f.name, functools.partial(lambda v, d: d[v], f.value)))
 
             for row in self._values():
-                agg = Struct()
+                agg = Dict()
                 for name, f in meta:
                     agg[name] = f(row)
 
@@ -92,13 +95,13 @@ class FlatList(list):
             # meta = []
             # for f in fields:
             #     keys = split_field(f.value)
-            #     depth = nvl(MIN([i for i, (k, p) in enumerate(zip(keys, self.path)) if k != p]), len(self.path))  # LENGTH OF COMMON PREFIX
+            #     depth = coalesce(MIN([i for i, (k, p) in enumerate(zip(keys, self.path)) if k != p]), len(self.path))  # LENGTH OF COMMON PREFIX
             #     short_key = join_field(keys[depth:])
             #
             #     meta.append((f.name, depth, short_key))
             #
             # for row in self._data:
-            #     agg = Struct()
+            #     agg = Dict()
             #     for name, depth, short_key in meta:
             #         if short_key:
             #             agg[name] = row[depth][short_key]

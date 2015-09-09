@@ -9,11 +9,13 @@
 #
 from __future__ import unicode_literals
 from __future__ import division
+from __future__ import absolute_import
 import math
 import __builtin__
-from ..struct import Null, nvl
-from ..env.logs import Log
-from ..strings import find_first
+
+
+from pyLibrary.strings import find_first
+from pyLibrary.dot import Null, coalesce
 
 
 class Math(object):
@@ -31,6 +33,7 @@ class Math(object):
     def bayesian_add(*args):
         a = args[0]
         if a >= 1 or a <= 0:
+            from pyLibrary.debugs.logs import Log
             Log.error("Only allowed values *between* zero and one")
 
         for b in args[1:]:
@@ -70,10 +73,13 @@ class Math(object):
         try:
             if v == None:
                 return Null
+            if v == 0.0:
+                return -float("inf")
             if base == None:
                 return math.log(v)
             return math.log(v, base)
         except Exception, e:
+            from pyLibrary.debugs.logs import Log
             Log.error("error in log")
 
 
@@ -100,6 +106,9 @@ class Math(object):
 
     @staticmethod
     def is_number(s):
+        if s is True or s is False:
+            return False
+
         try:
             float(s)
             return True
@@ -123,6 +132,9 @@ class Math(object):
 
     @staticmethod
     def is_integer(s):
+        if s is True or s is False:
+            return False
+
         try:
             if float(s) == round(float(s), 0):
                 return True
@@ -149,19 +161,19 @@ class Math(object):
                 m = pow(10, math.ceil(math.log10(abs(value))))
                 return __builtin__.round(value / m, digits) * m
             except Exception, e:
+                from pyLibrary.debugs.logs import Log
                 Log.error("not expected", e)
 
         return __builtin__.round(value, decimal)
 
 
     @staticmethod
-    def floor(value, mod=None):
+    def floor(value, mod=1):
         """
         x == floor(x, a) + mod(x, a)  FOR ALL a
         """
         if value == None:
             return None
-        mod = nvl(mod, 1)
         v = int(math.floor(value))
         return v - (v % mod)
 
@@ -185,11 +197,43 @@ class Math(object):
 
     @staticmethod
     def ceiling(value, mod=1):
-        return int(math.ceil(value/mod))*mod
+        """
+        RETURN SMALLEST INTEGER GREATER THAN value
+        """
+        if value == None:
+            return None
+        v = int(math.floor(value+mod))
+        return v - (v % mod)
+
+    @staticmethod
+    def count(values):
+        count = 0
+        for v in values:
+            if v != None:
+                count += 1
+        return count
+
+    @staticmethod
+    def pow(n, p):
+        if n == None or p == None:
+            return None
+        return math.pow(n, p)
 
 
     @staticmethod
+    def sum(values):
+        sum = 0
+        for v in values:
+            if v != None:
+                sum += v
+        return sum
+
+    @staticmethod
     def max(*values):
+        return Math.MAX(values)
+
+    @staticmethod
+    def MAX(values):
         output = None
         for v in values:
             if v == None:
@@ -202,6 +246,10 @@ class Math(object):
 
     @staticmethod
     def min(*values):
+        return Math.MIN(values)
+
+    @staticmethod
+    def MIN(values):
         output = None
         for v in values:
             if v == None:
@@ -221,7 +269,7 @@ def almost_equal(first, second, digits=None, places=None, delta=None):
         if abs(first - second) <= delta:
             return True
     else:
-        places = nvl(places, digits, 18)
+        places = coalesce(places, digits, 18)
         diff = math.log10(abs(first-second))
         if diff < Math.ceiling(math.log10(first))-places:
             return True

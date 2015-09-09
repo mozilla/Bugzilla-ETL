@@ -11,6 +11,7 @@
 
 from __future__ import unicode_literals
 from __future__ import division
+from __future__ import absolute_import
 
 
 class Queue(object):
@@ -39,6 +40,9 @@ class Queue(object):
         if value in self.list:
             return self
         self.list.append(value)
+
+    def push(self, value):
+        self.add(value)
 
     def extend(self, values):
         for v in values:

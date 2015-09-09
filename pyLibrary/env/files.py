@@ -13,11 +13,11 @@ from datetime import datetime
 import io
 import os
 import shutil
-from ..strings import utf82unicode
-from ..maths import crypto
-from ..struct import nvl
-from ..structs.wraps import listwrap
-from ..cnv import CNV
+
+from pyLibrary.strings import utf82unicode
+from pyLibrary.maths import crypto
+from pyLibrary.dot import coalesce
+from pyLibrary import convert
 
 
 class File(object):
@@ -30,20 +30,39 @@ class File(object):
         YOU MAY SET filename TO {"path":p, "key":k} FOR CRYPTO FILES
         """
         if filename == None:
-            from ..env.logs import Log
+            from pyLibrary.debugs.logs import Log
 
             Log.error("File must be given a filename")
         elif isinstance(filename, basestring):
             self.key = None
             self._filename = "/".join(filename.split(os.sep))  # USE UNIX STANDARD
-            self.buffering = buffering
         else:
-            self.key = CNV.base642bytearray(filename.key)
+            self.key = convert.base642bytearray(filename.key)
             self._filename = "/".join(filename.path.split(os.sep))  # USE UNIX STANDARD
-            self.buffering = buffering
+
+        while self._filename.find(".../") >= 0:
+            # LET ... REFER TO GRANDPARENT, .... REFER TO GREAT-GRAND-PARENT, etc...
+            self._filename = self._filename.replace(".../", "../../")
+        self.buffering = buffering
+
 
         if suffix:
             self._filename = File.add_suffix(self._filename, suffix)
+
+    @classmethod
+    def new_instance(cls, *path):
+        def scrub(i, p):
+            if isinstance(p, File):
+                p = p.abspath
+            p = p.replace(os.sep, "/")
+            if p[-1] == '/':
+                p = p[:-1]
+            if i > 0 and p[0] == '/':
+                p = p[1:]
+            return p
+
+        return File('/'.join(scrub(i, p) for i, p in enumerate(path)))
+
 
     @property
     def filename(self):
@@ -51,7 +70,16 @@ class File(object):
 
     @property
     def abspath(self):
-        return os.path.abspath(self._filename)
+        if self._filename.startswith("~"):
+            home_path = os.path.expanduser("~")
+            if os.sep == "\\":
+                home_path = home_path.replace(os.sep, "/")
+            if home_path.endswith("/"):
+                home_path = home_path[:-1]
+
+            return home_path + self._filename[1::]
+        else:
+            return os.path.abspath(self._filename)
 
     @staticmethod
     def add_suffix(filename, suffix):
@@ -87,7 +115,11 @@ class File(object):
         """
         path = self._filename.split("/")
         parts = path[-1].split(".")
-        parts[-1] = ext
+        if len(parts) == 1:
+            parts.append(ext)
+        else:
+            parts[-1] = ext
+
         path[-1] = ".".join(parts)
         return File("/".join(path))
 
@@ -107,7 +139,7 @@ class File(object):
         """
         RETURN A FILENAME THAT CAN SERVE AS A BACKUP FOR THIS FILE
         """
-        suffix = CNV.datetime2string(nvl(timestamp, datetime.now()), "%Y%m%d_%H%M%S")
+        suffix = convert.datetime2string(coalesce(timestamp, datetime.now()), "%Y%m%d_%H%M%S")
         return File.add_suffix(self._filename, suffix)
 
     def read(self, encoding="utf8"):
@@ -118,19 +150,34 @@ class File(object):
             else:
                 return content
 
+    def read_json(self, encoding="utf8"):
+        from pyLibrary.jsons import ref
+
+        content = self.read(encoding=encoding)
+        value = convert.json2value(content, flexible=True, paths=True)
+        abspath = self.abspath
+        if os.sep == "\\":
+            abspath = "/" + abspath.replace(os.sep, "/")
+        return ref.expand(value, "file://" + abspath)
+
     def is_directory(self):
         return os.path.isdir(self._filename)
 
-    def read_ascii(self):
-        if not self.parent.exists:
-            self.parent.create()
-        with open(self._filename, "r") as f:
-            return f.read()
+    def read_bytes(self):
+        try:
+            if not self.parent.exists:
+                self.parent.create()
+            with open(self._filename, "rb") as f:
+                return f.read()
+        except Exception, e:
+            from pyLibrary.debugs.logs import Log
 
-    def write_ascii(self, content):
+            Log.error("roblem reading file {{filename}}", self.abspath)
+
+    def write_bytes(self, content):
         if not self.parent.exists:
             self.parent.create()
-        with open(self._filename, "w") as f:
+        with open(self._filename, "wb") as f:
             f.write(content)
 
     def write(self, data):
@@ -138,13 +185,20 @@ class File(object):
             self.parent.create()
         with open(self._filename, "wb") as f:
             if isinstance(data, list) and self.key:
-                from ..env.logs import Log
+                from pyLibrary.debugs.logs import Log
 
                 Log.error("list of data and keys are not supported, encrypt before sending to file")
 
-            for d in listwrap(data):
+            if isinstance(data, list):
+                pass
+            elif isinstance(data, basestring):
+                data=[data]
+            elif hasattr(data, "__iter__"):
+                pass
+
+            for d in data:
                 if not isinstance(d, unicode):
-                    from ..env.logs import Log
+                    from pyLibrary.debugs.logs import Log
 
                     Log.error("Expecting unicode data only")
                 if self.key:
@@ -158,13 +212,18 @@ class File(object):
         # http://effbot.org/zone/wide-finder.htm
         def output():
             try:
-                with io.open(self._filename, "rb") as f:
+                path = self._filename
+                if path.startswith("~"):
+                    home_path = os.path.expanduser("~")
+                    path = home_path + path[1::]
+
+                with io.open(path, "rb") as f:
                     for line in f:
                         yield utf82unicode(line)
             except Exception, e:
-                from .logs import Log
+                from pyLibrary.debugs.logs import Log
 
-                Log.error("Can not read line from {{filename}}", {"filename": self._filename}, e)
+                Log.error("Can not read line from {{filename}}",  filename= self._filename, cause=e)
 
         return output()
 
@@ -173,7 +232,7 @@ class File(object):
             self.parent.create()
         with open(self._filename, "ab") as output_file:
             if isinstance(content, str):
-                from .logs import Log
+                from pyLibrary.debugs.logs import Log
 
                 Log.error("expecting to write unicode only")
             output_file.write(content.encode("utf-8"))
@@ -189,13 +248,14 @@ class File(object):
             with open(self._filename, "ab") as output_file:
                 for c in content:
                     if isinstance(c, str):
-                        from .logs import Log
+                        from pyLibrary.debugs.logs import Log
+
                         Log.error("expecting to write unicode only")
 
                     output_file.write(c.encode("utf-8"))
                     output_file.write(b"\n")
         except Exception, e:
-            from ..env.logs import Log
+            from pyLibrary.debugs.logs import Log
 
             Log.error("Could not write to file", e)
 
@@ -209,7 +269,7 @@ class File(object):
         except Exception, e:
             if e.strerror == "The system cannot find the path specified":
                 return
-            from ..env.logs import Log
+            from pyLibrary.debugs.logs import Log
 
             Log.error("Could not remove file", e)
 
@@ -223,9 +283,9 @@ class File(object):
         try:
             os.makedirs(self._filename)
         except Exception, e:
-            from ..env.logs import Log
+            from pyLibrary.debugs.logs import Log
 
-            Log.error("Could not make directory {{dir_name}}", {"dir_name": self._filename}, e)
+            Log.error("Could not make directory {{dir_name}}",  dir_name= self._filename, cause=e)
 
     @property
     def children(self):

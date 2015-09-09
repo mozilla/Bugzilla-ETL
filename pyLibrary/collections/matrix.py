@@ -9,13 +9,14 @@
 #
 from __future__ import unicode_literals
 from __future__ import division
+from __future__ import absolute_import
 
 
-from ..collections import PRODUCT, reverse, MAX, MIN, OR
-from ..cnv import CNV
-from ..env.logs import Log
-from ..struct import Null, Struct, nvl
-from ..structs.wraps import wrap
+from pyLibrary.collections import PRODUCT, reverse, MAX, MIN, OR
+from pyLibrary import convert
+from pyLibrary.debugs.logs import Log
+from pyLibrary.dot import Null, Dict, coalesce
+from pyLibrary.meta import use_settings
 
 
 class Matrix(object):
@@ -24,34 +25,37 @@ class Matrix(object):
     """
     ZERO = None
 
-    def __init__(self, *dims, **kwargs):
-        kwargs = wrap(kwargs)
-        list = kwargs.list
+    @use_settings
+    def __init__(self, dims=[], list=None, value=None, zeros=False, settings=None):
         if list:
             self.num = 1
-            self.shape = (len(list), )
+            self.dims = (len(list), )
             self.cube = list
             return
 
-        value = kwargs.value
         if value != None:
             self.num = 0
-            self.shape = tuple()
+            self.dims = tuple()
             self.cube = value
             return
 
         self.num = len(dims)
-        self.shape = tuple(dims)
-        if self.num == 0 or OR(d == 0 for d in dims):  #NO DIMS, OR HAS A ZERO DIM, THEN IT IS A NULL CUBE
-            self.cube = Null
+        self.dims = tuple(dims)
+        if zeros:
+            if self.num == 0 or OR(d == 0 for d in dims):  #NO DIMS, OR HAS A ZERO DIM, THEN IT IS A NULL CUBE
+                self.cube = None
+            else:
+                self.cube = _zeros(*dims)
         else:
-            self.cube = _null(*dims)
+            if self.num == 0 or OR(d == 0 for d in dims):  #NO DIMS, OR HAS A ZERO DIM, THEN IT IS A NULL CUBE
+                self.cube = Null
+            else:
+                self.cube = _null(*dims)
 
     @staticmethod
     def wrap(array):
-        output = Matrix()
-        output.num = 1
-        output.shape = (len(array), )
+        output = Matrix(dims=(1,))
+        output.dims = (len(array), )
         output.cube = array
         return output
 
@@ -61,42 +65,23 @@ class Matrix(object):
                 sub = self.cube[index]
                 output = Matrix()
                 output.num = 1
-                output.shape = (len(sub), )
+                output.dims = (len(sub), )
                 output.cube = sub
                 return output
             else:
                 return self.cube[index]
 
-        def _getitem(c, i):
-            select = i[0]
-            if len(i)==1:
-                if select == None:
-                    return (len(c), ), c
-                elif isinstance(select, slice):
-                    sub = c[select]
-                    dims, cube = zip(*[_getitem(cc, i[1::]) for cc in sub])
-                    return (len(cube),)+dims[0], cube
-                else:
-                    return (), c[select]
-            else:
-                if select == None:
-                    dims, cube = zip(*[_getitem(cc, i[1::]) for cc in c])
-                    return (len(cube),)+dims[0], cube
-                elif isinstance(select, slice):
-                    sub = c[select]
-                    dims, cube = zip(*[_getitem(cc, i[1::]) for cc in sub])
-                    return (len(cube),)+dims[0], cube
-                else:
-                    return _getitem(c[select], i[1::])
+        if len(index) == 0:
+            return self.cube
 
         dims, cube = _getitem(self.cube, index)
 
         if len(dims) == 0:
             return cube  # SIMPLE VALUE
 
-        output = Matrix()
+        output = Matrix(dims=[])
         output.num = len(dims)
-        output.shape = dims
+        output.dims = dims
         output.cube = cube
         return output
 
@@ -104,6 +89,11 @@ class Matrix(object):
         try:
             if len(key) != self.num:
                 Log.error("Expecting coordinates to match the number of dimensions")
+
+            if self.num == 0:
+                self.cube = value
+                return
+
             last = self.num - 1
             m = self.cube
             for k in key[0:last:]:
@@ -121,7 +111,7 @@ class Matrix(object):
     def __len__(self):
         if self.num == 0:
             return 0
-        return PRODUCT(self.shape)
+        return PRODUCT(self.dims)
 
     @property
     def value(self):
@@ -172,7 +162,7 @@ class Matrix(object):
 
     def __iter__(self):
         # TODO: MAKE THIS FASTER BY NOT CALLING __getitem__ (MAKES CUBE OBJECTS)
-        return (self[c] for c in self._all_combos())
+        return ((c, self[c]) for c in self._all_combos())
 
     def __float__(self):
         return self.value
@@ -180,13 +170,15 @@ class Matrix(object):
     def groupby(self, io_select):
         """
         SLICE THIS MATRIX INTO ONES WITH LESS DIMENSIONALITY
+        io_select - 1 IF GROUPING BY THIS DIMENSION, 0 IF FLATTENING
+        return -
         """
 
         # offsets WILL SERVE TO MASK DIMS WE ARE NOT GROUPING BY, AND SERVE AS RELATIVE INDEX FOR EACH COORDINATE
         offsets = []
         new_dim = []
         acc = 1
-        for i, d in reverse(enumerate(self.shape)):
+        for i, d in reverse(enumerate(self.dims)):
             if not io_select[i]:
                 new_dim.insert(0, d)
             offsets.insert(0, acc * io_select[i])
@@ -199,7 +191,7 @@ class Matrix(object):
             # v - VALUE AT GIVEN COORDINATES
             return ((c, self[c]) for c in self._all_combos())
         else:
-            output = [[None, Matrix(*new_dim)] for i in range(acc)]
+            output = [[None, Matrix(dims=new_dim)] for i in range(acc)]
             _groupby(self.cube, 0, offsets, 0, output, tuple(), [])
 
         return output
@@ -207,7 +199,7 @@ class Matrix(object):
     def aggregate(self, type):
         func = aggregates[type]
         if not type:
-            Log.error("Aggregate of type {{type}} is not supported yet", {"type": type})
+            Log.error("Aggregate of type {{type}} is not supported yet",  type= type)
 
         return func(self.num, self.cube)
 
@@ -223,25 +215,34 @@ class Matrix(object):
             method(self[c], c, self.cube)
 
 
+    def items(self):
+        """
+        ITERATE THROUGH ALL coord, value PAIRS
+        """
+        for c in self._all_combos():
+            _, value = _getitem(self.cube, c)
+            yield c, value
+
+
     def _all_combos(self):
         """
         RETURN AN ITERATOR OF ALL COORDINATES
         """
-        combos = PRODUCT(self.shape)
+        combos = PRODUCT(self.dims)
         if not combos:
             return
 
-        calc = [(nvl(PRODUCT(self.shape[i+1:]), 1), mm) for i, mm in enumerate(self.shape)]
+        calc = [(coalesce(PRODUCT(self.dims[i+1:]), 1), mm) for i, mm in enumerate(self.dims)]
 
         for c in xrange(combos):
             yield tuple(int(c / dd) % mm for dd, mm in calc)
 
 
     def __str__(self):
-        return "Matrix " + CNV.object2JSON(self.shape) + ": " + str(self.cube)
+        return "Matrix " + convert.value2json(self.dims) + ": " + str(self.cube)
 
     def __json__(self):
-        return CNV.object2JSON(self.cube)
+        return convert.value2json(self.cube)
 
 
 Matrix.ZERO = Matrix(value=None)
@@ -264,7 +265,7 @@ def _min(depth, cube):
         return MIN(_min(depth - 1, c) for c in cube)
 
 
-aggregates = Struct(
+aggregates = Dict(
     max=_max,
     maximum=_max,
     min=_min,
@@ -293,6 +294,15 @@ def _null(*dims):
     else:
         return [_null(*dims[1::]) for i in range(d0)]
 
+def _zeros(*dims):
+    d0 = dims[0]
+    if d0 == 0:
+        Log.error("Zero dimensions not allowed")
+    if len(dims) == 1:
+        return [0] * d0
+    else:
+        return [_zeros(*dims[1::]) for _ in range(d0)]
+
 
 def _groupby(cube, depth, intervals, offset, output, group, new_coord):
     if depth == len(intervals):
@@ -304,9 +314,39 @@ def _groupby(cube, depth, intervals, offset, output, group, new_coord):
 
     if interval:
         for i, c in enumerate(cube):
-            _groupby(c, depth + 1, intervals, offset + i * interval, output, group + ( i, ), new_coord)
+            _groupby(c, depth + 1, intervals, offset + i * interval, output, group + (i, ), new_coord)
     else:
         for i, c in enumerate(cube):
             _groupby(c, depth + 1, intervals, offset, output, group + (-1, ), new_coord + [i])
+
+
+
+
+
+def _getitem(c, i):
+    if len(i)==1:
+        select = i[0]
+        if select == None:
+            return (len(c), ), c
+        elif isinstance(select, slice):
+            sub = c[select]
+            dims, cube = zip(*[_getitem(cc, i[1::]) for cc in sub])
+            return (len(cube),) + dims[0], cube
+        else:
+            return (), c[select]
+    else:
+        select = i[0]
+        if select == None:
+            dims, cube = zip(*[_getitem(cc, i[1::]) for cc in c])
+            return (len(cube),)+dims[0], cube
+        elif isinstance(select, slice):
+            sub = c[select]
+            dims, cube = zip(*[_getitem(cc, i[1::]) for cc in sub])
+            return (len(cube),)+dims[0], cube
+        else:
+            try:
+                return _getitem(c[select], i[1::])
+            except Exception, _:
+                pass
 
 
