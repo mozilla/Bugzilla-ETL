@@ -682,11 +682,12 @@ class BugHistoryParser():
             else:
                 # Obvious case - matched exactly one.
                 if DEBUG_STATUS:
-                    Log.note("[Bug {{bug_id}}]: Matched added flag {{added}} to removed flag {{removed}}",
-added= added_flag, {
-                        "removed": chosen_one,
-                        "bug_id": self.currBugState.bug_id
-                    })
+                    Log.note(
+                        "[Bug {{bug_id}}]: Matched added flag {{added}} to removed flag {{removed}}",
+                        added=added_flag,
+                        removed=chosen_one,
+                        bug_id=self.currBugState.bug_id
+                    )
 
             if chosen_one != None:
                 for f in ["value", "request_status", "requestee"]:
@@ -756,13 +757,14 @@ added= added_flag, {
 
             #WE CAN NOT REMOVE VALUES WE KNOW TO BE THERE AFTER
             if removed and (field_name != 'cc' or DEBUG_CC_CHANGES) and field_name not in KNOWN_MISSING_KEYWORDS:
-                Log.note("[Bug {{bug_id}}]: PROBLEM: Found {{type}} {{field_name}} value: (Removing {{removed}} can not result in {{existing}})",
-bug_id= target.bug_id, {
-                    "type": valueType,
-                    "field_name": field_name,
-                    "removed": removed,
-                    "existing": target[field_name]
-                })
+                Log.note(
+                    "[Bug {{bug_id}}]: PROBLEM: Found {{type}} {{field_name}} value: (Removing {{removed}} can not result in {{existing}})",
+                    bug_id= target.bug_id,
+                    type=valueType,
+                    field_name=field_name,
+                    removed=removed,
+                    existing=target[field_name]
+                )
 
             if valueType != "added" and diff:
                 self.currActivity.changes.append({
@@ -1004,7 +1006,7 @@ bug_id= target.bug_id, {
             try:
                 alias_json = File(self.settings.alias_file).read()
             except Exception, e:
-                Log.warning("No alias file", cause=e)
+                Log.warning("Could not load alias file", cause=e)
                 alias_json = "{}"
             self.aliases = {k: wrap(v) for k, v in convert.json2value(alias_json).items()}
 
