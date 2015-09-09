@@ -91,14 +91,14 @@ class BugHistoryParser():
         try:
             self.currBugID = row_in.bug_id
             if self.settings.debug:
-                Log.note("process row: {{row}}", {"row": row_in})
+                Log.note("process row: {{row}}", row=row_in)
 
             # If we have switched to a new bug
             if self.prevBugID < self.currBugID:
                 if self.prevBugID > 0:
                     # Start replaying versions in ascending order to build full data on each version
                     if DEBUG_STATUS:
-                        Log.note("[Bug {{bug_id}}]: Emitting intermediate versions", {"bug_id": self.prevBugID})
+                        Log.note("[Bug {{bug_id}}]: Emitting intermediate versions", bug_id=self.prevBugID)
                     self.populateIntermediateVersionObjects()
                 if row_in.bug_id == STOP_BUG:
                     return
@@ -113,7 +113,7 @@ class BugHistoryParser():
 
                 if added in ["? ?", "?"]: # Unknown value extracted from a possibly truncated field
                     uncertain = True
-                    Log.note("[Bug {{bug_id}}]: PROBLEM Encountered uncertain added value.  Skipping.", {"bug_id": self.currBugID})
+                    Log.note("[Bug {{bug_id}}]: PROBLEM Encountered uncertain added value.  Skipping.", bug_id=self.currBugID)
                     row_in.new_value = Null
                 elif added != None and added.startswith("? "): # Possibly truncated value extracted from a possibly truncated field
                     uncertain = True
@@ -121,7 +121,7 @@ class BugHistoryParser():
 
                 if removed in ["? ?", "?"]:# Unknown value extracted from a possibly truncated field
                     uncertain = True
-                    Log.note("[Bug {{bug_id}}]: PROBLEM Encountered uncertain removed value.  Skipping.", {"bug_id": self.currBugID})
+                    Log.note("[Bug {{bug_id}}]: PROBLEM Encountered uncertain removed value.  Skipping.", bug_id=self.currBugID)
                     row_in.old_value = Null
                 elif removed != None and removed.startswith("? "): # Possibly truncated value extracted from a possibly truncated field
                     uncertain = True
@@ -130,7 +130,7 @@ class BugHistoryParser():
                 if uncertain and self.currBugState.uncertain == None:
                     # Process the "uncertain" flag as an activity
                     # WE ARE GOING BACKWARDS IN TIME, SO MARKUP PAST
-                    Log.note("[Bug {{bug_id}}]: PROBLEM Setting this bug to be uncertain.", {"bug_id": self.currBugID})
+                    Log.note("[Bug {{bug_id}}]: PROBLEM Setting this bug to be uncertain.", bug_id=self.currBugID)
                     self.processBugsActivitiesTableItem(wrap({
                         "modified_ts": row_in.modified_ts,
                         "modified_by": row_in.modified_by,
@@ -140,7 +140,7 @@ class BugHistoryParser():
                         "attach_id": Null
                     }))
                     if row_in.new_value == None and row_in.old_value == None:
-                        Log.note("[Bug {{bug_id}}]: Nothing added or removed. Skipping update.", {"bug_id": self.currBugID})
+                        Log.note("[Bug {{bug_id}}]: Nothing added or removed. Skipping update.", bug_id=self.currBugID)
                         return
 
             # Treat timestamps as int values
@@ -159,17 +159,17 @@ class BugHistoryParser():
             elif row_in._merge_order == 9:
                 self.processBugsActivitiesTableItem(row_in)
             else:
-                Log.warning("Unhandled merge_order: '" + row_in._merge_order + "'")
+                Log.warning("Unhandled merge_order: {{order|quote}}", order=row_in._merge_order)
 
         except Exception, e:
-            Log.warning("Problem processing row: {{row}}", {"row": row_in}, e)
+            Log.warning("Problem processing row: {{row}}", row=row_in, cause=e)
         finally:
             if row_in._merge_order > 1 and self.currBugState.created_ts == None:
-                Log.note("PROBLEM expecting a created_ts (did you install the timezone database into your MySQL instance?)", {"bug_id": self.currBugID})
+                Log.note("PROBLEM expecting a created_ts (did you install the timezone database into your MySQL instance?)", bug_id=self.currBugID)
 
             for b in self.currBugState.blocked:
                 if isinstance(b, basestring):
-                    Log.note("PROBLEM error", {"bug_id": self.currBugID})
+                    Log.note("PROBLEM error", bug_id=self.currBugID)
             self.prev_row = row_in
 
     @staticmethod
@@ -203,7 +203,7 @@ class BugHistoryParser():
 
         if row_in._merge_order != 1:
             # Problem: No entry found in the 'bugs' table.
-            Log.warning("Current bugs table record not found for bug_id: {{bug_id}}  (merge order should have been 1, but was {{start_time}})", row_in)
+            Log.warning("Current bugs table record not found for bug_id: {{bug_id}}  (merge order should have been 1, but was {{start_time}})", **row_in)
 
 
     def processSingleValueTableItem(self, field_name, new_value):
@@ -216,12 +216,14 @@ class BugHistoryParser():
             self.currBugState[field_name].add(new_value)
             return Null
         except Exception, e:
-            Log.warning("Unable to push {{value}} to array field {{start_time}} on bug {{curr_value}} current value: {{curr_value}}", {
-                "value": new_value,
-                "field": field_name,
-                "bug_id": self.currBugID,
-                "curr_value": self.currBugState[field_name]
-            }, e)
+            Log.warning(
+                "Unable to push {{value}} to array field {{start_time}} on bug {{curr_value}} current value: {{curr_value}}",
+                value=new_value,
+                field=field_name,
+                bug_id=self.currBugID,
+                curr_value=self.currBugState[field_name],
+                cause=e
+            )
 
 
     def processAttachmentsTableItem(self, row_in):
@@ -266,10 +268,10 @@ class BugHistoryParser():
         flag = self.makeFlag(row_in.new_value, row_in.modified_ts, row_in.modified_by)
         if row_in.attach_id != None:
             if self.currBugAttachmentsMap[unicode(row_in.attach_id)] == None:
-                Log.note("[Bug {{bug_id}}]: Unable to find attachment {{attach_id}} for bug_id {{bug_id}}", {
-                    "attach_id": row_in.attach_id,
-                    "bug_id": self.currBugID
-                })
+                Log.note("[Bug {{bug_id}}]: Unable to find attachment {{attach_id}} for bug_id {{bug_id}}",
+                    attach_id=row_in.attach_id,
+                    bug_id=self.currBugID
+                )
             else:
                 if self.currBugAttachmentsMap[unicode(row_in.attach_id)].flags == None:
                     Log.error("should never happen")
@@ -308,11 +310,12 @@ class BugHistoryParser():
             attachment = self.currBugAttachmentsMap[unicode(row_in.attach_id)]
             if attachment == None:
                 #we are going backwards in time, no need to worry about these?  maybe delete this change for public bugs
-                Log.note("[Bug {{bug_id}}]: PROBLEM Unable to find attachment {{attach_id}} {{start_time}}: {{start_time}}", {
-                    "attach_id": row_in.attach_id,
-                    "bug_id": self.currBugID,
-                    "attachments": self.currBugAttachmentsMap
-                })
+                Log.note(
+                    "[Bug {{bug_id}}]: PROBLEM Unable to find attachment {{attach_id}} {{start_time}}: {{start_time}}",
+                    attach_id=row_in.attach_id,
+                    bug_id=self.currBugID,
+                    attachments=self.currBugAttachmentsMap
+                )
                 self.currActivity.changes.append({
                     "field_name": row_in.field_name,
                     "new_value": row_in.new_value,
@@ -361,11 +364,12 @@ class BugHistoryParser():
                         row_in.old_value = "\n".join(apply_diff(self.currBugState[row_in.field_name].split("\n"), row_in.new_value.split("\n"), reverse=True))
                         row_in.new_value = self.currBugState[row_in.field_name]
                     except Exception, e:
-                        Log.note("[Bug {{bug_id}}]: PROBLEM Unable to process {{field_name}} diff:\n{{diff|indent}}", {
-                            "bug_id": self.currBugID,
-                            "field_name": row_in.field_name,
-                            "diff":new_value
-                        })
+                        Log.note(
+                            "[Bug {{bug_id}}]: PROBLEM Unable to process {{field_name}} diff:\n{{diff|indent}}",
+                            bug_id=self.currBugID,
+                            field_name=row_in.field_name,
+                            diff=new_value
+                        )
                 self.currBugState[row_in.field_name] = row_in.old_value
                 self.currActivity.changes.append({
                     "field_name": row_in.field_name,
@@ -401,11 +405,12 @@ class BugHistoryParser():
                         nextVersion = self.bugVersions.pop() # Oldest version
                         if nextVersion.modified_ts > self.settings.end_time:
                             if DEBUG_STATUS:
-                                Log.note("[Bug {{bug_id}}]: Not outputting {{_id}} - it is after self.end_time ({{end_time|datetime}})", {
-                                    "_id": nextVersion._id,
-                                    "end_time": self.settings.end_time,
-                                    "bug_id": self.currBugState.bug_id
-                                })
+                                Log.note(
+                                    "[Bug {{bug_id}}]: Not outputting {{_id}} - it is after self.end_time ({{end_time|datetime}})",
+                                    _id=nextVersion._id,
+                                    end_time=self.settings.end_time,
+                                    bug_id=self.currBugState.bug_id
+                                )
                             nextVersion = Null
                     except Exception, e:
                         Log.error("problem", e)
@@ -677,8 +682,8 @@ class BugHistoryParser():
             else:
                 # Obvious case - matched exactly one.
                 if DEBUG_STATUS:
-                    Log.note("[Bug {{bug_id}}]: Matched added flag {{added}} to removed flag {{removed}}", {
-                        "added": added_flag,
+                    Log.note("[Bug {{bug_id}}]: Matched added flag {{added}} to removed flag {{removed}}",
+added= added_flag, {
                         "removed": chosen_one,
                         "bug_id": self.currBugState.bug_id
                     })
@@ -751,8 +756,8 @@ class BugHistoryParser():
 
             #WE CAN NOT REMOVE VALUES WE KNOW TO BE THERE AFTER
             if removed and (field_name != 'cc' or DEBUG_CC_CHANGES) and field_name not in KNOWN_MISSING_KEYWORDS:
-                Log.note("[Bug {{bug_id}}]: PROBLEM: Found {{type}} {{field_name}} value: (Removing {{removed}} can not result in {{existing}})", {
-                    "bug_id": target.bug_id,
+                Log.note("[Bug {{bug_id}}]: PROBLEM: Found {{type}} {{field_name}} value: (Removing {{removed}} can not result in {{existing}})",
+bug_id= target.bug_id, {
                     "type": valueType,
                     "field_name": field_name,
                     "removed": removed,
@@ -999,6 +1004,7 @@ class BugHistoryParser():
             try:
                 alias_json = File(self.settings.alias_file).read()
             except Exception, e:
+                Log.warning("No alias file", cause=e)
                 alias_json = "{}"
             self.aliases = {k: wrap(v) for k, v in convert.json2value(alias_json).items()}
 

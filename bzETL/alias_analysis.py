@@ -50,10 +50,11 @@ def full_analysis(settings, bug_list=None, please_stop=None):
 
         #Perform analysis on blocks of bugs, in case we crash partway through
         for s, e in qb.intervals(start, end, settings.alias.increment):
-            Log.note("Load range {{start}}-{{end}}", {
-                "start": s,
-                "end": e
-            })
+            Log.note(
+                "Load range {{start}}-{{end}}",
+                start=s,
+                end=e
+            )
             data = get_all_cc_changes(db, range(s, e))
             if please_stop:
                 break
@@ -78,7 +79,7 @@ class AliasAnalyzer(object):
             for r in result:
                 self.aliases[r.alias] = {"canonical":r["canonical"], "dirty":False}
 
-            Log.note("{{num}} aliases loaded", {"num": len(self.aliases.keys())})
+            Log.note("{{num}} aliases loaded", num=len(self.aliases.keys()))
 
             # LOAD THE NON-MATCHES
             na = set_default({}, settings.elasticsearch, {"type":"not_alias"})
@@ -92,7 +93,7 @@ class AliasAnalyzer(object):
                 self.not_aliases[r.alias] = r["canonical"]
 
         except Exception, e:
-            Log.error("Can not init aliases", e)
+            Log.error("Can not init aliases", cause=e)
 
     def aggregator(self, data):
         """
@@ -150,12 +151,13 @@ class AliasAnalyzer(object):
                     continue
 
                 best_solution = solutions[0]
-                Log.note("{{problem}} ({{score}}) -> {{solution}} {{matches}}", {
-                    "problem": problem.email,
-                    "score": problem.count,
-                    "solution": best_solution.email,
-                    "matches": convert.value2json(qb.select(solutions, "count")[:10:])
-                })
+                Log.note(
+                    "{{problem}} ({{score}}) -> {{solution}} {{matches}}",
+                    problem= problem.email,
+                    score= problem.count,
+                    solution= best_solution.email,
+                    matches= convert.value2json(qb.select(solutions, "count")[:10:])
+                )
                 try_again = True
                 self.add_alias(problem.email, best_solution.email)
 
@@ -214,11 +216,12 @@ class AliasAnalyzer(object):
         reassign=[]
         for k, v in self.aliases.iteritems():
             if v["canonical"] == old_canonical["canonical"]:
-                Log.note("ALIAS REMAPPED: {{alias}}->{{old}} to {{alias}}->{{new}}", {
-                    "alias": k,
-                    "old": old_canonical["canonical"],
-                    "new": found
-                })
+                Log.note(
+                    "ALIAS REMAPPED: {{alias}}->{{old}} to {{alias}}->{{new}}",
+                    alias= k,
+                    old= old_canonical["canonical"],
+                    new= found
+                )
                 reassign.append((k, found))
 
         for k, found in reassign:
@@ -231,7 +234,7 @@ class AliasAnalyzer(object):
                 records.append({"id":k, "value":{"canonical":v["canonical"], "alias":k}})
 
         if records:
-            Log.note("Net new aliases saved: {{num}}", {"num":len(records)})
+            Log.note("Net new aliases saved: {{num}}", num=len(records))
             self.es.extend(records)
 
 def mapper(emails, aliases):

@@ -20,7 +20,10 @@ Requirements
 Installation
 ------------
 
-Python and SetupTools are required.  It is best you install on Linux, but if you do install on Windows please [follow instructions to get these installed](https://github.com/klahnakoski/pyLibrary#windows-7-install-instructions-for-python).  When done, installation is easy:
+Python and SetupTools are required.  It is best you install on Linux, but if 
+you do install on Windows please [follow instructions to get these installed]
+(https://github.com/klahnakoski/pyLibrary#windows-7-install-instructions-for-python).  
+When done, installation is easy:
 
     git clone https://github.com/klahnakoski/Bugzilla-ETL.git
 
@@ -29,12 +32,16 @@ then install requirements:
     cd Bugzilla-ETL
     pip install -r requirements.txt
 
-**WARNING: ```pip install Bugzilla-ETL``` does not work** - I have been unable to get Pip to install resource files consistently across platforms and Python versions.
+**WARNING: ```pip install Bugzilla-ETL``` does not work** - I have been unable 
+to get Pip to install resource files consistently across platforms and Python 
+versions.
 
 Installation with PyPy
 ----------------------
 
-PyPy will execute 4 to 5 times faster then CPython.  PyPy maintains its own environment, and its own version of the module binaries.  This means running SetupTools is just a little different.  After
+PyPy will execute 4 to 5 times faster then CPython.  PyPy maintains its own 
+environment, and its own version of the module binaries.  This means running 
+SetupTools is just a little different.  After
 
     git clone https://github.com/klahnakoski/Bugzilla-ETL.git
 
@@ -59,15 +66,24 @@ Bugzilla-ETL keeps local run state in the form of two files:
 ```first_run_time``` and ```last_run_time```.  These are both parameters
 in the ``settings.json``` file.
 
-  * ```first_run_time``` is written only if it does not exist, and triggers a full ETL refresh.  Delete this file if you want to create a new ES index and start ETL from the beginning.
-  * ```last_run_time``` is recorded whenever there has been a successful ETL.  This file will not exist until the initial full ETL has completed successfully.  Deleteing this file should have no net effect, other than making the program work harder then it should.
+  * ```first_run_time``` is written only if it does not exist, and triggers a 
+    full ETL refresh.  Delete this file if you want to create a new ES index 
+    and start ETL from the beginning.
+  * ```last_run_time``` is recorded whenever there has been a successful ETL.  
+    This file will not exist until the initial full ETL has completed 
+    successfully.  Deleting this file should have no net effect, other than 
+    making the program work harder then it should.
 
 ### Alias Analysis ###
 
-You will require an alias file that matches the various email addresses that users have over time.  This analysis is neccesary for proper CC list history and patch review history.  [More on alias analysis](https://wiki.mozilla.org/BMO/ElasticSearch#Alias_Analysis).
+You will require an alias file that matches the various email addresses that 
+users have over time.  This analysis is necessary for proper CC list history 
+and patch review history.  [More on alias analysis](https://wiki.mozilla.org/BMO/ElasticSearch#Alias_Analysis).
 
-  * Make an ```alias_analysis_settings.json``` file.  Which can be the same main ETL settings.json file.
-  * The ```param.alias_file.key``` can be ```null```, or set to a AES256 key of your choice.
+  * Make an ```alias_analysis_settings.json``` file.  Which can be the same 
+    main ETL settings.json file.
+  * The ```param.alias_file.key``` can be ```null```, or set to a AES256 key 
+    of your choice.
   * Run [alias_analysis.py](https://github.com/klahnakoski/Bugzilla-ETL/blob/master/resources/scripts/alias_analysis.bat)
 
 

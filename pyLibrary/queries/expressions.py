@@ -676,10 +676,10 @@ class RangeOp(object):
         self.field, self.cmp = term.items()[0]
 
     def to_ruby(self):
-        return " and ".join(qb_expression_to_ruby({"and": [{o: {self.field: v}} for o, v in self.cmp.items()]}))
+        return qb_expression_to_ruby({"and": [{o: {self.field: v}} for o, v in self.cmp.items()]})
 
     def to_python(self):
-        return " and ".join(qb_expression_to_python({"and": [{o: {self.field: v}} for o, v in self.cmp.items()]}))
+        return qb_expression_to_python({"and": [{o: {self.field: v}} for o, v in self.cmp.items()]})
 
     def to_esfilter(self):
         return {"range": {self.field, self.cmp}}

@@ -119,11 +119,11 @@ def run_both_etl(db, output_queue, es_comments, param):
 
     result = comment_thread.join()
     if result.exception:
-        Log.error("etl_comments had problems", result.exception)
+        Log.error("etl_comments had problems", cause=result.exception)
 
     result = process_thread.join()
     if result.exception:
-        Log.error("etl had problems", result.exception)
+        Log.error("etl had problems", cause=result.exception)
 
 
 def setup_es(settings, db, es, es_comments):
@@ -157,7 +157,7 @@ def setup_es(settings, db, es, es_comments):
                     settings.es_comments.index = temp.last()
                 es_comments = elasticsearch.Index(settings.es_comments)
         except Exception, e:
-            Log.warning("can not resume ETL, restarting", e)
+            Log.warning("can not resume ETL, restarting", cause=e)
             File(settings.param.first_run_time).delete()
             return setup_es(settings, db, es, es_comments)
     else:
@@ -197,11 +197,11 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
 
     #REMOVE PRIVATE BUGS
     private_bugs = get_private_bugs_for_delete(db, param)
-    Log.note("Ensure the following private bugs are deleted:\n{{private_bugs|indent}}", {"private_bugs": sorted(private_bugs)})
+    Log.note("Ensure the following private bugs are deleted:\n{{private_bugs|indent}}", private_bugs=sorted(private_bugs))
     for g, delete_bugs in qb.groupby(private_bugs, size=1000):
         still_existing = get_bug_ids(es, {"terms": {"bug_id": delete_bugs}})
         if still_existing:
-            Log.note("Ensure the following existing private bugs are deleted:\n{{private_bugs|indent}}", {"private_bugs": sorted(still_existing)})
+            Log.note("Ensure the following existing private bugs are deleted:\n{{private_bugs|indent}}", private_bugs=sorted(still_existing))
         es.delete_record({"terms": {"bug_id": delete_bugs}})
         es_comments.delete_record({"terms": {"bug_id": delete_bugs}})
 
@@ -235,9 +235,11 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
             etl(db, output_queue, refresh_param.copy(), please_stop=None)
             etl_comments(db, es_comments, refresh_param.copy(), please_stop=None)
         except Exception, e:
-            Log.error("Problem with etl using parameters {{parameters}}", {
-                "parameters": refresh_param
-            }, e)
+            Log.error(
+                "Problem with etl using parameters {{parameters}}",
+                parameters=refresh_param,
+                cause=e
+            )
 
 
     #REFRESH COMMENTS WITH PRIVACY CHANGE
@@ -279,10 +281,11 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
         return
 
     with Thread.run("alias analysis", alias_analysis.full_analysis, settings=settings, bug_list=bug_list):
-        Log.note("Updating {{num}} bugs:\n{{bug_list|indent}}", {
-            "num": len(bug_list),
-            "bug_list": bug_list
-        })
+        Log.note(
+            "Updating {{num}} bugs:\n{{bug_list|indent}}",
+            num=len(bug_list),
+            bug_list=bug_list
+        )
         param.bug_list = bug_list
         run_both_etl(**{
             "db": db,
@@ -357,10 +360,12 @@ def full_etl(resume_from_last_run, settings, param, db, es, es_comments, output_
                 })
 
             except Exception, e:
-                Log.error("Problem with dispatch loop in range [{{min}}, {{max}})", {
-                    "min": min,
-                    "max": max
-                }, e)
+                Log.error(
+                    "Problem with dispatch loop in range [{{min}}, {{max}})",
+                    min=min,
+                    max=max,
+                    cause=e
+                )
 
 
 def main(settings, es=None, es_comments=None):
@@ -405,7 +410,7 @@ def main(settings, es=None, es_comments=None):
 
         File(settings.param.last_run_time).write(unicode(convert.datetime2milli(current_run_time)))
     except Exception, e:
-        Log.error("Problem with main ETL loop", e)
+        Log.error("Problem with main ETL loop", cause=e)
     finally:
         try:
             close_db_connections()
@@ -431,10 +436,12 @@ def get_bug_ids(es, filter):
 
         return set(results.hits.hits.fields.bug_id)
     except Exception, e:
-        Log.error("Can not get_max_bug from {{host}}/{{index}}", {
-            "host": es.settings.host,
-            "index": es.settings.index
-        }, e)
+        Log.error(
+            "Can not get_max_bug from {{host}}/{{index}}",
+            host=es.settings.host,
+            index=es.settings.index,
+            cause=e
+        )
 
 
 
@@ -455,10 +462,12 @@ def get_max_bug_id(es):
             return 0
         return results.facets["0"].max
     except Exception, e:
-        Log.error("Can not get_max_bug from {{host}}/{{index}}", {
-            "host": es.settings.host,
-            "index": es.settings.index
-        }, e)
+        Log.error(
+            "Can not get_max_bug from {{host}}/{{index}}",
+            host=es.settings.host,
+            index=es.settings.index,
+            cause=e
+        )
 
 
 def close_db_connections():
