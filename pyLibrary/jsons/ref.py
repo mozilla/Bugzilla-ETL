@@ -207,7 +207,7 @@ def get_file(ref, url):
     except Exception, e:
         try:
             new_value = _convert.ini2value(content)
-        except Exception, f:
+        except Exception:
             raise _Log.error("Can not read {{file}}", file=path, cause=e)
     new_value = _replace_ref(new_value, ref)
     return new_value

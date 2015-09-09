@@ -12,6 +12,7 @@ from __future__ import division
 from __future__ import absolute_import
 
 import datetime
+from decimal import Decimal
 
 from pyLibrary import regex
 from pyLibrary.vendor.dateutil.relativedelta import relativedelta
@@ -20,14 +21,12 @@ from pyLibrary.maths import Math
 from pyLibrary.dot import wrap
 
 
-_Date = None
-_Log = None
-
-
+Date = None
+Log = None
 def _delayed_import():
-    global _Date
-    from pyLibrary.times.dates import Date as _Date
-    _ = _Date(None)
+    global Date
+    from pyLibrary.times.dates import Date
+    _ = Date(None)
 
 
 class Duration(object):
@@ -71,7 +70,7 @@ class Duration(object):
     @staticmethod
     def range(start, stop, step):
         if not step:
-            _Log.error("Expecting a non-zero duration for interval")
+            Log.error("Expecting a non-zero duration for interval")
         output = []
         c = start
         while c < stop:
@@ -88,12 +87,12 @@ class Duration(object):
         return output
 
     def __radd__(self, other):
-        if not _Date:
+        if not Date:
             _delayed_import()
 
         if isinstance(other, datetime.datetime):
-            return _Date(other).add(self)
-        elif isinstance(other, _Date):
+            return Date(other).add(self)
+        elif isinstance(other, Date):
             return other.add(self)
         return self + other
 
@@ -212,10 +211,10 @@ class Duration(object):
 
     @property
     def seconds(self):
-        return self.milli / 1000.0
+        return float(self.milli) / 1000.0
 
     def total_seconds(self):
-        return self.milli / 1000.0
+        return float(self.milli) / 1000.0
 
     def __str__(self):
         return str(self.__unicode__())

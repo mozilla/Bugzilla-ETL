@@ -1,13 +1,13 @@
 # encoding: utf-8
 #
-from pyLibrary.sql.db import DB, SQL
+from pyLibrary.sql.db import MySQL, SQL
 from pyLibrary.env.logs import Log
 from pyLibrary.env import startup
 
 def main():
     """
     MEANT TO BE RUN JUST ONCE IN DEVELOPMENT TO CONVERT A BIG PUBLIC
-    DATABASE (8G+) INTO A TINY TESTING DB (FOR ADDING TO REPOSITORY)
+    DATABASE (8G+) INTO A TINY TESTING MySQL (FOR ADDING TO REPOSITORY)
     """
     try:
         settings=startup.read_settings()
@@ -20,7 +20,7 @@ def main():
         Log.note("Scrubbing db of those pesky records.")
         Log.note("This is going to take hours ...")
 
-        DB.execute_file(settings.bugzilla, "./tests/resources/sql/scrub_db.sql", {
+        MySQL.execute_file(settings.bugzilla, "./tests/resources/sql/scrub_db.sql", {
             "schema":settings.bugzilla.schema,
             "bug_list":SQL(settings.param.bugs)
         })

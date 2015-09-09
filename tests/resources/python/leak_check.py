@@ -6,12 +6,12 @@ from pymysql.times import TimeDelta
 from bzETL.extract_bugzilla import SCREENED_WHITEBOARD_BUG_GROUPS
 from pyLibrary.env import startup, elasticsearch
 from pyLibrary import struct
-from pyLibrary.cnv import CNV
+from pyLibrary import convert
 from pyLibrary.env.emailer import Emailer
 from pyLibrary.env.logs import Log, extract_stack
 from pyLibrary.maths import Math
-from pyLibrary.queries import Q
-from pyLibrary.struct import nvl, Struct
+from pyLibrary.queries import qb
+from pyLibrary.struct import coalesce, Dict
 
 # WRAP Log.error TO SHOW THE SPECIFIC ERROR IN THE LOGFILE
 if not hasattr(Log, "old_error"):
@@ -26,7 +26,7 @@ if not hasattr(Log, "old_error"):
     ##ASSIGN AS CLASS METHOD
     Log.error=MethodType(new_error, Log)
 
-NOW = CNV.datetime2milli(datetime.utcnow())
+NOW = convert.datetime2milli(datetime.utcnow())
 A_WHILE_AGO = int(NOW - TimeDelta(minutes=10).total_seconds()*1000)
 
 
@@ -58,7 +58,7 @@ class TestLookForLeaks(unittest.TestCase):
             "facets": {"0": {"statistical": {"field": "bug_id"}}}
         }).facets["0"].max
 
-        return reversed(list(Q.intervals(0, max_bug_id, self.settings.param.increment)))
+        return reversed(list(qb.intervals(0, max_bug_id, self.settings.param.increment)))
 
     def test_private_bugs_not_leaking(self):
         bad_news = False
@@ -103,9 +103,9 @@ class TestLookForLeaks(unittest.TestCase):
 
                 Log.note("{{num}} leaks!! {{bugs}}", {
                     "num": len(leaked_bugs),
-                    "bugs": Q.run({
+                    "bugs": qb.run({
                         "from":leaked_bugs,
-                        "select":["bug_id", "bug_version_num", {"name":"modified_ts", "value":lambda d: CNV.datetime2string(CNV.milli2datetime(d.modified_ts))}],
+                        "select":["bug_id", "bug_version_num", {"name":"modified_ts", "value":lambda d: convert.datetime2string(convert.milli2datetime(d.modified_ts))}],
                         "sort":"bug_id"
                     })
                 })
@@ -170,7 +170,7 @@ class TestLookForLeaks(unittest.TestCase):
                 fields=["bug_id", "bug_group", "attachments", "modified_ts"]
             )
 
-            private_attachments = Q.run({
+            private_attachments = qb.run({
                 "from": bugs_w_private_attachments,
                 "select": "attachments.attach_id",
                 "where": {"or": [
@@ -181,7 +181,7 @@ class TestLookForLeaks(unittest.TestCase):
             try:
                 private_attachments = [int(v) for v in private_attachments]
             except Exception, e:
-                private_attachments = Q.run({
+                private_attachments = qb.run({
                     "from": bugs_w_private_attachments,
                     "select": "attachments.attach_id",
                     "where": {"or": [
@@ -263,29 +263,29 @@ class TestLookForLeaks(unittest.TestCase):
 
         if leaked_whiteboard:
             for l in leaked_whiteboard:
-                l.modified_ts=CNV.datetime2string(CNV.milli2datetime(l.modified_ts))
+                l.modified_ts=convert.datetime2string(convert.milli2datetime(l.modified_ts))
 
             Log.error("Whiteboard leaking:\n{{leak|indent}}", {"leak": leaked_whiteboard})
 
 
 def get(es, esfilter, fields=None, limit=None):
-    query = struct.wrap({
+    query = wrap({
         "query": {"filtered": {
             "query": {"match_all": {}},
             "filter": esfilter
         }},
         "from": 0,
-        "size": nvl(limit, 200000),
+        "size": coalesce(limit, 200000),
         "sort": []
     })
 
     if fields:
         query.fields=fields
         results = es.search(query)
-        return Q.select(results.hits.hits, "fields")
+        return qb.select(results.hits.hits, "fields")
     else:
         results = es.search(query)
-        return Q.select(results.hits.hits, "_source")
+        return qb.select(results.hits.hits, "_source")
 
 
 
@@ -300,8 +300,8 @@ def milli2datetime(r):
         elif isinstance(r, basestring):
             return r
         elif Math.is_number(r):
-            if CNV.value2number(r) > 800000000000:
-                return CNV.datetime2string(CNV.milli2datetime(r), "%Y-%m-%d %H:%M:%S")
+            if convert.value2number(r) > 800000000000:
+                return convert.datetime2string(convert.milli2datetime(r), "%Y-%m-%d %H:%M:%S")
             else:
                 return r
         elif isinstance(r, dict):
@@ -320,7 +320,7 @@ def milli2datetime(r):
             if not output:
                 return None
             try:
-                return Q.sort(output)
+                return qb.sort(output)
             except Exception:
                 return output
         else:
@@ -339,7 +339,7 @@ def main():
         if results.errors or results.failures:
             error(results)
     except Exception, e:
-        error(Struct(errors=[e]))
+        error(Dict(errors=[e]))
     finally:
         pass
 

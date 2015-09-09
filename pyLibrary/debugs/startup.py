@@ -60,7 +60,7 @@ def read_settings(filename=None, defs=None):
             Log.error("Can not file settings file {{filename}}", {
                 "filename": settings_file.abspath
             })
-        settings = ref.get("file://" + settings_file.abspath)
+        settings = ref.get("file:///" + settings_file.abspath.replace(os.sep, "/"))
         if defs:
             settings.args = _argparse(defs)
         return settings

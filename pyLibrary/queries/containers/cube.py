@@ -16,11 +16,11 @@ from pyLibrary import convert
 from pyLibrary.collections.matrix import Matrix
 from pyLibrary.collections import MAX, OR
 from pyLibrary.queries.containers import Container
-# from pyLibrary.queries.query import _normalize_edge
 from pyLibrary.dot import Null, Dict
 from pyLibrary.dot.lists import DictList
 from pyLibrary.dot import wrap, wrap_dot, listwrap
 from pyLibrary.debugs.logs import Log
+from pyLibrary.queries.query import _normalize_edge
 
 
 class Cube(Container):
@@ -272,7 +272,7 @@ class Cube(Container):
         if len(self.edges)==1 and self.edges[0].domain.type=="index":
             # USE THE STANDARD LIST FILTER
             from pyLibrary.queries import qb
-            return qb.filter(where, self.data.values()[0].cube)
+            return qb.filter(self.data.values()[0].cube, where)
         else:
             # FILTER DOES NOT ALTER DIMESIONS, JUST WHETHER THERE ARE VALUES IN THE CELLS
             Log.unexpected("Incomplete")

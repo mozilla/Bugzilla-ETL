@@ -16,7 +16,7 @@ from copy import copy
 from types import GeneratorType
 
 from pyLibrary.debugs.logs import Log
-from pyLibrary.dot import set_default, split_field, wrap
+from pyLibrary.dot import set_default, split_field, wrap, DictList
 from pyLibrary.dot.dicts import Dict
 
 type2container = Dict()
@@ -25,7 +25,7 @@ _ListContainer = None
 _Cube = None
 _run = None
 _Query = None
-
+_Normal = None
 
 def _delayed_imports():
     global type2container
@@ -33,6 +33,7 @@ def _delayed_imports():
     global _Cube
     global _run
     global _Query
+    global _Normal
 
     from pyLibrary.queries.qb_usingMySQL import MySQL as _MySQL
     from pyLibrary.queries.qb_usingES import FromES as _FromES
@@ -49,10 +50,11 @@ def _delayed_imports():
 
     _ = _run
     _ = _Query
+    _ = _Normal
 
 
 class Container(object):
-    __slots__ = ["data", "schema"]
+    __slots__ = ["data", "schema", "namespaces"]
 
     @classmethod
     def new_instance(type, frum, schema=None):
@@ -100,8 +102,14 @@ class Container(object):
 
     def __init__(self, frum, schema=None):
         object.__init__(self)
+        if not type2container:
+            _delayed_imports()
+
         self.data = frum
+        if isinstance(schema, list):
+            Log.error("expecting map from abs_name to column object")
         self.schema = schema
+        # self.namespaces = wrap([_Normal()])
 
     def query(self, query):
         if query.frum != self:
@@ -135,7 +143,7 @@ class Container(object):
         _ = format
         Log.error("not implemented")
 
-    def get_columns(self, frum):
+    def get_columns(self, table):
         """
         USE THE frum TO DETERMINE THE COLUMNS
         """

@@ -10,39 +10,38 @@
 
 from datetime import datetime
 import unittest
-
 from bzETL import extract_bugzilla, bz_etl
 from bzETL.bz_etl import etl
 from bzETL.extract_bugzilla import get_current_time, SCREENED_WHITEBOARD_BUG_GROUPS
-from pyLibrary.cnv import CNV
+from pyLibrary import convert
 from pyLibrary.collections import MIN
-from pyLibrary.queries.db_query import esfilter2sqlwhere
-from pyLibrary.sql.db import DB, all_db
-from pyLibrary.env.logs import Log
-from pyLibrary.env.elasticsearch import ElasticSearch
+from pyLibrary.debugs import startup, constants
+from pyLibrary.debugs.logs import Log
+from pyLibrary.dot import Dict, Null, wrap
 from pyLibrary.env.files import File
-from pyLibrary.queries import Q
 from pyLibrary.maths.randoms import Random
-from pyLibrary.env import startup
-from pyLibrary import struct
-from pyLibrary.struct import Struct, Null
+from pyLibrary.queries import qb
+from pyLibrary.queries.qb_usingMySQL import esfilter2sqlwhere
+from pyLibrary.sql.mysql import MySQL, all_db
 from pyLibrary.testing import elasticsearch
 from pyLibrary.thread.threads import ThreadedQueue, Thread
 from pyLibrary.times.timer import Timer
-from util import compare_es, database
+from util import database, compare_es
 from util.compare_es import get_all_bug_versions
 from util.database import diff
+
 
 BUG_GROUP_FOR_TESTING = "super secret"
 
 
 class TestETL(unittest.TestCase):
     def setUp(self):
-        self.settings = startup.read_settings(filename="test_settings.json")
+        self.settings = startup.read_settings(filename="./tests/resources/config/test_settings.json")
+        constants.set(self.settings.constants)
         Log.start(self.settings.debug)
 
     def tearDown(self):
-        #CLOSE THE CACHED DB CONNECTIONS
+        #CLOSE THE CACHED MySQL CONNECTIONS
         bz_etl.close_db_connections()
 
         if all_db:
@@ -60,13 +59,13 @@ class TestETL(unittest.TestCase):
         # settings.param.allow_private_bugs = True
         database.make_test_instance(self.settings.bugzilla)
 
-        with DB(self.settings.bugzilla) as db:
+        with MySQL(self.settings.bugzilla) as db:
             candidate = elasticsearch.make_test_instance("candidate", self.settings.candidate)
             reference = elasticsearch.open_test_instance("reference", self.settings.private_bugs_reference)
 
             #SETUP RUN PARAMETERS
-            param = Struct()
-            param.end_time = CNV.datetime2milli(get_current_time(db))
+            param = Dict()
+            param.end_time = convert.datetime2milli(get_current_time(db))
             param.start_time = 0
             param.start_time_str = extract_bugzilla.milli2string(db, 0)
 
@@ -74,7 +73,7 @@ class TestETL(unittest.TestCase):
             param.bug_list = self.settings.param.bugs
             param.allow_private_bugs = self.settings.param.allow_private_bugs
 
-            with ThreadedQueue(candidate, size=1000) as output:
+            with ThreadedQueue("etl_queue", candidate, max_size=1000) as output:
                 etl(db, output, param, please_stop=None)
 
             #COMPARE ALL BUGS
@@ -91,18 +90,18 @@ class TestETL(unittest.TestCase):
         NUM_TO_TEST = 100
         MAX_BUG_ID = 900000
 
-        with DB(self.settings.bugzilla) as db:
+        with MySQL(self.settings.bugzilla) as db:
             candidate = elasticsearch.make_test_instance("candidate", self.settings.candidate)
-            reference = ElasticSearch(self.settings.private_bugs_reference)
+            reference = elasticsearch.Index(self.settings.private_bugs_reference)
 
             #GO FASTER BY STORING LOCAL FILE
             local_cache = File(self.settings.param.temp_dir + "/private_bugs.json")
             if local_cache.exists:
-                private_bugs = set(CNV.JSON2object(local_cache.read()))
+                private_bugs = set(convert.json2value(local_cache.read()))
             else:
                 with Timer("get private bugs"):
                     private_bugs = compare_es.get_private_bugs(reference)
-                    local_cache.write(CNV.object2JSON(private_bugs))
+                    local_cache.write(convert.value2json(private_bugs))
 
             while True:
                 some_bugs = [b for b in [Random.int(MAX_BUG_ID) for i in range(NUM_TO_TEST)] if b not in private_bugs]
@@ -110,8 +109,8 @@ class TestETL(unittest.TestCase):
                 Log.note("Test with the following bug_ids: {{bugs}}", {"bugs":some_bugs})
 
                 #SETUP RUN PARAMETERS
-                param = Struct()
-                param.end_time = CNV.datetime2milli(get_current_time(db))
+                param = Dict()
+                param.end_time = convert.datetime2milli(get_current_time(db))
                 param.start_time = 0
                 param.start_time_str = extract_bugzilla.milli2string(db, 0)
                 param.alias_file = self.settings.param.alias_file
@@ -196,7 +195,7 @@ class TestETL(unittest.TestCase):
         database.make_test_instance(self.settings.bugzilla)
 
         #MARK SOME BUGS PRIVATE
-        with DB(self.settings.bugzilla) as db:
+        with MySQL(self.settings.bugzilla) as db:
             for b in private_bugs:
                 database.add_bug_group(db, b, BUG_GROUP_FOR_TESTING)
 
@@ -219,7 +218,7 @@ class TestETL(unittest.TestCase):
         bz_etl.main(self.settings, es, es_c)
 
         #MARK SOME STUFF PRIVATE
-        with DB(self.settings.bugzilla) as db:
+        with MySQL(self.settings.bugzilla) as db:
             #BUGS
             private_bugs = set(Random.sample(self.settings.param.bugs, 3))
             Log.note("The private bugs are {{bugs}}", {"bugs": private_bugs})
@@ -259,7 +258,7 @@ class TestETL(unittest.TestCase):
 
         #MARK SOME STUFF PUBLIC
 
-        with DB(self.settings.bugzilla) as db:
+        with MySQL(self.settings.bugzilla) as db:
             for b in private_bugs:
                 database.remove_bug_group(db, b, BUG_GROUP_FOR_TESTING)
 
@@ -276,7 +275,7 @@ class TestETL(unittest.TestCase):
         database.make_test_instance(self.settings.bugzilla)
 
         #MARK SOME STUFF PRIVATE
-        with DB(self.settings.bugzilla) as db:
+        with MySQL(self.settings.bugzilla) as db:
             private_attachments = db.query("""
                 SELECT
                     bug_id,
@@ -305,7 +304,7 @@ class TestETL(unittest.TestCase):
         database.make_test_instance(self.settings.bugzilla)
 
         #MARK SOME COMMENTS PRIVATE
-        with DB(self.settings.bugzilla) as db:
+        with MySQL(self.settings.bugzilla) as db:
             private_comments = db.query("""
                 SELECT
                     bug_id,
@@ -341,7 +340,7 @@ class TestETL(unittest.TestCase):
         database.make_test_instance(self.settings.bugzilla)
 
         #MARK SOME BUGS PRIVATE
-        with DB(self.settings.bugzilla) as db:
+        with MySQL(self.settings.bugzilla) as db:
             for b in private_bugs:
                 database.add_bug_group(db, b, BUG_GROUP_FOR_TESTING)
 
@@ -350,7 +349,7 @@ class TestETL(unittest.TestCase):
         bz_etl.main(self.settings, es, es_c)
 
         # MAKE A CHANGE TO THE PRIVATE BUGS
-        with DB(self.settings.bugzilla) as db:
+        with MySQL(self.settings.bugzilla) as db:
             for b in private_bugs:
                 old_bug = db.query("SELECT * FROM bugs WHERE bug_id={{bug_id}}", {"bug_id": b})[0]
                 new_bug = old_bug.copy()
@@ -370,15 +369,15 @@ class TestETL(unittest.TestCase):
                 "query": {"match_all": {}},
                 "filter": {"and": [
                     {"terms": {"bug_id": private_bugs}},
-                    {"range": {"expires_on": {"gte": CNV.datetime2milli(now)}}}
+                    {"range": {"expires_on": {"gte": convert.datetime2milli(now)}}}
                 ]}
             }},
             "from": 0,
             "size": 200000,
             "sort": []
         })
-        latest_bugs = Q.select(results.hits.hits, "_source")
-        latest_bugs_index = Q.unique_index(latest_bugs, "bug_id")  # IF NOT UNIQUE, THEN ETL IS WRONG
+        latest_bugs = qb.select(results.hits.hits, "_source")
+        latest_bugs_index = qb.unique_index(latest_bugs, "bug_id")  # IF NOT UNIQUE, THEN ETL IS WRONG
 
         for bug_id in private_bugs:
             if latest_bugs_index[bug_id] == None:
@@ -396,18 +395,18 @@ class TestETL(unittest.TestCase):
     def test_incremental_etl_catches_tracking_flags(self):
         database.make_test_instance(self.settings.bugzilla)
 
-        with DB(self.settings.bugzilla) as db:
+        with MySQL(self.settings.bugzilla) as db:
             es = elasticsearch.make_test_instance("candidate", self.settings.candidate)
 
             #SETUP RUN PARAMETERS
-            param = Struct()
-            param.end_time = CNV.datetime2milli(get_current_time(db))
+            param = Dict()
+            param.end_time = convert.datetime2milli(get_current_time(db))
             # FLAGS ADDED TO BUG 813650 ON 18/12/2012 2:38:08 AM (PDT), SO START AT SOME LATER TIME
-            param.start_time = CNV.datetime2milli(CNV.string2datetime("02/01/2013 10:09:15", "%d/%m/%Y %H:%M:%S"))
+            param.start_time = convert.datetime2milli(convert.string2datetime("02/01/2013 10:09:15", "%d/%m/%Y %H:%M:%S"))
             param.start_time_str = extract_bugzilla.milli2string(db, param.start_time)
 
             param.alias_file = self.settings.param.alias_file
-            param.bug_list = struct.wrap([813650])
+            param.bug_list = wrap([813650])
             param.allow_private_bugs = self.settings.param.allow_private_bugs
 
             with ThreadedQueue(es, size=1000) as output:
@@ -428,7 +427,7 @@ class TestETL(unittest.TestCase):
 
         database.make_test_instance(self.settings.bugzilla)
 
-        with DB(self.settings.bugzilla) as db:
+        with MySQL(self.settings.bugzilla) as db:
             es = elasticsearch.make_test_instance("candidate", self.settings.candidate)
 
             #MARK BUG AS ONE OF THE SCREENED GROUPS
@@ -436,13 +435,13 @@ class TestETL(unittest.TestCase):
             db.flush()
 
             #SETUP RUN PARAMETERS
-            param = Struct()
-            param.end_time = CNV.datetime2milli(get_current_time(db))
+            param = Dict()
+            param.end_time = convert.datetime2milli(get_current_time(db))
             param.start_time = 0
             param.start_time_str = extract_bugzilla.milli2string(db, 0)
 
             param.alias_file = self.settings.param.alias_file
-            param.bug_list = struct.wrap([GOOD_BUG_TO_TEST]) # bug 1046 sees lots of whiteboard, and other field, changes
+            param.bug_list = wrap([GOOD_BUG_TO_TEST]) # bug 1046 sees lots of whiteboard, and other field, changes
             param.allow_private_bugs = True
 
             with ThreadedQueue(es, size=1000) as output:
@@ -460,7 +459,7 @@ class TestETL(unittest.TestCase):
 
         database.make_test_instance(self.settings.bugzilla)
 
-        with DB(self.settings.bugzilla) as db:
+        with MySQL(self.settings.bugzilla) as db:
             es = elasticsearch.make_test_instance("candidate", self.settings.candidate)
 
             #MARK BUG AS ONE OF THE SCREENED GROUPS
@@ -470,13 +469,13 @@ class TestETL(unittest.TestCase):
             db.flush()
 
             #SETUP RUN PARAMETERS
-            param = Struct()
-            param.end_time = CNV.datetime2milli(get_current_time(db))
+            param = Dict()
+            param.end_time = convert.datetime2milli(get_current_time(db))
             param.start_time = 0
             param.start_time_str = extract_bugzilla.milli2string(db, 0)
 
             param.alias_file = self.settings.param.alias_file
-            param.bug_list = struct.wrap([GOOD_BUG_TO_TEST]) # bug 1046 sees lots of whiteboard, and other field, changes
+            param.bug_list = wrap([GOOD_BUG_TO_TEST]) # bug 1046 sees lots of whiteboard, and other field, changes
             param.allow_private_bugs = True
 
             with ThreadedQueue(es, size=1000) as output:
@@ -491,13 +490,13 @@ class TestETL(unittest.TestCase):
 
     def test_incremental_has_correct_expires_on(self):
         # 813650, 726635 BOTH HAVE CHANGES IN 2013
-        bugs = struct.wrap([813650, 726635])
-        start_incremental=CNV.datetime2milli(CNV.string2datetime("2013-01-01", "%Y-%m-%d"))
+        bugs = wrap([813650, 726635])
+        start_incremental=convert.datetime2milli(convert.string2datetime("2013-01-01", "%Y-%m-%d"))
 
         es = elasticsearch.make_test_instance("candidate", self.settings.candidate)
-        with DB(self.settings.bugzilla) as db:
+        with MySQL(self.settings.bugzilla) as db:
             #SETUP FIRST RUN PARAMETERS
-            param = Struct()
+            param = Dict()
             param.end_time = start_incremental
             param.start_time = 0
             param.start_time_str = extract_bugzilla.milli2string(db, param.start_time)
@@ -510,8 +509,8 @@ class TestETL(unittest.TestCase):
                 etl(db, output, param, please_stop=None)
 
             #SETUP INCREMENTAL RUN PARAMETERS
-            param = Struct()
-            param.end_time = CNV.datetime2milli(datetime.utcnow())
+            param = Dict()
+            param.end_time = convert.datetime2milli(datetime.utcnow())
             param.start_time = start_incremental
             param.start_time_str = extract_bugzilla.milli2string(db, param.start_time)
 
@@ -528,7 +527,7 @@ class TestETL(unittest.TestCase):
                     "query": {"match_all": {}},
                     "filter": {"and":[
                         {"term":{"bug_id":b}},
-                        {"range":{"expires_on":{"gte":CNV.datetime2milli(datetime.utcnow())}}}
+                        {"range":{"expires_on":{"gte":convert.datetime2milli(datetime.utcnow())}}}
                     ]}
                 }},
                 "from": 0,
@@ -564,13 +563,13 @@ def verify_public_bugs(es, private_bugs):
 
 def verify_no_private_attachments(es, private_attachments):
     #VERIFY ATTACHMENTS ARE NOT IN OUTPUT
-    for b in Q.select(private_attachments, "bug_id"):
+    for b in qb.select(private_attachments, "bug_id"):
         versions = compare_es.get_all_bug_versions(es, b)
         #WE ASSUME THE ATTACHMENT, IF IT EXISTS, WILL BE SOMEWHERE IN THE BUG IT
         #BELONGS TO, IF AT ALL
         for v in versions:
             for a in v.attachments:
-                if a.attach_id in Q.select(private_attachments, "attach_id"):
+                if a.attach_id in qb.select(private_attachments, "attach_id"):
                     Log.error("Private attachment should not exist")
 
 
@@ -587,7 +586,7 @@ def verify_no_private_comments(es, private_comments):
         "sort": []
     })
 
-    if Q.select(data.hits.hits, "_source"):
+    if qb.select(data.hits.hits, "_source"):
         Log.error("Expecting no comments")
 
 
@@ -601,25 +600,25 @@ def compare_both(candidate, reference, settings, some_bugs):
         found_errors = False
         for bug_id in some_bugs:
             try:
-                versions = Q.sort(
+                versions = qb.sort(
                     get_all_bug_versions(candidate, bug_id, datetime.utcnow()),
                     "modified_ts")
                 # WE CAN NOT EXPECT candidate TO BE UP TO DATE BECAUSE IT IS USING AN OLD IMAGE
                 if not versions:
-                    max_time = CNV.milli2datetime(settings.bugzilla.expires_on)
+                    max_time = convert.milli2datetime(settings.bugzilla.expires_on)
                 else:
-                    max_time = CNV.milli2datetime(versions.last().modified_ts)
+                    max_time = convert.milli2datetime(versions.last().modified_ts)
 
                 pre_ref_versions = get_all_bug_versions(reference, bug_id, max_time)
                 ref_versions = \
-                    Q.sort(
+                    qb.sort(
                         #ADDED TO FIX OLD PRODUCTION BUG VERSIONS
                         [compare_es.old2new(x, settings.bugzilla.expires_on) for x in pre_ref_versions],
                         "modified_ts"
                     )
 
-                can = CNV.object2JSON(versions, pretty=True)
-                ref = CNV.object2JSON(ref_versions, pretty=True)
+                can = convert.value2json(versions, pretty=True)
+                ref = convert.value2json(ref_versions, pretty=True)
                 if can != ref:
                     found_errors = True
                     File(try_dir + unicode(bug_id) + ".txt").write(can)

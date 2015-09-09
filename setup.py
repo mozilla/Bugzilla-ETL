@@ -32,7 +32,7 @@ def get_resources(source, destination):
 
 setup(
     name='Bugzilla-ETL',
-    version="0.3.13353",
+    version="2.0.13353",
     description='Mozilla Bugzilla Bug Version ETL',
     long_description=long_desc,
     author='Kyle Lahnakoski',

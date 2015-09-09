@@ -1,26 +1,26 @@
 # encoding: utf-8
 #
-#
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# PYTHON VERSION OF https://github.com/mozilla-metrics/bugzilla_etl/blob/master/transformations/bugzilla_to_json.ktr
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
+
+from __future__ import unicode_literals
+from __future__ import division
+from __future__ import absolute_import
+
 from bzETL.parse_bug_history import MAX_TIME
-from pyLibrary.cnv import CNV
-from pyLibrary.queries.db_query import esfilter2sqlwhere
-from pyLibrary.sql.db import SQL
-
-from pyLibrary.env.logs import Log
-from pyLibrary.queries import Q
-from pyLibrary.struct import Struct
-
-
-#ALL BUGS IN PRIVATE ETL HAVE SCREENED FIELDS
+from pyLibrary import convert
+from pyLibrary.debugs.logs import Log
+from pyLibrary.dot import Dict
+from pyLibrary.queries import qb
+from pyLibrary.queries.qb_usingMySQL import esfilter2sqlwhere
+from pyLibrary.sql import SQL
 from pyLibrary.times.timer import Timer
 
+#ALL BUGS IN PRIVATE ETL HAVE SCREENED FIELDS
 SCREENED_FIELDDEFS = [
     19, #bug_file_loc
     24, #short_desc
@@ -67,7 +67,7 @@ def get_current_time(db):
         SELECT
             UNIX_TIMESTAMP(now()) `value`
         """)[0].value
-    return CNV.unix2datetime(output)
+    return convert.unix2datetime(output)
 
 
 def milli2string(db, value):
@@ -90,7 +90,7 @@ def get_screened_whiteboard(db):
         groups = db.query("SELECT id FROM groups WHERE {{where}}", {
             "where": esfilter2sqlwhere(db, {"terms": {"name": SCREENED_WHITEBOARD_BUG_GROUPS}})
         })
-        globals()["SCREENED_BUG_GROUP_IDS"] = Q.select(groups, "id")
+        globals()["SCREENED_BUG_GROUP_IDS"] = qb.select(groups, "id")
 
 
 def get_bugs_table_columns(db, schema_name):
@@ -226,7 +226,7 @@ def get_bugs(db, param):
             else:
                 return db.quote_column(col.column_name)
 
-        param.bugs_columns = Q.select(bugs_columns, "column_name")
+        param.bugs_columns = qb.select(bugs_columns, "column_name")
         param.bugs_columns_SQL = SQL(",\n".join([lower(c) for c in bugs_columns]))
         param.bug_filter = esfilter2sqlwhere(db, {"terms": {"b.bug_id": param.bug_list}})
         param.screened_whiteboard = esfilter2sqlwhere(db, {"and": [
@@ -290,7 +290,7 @@ def get_bugs(db, param):
 def flatten_bugs_record(r, output):
     for field_name, value in r.items():
         if value != "---":
-            newRow = Struct()
+            newRow = Dict()
             newRow.bug_id = r.bug_id
             newRow.modified_ts = r.modified_ts
             newRow.modified_by = r.modified_by
@@ -523,7 +523,7 @@ def flatten_attachments(data):
         for k,v in r.items():
             if k=="bug_id":
                 continue
-            output.append(Struct(
+            output.append(Dict(
                 bug_id=r.bug_id,
                 modified_ts=r.modified_ts,
                 modified_by=r.modified_by,

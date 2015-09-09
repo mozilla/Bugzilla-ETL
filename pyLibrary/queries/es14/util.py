@@ -11,10 +11,15 @@ from __future__ import unicode_literals
 from __future__ import division
 from __future__ import absolute_import
 
-from pyLibrary.dot import wrap, join_field, split_field
+from pyLibrary.dot import wrap, split_field, join_field
 
 
 def es_query_template(path):
+    """
+    RETURN TEMPLATE AND PATH-TO-FILTER AS A 2-TUPLE
+    :param path:
+    :return:
+    """
     sub_path = split_field(path)[1:]
 
     if sub_path:
@@ -34,24 +39,30 @@ def es_query_template(path):
     else:
         output = wrap({
             "query": {
-                "filter": {},
+                "filtered": {
+                    "query": {"match_all": {}},
+                    "filter": {}
+                }
             },
             "from": 0,
             "size": 0,
             "sort": []
         })
-        return output, "query.filter"
+        return output, "query.filtered.filter"
 
 
 
 
 def qb_sort_to_es_sort(sort):
+    if not sort:
+        return []
+
     output = []
     for s in sort:
         if s.sort == 1:
-            output.append(s.field)
+            output.append(s.value)
         elif s.sort == -1:
-            output.append({s.field: "desc"})
+            output.append({s.value: "desc"})
         else:
             pass
     return output
@@ -71,6 +82,8 @@ aggregates1_4 = {
     "mean": "avg",
     "average": "avg",
     "avg": "avg",
+    "median": "median",
+    "percentile": "percentile",
     "N": "count",
     "X0": "count",
     "X1": "sum",
@@ -80,4 +93,6 @@ aggregates1_4 = {
     "var": "variance",
     "variance": "variance"
 }
+
+NON_STATISTICAL_AGGS = {"none", "one", "count"}
 

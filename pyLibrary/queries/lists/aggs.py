@@ -18,7 +18,6 @@ from pyLibrary.dot import listwrap
 from pyLibrary.queries import windows
 from pyLibrary.queries.containers.cube import Cube
 from pyLibrary.queries.domains import SimpleSetDomain, DefaultDomain
-# from pyLibrary.queries.py.util import util_filter
 from pyLibrary.queries.expressions import qb_expression_to_function
 
 

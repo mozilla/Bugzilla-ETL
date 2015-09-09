@@ -405,6 +405,7 @@ class MySQL(object):
             )
 
     @staticmethod
+    @use_settings
     def execute_file(
         filename,
         host,
@@ -424,7 +425,7 @@ class MySQL(object):
             except Exception, e:
                 pass
         else:
-            MySQL.execute_sql(settings, sql, param)
+            MySQL.execute_sql(sql=sql, param=param, settings=settings)
 
     def _execute_backlog(self):
         if not self.backlog: return

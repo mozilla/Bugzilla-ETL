@@ -8,14 +8,14 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 import unittest
-from bzETL import extract_bugzilla, bz_etl
+from bzETL import bz_etl, extract_bugzilla
 from bzETL.bz_etl import etl
 from bzETL.extract_bugzilla import get_current_time
-from pyLibrary.cnv import CNV
-from pyLibrary.sql.db import DB, all_db
-from pyLibrary.env.logs import Log
-from pyLibrary.env import startup
-from pyLibrary.struct import Struct
+from pyLibrary import convert
+from pyLibrary.debugs import startup
+from pyLibrary.debugs.logs import Log
+from pyLibrary.dot import Dict
+from pyLibrary.sql.mysql import all_db, MySQL
 from pyLibrary.testing import elasticsearch
 from pyLibrary.thread.threads import ThreadedQueue
 
@@ -31,7 +31,7 @@ class TestOneETL(unittest.TestCase):
 
 
     def tearDown(self):
-        #CLOSE THE CACHED DB CONNECTIONS
+        #CLOSE THE CACHED MySQL CONNECTIONS
         bz_etl.close_db_connections()
 
         if all_db:
@@ -45,12 +45,12 @@ class TestOneETL(unittest.TestCase):
         USE A MYSQL DATABASE TO FILL AN ES INSTANCE (USE Fake_ES() INSTANCES TO KEEP
         THIS TEST LOCAL) WITH VERSIONS OF BUGS FROM settings.param.bugs.
         """
-        with DB(self.settings.bugzilla) as db:
+        with MySQL(self.settings.bugzilla) as db:
             candidate = elasticsearch.make_test_instance("candidate", self.settings.elasticsearch)
 
             #SETUP RUN PARAMETERS
-            param = Struct()
-            param.end_time = CNV.datetime2milli(get_current_time(db))
+            param = Dict()
+            param.end_time = convert.datetime2milli(get_current_time(db))
             param.start_time = 0
             param.start_time_str = extract_bugzilla.milli2string(db, 0)
 
@@ -63,7 +63,7 @@ class TestOneETL(unittest.TestCase):
 
 
         #TODO: INCLUDE OPTION TO USE REAL ES (AND ENSURE REALLY WORKING)
-        # es_settings=Struct(**{
+        # es_settings=Dict(**{
         #     "host": "http://localhost",
         #     "port": "9200",
         #     "index": ElasticSearch.proto_name("test_public_bugs"),

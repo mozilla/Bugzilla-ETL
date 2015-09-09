@@ -55,7 +55,7 @@ def unix(value):
 
 def url(value):
     """
-    CONVERT FROM dict OR string TO URL PARAMETERS
+    _CONVERT FROM dict OR string TO URL PARAMETERS
     """
     if not _convert:
         _late_import()
@@ -65,7 +65,7 @@ def url(value):
 
 def html(value):
     """
-    CONVERT FROM unicode TO HTML OF THE SAME
+    _CONVERT FROM unicode TO HTML OF THE SAME
     """
     if not _convert:
         _late_import()
@@ -553,14 +553,14 @@ def utf82unicode(value):
             _late_import()
 
         if not isinstance(value, basestring):
-            _Log.error("Can not convert {{type}} to unicode because it's not a string",  type= type(value).__name__)
+            _Log.error("Can not _convert {{type}} to unicode because it's not a string",  type= type(value).__name__)
 
         e = _Except.wrap(e)
         for i, c in enumerate(value):
             try:
                 c.decode("utf8")
             except Exception, f:
-                _Log.error("Can not convert charcode {{c}} in string  index {{i}}", i=i, c=ord(c), cause=[e, _Except.wrap(f)])
+                _Log.error("Can not _convert charcode {{c}} in string  index {{i}}", i=i, c=ord(c), cause=[e, _Except.wrap(f)])
 
         try:
             latin1 = unicode(value.decode("latin1"))

@@ -24,6 +24,9 @@ WHERE
 ;
 COMMIT;
 
+
+
+
 START TRANSACTION;
 DELETE FROM
 	tracking_flags_bugs
@@ -182,6 +185,8 @@ INSERT INTO keep_profiles SELECT watch_user FROM components;
 
 DELETE FROM keep_profiles WHERE id IS NULL;
 DELETE FROM profiles WHERE userid NOT IN (SELECT DISTINCT id FROM keep_profiles);
+DELETE FROM bug_mentors
+
 DROP TABLE IF EXISTS keep_profiles;
 UPDATE profiles SET public_key=NULL;
 COMMIT;
@@ -386,6 +391,11 @@ DELETE FROM whine_queries;
 DELETE FROM whine_schedules;
 DELETE FROM quips;
 COMMIT;
+
+
+START TRANSACTION ;
+DELETE FROM
+
 
 SET foreign_key_checks = 1;
 

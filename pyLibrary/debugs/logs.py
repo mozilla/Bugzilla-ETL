@@ -256,9 +256,9 @@ class Log(object):
     @classmethod
     def error(
         cls,
-        template,  # human readable template
-        default_params={},  # parameters for template
-        cause=None,  # pausible cause
+        template, # human readable template
+        default_params={}, # parameters for template
+        cause=None, # pausible cause
         stack_depth=0,        # stack trace offset (==1 if you do not want to report self)
         **more_params
     ):
@@ -270,6 +270,7 @@ class Log(object):
             default_params = {}
 
         params = dict(unwrap(default_params), **more_params)
+
         add_to_trace = False
         if cause == None:
             cause = []

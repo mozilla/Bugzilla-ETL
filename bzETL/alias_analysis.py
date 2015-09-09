@@ -1,12 +1,26 @@
+# encoding: utf-8
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this file,
+# You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Author: Kyle Lahnakoski (kyle@lahnakoski.com)
+#
+
+from __future__ import unicode_literals
+from __future__ import division
+from __future__ import absolute_import
+
 from bzETL.extract_bugzilla import get_all_cc_changes
-from pyLibrary.env import startup, elasticsearch
-from pyLibrary.cnv import CNV
-from pyLibrary.queries.es_query import ESQuery
-from pyLibrary.sql.db import DB
-from pyLibrary.env.logs import Log
-from pyLibrary.collections.multiset import Multiset
-from pyLibrary.queries import Q
-from pyLibrary.struct import nvl, set_default
+from pyLibrary import convert
+from pyLibrary.collections import Multiset
+from pyLibrary.debugs import startup
+from pyLibrary.debugs.logs import Log
+from pyLibrary.dot import set_default, coalesce
+from pyLibrary.env import elasticsearch
+from pyLibrary.queries import qb
+from pyLibrary.queries.qb_usingES import FromES
+from pyLibrary.sql.mysql import MySQL
 
 
 def full_analysis(settings, bug_list=None, please_stop=None):
@@ -24,18 +38,18 @@ def full_analysis(settings, bug_list=None, please_stop=None):
     analyzer = AliasAnalyzer(settings.alias)
 
     if bug_list:
-        with DB(settings.bugzilla, readonly=True) as db:
+        with MySQL(settings.bugzilla, readonly=True) as db:
             data = get_all_cc_changes(db, bug_list)
             analyzer.aggregator(data)
             analyzer.analysis(True, please_stop)
         return
 
-    with DB(settings.bugzilla, readonly=True) as db:
-        start = nvl(settings.alias.start, 0)
-        end = nvl(settings.alias.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
+    with MySQL(settings.bugzilla, readonly=True) as db:
+        start = coalesce(settings.alias.start, 0)
+        end = coalesce(settings.alias.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
 
         #Perform analysis on blocks of bugs, in case we crash partway through
-        for s, e in Q.intervals(start, end, settings.alias.increment):
+        for s, e in qb.intervals(start, end, settings.alias.increment):
             Log.note("Load range {{start}}-{{end}}", {
                 "start": s,
                 "end": e
@@ -56,7 +70,7 @@ class AliasAnalyzer(object):
         try:
             a = set_default({}, settings.elasticsearch, {"type":"alias"})
             self.es = elasticsearch.Cluster(settings.elasticsearch).get_or_create_index(a, ALIAS_SCHEMA, limit_replicas=True)
-            self.esq = ESQuery(self.es)
+            self.esq = FromES(self.es)
             result = self.esq.query({
                 "from":"bug_aliases",
                 "select":["canonical", "alias"]
@@ -69,7 +83,7 @@ class AliasAnalyzer(object):
             # LOAD THE NON-MATCHES
             na = set_default({}, settings.elasticsearch, {"type":"not_alias"})
             es = elasticsearch.Cluster(na).get_or_create_index(na)
-            esq = ESQuery(es)
+            esq = FromES(es)
             result = esq.query({
                 "from":"bug_aliases",
                 "select":["canonical", "alias"]
@@ -110,7 +124,7 @@ class AliasAnalyzer(object):
                     if count < 0:
                         problem_agg.add(self.alias(email)["canonical"], amount=count)
 
-            problems = Q.sort([
+            problems = qb.sort([
                 {"email": e, "count": c}
                 for e, c in problem_agg.dic.iteritems()
                 if not self.not_aliases.get(e, None) and (c <= -(DIFF / 2) or last_run)
@@ -126,7 +140,7 @@ class AliasAnalyzer(object):
                 for bug_id, agg in self.bugs.iteritems():
                     if agg.dic.get(problem.email, 0) < 0:  #ONLY BUGS THAT ARE EXPERIENCING THIS problem
                         solution_agg += agg
-                solutions = Q.sort([{"email": e, "count": c} for e, c in solution_agg.dic.iteritems()], [{"field": "count", "sort": -1}, "email"])
+                solutions = qb.sort([{"email": e, "count": c} for e, c in solution_agg.dic.iteritems()], [{"field": "count", "sort": -1}, "email"])
 
                 if last_run and len(solutions) == 2 and solutions[0].count == -solutions[1].count:
                     #exact match
@@ -140,7 +154,7 @@ class AliasAnalyzer(object):
                     "problem": problem.email,
                     "score": problem.count,
                     "solution": best_solution.email,
-                    "matches": CNV.object2JSON(Q.select(solutions, "count")[:10:])
+                    "matches": convert.value2json(qb.select(solutions, "count")[:10:])
                 })
                 try_again = True
                 self.add_alias(problem.email, best_solution.email)

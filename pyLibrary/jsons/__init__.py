@@ -5,7 +5,7 @@ import json
 import re
 from types import NoneType
 
-from pyLibrary.dot import DictList, NullType
+from pyLibrary.dot import DictList, NullType, Dict, unwrap
 from pyLibrary.dot.objects import DictObject
 from pyLibrary.times.dates import Date
 
@@ -22,10 +22,10 @@ def _late_import():
     global datetime2unix
     global utf82unicode
 
-    from pyLibrary.debugs.logs import Log
+    from pyLibrary.debugs.logs import Log as _Log
     from pyLibrary.convert import datetime2unix, utf82unicode
 
-    _ = Log
+    _ = _Log
     _ = datetime2unix
     _ = utf82unicode
 
@@ -50,7 +50,6 @@ def replace(match):
 
 
 def quote(value):
-    value
     return "\"" + ESCAPE.sub(replace, value) + "\""
 
 
@@ -82,6 +81,8 @@ def _scrub(value, is_done):
         return utf82unicode(value)
     elif type_ is Decimal:
         return float(value)
+    elif type_ is Dict:
+        return _scrub(unwrap(value), is_done)
     elif isinstance(value, Mapping):
         _id = id(value)
         if _id in is_done:

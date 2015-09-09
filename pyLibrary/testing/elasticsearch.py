@@ -18,6 +18,8 @@ from pyLibrary.env.files import File
 from pyLibrary.queries import qb
 from pyLibrary.dot.dicts import Dict
 from pyLibrary.dot import unwrap, wrap
+from pyLibrary.queries.expressions import qb_expression_to_function
+
 
 def make_test_instance(name, settings):
     if settings.filename:
@@ -56,7 +58,7 @@ class Fake_ES():
 
     def search(self, query):
         query=wrap(query)
-        f = convert.esfilter2where(query.query.filtered.filter)
+        f = qb_expression_to_function(query.query.filtered.filter)
         filtered=wrap([{"_id": i, "_source": d} for i, d in self.data.items() if f(d)])
         if query.fields:
             return wrap({"hits": {"total":len(filtered), "hits": [{"_id":d._id, "fields":unwrap(qb.select([unwrap(d._source)], query.fields)[0])} for d in filtered]}})

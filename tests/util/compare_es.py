@@ -10,11 +10,10 @@
 from datetime import datetime
 
 from bzETL import transform_bugzilla, parse_bug_history
-from pyLibrary import struct
-from pyLibrary.struct import nvl
-from pyLibrary.cnv import CNV
+from pyLibrary import convert
+from pyLibrary.dot import coalesce, unwrap
 from pyLibrary.maths import Math
-from pyLibrary.queries import Q
+from pyLibrary.queries import qb
 
 
 #PULL ALL BUG DOCS FROM ONE ES
@@ -22,14 +21,14 @@ from pyLibrary.times.timer import Timer
 
 
 def get_all_bug_versions(es, bug_id, max_time=None):
-    max_time = nvl(max_time, datetime.max)
+    max_time = coalesce(max_time, datetime.max)
 
     data = es.search({
         "query": {"filtered": {
             "query": {"match_all": {}},
             "filter": {"and": [
                 {"term": {"bug_id": bug_id}},
-                {"range": {"modified_ts": {"lte": CNV.datetime2milli(max_time)}}}
+                {"range": {"modified_ts": {"lte": convert.datetime2milli(max_time)}}}
             ]}
         }},
         "from": 0,
@@ -37,7 +36,7 @@ def get_all_bug_versions(es, bug_id, max_time=None):
         "sort": []
     })
 
-    return Q.select(data.hits.hits, "_source")
+    return qb.select(data.hits.hits, "_source")
 
 
 def get_private_bugs(es):
@@ -63,10 +62,10 @@ def get_private_bugs(es):
         output = set([])
         for bug in data.hits.hits:
             output.add(bug.fields.bug_id)
-            output |= set(nvl(CNV.value2intlist(bug.fields.blocked), []))
-            output |= set(nvl(CNV.value2intlist(bug.fields.dependson), []))
-            output |= set(nvl(CNV.value2intlist(bug.fields.dupe_of), []))
-            output |= set(nvl(CNV.value2intlist(bug.fields.dupe_by), []))
+            output |= set(coalesce(convert.value2intlist(bug.fields.blocked), []))
+            output |= set(coalesce(convert.value2intlist(bug.fields.dependson), []))
+            output |= set(coalesce(convert.value2intlist(bug.fields.dupe_of), []))
+            output |= set(coalesce(convert.value2intlist(bug.fields.dupe_by), []))
 
     output.add(551988, 636964)
     return output
@@ -83,23 +82,23 @@ def old2new(bug, max_date):
         else:
             bug.everconfirmed = int(bug.everconfirmed)
 
-    bug = CNV.JSON2object(CNV.object2JSON(bug).replace("bugzilla: other b.m.o issues ", "bugzilla: other b.m.o issues"))
+    bug = convert.json2value(convert.value2json(bug).replace("bugzilla: other b.m.o issues ", "bugzilla: other b.m.o issues"))
 
     if bug.expires_on > max_date:
         bug.expires_on = parse_bug_history.MAX_TIME
     if bug.votes != None:
         bug.votes = int(bug.votes)
-    bug.dupe_by = CNV.value2intlist(bug.dupe_by)
+    bug.dupe_by = convert.value2intlist(bug.dupe_by)
     if bug.votes == 0:
         del bug["votes"]
         # if Math.is_integer(bug.remaining_time) and int(bug.remaining_time) == 0:
     #     bug.remaining_time = 0
     if bug.cf_due_date != None and not Math.is_number(bug.cf_due_date):
-        bug.cf_due_date = CNV.datetime2milli(
-            CNV.string2datetime(bug.cf_due_date, "%Y-%m-%d")
+        bug.cf_due_date = convert.datetime2milli(
+            convert.string2datetime(bug.cf_due_date, "%Y-%m-%d")
         )
-    bug.changes = CNV.JSON2object(
-        CNV.object2JSON(Q.sort(bug.changes, "field_name")) \
+    bug.changes = convert.json2value(
+        convert.value2json(qb.sort(bug.changes, "field_name")) \
             .replace("\"field_value_removed\":", "\"old_value\":") \
             .replace("\"field_value\":", "\"new_value\":")
     )
@@ -113,7 +112,7 @@ def old2new(bug, max_date):
         if Math.is_number(bug.cf_last_resolved):
             bug.cf_last_resolved = long(bug.cf_last_resolved)
         else:
-            bug.cf_last_resolved = CNV.datetime2milli(CNV.string2datetime(bug.cf_last_resolved, "%Y-%m-%d %H:%M:%S"))
+            bug.cf_last_resolved = convert.datetime2milli(convert.string2datetime(bug.cf_last_resolved, "%Y-%m-%d %H:%M:%S"))
     except Exception, e:
         pass
 
@@ -123,15 +122,15 @@ def old2new(bug, max_date):
         if c.attach_id == '':
             c.attach_id = None
         else:
-            c.attach_id = CNV.value2int(c.attach_id)
+            c.attach_id = convert.value2int(c.attach_id)
 
-    bug.attachments = Q.sort(bug.attachments, "attach_id")
+    bug.attachments = qb.sort(bug.attachments, "attach_id")
     for a in bug.attachments:
-        a.attach_id = CNV.value2int(a.attach_id)
+        a.attach_id = convert.value2int(a.attach_id)
         for k, v in list(a.items()):
             if k.endswith("isobsolete") or k.endswith("ispatch") or k.endswith("isprivate"):
-                struct.unwrap(a)[k] = CNV.value2int(v) # PREVENT dot (.) INTERPRETATION
-                a[k.split(".")[-1].split("_")[-1]] = CNV.value2int(v)
+                unwrap(a)[k] = convert.value2int(v) # PREVENT dot (.) INTERPRETATION
+                a[k.split(".")[-1].split("_")[-1]] = convert.value2int(v)
 
     bug = transform_bugzilla.normalize(bug)
     return bug

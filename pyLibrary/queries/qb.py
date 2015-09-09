@@ -21,19 +21,17 @@ from pyLibrary.debugs.logs import Log
 from pyLibrary.dot import set_default, Null, Dict, split_field, coalesce, join_field
 from pyLibrary.dot.lists import DictList
 from pyLibrary.dot import listwrap, wrap, unwrap
-from pyLibrary.dot.objects import DictObject
+from pyLibrary.dot.objects import DictClass, DictObject
 from pyLibrary.maths import Math
 from pyLibrary.queries import flat_list, query, group_by
 from pyLibrary.queries.containers import Container
 from pyLibrary.queries.cubes.aggs import cube_aggs
-from pyLibrary.queries.expressions import TRUE_FILTER, FALSE_FILTER, compile_expression, qb_expression_to_function
+from pyLibrary.queries.expressions import TRUE_FILTER, FALSE_FILTER, compile_expression, qb_expression_to_function, qb_expression_to_python
 from pyLibrary.queries.flat_list import FlatList
 from pyLibrary.queries.index import Index
+from pyLibrary.queries.query import Query, _normalize_selects, sort_direction, _normalize_select
 from pyLibrary.queries.containers.cube import Cube
-from pyLibrary.queries.normalize import _normalize_sort, _normalize_select, _normalize_selects
-from pyLibrary.queries.query import Query
 from pyLibrary.queries.unique_index import UniqueIndex
-
 
 # A COLLECTION OF DATABASE OPERATORS (RELATIONAL ALGEBRA OPERATORS)
 # qb QUERY DOCUMENTATION: https://github.com/klahnakoski/qb/tree/master/docs
@@ -41,14 +39,64 @@ from pyLibrary.queries.unique_index import UniqueIndex
 # TODO: USE http://docs.sqlalchemy.org/en/latest/core/tutorial.html AS DOCUMENTATION FRAMEWORK
 
 
-def run(query):
+def run(query, frum=None):
     """
     THIS FUNCTION IS SIMPLY SWITCHING BASED ON THE query["from"] CONTAINER,
     BUT IT IS ALSO PROCESSING A list CONTAINER; SEPARATE TO A ListContainer
     """
-    frum = Container.new_instance(query["from"])
-    q = Query(query, frum)
-    return frum.query(q)
+    query = Query(query)
+    frum = coalesce(frum, query["from"])
+    if isinstance(frum, Container):
+        return frum.query(query)
+    elif isinstance(frum, (list, set, GeneratorType)):
+        frum = wrap(list(frum))
+    elif isinstance(frum, Cube):
+        if is_aggs(query):
+            return cube_aggs(frum, query)
+
+    elif isinstance(frum, Query):
+        frum = run(frum).data
+    else:
+        Log.error("Do not know how to handle {{type}}",  type=frum.__class__.__name__)
+
+    if is_aggs(query):
+        frum = list_aggs(frum, query)
+    else:  # SETOP
+        # try:
+        #     if query.filter != None or query.esfilter != None:
+        #         Log.error("use 'where' clause")
+        # except AttributeError:
+        #     pass
+
+        if query.where is not TRUE_FILTER:
+            frum = filter(frum, query.where)
+
+        if query.sort:
+            frum = sort(frum, query.sort)
+
+        if query.select:
+            frum = select(frum, query.select)
+
+    if query.window:
+        if isinstance(frum, Cube):
+            frum = list(frum.values())
+
+        for param in query.window:
+            window(frum, param)
+
+    # AT THIS POINT frum IS IN LIST FORMAT, NOW PACKAGE RESULT
+    if query.format == "cube":
+        frum = convert.list2cube(frum)
+    elif query.format == "table":
+        frum = convert.list2table(frum)
+        frum.meta.format = "table"
+    else:
+        frum = wrap({
+            "meta": {"format": "list"},
+            "data": frum
+        })
+
+    return frum
 
 
 groupby = group_by.groupby
@@ -221,10 +269,11 @@ def select_one(record, selection):
         output = Dict()
         for f in selection:
             f = _normalize_select(f)
-            output[f.name]=record[f.value]
+            output[f.name] = record[f.value]
         return output
     else:
         Log.error("Do not know how to handle")
+
 
 
 def select(data, field_name):
@@ -395,8 +444,8 @@ def _select_deep_meta(field, depth):
             return assign
 
 
-# def get_columns(data):
-#     return wrap([{"name": n} for n in UNION(set(d.keys()) for d in data)])
+def get_columns(data):
+    return wrap([{"name": n} for n in UNION(set(d.keys()) for d in data)])
 
 
 def sort(data, fieldnames=None):
@@ -410,19 +459,29 @@ def sort(data, fieldnames=None):
         if fieldnames == None:
             return wrap(sorted(data))
 
-        fieldnames = _normalize_sort(fieldnames)
+        fieldnames = listwrap(fieldnames)
         if len(fieldnames) == 1:
             fieldnames = fieldnames[0]
-
             # SPECIAL CASE, ONLY ONE FIELD TO SORT BY
-            if fieldnames.field == ".":
+            if fieldnames == ".":
+                return wrap(sorted(data))
+            if isinstance(fieldnames, (basestring, int)):
+                fieldnames = wrap({"value": fieldnames, "sort": 1})
+
+            # EXPECTING {"field":f, "sort":i} FORMAT
+            fieldnames.sort = sort_direction.get(fieldnames.sort, 1)
+            fieldnames.value = coalesce(fieldnames.value, fieldnames.field)
+            if fieldnames.value==None:
+                Log.error("Expecting sort to have 'value' attribute")
+
+            if fieldnames.value == ".":
                 #VALUE COMPARE
                 def _compare_v(l, r):
                     return value_compare(l, r, fieldnames.sort)
                 return DictList([unwrap(d) for d in sorted(data, cmp=_compare_v)])
             else:
                 def _compare_o(left, right):
-                    return value_compare(coalesce(left)[fieldnames.field], coalesce(right)[fieldnames.field], fieldnames.sort)
+                    return value_compare(coalesce(left)[fieldnames.value], coalesce(right)[fieldnames.value], fieldnames.sort)
                 return DictList([unwrap(d) for d in sorted(data, cmp=_compare_o)])
 
         formal = query._normalize_sort(fieldnames)
@@ -432,7 +491,7 @@ def sort(data, fieldnames=None):
             right = coalesce(right)
             for f in formal:
                 try:
-                    result = value_compare(left[f.field], right[f.field], f.sort)
+                    result = value_compare(left[f.value], right[f.value], f.sort)
                     if result != 0:
                         return result
                 except Exception, e:
@@ -449,7 +508,7 @@ def sort(data, fieldnames=None):
 
         return output
     except Exception, e:
-        Log.error("Problem sorting\n{{data}}",  data= data, cause=e)
+        Log.error("Problem sorting\n{{data}}",  data=data, cause=e)
 
 
 def value_compare(l, r, ordering=1):
@@ -491,9 +550,13 @@ def filter(data, where):
     if isinstance(data, Cube):
         data.filter(where)
 
+    temp = None
+    exec("def temp(row):\n    return "+qb_expression_to_python(where))
+    return data.filter(temp)
+
     try:
         return drill_filter(where, data)
-    except Exception, e:
+    except Exception, _:
         # WOW!  THIS IS INEFFICIENT!
         return wrap([unwrap(d) for d in drill_filter(where, [DictObject(d) for d in data])])
 
@@ -516,7 +579,10 @@ def drill_filter(esfilter, data):
         col = split_field(fieldname)
         d = data
         for i, c in enumerate(col):
-            d = d[c]
+            try:
+                d = d[c]
+            except Exception, e:
+                Log.error("{{name}} does not exist", name=fieldname)
             if isinstance(d, list) and len(col) > 1:
                 if len(primary_column) <= depth+i:
                     primary_nested.append(True)
@@ -581,10 +647,11 @@ def drill_filter(esfilter, data):
                 return True
             else:
                 return {"not": f}
-        elif filter.term:
+        elif filter.term or filter.eq:
+            eq = coalesce(filter.term, filter.eq)
             result = True
             output = {}
-            for col, val in filter["term"].items():
+            for col, val in eq.items():
                 first, rest = parse_field(col, data, depth)
                 d = data[first]
                 if not rest:
@@ -896,4 +963,4 @@ def reverse(vals):
 
     return wrap(output)
 
-from pyLibrary.queries.list.aggs import is_aggs, list_aggs
+from pyLibrary.queries.lists.aggs import is_aggs, list_aggs
