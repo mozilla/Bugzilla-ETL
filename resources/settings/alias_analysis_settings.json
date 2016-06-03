@@ -1,0 +1,37 @@
+{
+    "alias":{
+        "start":0,
+        "increment":5000000,
+        "elasticsearch":{
+            "host": "http://localhost",
+            "index": "bug_aliases"
+        },
+        "file":{
+            "path":"./resources/json/bugzilla_aliases.json",
+            "$ref":"//~/private.json#alias_file"
+        }
+    },
+	"bugzilla":{
+		"preamble":"from https://github.com/klahnakoski/Bugzilla-ETL",
+		"host":"localhost",
+		"port":3306,
+        "$ref":"//~/private.json#bugzilla",
+		"schema":"test_bugzilla",
+		"debug":false
+	},
+	"debug":{
+		"log":[{
+			"class": "logging.handlers.RotatingFileHandler",
+			"filename": "./results/logs/alias_analysis.log",
+			"maxBytes": 10000000,
+			"backupCount": 200,
+			"encoding": "utf8"
+		},{
+			"log_type": "stream",
+			"stream":"sys.stdout"
+		}]
+
+	}
+
+
+}

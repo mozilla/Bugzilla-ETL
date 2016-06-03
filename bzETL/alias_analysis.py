@@ -44,7 +44,7 @@ def full_analysis(settings, bug_list=None, please_stop=None):
             analyzer.analysis(True, please_stop)
         return
 
-    with MySQL(settings.bugzilla, readonly=True) as db:
+    with MySQL(settings=settings.bugzilla, readonly=True) as db:
         start = coalesce(settings.alias.start, 0)
         end = coalesce(settings.alias.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
 
@@ -70,8 +70,8 @@ class AliasAnalyzer(object):
         self.not_aliases={}  # EXPLICIT LIST OF NON-MATCHES (HUMAN ADDED)
         try:
             a = set_default({}, settings.elasticsearch, {"type":"alias"})
-            self.es = elasticsearch.Cluster(settings.elasticsearch).get_or_create_index(a, ALIAS_SCHEMA, limit_replicas=True)
-            self.esq = FromES(self.es)
+            self.es = elasticsearch.Cluster(settings.elasticsearch).get_or_create_index(settings=a, schema=ALIAS_SCHEMA, limit_replicas=True)
+            self.esq = FromES(self.es.settings)
             result = self.esq.query({
                 "from":"bug_aliases",
                 "select":["canonical", "alias"]
@@ -84,7 +84,7 @@ class AliasAnalyzer(object):
             # LOAD THE NON-MATCHES
             na = set_default({}, settings.elasticsearch, {"type":"not_alias"})
             es = elasticsearch.Cluster(na).get_or_create_index(na)
-            esq = FromES(es)
+            esq = FromES(es.settings)
             result = esq.query({
                 "from":"bug_aliases",
                 "select":["canonical", "alias"]

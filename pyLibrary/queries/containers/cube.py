@@ -100,7 +100,7 @@ class Cube(Container):
         if not self.edges:
             return list.__iter__([])
 
-        if len(self.edges) == 1 and wrap(self.edges[0]).domain.type == "index":
+        if len(self.edges) == 1 and wrap(self.edges[0]).domain.type in ["index", "rownum"]:
             # ITERATE AS LIST OF RECORDS
             keys = list(self.data.keys())
             output = (dot.zip(keys, r) for r in zip(*self.data.values()))

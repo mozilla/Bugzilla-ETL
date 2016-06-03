@@ -10,6 +10,7 @@
 from __future__ import unicode_literals
 from __future__ import division
 from __future__ import absolute_import
+
 from collections import Mapping
 from copy import deepcopy
 from datetime import datetime
@@ -440,7 +441,7 @@ class Cluster(object):
     ):
         best = self._get_best(settings)
         if not best:
-            output = self.create_index(settings=settings, schema=schema, limit_replicas=limit_replicas)
+            output = self.create_index(settings=settings)
             return output
         elif best.alias != None:
             settings.alias = best.alias
@@ -625,7 +626,7 @@ class Cluster(object):
 
             response = http.post(url, **kwargs)
             if response.status_code not in [200, 201]:
-                Log.error(response.reason + ": " + response.content)
+                Log.error(response.reason + ": " + convert.latin12unicode(response.content)[:130])
             if self.debug:
                 Log.note("response: {{response}}", response=utf82unicode(response.content)[:130])
             details = convert.json2value(utf82unicode(response.content))

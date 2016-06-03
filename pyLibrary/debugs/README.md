@@ -17,6 +17,17 @@ This logging module is additionally responsible for raising exceptions,
 collecting the trace and context, and then deducing if it must be logged, or 
 if it can be ignored because something can handle it.
 
+Benefits
+--------
+
+* **Structured logging** - The biggest benefit is the logging output is JSON structured so that it can be put into databases and document stores for analysis.
+* **Message templates as exception types** - All logging calls consist of a string template, and parameters for that template. This template is used to generate humane log messages, but its uniqueness can also be used to identify the type of exception:  Instead of exception classes, the template is used to distinguish error modes.  
+* **Chained exceptions** - Chaining exceptions helps identify the original trigger for an error
+* **No logger objects** - The `Log` class is all-knowing; you do not make logger objects.  Logging certain program aspects is done by switching on some explicit variable.  
+* **No log 'levels'** - Log levels is considered just another logging aspect: Runtime log level switching is done explicitly by changing variable state.
+* **No formatters** - Log formatting is only required for text logs, and that is provided by the template.
+
+
 Basic Forms
 -----------
 
@@ -61,7 +72,7 @@ All logs are structured logs; the parameters will be included, unchanged, in the
     Log.error("This will throw an error")
 ```
 
-The actual call will always raise an exception, and it manipulates the stack trace to ensure the caller is approriatly blamed.  Feel free to use the `raise` keyword (as in `raise Log.error("")`), if that looks nicer to you. 
+The actual call will always raise an exception, and it manipulates the stack trace to ensure the caller is appropriately blamed.  Feel free to use the `raise` keyword (as in `raise Log.error("")`), if that looks nicer to you. 
 
 **Always chain your exceptions**
 
@@ -76,9 +87,9 @@ The `cause` parameter accepts an `Exception`, or a list of exceptions.  Chaining
 
 **Always catch all `Exceptions`**
 
-Catching all exceptions is preferred over the *only-catch-what-you-can-handle* strategy.  First, exceptions are not lost because we are chaining.  Second, we catch unexpected `Exceptions` early and we annotate them with a description of what the local code was intending to do.  This annotation effectively groups the possible errors (known, or not) into a class, which can be used by callers to decide on appropriate mitigation.  
+Catching all exceptions is preferred over the *only-catch-what-you-can-handle* strategy.  First, exceptions are never lost because we are chaining.  Second, we catch unexpected `Exceptions` early and we annotate them with a description of what the local code was intending to do.  This annotation effectively groups the possible errors (known, or not) into a class, which can be used by callers to decide on appropriate mitigation.  
 
-To repeat:  When using dependency injection, callers can not reasonably be expected to know about the types of failures that can happen deep down the call chain.  This makes it vitally important that methods summarize all exceptions, both known and unknown, so their callers have the information to make better decisions on appropriate action.  
+To repeat:  *When using dependency injection, callers can not reasonably be expected to know about the types of failures that can happen deep down the call chain.  This makes it vitally important that methods summarize all exceptions, both known and unknown, so their callers have the information to make better decisions on appropriate action.*
 
 
 **Use named parameters in your error descriptions too**
@@ -104,6 +115,8 @@ Error logging accepts keyword parameters just like `Log.note()` does
             # Try something else
 ```
 
+It is important that errors are not logged if the caller is wholly designed to deal with such situations; they are technically not errors in the caller context.  By combining error handling with logging the callee logic is simplified; it need not be aware there are higher-level mitigation strategies.  
+
 **Use `Log.warning()` if your code can deal with an exception, but you still want to log it as an issue**
 
 ```python
@@ -114,6 +127,9 @@ Error logging accepts keyword parameters just like `Log.note()` does
         except Exception, e:
             Log.warning("Failure to work with {{key4}}", key4=value4, cause=e)
 ```
+
+Warnings are meant to indicate a sub-optimal code path, yet still does not block progress.  For example, problems connecting to optional service can raise a warning: Knowing that maybe next time it will be accessible.    
+
 
 Other forms
 -----------
@@ -161,9 +177,7 @@ structure:
         try:
             settings = startup.read_settings()
             Log.start(settings.debug)
-
             # DO WORK HERE
-
         except Exception, e:
             Log.error("Complain, or not", e)
         finally:
@@ -215,6 +229,8 @@ These debug variables can be set by configuration file:
 		}
 	}
 ```
+
+
 
 Problems with Python Logging
 ----------------------------
