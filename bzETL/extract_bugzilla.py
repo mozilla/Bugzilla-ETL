@@ -67,6 +67,8 @@ def get_current_time(db):
         SELECT
             UNIX_TIMESTAMP(now()) `value`
         """)[0].value
+    if output == None:
+        Log.error("I am guessing you did not add the timezone database!  See tests/resources/mySQL/README.md")
     return convert.unix2datetime(output)
 
 

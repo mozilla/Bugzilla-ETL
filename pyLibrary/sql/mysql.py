@@ -32,7 +32,6 @@ from pyLibrary.strings import indent
 from pyLibrary.strings import outdent
 from pyLibrary.env.files import File
 
-
 DEBUG = False
 MAX_BATCH_SIZE = 100
 
@@ -370,7 +369,7 @@ class MySQL(object):
             with MySQL(settings) as temp:
                 sql = expand_template(sql, temp.quote_param(param))
 
-        # MWe have no way to execute an entire SQL file in bulk, so we
+        # We have no way to execute an entire SQL file in bulk, so we
         # have to shell out to the commandline client.
         args = [
             "mysql",
@@ -394,6 +393,9 @@ class MySQL(object):
             (output, _) = proc.communicate(sql)
         except Exception, e:
             Log.error("Can not call \"mysql\"", e)
+
+        for line in listwrap(output):
+            Log.note(line.strip())
 
         if proc.returncode:
             if len(sql) > 10000:
