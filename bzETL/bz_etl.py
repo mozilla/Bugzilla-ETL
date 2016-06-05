@@ -453,11 +453,14 @@ def get_max_bug_id(es):
 
 
 def close_db_connections():
-    (globals()["db_cache"], temp) = ([], db_cache)
+    global db_cache
+    global comment_db_cache
+
+    db_cache, temp = [], db_cache
     for db in temp:
         db.close()
 
-    (globals()["comment_db_cache"], temp) = ([], comment_db_cache)
+    comment_db_cache, temp = [], comment_db_cache
     for db in temp:
         db.close()
 

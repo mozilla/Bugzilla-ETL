@@ -18,7 +18,7 @@ from .. import struct
 from ..jsons import json_scrub
 from ..maths import Math
 from ..strings import expand_template
-from ..struct import nvl, wrap
+from ..struct import nvl, wrap, listwrap
 from ..cnv import CNV
 from ..env.logs import Log, Except
 from ..queries import Q
@@ -347,7 +347,7 @@ class DB(object):
             with DB(settings) as temp:
                 sql = expand_template(sql, temp.quote_param(param))
 
-        # MWe have no way to execute an entire SQL file in bulk, so we
+        # We have no way to execute an entire SQL file in bulk, so we
         # have to shell out to the commandline client.
         args = [
             "mysql",
@@ -367,6 +367,9 @@ class DB(object):
         if isinstance(sql, unicode):
             sql = sql.encode("utf8")
         (output, _) = proc.communicate(sql)
+
+        for line in listwrap(output):
+            Log.note(line.strip())
 
         if proc.returncode:
             if len(sql) > 10000:
