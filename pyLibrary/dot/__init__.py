@@ -39,6 +39,7 @@ def coalesce(*args):
 def zip(keys, values):
     """
     CONVERT LIST OF KEY/VALUE PAIRS TO A DICT
+    PLEASE `import dot`, AND CALL `dot.zip()`
     """
     output = Dict()
     for i, k in enumerate(keys):
@@ -51,7 +52,7 @@ def zip(keys, values):
 
 def literal_field(field):
     """
-    RETURN SAME WITH . ESCAPED
+    RETURN SAME WITH DOTS (`.`) ESCAPED
     """
     try:
         return field.replace(".", "\.")
@@ -127,30 +128,49 @@ def _all_default(d, default, seen=None):
     """
     if default is None:
         return
-    for k, default_value in wrap(default).items():
-        # existing_value = d.get(k)
+    if isinstance(default, Dict):
+        default = object.__getattribute__(default, "_dict")  # REACH IN AND GET THE dict
+        # from pyLibrary.debugs.logs import Log
+        # Log.error("strictly dict (or object) allowed: got {{type}}", type=default.__class__.__name__)
+
+    for k, default_value in default.items():
+        default_value = unwrap(default_value)  # TWO DIFFERENT Dicts CAN SHARE id() BECAUSE THEY ARE SHORT LIVED
         existing_value = _get_attr(d, [k])
 
         if existing_value == None:
             if default_value != None:
-                try:
-                    _set_attr(d, [k], default_value)
-                except Exception, e:
-                    if PATH_NOT_FOUND not in e:
-                        from pyLibrary.debugs.logs import Log
-                        Log.error("Can not set attribute {{name}}", name=k, cause=e)
-
+                if isinstance(default_value, Mapping):
+                    df = seen.get(id(default_value))
+                    if df is not None:
+                        _set_attr(d, [k], df)
+                    else:
+                        copy_dict = {}
+                        seen[id(default_value)] = copy_dict
+                        _set_attr(d, [k], copy_dict)
+                        _all_default(copy_dict, default_value, seen)
+                else:
+                    # ASSUME PRIMITIVE (OR LIST, WHICH WE DO NOT COPY)
+                    try:
+                        _set_attr(d, [k], default_value)
+                    except Exception, e:
+                        if PATH_NOT_FOUND not in e:
+                            from pyLibrary.debugs.logs import Log
+                            Log.error("Can not set attribute {{name}}", name=k, cause=e)
+        elif isinstance(existing_value, list) or isinstance(default_value, list):
+            _set_attr(d, [k], listwrap(existing_value) + listwrap(default_value))
         elif (hasattr(existing_value, "__setattr__") or isinstance(existing_value, Mapping)) and isinstance(default_value, Mapping):
-            df = seen.get(id(existing_value))
-            if df:
+            df = seen.get(id(default_value))
+            if df is not None:
                 _set_attr(d, [k], df)
             else:
-                seen[id(existing_value)] = default_value
+                seen[id(default_value)] = existing_value
                 _all_default(existing_value, default_value, seen)
 
 
 def _getdefault(obj, key):
     """
+    obj MUST BE A DICT
+    key IS EXPECTED TO BE LITERAL (NO ESCAPING)
     TRY BOTH ATTRIBUTE AND ITEM ACCESS, OR RETURN Null
     """
     try:
@@ -160,14 +180,16 @@ def _getdefault(obj, key):
 
     try:
         return getattr(obj, key)
-    except Exception, e:
+    except Exception, f:
         pass
+
 
     try:
         if float(key) == round(float(key), 0):
             return obj[int(key)]
     except Exception, f:
         pass
+
 
     # TODO: FIGURE OUT WHY THIS WAS EVER HERE (AND MAKE A TEST)
     # try:
@@ -249,10 +271,18 @@ def _get_attr(obj, path):
             Log.error(AMBIGUOUS_PATH_FOUND+" {{paths}}",  paths=attr_name)
         else:
             return _get_attr(obj[attr_name[0]], path[1:])
+
+
+    try:
+        obj = obj[int(attr_name)]
+        return _get_attr(obj, path[1:])
+    except Exception:
+        pass
+
     try:
         obj = getattr(obj, attr_name)
         return _get_attr(obj, path[1:])
-    except Exception, e:
+    except Exception:
         pass
 
     try:
@@ -304,6 +334,10 @@ def wrap(v):
     if type_ is dict:
         m = Dict(v)
         return m
+        # m = object.__new__(Dict)
+        # object.__setattr__(m, "_dict", v)
+        # return m
+
     elif type_ is NoneType:
         return Null
     elif type_ is list:
@@ -314,14 +348,14 @@ def wrap(v):
         return v
 
 
-def wrap_dot(value):
+def wrap_leaves(value):
     """
     dict WITH DOTS IN KEYS IS INTERPRETED AS A PATH
     """
-    return wrap(_wrap_dot(value))
+    return wrap(_wrap_leaves(value))
 
 
-def _wrap_dot(value):
+def _wrap_leaves(value):
     if value == None:
         return None
     if isinstance(value, (basestring, int, float)):
@@ -332,7 +366,7 @@ def _wrap_dot(value):
 
         output = {}
         for key, value in value.iteritems():
-            value = _wrap_dot(value)
+            value = _wrap_leaves(value)
 
             if key == "":
                 from pyLibrary.debugs.logs import Log
@@ -363,7 +397,7 @@ def _wrap_dot(value):
     if hasattr(value, '__iter__'):
         output = []
         for v in value:
-            v = wrap_dot(v)
+            v = wrap_leaves(v)
             output.append(v)
         return output
     return value
@@ -413,9 +447,11 @@ def listwrap(value):
 
     """
     if value == None:
-        return []
+        return DictList()
     elif isinstance(value, list):
         return wrap(value)
+    elif isinstance(value, set):
+        return wrap(list(value))
     else:
         return wrap([unwrap(value)])
 

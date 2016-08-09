@@ -17,7 +17,7 @@ import re
 from pyLibrary import convert
 from pyLibrary.debugs.logs import Log
 from pyLibrary.env import elasticsearch
-from pyLibrary.queries import qb
+from pyLibrary.queries import jx
 
 
 USE_ATTACHMENTS_DOT = True
@@ -58,12 +58,12 @@ def normalize(bug, old_school=False):
 
     #ENSURE STRUCTURES ARE SORTED
     # Do some processing to make sure that diffing between runs stays as similar as possible.
-    bug.flags=qb.sort(bug.flags, "value")
+    bug.flags=jx.sort(bug.flags, "value")
 
     if bug.attachments:
         if USE_ATTACHMENTS_DOT:
             bug.attachments=convert.json2value(convert.value2json(bug.attachments).replace("attachments_", "attachments."))
-        bug.attachments = qb.sort(bug.attachments, "attach_id")
+        bug.attachments = jx.sort(bug.attachments, "attach_id")
         for a in bug.attachments:
             for k,v in list(a.items()):
                 if k.startswith("attachments") and (k.endswith("isobsolete") or k.endswith("ispatch") or k.endswith("isprivate")):
@@ -72,13 +72,13 @@ def normalize(bug, old_school=False):
                     a[k.replace(".", "\.")]=new_v
                     if not old_school:
                         a[new_k]=new_v
-            a.flags = qb.sort(a.flags, ["modified_ts", "value"])
+            a.flags = jx.sort(a.flags, ["modified_ts", "value"])
 
     if bug.changes != None:
         if USE_ATTACHMENTS_DOT:
             json = convert.value2json(bug.changes).replace("attachments_", "attachments.")
             bug.changes=convert.json2value(json)
-        bug.changes = qb.sort(bug.changes, ["attach_id", "field_name"])
+        bug.changes = jx.sort(bug.changes, ["attach_id", "field_name"])
 
     #bug IS CONVERTED TO A 'CLEAN' COPY
     bug = elasticsearch.scrub(bug)

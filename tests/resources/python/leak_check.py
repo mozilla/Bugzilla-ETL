@@ -1,17 +1,19 @@
-from datetime import datetime
-import functools
-from types import MethodType
 import unittest
+from datetime import datetime
+from types import MethodType
+
 from pymysql.times import TimeDelta
+
 from bzETL.extract_bugzilla import SCREENED_WHITEBOARD_BUG_GROUPS
-from pyLibrary.env import startup, elasticsearch
-from pyLibrary import struct
 from pyLibrary import convert
+from pyLibrary.debugs import startup
+from pyLibrary.debugs.logs import Log
+from pyLibrary.dot import coalesce
+from pyLibrary.dot import wrap
+from pyLibrary.env import elasticsearch
 from pyLibrary.env.emailer import Emailer
-from pyLibrary.env.logs import Log, extract_stack
 from pyLibrary.maths import Math
-from pyLibrary.queries import qb
-from pyLibrary.struct import coalesce, Dict
+from pyLibrary.queries import jx
 
 # WRAP Log.error TO SHOW THE SPECIFIC ERROR IN THE LOGFILE
 if not hasattr(Log, "old_error"):
@@ -58,7 +60,7 @@ class TestLookForLeaks(unittest.TestCase):
             "facets": {"0": {"statistical": {"field": "bug_id"}}}
         }).facets["0"].max
 
-        return reversed(list(qb.intervals(0, max_bug_id, self.settings.param.increment)))
+        return reversed(list(jx.intervals(0, max_bug_id, self.settings.param.increment)))
 
     def test_private_bugs_not_leaking(self):
         bad_news = False
@@ -103,7 +105,7 @@ class TestLookForLeaks(unittest.TestCase):
 
                 Log.note("{{num}} leaks!! {{bugs}}", {
                     "num": len(leaked_bugs),
-                    "bugs": qb.run({
+                    "bugs": jx.run({
                         "from":leaked_bugs,
                         "select":["bug_id", "bug_version_num", {"name":"modified_ts", "value":lambda d: convert.datetime2string(convert.milli2datetime(d.modified_ts))}],
                         "sort":"bug_id"
@@ -170,7 +172,7 @@ class TestLookForLeaks(unittest.TestCase):
                 fields=["bug_id", "bug_group", "attachments", "modified_ts"]
             )
 
-            private_attachments = qb.run({
+            private_attachments = jx.run({
                 "from": bugs_w_private_attachments,
                 "select": "attachments.attach_id",
                 "where": {"or": [
@@ -181,7 +183,7 @@ class TestLookForLeaks(unittest.TestCase):
             try:
                 private_attachments = [int(v) for v in private_attachments]
             except Exception, e:
-                private_attachments = qb.run({
+                private_attachments = jx.run({
                     "from": bugs_w_private_attachments,
                     "select": "attachments.attach_id",
                     "where": {"or": [
@@ -282,10 +284,10 @@ def get(es, esfilter, fields=None, limit=None):
     if fields:
         query.fields=fields
         results = es.search(query)
-        return qb.select(results.hits.hits, "fields")
+        return jx.select(results.hits.hits, "fields")
     else:
         results = es.search(query)
-        return qb.select(results.hits.hits, "_source")
+        return jx.select(results.hits.hits, "_source")
 
 
 
@@ -320,7 +322,7 @@ def milli2datetime(r):
             if not output:
                 return None
             try:
-                return qb.sort(output)
+                return jx.sort(output)
             except Exception:
                 return output
         else:

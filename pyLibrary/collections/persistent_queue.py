@@ -13,6 +13,7 @@ from __future__ import division
 from __future__ import absolute_import
 
 from pyLibrary import convert
+from pyLibrary.debugs.exceptions import suppress_exception
 from pyLibrary.debugs.logs import Log
 from pyLibrary.env.files import File
 from pyLibrary.maths.randoms import Random
@@ -45,11 +46,9 @@ class PersistentQueue(object):
 
         if self.file.exists:
             for line in self.file:
-                try:
+                with suppress_exception:
                     delta = convert.json2value(line)
                     apply_delta(self.db, delta)
-                except:
-                    pass
             if self.db.status.start == None:  # HAPPENS WHEN ONLY ADDED TO QUEUE, THEN CRASH
                 self.db.status.start = 0
             self.start = self.db.status.start
@@ -57,12 +56,11 @@ class PersistentQueue(object):
             # SCRUB LOST VALUES
             lost = 0
             for k in self.db.keys():
-                try:
+                with suppress_exception:
                     if k!="status" and int(k) < self.start:
                         self.db[k] = None
                         lost += 1
-                except Exception:
-                    pass  # HAPPENS FOR self.db.status, BUT MAYBE OTHER PROPERTIES TOO
+                  # HAPPENS FOR self.db.status, BUT MAYBE OTHER PROPERTIES TOO
             if lost:
                 Log.warning("queue file had {{num}} items lost",  num= lost)
 
@@ -125,7 +123,11 @@ class PersistentQueue(object):
     def __getitem__(self, item):
         return self.db[str(item + self.start)]
 
-    def pop(self):
+    def pop(self, timeout=None):
+        """
+        :param timeout: OPTIONAL DURATION
+        :return: None, IF timeout PASSES
+        """
         with self.lock:
             while not self.please_stop:
                 if self.db.status.end > self.start:
@@ -133,10 +135,15 @@ class PersistentQueue(object):
                     self.start += 1
                     return value
 
-                try:
-                    self.lock.wait()
-                except Exception, _:
-                    pass
+                if timeout is not None:
+                    with suppress_exception:
+                        self.lock.wait(timeout=timeout)
+                        if self.db.status.end <= self.start:
+                            return None
+                else:
+                    with suppress_exception:
+                        self.lock.wait()
+
             if DEBUG:
                 Log.note("persistent queue already stopped")
             return Thread.STOP
@@ -175,7 +182,7 @@ class PersistentQueue(object):
                 for i in range(self.db.status.start, self.start):
                     self._add_pending({"remove": str(i)})
 
-                if self.db.status.end - self.start < 10 or Random.range(1000) == 0:  # FORCE RE-WRITE TO LIMIT FILE SIZE
+                if self.db.status.end - self.start < 10 or Random.range(0, 1000) == 0:  # FORCE RE-WRITE TO LIMIT FILE SIZE
                     # SIMPLY RE-WRITE FILE
                     if DEBUG:
                         Log.note("Re-write {{num_keys}} keys to persistent queue", num_keys=self.db.status.end - self.start)

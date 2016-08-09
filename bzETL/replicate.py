@@ -30,7 +30,7 @@ from pyLibrary.dot import coalesce, Dict
 from pyLibrary.env import elasticsearch
 from pyLibrary.env.elasticsearch import Cluster
 from pyLibrary.env.files import File
-from pyLibrary.queries import qb
+from pyLibrary.queries import jx
 from pyLibrary.thread.threads import ThreadedQueue
 from pyLibrary.times.timer import Timer
 
@@ -41,7 +41,7 @@ BATCH_SIZE = 1000
 
 def extract_from_file(source_settings, destination):
     file = File(source_settings.filename)
-    for g, d in qb.groupby(file, size=BATCH_SIZE):
+    for g, d in jx.groupby(file, size=BATCH_SIZE):
         try:
             d2 = map(
                 lambda (x): {"id": x.id, "value": x},
@@ -104,7 +104,7 @@ def get_pending(es, since):
 
     pending_bugs = None
 
-    for s, e in qb.intervals(0, max_bug+1, 100000):
+    for s, e in jx.intervals(0, max_bug+1, 100000):
         Log.note("Collect history for bugs from {{start}}..{{end}}", {"start":s, "end":e})
         result = es.search({
             "query": {"filtered": {
@@ -165,7 +165,7 @@ def replicate(source, destination, pending, last_updated):
     """
     COPY source RECORDS TO destination
     """
-    for g, bugs in qb.groupby(pending, max_size=BATCH_SIZE):
+    for g, bugs in jx.groupby(pending, max_size=BATCH_SIZE):
         with Timer("Replicate {{num_bugs}} bug versions", {"num_bugs": len(bugs)}):
             data = source.search({
                 "query": {"filtered": {

@@ -23,37 +23,36 @@ def es_query_template(path):
     sub_path = split_field(path)[1:]
 
     if sub_path:
+        f0 = {}
+        f1 = {}
         output = wrap({
-            "query": {
-                "nested": {
+            "filter": {"and": [
+                f0,
+                {"nested": {
                     "path": join_field(sub_path),
-                    "filter": {},
-                    "inner_hits": {}
-                }
-            },
+                    "filter": f1,
+                    "inner_hits": {"size": 100000}
+                }}
+            ]},
             "from": 0,
             "size": 0,
             "sort": []
         })
-        return output, "query.nested.filter"
+        return output, wrap([f0, f1])
     else:
+        f0 = {}
         output = wrap({
-            "query": {
-                "filtered": {
-                    "query": {"match_all": {}},
-                    "filter": {}
-                }
-            },
+            "query": {"filtered": {
+                "filter": f0
+            }},
             "from": 0,
             "size": 0,
             "sort": []
         })
-        return output, "query.filtered.filter"
+        return output, wrap([f0])
 
 
-
-
-def qb_sort_to_es_sort(sort):
+def jx_sort_to_es_sort(sort):
     if not sort:
         return []
 
@@ -72,6 +71,7 @@ def qb_sort_to_es_sort(sort):
 aggregates1_4 = {
     "none": "none",
     "one": "count",
+    "cardinality": "cardinality",
     "sum": "sum",
     "add": "sum",
     "count": "value_count",
@@ -85,14 +85,16 @@ aggregates1_4 = {
     "median": "median",
     "percentile": "percentile",
     "N": "count",
-    "X0": "count",
-    "X1": "sum",
-    "X2": "sum_of_squares",
+    "s0": "count",
+    "s1": "sum",
+    "s2": "sum_of_squares",
     "std": "std_deviation",
     "stddev": "std_deviation",
+    "union": "union",
     "var": "variance",
-    "variance": "variance"
+    "variance": "variance",
+    "stats": "stats"
 }
 
-NON_STATISTICAL_AGGS = {"none", "one", "count"}
+NON_STATISTICAL_AGGS = {"none", "one"}
 

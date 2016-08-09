@@ -24,7 +24,7 @@ from pyLibrary.env import elasticsearch
 from pyLibrary.env.elasticsearch import Cluster
 from pyLibrary.env.files import File
 from pyLibrary.maths import Math
-from pyLibrary.queries import qb
+from pyLibrary.queries import jx
 from pyLibrary.sql.mysql import MySQL
 from pyLibrary.thread.threads import Lock, AllThread, Thread, Queue, ThreadedQueue
 from pyLibrary.times.timer import Timer
@@ -62,7 +62,7 @@ def etl_comments(db, es, param, please_stop):
         Log.note("Read comments from database")
         comments = get_comments(comment_db_cache[0], param)
 
-    for g, c in qb.groupby(comments, size=500):
+    for g, c in jx.groupby(comments, size=500):
         with Timer("Write {{num}} comments to ElasticSearch", {"num": len(c)}):
             es.extend({"id": cc.comment_id, "value": cc} for cc in c)
 
@@ -93,14 +93,14 @@ def etl(db, output_queue, param, please_stop):
         with db_cache_lock:
             # SPLIT TASK EVENLY, HAVE EACH BUG USE SAME CONNECTION FOR ALL DATA
             size = Math.ceiling(float(len(param.bug_list))/float(10))
-            for g, bug_ids in qb.groupby(param.bug_list, size=size):
+            for g, bug_ids in jx.groupby(param.bug_list, size=size):
                 all.add(get_records_from_bugzilla, db_cache[g], set_default(
                     {"bug_list": bug_ids},
                     param
                 ))
     db_results.add(Thread.STOP)
 
-    sorted = qb.sort(db_results, [
+    sorted = jx.sort(db_results, [
         "bug_id",
         "_merge_order",
         {"field": "modified_ts", "sort": -1},
@@ -198,7 +198,7 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
     #REMOVE PRIVATE BUGS
     private_bugs = get_private_bugs_for_delete(db, param)
     Log.note("Ensure the following private bugs are deleted:\n{{private_bugs|indent}}", private_bugs=sorted(private_bugs))
-    for g, delete_bugs in qb.groupby(private_bugs, size=1000):
+    for g, delete_bugs in jx.groupby(private_bugs, size=1000):
         still_existing = get_bug_ids(es, {"terms": {"bug_id": delete_bugs}})
         if still_existing:
             Log.note("Ensure the following existing private bugs are deleted:\n{{private_bugs|indent}}", private_bugs=sorted(still_existing))
@@ -220,7 +220,7 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
 
     #REMOVE **RECENT** PRIVATE ATTACHMENTS
     private_attachments = get_recent_private_attachments(db, param)
-    bugs_to_refresh = set(qb.select(private_attachments, "bug_id"))
+    bugs_to_refresh = set(jx.select(private_attachments, "bug_id"))
     es.delete_record({"terms": {"bug_id": bugs_to_refresh}})
 
     #REBUILD BUGS THAT GOT REMOVED
@@ -244,7 +244,7 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
 
     #REFRESH COMMENTS WITH PRIVACY CHANGE
     private_comments = get_recent_private_comments(db, param)
-    comment_list = set(qb.select(private_comments, "comment_id")) | {0}
+    comment_list = set(jx.select(private_comments, "comment_id")) | {0}
     es_comments.delete_record({"terms": {"comment_id": comment_list}})
     changed_comments = get_comments_by_id(db, comment_list, param)
     es_comments.extend({"id": c.comment_id, "value": c} for c in changed_comments)
@@ -252,7 +252,7 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
     #GET LIST OF CHANGED BUGS
     with Timer("time to get changed bug list"):
         if param.allow_private_bugs:
-            bug_list = qb.select(db.query("""
+            bug_list = jx.select(db.query("""
                 SELECT
                     b.bug_id
                 FROM
@@ -263,7 +263,7 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
                 "start_time_str": param.start_time_str
             }), u"bug_id")
         else:
-            bug_list = qb.select(db.query("""
+            bug_list = jx.select(db.query("""
                 SELECT
                     b.bug_id
                 FROM
@@ -308,7 +308,7 @@ def full_etl(resume_from_last_run, settings, param, db, es, es_comments, output_
 
         #TWO WORKERS IS MORE THAN ENOUGH FOR A SINGLE THREAD
         # with Multithread([run_both_etl, run_both_etl]) as workers:
-        for min, max in qb.intervals(start, end, settings.param.increment):
+        for min, max in jx.intervals(start, end, settings.param.increment):
             if settings.args.quick and min < end - settings.param.increment and min != 0:
                 #--quick ONLY DOES FIRST AND LAST BLOCKS
                 continue
@@ -317,7 +317,7 @@ def full_etl(resume_from_last_run, settings, param, db, es, es_comments, output_
                 #GET LIST OF CHANGED BUGS
                 with Timer("time to get {{min}}..{{max}} bug list", {"min":min, "max":max}):
                     if param.allow_private_bugs:
-                        bug_list = qb.select(db.query("""
+                        bug_list = jx.select(db.query("""
                             SELECT
                                 b.bug_id
                             FROM
@@ -331,7 +331,7 @@ def full_etl(resume_from_last_run, settings, param, db, es, es_comments, output_
                             "start_time_str": param.start_time_str
                         }), u"bug_id")
                     else:
-                        bug_list = qb.select(db.query("""
+                        bug_list = jx.select(db.query("""
                             SELECT
                                 b.bug_id
                             FROM

@@ -17,12 +17,13 @@ from boto.sqs.message import Message
 import requests
 
 from pyLibrary import convert
+from pyLibrary.debugs.exceptions import Except
 from pyLibrary.debugs.logs import Log
 from pyLibrary.dot import wrap, unwrap
 from pyLibrary.maths import Math
 from pyLibrary.meta import use_settings, cache
 from pyLibrary.thread.threads import Thread
-from pyLibrary.times.durations import SECOND
+from pyLibrary.times.durations import SECOND, Duration
 
 
 class Queue(object):
@@ -67,6 +68,10 @@ class Queue(object):
         m.set_body(convert.value2json(message))
         self.queue.write(m)
 
+    @property
+    def name(self):
+        return self.settings.name
+
     def extend(self, messages):
         for m in messages:
             self.add(m)
@@ -77,7 +82,20 @@ class Queue(object):
             return None
 
         self.pending.append(m)
-        return convert.json2value(m.get_body())
+        output = convert.json2value(m.get_body())
+        return output
+
+    def pop_message(self, wait=SECOND, till=None):
+        """
+        RETURN TUPLE (message, payload) CALLER IS RESPONSIBLE FOR CALLING message.delete() WHEN DONE
+        """
+        message = self.queue.read(wait_time_seconds=Math.floor(wait.seconds))
+        if not message:
+            return None
+        message.delete = lambda: self.queue.delete_message(message)
+
+        payload = convert.json2value(message.get_body())
+        return message, payload
 
     def commit(self):
         pending = self.pending
@@ -99,7 +117,7 @@ class Queue(object):
                 self.queue.delete_message(p)
 
             if self.settings.debug:
-                Log.alert("{{num}} messages returned to queue",  num= len(pending))
+                Log.alert("{{num}} messages returned to queue", num=len(pending))
 
     def close(self):
         self.commit()
@@ -118,15 +136,35 @@ def capture_termination_signal(please_stop):
                     please_stop.go()
                     return
             except Exception, e:
-                pass  # BE QUIET
                 Thread.sleep(seconds=61, please_stop=please_stop)
             Thread.sleep(seconds=11, please_stop=please_stop)
 
     Thread.run("listen for termination", worker)
 
-@cache
-def get_instance_metadata():
-    output = wrap({k.replace("-", "_"): v for k, v in boto_utils.get_instance_metadata().items()})
+
+def get_instance_metadata(timeout=None):
+    if not isinstance(timeout, (int, float)):
+        timeout = Duration(timeout).seconds
+
+    output = wrap({k.replace("-", "_"): v for k, v in boto_utils.get_instance_metadata(timeout=5, num_retries=2).items()})
     return output
+
+
+def aws_retry(func):
+    def output(*args, **kwargs):
+        while True:
+            try:
+                return func(*args, **kwargs)
+            except Exception, e:
+                e = Except.wrap(e)
+                if "Request limit exceeded" in e:
+                    Log.warning("AWS Problem", cause=e)
+                    continue
+                else:
+                    Log.error("Problem with call to AWS", cause=e)
+    return output
+
+
+
 
 from . import s3

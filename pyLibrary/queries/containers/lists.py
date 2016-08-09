@@ -7,31 +7,39 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import unicode_literals
-from __future__ import division
 from __future__ import absolute_import
-from collections import Mapping
-from pyLibrary import convert
+from __future__ import division
+from __future__ import unicode_literals
 
+from collections import Mapping
+
+from pyLibrary import convert
 from pyLibrary.debugs.logs import Log
-from pyLibrary.dot import Dict, wrap, listwrap, unwraplist
-from pyLibrary.queries import qb
+from pyLibrary.dot import Dict, wrap, listwrap, unwraplist, DictList, unwrap, set_default
+from pyLibrary.queries import jx
 from pyLibrary.queries.containers import Container
-from pyLibrary.queries.domains import is_keyword
-from pyLibrary.queries.expressions import TRUE_FILTER, qb_expression_to_python
+from pyLibrary.queries.expression_compiler import compile_expression
+from pyLibrary.queries.expressions import TRUE_FILTER, jx_expression, Expression, TrueOp, jx_expression_to_function, Variable
 from pyLibrary.queries.lists.aggs import is_aggs, list_aggs
 from pyLibrary.queries.meta import Column
 from pyLibrary.thread.threads import Lock
+from pyLibrary.times.dates import Date
+
+_get = object.__getattribute__
 
 
 class ListContainer(Container):
-    def __init__(self, frum, schema=None):
+    def __init__(self, name, data, schema=None):
         #TODO: STORE THIS LIKE A CUBE FOR FASTER ACCESS AND TRANSFORMATION
-        frum = list(frum)
+        data = list(unwrap(data))
+        Container.__init__(self, data, schema)
         if schema == None:
-            self.schema = get_schema_from_list(frum)
-        Container.__init__(self, frum, schema)
-        self.frum = frum
+            self.schema = get_schema_from_list(data)
+        else:
+            self.schema = schema
+        self.name = name
+        self.data = data
+        self.locker = Lock()  # JUST IN CASE YOU WANT TO DO MORE THAN ONE THING
 
     @property
     def query_path(self):
@@ -48,7 +56,7 @@ class ListContainer(Container):
             except AttributeError, e:
                 pass
 
-            if q.where is not TRUE_FILTER:
+            if q.where is not TRUE_FILTER and not isinstance(q.where, TrueOp):
                 frum = frum.filter(q.where)
 
             if q.sort:
@@ -56,65 +64,82 @@ class ListContainer(Container):
 
             if q.select:
                 frum = frum.select(q.select)
-
+        #TODO: ADD EXTRA COLUMN DESCRIPTIONS TO RESULTING SCHEMA
         for param in q.window:
-            frum = frum.window(param)
+            frum.window(param)
 
-        return frum.format(q.format)
+        return frum
 
     def update(self, command):
         """
         EXPECTING command == {"set":term, "clear":term, "where":where}
         THE set CLAUSE IS A DICT MAPPING NAMES TO VALUES
-        THE where CLAUSE IS AN ES FILTER
+        THE where CLAUSE IS A JSON EXPRESSION FILTER
         """
         command = wrap(command)
-        if command.where==None:
-            filter_ = lambda: True
-        else:
-            filter_ = _exec("temp = lambda row: "+qb_expression_to_python(command.where))
-
+        command_clear = listwrap(command["clear"])
+        command_set = command.set.items()
+        command_where = jx.get(command.where)
 
         for c in self.data:
-            if filter_(c):
-                for k in command["clear"].keys():
+            if command_where(c):
+                for k in command_clear:
                     c[k] = None
-                for k, v in command.set.items():
+                for k, v in command_set:
                     c[k] = v
 
     def filter(self, where):
         return self.where(where)
 
     def where(self, where):
+        temp = None
         if isinstance(where, Mapping):
-            temp = None
-            exec("def temp(row):\n    return "+qb_expression_to_python(where))
+            exec("def temp(row):\n    return "+jx_expression(where).to_python())
+        elif isinstance(where, Expression):
+            temp = compile_expression(where.to_python())
         else:
             temp = where
 
-        return ListContainer(filter(temp, self.data), self.schema)
+        return ListContainer("from "+self.name, filter(temp, self.data), self.schema)
 
     def sort(self, sort):
-        return ListContainer(qb.sort(self.data, sort), self.schema)
+        return ListContainer("from "+self.name, jx.sort(self.data, sort, already_normalized=True), self.schema)
+
+    def get(self, select):
+        """
+        :param select: the variable to extract from list
+        :return:  a simple list of the extraction
+        """
+        if isinstance(select, list):
+            return [(d[s] for s in select) for d in self.data]
+        else:
+            return [d[select] for d in self.data]
 
     def select(self, select):
         selects = listwrap(select)
-        if selects[0].value == "*" and selects[0].name == ".":
-            return self
 
-        for s in selects:
-            if not isinstance(s.value, basestring) or not is_keyword(s.value):
-                Log.error("selecting on structure, or expressions, not supported yet")
+        if len(selects) == 1 and isinstance(selects[0].value, Variable) and selects[0].value.var == ".":
+            new_schema = self.schema
+            if selects[0].name == ".":
+                return self
+        else:
+            new_schema = None
 
-        #TODO: DO THIS WITH JUST A SCHEMA TRANSFORM, DO NOT TOUCH DATA
-        #TODO: HANDLE STRUCTURE AND EXPRESSIONS
-        new_schema = {s.name: self.schema[s.value] for s in selects}
-        new_data = [{s.name: d[s.value] for s in selects} for d in self.data]
-        return ListContainer(frum=new_data, schema=new_schema)
+        push_and_pull = [(s.name, jx_expression_to_function(s.value)) for s in selects]
+
+        def constructor(d):
+            output = Dict()
+            for n, p in push_and_pull:
+                output[n] = p(d)
+            return _get(d, "_dict")
+
+        new_data = map(constructor, self.data)
+        return ListContainer("from "+self.name, data=new_data, schema=new_schema)
 
     def window(self, window):
         _ = window
-        Log.error("not implemented")
+        jx.window(self.data, window)
+        return self
 
     def having(self, having):
         _ = having
@@ -126,7 +151,7 @@ class ListContainer(Container):
         elif format == "cube":
             frum = convert.list2cube(self.data, self.schema.keys())
         else:
-            frum = self
+            frum = self.to_dict()
 
         return frum
 
@@ -145,19 +170,24 @@ class ListContainer(Container):
             "data": [{k: unwraplist(v) for k, v in row.items()} for row in self.data]
         })
 
-    def get_columns(self, table=None):
+    def get_columns(self, table_name=None):
         return self.schema.values()
 
     def __getitem__(self, item):
         return self.data[item]
 
+    def __iter__(self):
+        return self.data.__iter__()
+
+    def __len__(self):
+        return len(self.data)
 
 def get_schema_from_list(frum):
     """
     SCAN THE LIST FOR COLUMN TYPES
     """
     columns = {}
-    _get_schema_from_list(frum, columns, [], 0)
+    _get_schema_from_list(frum, columns, prefix=[], nested_path=[])
     return columns
 
 def _get_schema_from_list(frum, columns, prefix, nested_path):
@@ -175,19 +205,21 @@ def _get_schema_from_list(frum, columns, prefix, nested_path):
             if this_type == "object":
                 _get_schema_from_list([value], columns, prefix + [name], nested_path)
             elif this_type == "nested":
-                if not nested_path:
-                    _get_schema_from_list(value, columns, prefix + [name], [name])
-                else:
-                    _get_schema_from_list(value, columns, prefix + [name], [nested_path[0]+"."+name]+nested_path)
+                np = listwrap(nested_path)
+                newpath = unwraplist([".".join((np[0], name))]+np)
+                _get_schema_from_list(value, columns, prefix + [name], newpath)
 
     for n, t in names.items():
         full_name = ".".join(prefix + [n])
         column = Column(
             name=full_name,
+            table=".",
+            es_column=full_name,
+            es_index=".",
             type=t,
             nested_path=nested_path
         )
-        columns[columns.name] = column
+        columns[column.name] = column
 
 
 _type_to_name = {
@@ -200,7 +232,9 @@ _type_to_name = {
     Dict: "object",
     dict: "object",
     set: "nested",
-    list: "nested"
+    list: "nested",
+    DictList: "nested",
+    Date: "double"
 }
 
 _merge_type = {
@@ -299,6 +333,9 @@ _merge_type = {
 
 
 def _exec(code):
-    temp = None
-    exec code
-    return temp
+    try:
+        temp = None
+        exec "temp = " + code
+        return temp
+    except Exception, e:
+        Log.error("Could not execute {{code|quote}}", code=code, cause=e)

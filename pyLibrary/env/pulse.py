@@ -12,21 +12,21 @@ from __future__ import division
 from __future__ import absolute_import
 
 import datetime
+from socket import timeout as socket_timeout
 
 from kombu import Connection, Producer, Exchange
 from pytz import timezone
-
 from mozillapulse.utils import time_to_string
 
 from pyLibrary.debugs import constants
 from pyLibrary import jsons
-from pyLibrary.debugs.logs import Log, Except
+from pyLibrary.debugs.exceptions import Except, suppress_exception
+from pyLibrary.debugs.logs import Log
 from pyLibrary.dot import wrap, coalesce, Dict, set_default
 from pyLibrary.meta import use_settings
 from pyLibrary.thread.threads import Thread
 from mozillapulse.consumers import GenericConsumer
 
-constants.set({"mozillapulse": {"consumers": {"logging": Log}}})
 
 class Consumer(Thread):
     @use_settings
@@ -62,7 +62,7 @@ class Consumer(Thread):
         settings.applabel = coalesce(settings.applable, settings.queue, settings.queue_name)
         settings.topic = topic
 
-        self.pulse = GenericConsumer(settings, connect=True, **settings)
+        self.pulse = ModifiedGenericConsumer(settings, connect=True, **settings)
         self.count = coalesce(start, 0)
         self.start()
 
@@ -90,11 +90,9 @@ class Consumer(Thread):
 
     def _worker(self, please_stop):
         def disconnect():
-            try:
+            with suppress_exception:
                 self.target_queue.close()
                 Log.note("stop put into queue")
-            except:
-                pass
 
             self.pulse.disconnect()
             Log.note("pulse listener was given a disconnect()")
@@ -106,18 +104,16 @@ class Consumer(Thread):
                 self.pulse.listen()
             except Exception, e:
                 if not please_stop:
-                    Log.warning("pulse had problem", e)
+                    Log.warning("Pulse had problem (Have you set your Pulse permissions correctly?", e)
         Log.note("pulse listener is done")
 
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         Log.note("clean pulse exit")
         self.please_stop.go()
-        try:
+        with suppress_exception:
             self.target_queue.close()
             Log.note("stop put into queue")
-        except:
-            pass
 
         try:
             self.pulse.disconnect()
@@ -149,7 +145,7 @@ class Publisher(object):
         broker_timezone='GMT',
         settings=None
     ):
-        self.settings=settings
+        self.settings = settings
         self.connection = None
         self.count = 0
 
@@ -201,3 +197,17 @@ class Publisher(object):
 
         producer.publish(jsons.scrub(final_data), serializer=self.settings.serializer)
         self.count += 1
+
+
+class ModifiedGenericConsumer(GenericConsumer):
+    def _drain_events_loop(self):
+        while True:
+            try:
+                self.connection.drain_events(timeout=self.timeout)
+            except socket_timeout, e:
+                Log.warning("timeout! Restarting pulse consumer.", cause=e)
+                try:
+                    self.disconnect()
+                except Exception, f:
+                    Log.warning("Problem with disconnect()", cause=f)
+                break

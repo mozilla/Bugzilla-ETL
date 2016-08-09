@@ -15,10 +15,10 @@ from pyLibrary import convert
 from pyLibrary.env.elasticsearch import Index, Cluster
 from pyLibrary.debugs.logs import Log
 from pyLibrary.env.files import File
-from pyLibrary.queries import qb
+from pyLibrary.meta import use_settings
+from pyLibrary.queries import jx
 from pyLibrary.dot.dicts import Dict
 from pyLibrary.dot import unwrap, wrap
-from pyLibrary.queries.expressions import qb_expression_to_function
 
 
 def make_test_instance(name, settings):
@@ -47,23 +47,23 @@ def open_test_instance(name, settings):
 
 
 class Fake_ES():
-    def __init__(self, settings):
-        self.settings = wrap({"host":"fake", "index":"fake"})
+    @use_settings
+    def __init__(self, filename, host="fake", index="fake", settings=None):
+        self.settings = settings
         self.filename = settings.filename
         try:
             self.data = convert.json2value(File(self.filename).read())
-        except IOError:
+        except Exception:
             self.data = Dict()
 
-
     def search(self, query):
-        query=wrap(query)
-        f = qb_expression_to_function(query.query.filtered.filter)
-        filtered=wrap([{"_id": i, "_source": d} for i, d in self.data.items() if f(d)])
+        query = wrap(query)
+        f = jx.get(query.query.filtered.filter)
+        filtered = wrap([{"_id": i, "_source": d} for i, d in self.data.items() if f(d)])
         if query.fields:
-            return wrap({"hits": {"total":len(filtered), "hits": [{"_id":d._id, "fields":unwrap(qb.select([unwrap(d._source)], query.fields)[0])} for d in filtered]}})
+            return wrap({"hits": {"total": len(filtered), "hits": [{"_id": d._id, "fields": unwrap(jx.select([unwrap(d._source)], query.fields)[0])} for d in filtered]}})
         else:
-            return wrap({"hits": {"total":len(filtered), "hits": filtered}})
+            return wrap({"hits": {"total": len(filtered), "hits": filtered}})
 
     def extend(self, records):
         """

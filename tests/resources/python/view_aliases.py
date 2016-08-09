@@ -4,7 +4,7 @@ from pyLibrary import struct
 from pyLibrary import convert
 from pyLibrary.env.files import File
 from pyLibrary.env.logs import Log
-from pyLibrary.queries import qb
+from pyLibrary.queries import jx
 from pyLibrary.env import startup
 
 
@@ -24,7 +24,7 @@ def main(settings):
         if d.canonical != None and n != d.canonical
     ]
 
-    sorted = qb.sort(data, "found")
+    sorted = jx.sort(data, "found")
     for s in sorted:
         Log.note("{{found}} == {{lost}}", s)
 

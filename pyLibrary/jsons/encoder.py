@@ -22,7 +22,7 @@ from json import encoder as json_encoder_module
 from math import floor
 from repr import Repr
 
-from pyLibrary.dot import Dict, DictList, NullType
+from pyLibrary.dot import Dict, DictList, NullType, Null
 from pyLibrary.jsons import quote, ESCAPE_DCT, scrub
 from pyLibrary.strings import utf82unicode
 from pyLibrary.times.dates import Date
@@ -124,7 +124,7 @@ json_encoder_module.FLOAT_REPR = float_repr
 
 
 class cPythonJSONEncoder(object):
-    def __init__(self):
+    def __init__(self, sort_keys=False):
         object.__init__(self)
 
         self.encoder = json.JSONEncoder(
@@ -136,7 +136,7 @@ class cPythonJSONEncoder(object):
             separators=None,
             encoding='utf-8',
             default=None,
-            sort_keys=False
+            sort_keys=sort_keys
         )
 
     def encode(self, value, pretty=False):
@@ -147,7 +147,8 @@ class cPythonJSONEncoder(object):
             scrubbed = scrub(value)
             return unicode(self.encoder.encode(scrubbed))
         except Exception, e:
-            from pyLibrary.debugs.logs import Log, Except
+            from pyLibrary.debugs.exceptions import Except
+            from pyLibrary.debugs.logs import Log
 
             e = Except.wrap(e)
             Log.warning("problem serializing {{type}}", type=_repr(value), cause=e)
@@ -165,14 +166,15 @@ def _value2json(value, _buffer):
         elif value is False:
             append(_buffer, u"false")
             return
-
-        type = value.__class__
-        if type in (dict, Dict):
+        elif isinstance(value, Mapping):
             if value:
                 _dict2json(value, _buffer)
             else:
                 append(_buffer, u"{}")
-        elif type is str:
+            return
+
+        type = value.__class__
+        if type is str:
             append(_buffer, u"\"")
             try:
                 v = utf82unicode(value)
@@ -194,11 +196,11 @@ def _value2json(value, _buffer):
         elif type in (set, list, tuple, DictList):
             _list2json(value, _buffer)
         elif type is date:
-            append(_buffer, unicode(long(time.mktime(value.timetuple()))))
+            append(_buffer, unicode(Decimal(time.mktime(value.timetuple()))))
         elif type is datetime:
-            append(_buffer, unicode(long(time.mktime(value.timetuple()))))
+            append(_buffer, unicode(Decimal(time.mktime(value.timetuple()))))
         elif type is Date:
-            append(_buffer, unicode(long(time.mktime(value.value.timetuple()))))
+            append(_buffer, unicode(value.unix))
         elif type is timedelta:
             append(_buffer, unicode(value.total_seconds()))
         elif type is Duration:
@@ -217,7 +219,7 @@ def _value2json(value, _buffer):
     except Exception, e:
         from pyLibrary.debugs.logs import Log
 
-        Log.error(_repr(value) + " is not JSON serializable", e)
+        Log.error(_repr(value) + " is not JSON serializable", cause=e)
 
 
 def _list2json(value, _buffer):
@@ -243,18 +245,22 @@ def _iter2json(value, _buffer):
 
 
 def _dict2json(value, _buffer):
-    prefix = u"{\""
-    for k, v in value.iteritems():
-        append(_buffer, prefix)
-        prefix = u", \""
-        if isinstance(k, str):
-            k = utf82unicode(k)
-        for c in k:
-            append(_buffer, ESCAPE_DCT.get(c, c))
-        append(_buffer, u"\": ")
-        _value2json(v, _buffer)
-    append(_buffer, u"}")
+    try:
+        prefix = u"{\""
+        for k, v in value.iteritems():
+            append(_buffer, prefix)
+            prefix = u", \""
+            if isinstance(k, str):
+                k = utf82unicode(k)
+            for c in k:
+                append(_buffer, ESCAPE_DCT.get(c, c))
+            append(_buffer, u"\": ")
+            _value2json(v, _buffer)
+        append(_buffer, u"}")
+    except Exception, e:
+        from pyLibrary.debugs.logs import Log
 
+        Log.error(_repr(value) + " is not JSON serializable", cause=e)
 
 ARRAY_ROW_LENGTH = 80
 ARRAY_ITEM_MAX_LENGTH = 30
@@ -264,7 +270,38 @@ INDENT = "    "
 
 def pretty_json(value):
     try:
-        if scrub(value) is None:
+        if value is False:
+            return "false"
+        elif value is True:
+            return "true"
+        elif isinstance(value, Mapping):
+            try:
+                if not value:
+                    return "{}"
+                items = list(value.items())
+                if len(items) == 1:
+                    return "{" + unicode_key(items[0][0]) + ": " + pretty_json(items[0][1]).strip() + "}"
+
+                items = sorted(items, lambda a, b: value_compare(a[0], b[0]))
+                values = [unicode_key(k) + ": " + indent(pretty_json(v)).strip() for k, v in items if v != None]
+                return "{\n" + INDENT + (",\n" + INDENT).join(values) + "\n}"
+            except Exception, e:
+                from pyLibrary.debugs.logs import Log
+                from pyLibrary.collections import OR
+
+                if OR(not isinstance(k, basestring) for k in value.keys()):
+                    Log.error(
+                        "JSON must have string keys: {{keys}}:",
+                        keys=[k for k in value.keys()],
+                        cause=e
+                    )
+
+                Log.error(
+                    "problem making dict pretty: keys={{keys}}:",
+                    keys=[k for k in value.keys()],
+                    cause=e
+                )
+        elif value in (None, Null):
             return "null"
         elif isinstance(value, basestring):
             if isinstance(value, str):
@@ -281,11 +318,11 @@ def pretty_json(value):
                         try:
                             try:
                                 c2 = ESCAPE_DCT[c]
-                            except Exception, h:
+                            except Exception:
                                 c2 = c
                             c3 = unicode(c2)
                             acc.append(c3)
-                        except BaseException, g:
+                        except BaseException:
                             pass
                             # Log.warning("odd character {{ord}} found in string.  Ignored.",  ord= ord(c)}, cause=g)
                     acc.append(u"\"")
@@ -293,31 +330,8 @@ def pretty_json(value):
                     Log.note("return value of length {{length}}", length=len(output))
                     return output
                 except BaseException, f:
-                    Log.warning("can not even explicit convert", f)
+                    Log.warning("can not even explicit convert {{type}}", type=f.__class__.__name__, cause=f)
                     return "null"
-        elif isinstance(value, Mapping):
-            try:
-                if not value:
-                    return "{}"
-                items = list(value.items())
-                if len(items) == 1:
-                    return "{" + quote(unicode(items[0][0])) + ": " + pretty_json(items[0][1]).strip() + "}"
-
-                items = sorted(items, lambda a, b: value_compare(a[0], b[0]))
-                values = [quote(unicode(k)) + ": " + indent(pretty_json(v)).strip() for k, v in items if v != None]
-                return "{\n" + INDENT + (",\n" + INDENT).join(values) + "\n}"
-            except Exception, e:
-                from pyLibrary.debugs.logs import Log
-                from pyLibrary.collections import OR
-
-                if OR(not isinstance(k, basestring) for k in value.keys()):
-                    Log.error("JSON must have string keys: {{keys}}:", {
-                        "keys": [k for k in value.keys()]
-                    }, e)
-
-                Log.error("problem making dict pretty: keys={{keys}}:", {
-                    "keys": [k for k in value.keys()]
-                }, e)
         elif isinstance(value, list):
             if not value:
                 return "[]"
@@ -370,6 +384,8 @@ def pretty_json(value):
             if j == None:
                 return "   null   "  # TODO: FIND OUT WHAT CAUSES THIS
             return pretty_json(json_decoder(j))
+        elif scrub(value) is None:
+            return "null"
         elif hasattr(value, '__iter__'):
             return pretty_json(list(value))
         elif hasattr(value, '__call__'):
@@ -378,13 +394,13 @@ def pretty_json(value):
             try:
                 if int(value) == value:
                     return str(int(value))
-            except Exception, e:
+            except Exception:
                 pass
 
             try:
                 if float(value) == value:
                     return str(float(value))
-            except Exception, e:
+            except Exception:
                 pass
 
             return pypy_json_encode(value)
@@ -410,9 +426,11 @@ def problem_serializing(value, e=None):
         rep = None
 
     if rep == None:
-        Log.error("Problem turning value of type {{type}} to json", {
-            "type": typename
-        }, e)
+        Log.error(
+            "Problem turning value of type {{type}} to json",
+            type=typename,
+            cause=e
+        )
     else:
         Log.error(
             "Problem turning value ({{value}}) of type {{type}} to json",
@@ -460,6 +478,16 @@ def datetime2milli(d, type):
         problem_serializing(d, e)
 
 
+def unicode_key(key):
+    """
+    CONVERT PROPERTY VALUE TO QUOTED NAME OF SAME
+    """
+    if not isinstance(key, basestring):
+        from pyLibrary.debugs.logs import Log
+        Log.error("{{key|quote}} is not a valid key", key=key)
+    return quote(unicode(key))
+
+
 _repr_ = Repr()
 _repr_.maxlevel = 2
 
@@ -475,3 +503,5 @@ if use_pypy:
     json_encoder = pypy_json_encode
 else:
     json_encoder = cPythonJSONEncoder().encode
+
+

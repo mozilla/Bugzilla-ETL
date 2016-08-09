@@ -13,6 +13,8 @@ from __future__ import division
 from __future__ import absolute_import
 
 import __builtin__
+from __builtin__ import unicode as _unicode
+
 
 import re
 import math
@@ -23,6 +25,33 @@ from datetime import timedelta, date
 from datetime import datetime as builtin_datetime
 
 from pyLibrary.dot import coalesce, wrap
+
+
+_json_encoder = None
+_convert = None
+_Log = None
+_Except = None
+_Duration = None
+
+
+def _late_import():
+    global _json_encoder
+    global _convert
+    global _Log
+    global _Except
+    global _Duration
+
+    from pyLibrary.jsons.encoder import json_encoder as _json_encoder
+    from pyLibrary import convert as _convert
+    from pyLibrary.debugs.logs import Log as _Log
+    from pyLibrary.debugs.exceptions import Except as _Except
+    from pyLibrary.times.durations import Duration as _Duration
+
+    _ = _json_encoder
+    _ = _convert
+    _ = _Log
+    _ = _Except
+    _ = _Duration
 
 
 def datetime(value):
@@ -38,6 +67,11 @@ def datetime(value):
 
     return _convert.datetime2string(value, "%Y-%m-%d %H:%M:%S")
 
+
+def unicode(value):
+    if value == None:
+        return ""
+    return _unicode(value)
 
 def unix(value):
     if not _convert:
@@ -99,6 +133,19 @@ def json(value):
     return _convert.value2json(value, pretty=True)
 
 
+def tab(value):
+    if not _convert:
+        _late_import()
+
+    if isinstance(value, Mapping):
+        h, d = zip(*wrap(value).leaves())
+        return \
+            "\t".join(map(_convert.value2json, h)) + \
+            "\n" + \
+            "\t".join(map(_convert.value2json, d))
+    else:
+        _unicode(value)
+
 def indent(value, prefix=u"\t", indent=None):
     if indent != None:
         prefix = prefix * indent
@@ -110,7 +157,7 @@ def indent(value, prefix=u"\t", indent=None):
         lines = content.splitlines()
         return prefix + (u"\n" + prefix).join(lines) + suffix
     except Exception, e:
-        raise Exception(u"Problem with indent of value (" + e.message + u")\n" + unicode(toString(value)))
+        raise Exception(u"Problem with indent of value (" + e.message + u")\n" + _unicode(toString(value)))
 
 
 def outdent(value):
@@ -147,7 +194,7 @@ def round(value, decimal=None, digits=None, places=None):
         decimal = digits - left_of_decimal
 
     right_of_decimal = max(decimal, 0)
-    format = "{:." + unicode(right_of_decimal) + "f}"
+    format = "{:." + _unicode(right_of_decimal) + "f}"
     return format.format(__builtin__.round(value, decimal))
 
 
@@ -163,7 +210,7 @@ def percent(value, decimal=None, digits=None, places=None):
 
     decimal = coalesce(decimal, 0)
     right_of_decimal = max(decimal, 0)
-    format = "{:." + unicode(right_of_decimal) + "%}"
+    format = "{:." + _unicode(right_of_decimal) + "%}"
     return format.format(__builtin__.round(value, decimal + 2))
 
 
@@ -247,7 +294,7 @@ def right_align(value, length):
     if length <= 0:
         return u""
 
-    value = unicode(value)
+    value = _unicode(value)
 
     if len(value) < length:
         return (" " * (length - len(value))) + value
@@ -271,7 +318,7 @@ def comma(value):
         else:
             output = "{:,}".format(float(value))
     except Exception:
-        output = unicode(value)
+        output = _unicode(value)
 
     return output
 
@@ -281,6 +328,20 @@ def quote(value):
         _late_import()
 
     return _convert.string2quote(value)
+
+
+_SNIP = "...<snip>..."
+
+def limit(value, length):
+    # LIMIT THE STRING value TO GIVEN LENGTH
+    if len(value) <= length:
+        return value
+    elif length < len(_SNIP) * 2:
+        return value[0:length]
+    else:
+        lhs = int(round((length - len(_SNIP)) / 2, 0))
+        rhs = length - len(_SNIP) - lhs
+        return value[:lhs] + _SNIP + value[-rhs:]
 
 
 def split(value, sep="\n"):
@@ -378,12 +439,12 @@ def _simple_expand(template, seq):
             val = seq[-depth]
             if var:
                 val = val[var]
-            for filter in ops[1:]:
-                parts = filter.split('(')
+            for func_name in ops[1:]:
+                parts = func_name.split('(')
                 if len(parts) > 1:
                     val = eval(parts[0] + "(val, " + ("(".join(parts[1::])))
                 else:
-                    val = globals()[filter](val)
+                    val = globals()[func_name](val)
             val = toString(val)
             return val
         except Exception, e:
@@ -432,19 +493,17 @@ def toString(val):
     if val == None:
         return ""
     elif isinstance(val, (Mapping, list, set)):
-        from pyLibrary.jsons.encoder import json_encoder
-
-        return json_encoder(val, pretty=True)
+        return _json_encoder(val, pretty=True)
     elif hasattr(val, "__json__"):
         return val.__json__()
     elif isinstance(val, _Duration):
-        return unicode(round(val.seconds, places=4)) + " seconds"
+        return _unicode(round(val.seconds, places=4)) + " seconds"
     elif isinstance(val, timedelta):
         duration = val.total_seconds()
-        return unicode(round(duration, 3)) + " seconds"
+        return _unicode(round(duration, 3)) + " seconds"
 
     try:
-        return unicode(val)
+        return _unicode(val)
     except Exception, e:
         if not _Log:
             _late_import()
@@ -563,16 +622,17 @@ def utf82unicode(value):
                 _Log.error("Can not _convert charcode {{c}} in string  index {{i}}", i=i, c=ord(c), cause=[e, _Except.wrap(f)])
 
         try:
-            latin1 = unicode(value.decode("latin1"))
+            latin1 = _unicode(value.decode("latin1"))
             _Log.error("Can not explain conversion failure, but seems to be latin1", e)
-        except Exception, f:
+        except Exception:
             pass
 
         try:
-            a = unicode(value.decode("iso-8859-1"))
+            a = _unicode(value.decode("iso-8859-1"))
             _Log.error("Can not explain conversion failure, but seems to be iso-8859-1", e)
-        except Exception, f:
+        except Exception:
             pass
+
 
         _Log.error("Can not explain conversion failure of " + type(value).__name__ + "!", e)
 
@@ -580,25 +640,4 @@ def wordify(value):
     return [w for w in re.split(r"[\W_]", value) if strip(w)]
 
 
-
-_convert = None
-_Log = None
-_Except = None
-_Duration = None
-
-def _late_import():
-    global _convert
-    global _Log
-    global _Except
-    global _Duration
-
-    from pyLibrary import convert as _convert
-    from pyLibrary.debugs.logs import Log as _Log
-    from pyLibrary.debugs.logs import Except as _Except
-    from pyLibrary.times.durations import Duration as _Duration
-
-    _ = _convert
-    _ = _Log
-    _ = _Except
-    _ = _Duration
 

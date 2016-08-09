@@ -1,3 +1,16 @@
+# encoding: utf-8
+#
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this file,
+# You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Author: Kyle Lahnakoski (kyle@lahnakoski.com)
+#
+from __future__ import unicode_literals
+from __future__ import division
+from __future__ import absolute_import
+
 from collections import Mapping
 from datetime import date, timedelta, datetime
 from decimal import Decimal
@@ -8,7 +21,6 @@ from types import NoneType
 from pyLibrary.dot import DictList, NullType, Dict, unwrap
 from pyLibrary.dot.objects import DictObject
 from pyLibrary.times.dates import Date
-
 from pyLibrary.times.durations import Duration
 
 
@@ -76,7 +88,7 @@ def _scrub(value, is_done):
     elif type_ is Date:
         return float(value.unix)
     elif type_ is Duration:
-        return value.seconds
+        return float(value.seconds)
     elif type_ is str:
         return utf82unicode(value)
     elif type_ is Decimal:
@@ -86,15 +98,20 @@ def _scrub(value, is_done):
     elif isinstance(value, Mapping):
         _id = id(value)
         if _id in is_done:
-            _Log.error("possible loop in structure detected")
+            _Log.warning("possible loop in structure detected")
+            return '"<LOOP IN STRUCTURE>"'
         is_done.add(_id)
 
         output = {}
         for k, v in value.iteritems():
-            if not isinstance(k, basestring):
+            if isinstance(k, basestring):
+                pass
+            elif hasattr(k, "__unicode__"):
+                k = unicode(k)
+            else:
                 _Log.error("keys must be strings")
             v = _scrub(v, is_done)
-            if v != None:
+            if v != None or isinstance(v, Mapping):
                 output[k] = v
 
         is_done.discard(_id)

@@ -15,8 +15,8 @@ from bzETL.parse_bug_history import MAX_TIME
 from pyLibrary import convert
 from pyLibrary.debugs.logs import Log
 from pyLibrary.dot import Dict
-from pyLibrary.queries import qb
-from pyLibrary.queries.qb_usingMySQL import esfilter2sqlwhere
+from pyLibrary.queries import jx
+from pyLibrary.queries.jx_usingMySQL import esfilter2sqlwhere
 from pyLibrary.sql import SQL
 from pyLibrary.times.timer import Timer
 
@@ -92,7 +92,7 @@ def get_screened_whiteboard(db):
         groups = db.query("SELECT id FROM groups WHERE {{where}}", {
             "where": esfilter2sqlwhere(db, {"terms": {"name": SCREENED_WHITEBOARD_BUG_GROUPS}})
         })
-        globals()["SCREENED_BUG_GROUP_IDS"] = qb.select(groups, "id")
+        globals()["SCREENED_BUG_GROUP_IDS"] = jx.select(groups, "id")
 
 
 def get_bugs_table_columns(db, schema_name):
@@ -228,7 +228,7 @@ def get_bugs(db, param):
             else:
                 return db.quote_column(col.column_name)
 
-        param.bugs_columns = qb.select(bugs_columns, "column_name")
+        param.bugs_columns = jx.select(bugs_columns, "column_name")
         param.bugs_columns_SQL = SQL(",\n".join([lower(c) for c in bugs_columns]))
         param.bug_filter = esfilter2sqlwhere(db, {"terms": {"b.bug_id": param.bug_list}})
         param.screened_whiteboard = esfilter2sqlwhere(db, {"and": [

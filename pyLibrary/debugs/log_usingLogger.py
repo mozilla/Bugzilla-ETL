@@ -17,8 +17,9 @@ from datetime import timedelta
 import logging
 import sys
 
-from .log_usingThreadedStream import Log_usingThreadedStream, time_delta_pusher
-from .logs import BaseLog, DEBUG_LOGGING, Log
+from pyLibrary.debugs.log_usingThreadedStream import TextLog_usingThreadedStream, time_delta_pusher
+from pyLibrary.debugs.logs import Log
+from pyLibrary.debugs.text_logs import TextLog, DEBUG_LOGGING
 from pyLibrary.dot import unwrap
 from pyLibrary.thread import threads
 from pyLibrary.thread.threads import Thread
@@ -26,7 +27,7 @@ from pyLibrary.thread.threads import Thread
 
 
 # WRAP PYTHON CLASSIC logger OBJECTS
-class Log_usingLogger(BaseLog):
+class TextLog_usingLogger(TextLog):
     def __init__(self, settings):
         self.logger = logging.Logger("unique name", level=logging.INFO)
         self.logger.addHandler(make_log_from_settings(settings))
@@ -42,20 +43,18 @@ class Log_usingLogger(BaseLog):
         self.queue.add({"template": template, "params": params})
 
     def stop(self):
-        try:
+        with suppress_exception:
             if DEBUG_LOGGING:
-                sys.stdout.write("Log_usingLogger sees stop, adding stop to queue\n")
+                sys.stdout.write("TextLog_usingLogger sees stop, adding stop to queue\n")
             self.queue.add(Thread.STOP)  # BE PATIENT, LET REST OF MESSAGE BE SENT
             self.thread.join()
             if DEBUG_LOGGING:
-                sys.stdout.write("Log_usingLogger done\n")
-        except Exception, e:
-            pass
+                sys.stdout.write("TextLog_usingLogger done\n")
 
-        try:
+
+        with suppress_exception:
             self.queue.close()
-        except Exception, f:
-            pass
+
 
 
 def make_log_from_settings(settings):
@@ -72,7 +71,7 @@ def make_log_from_settings(settings):
     except Exception, e:
         if settings.stream and not constructor:
             # PROVIDE A DEFAULT STREAM HANLDER
-            constructor = Log_usingThreadedStream
+            constructor = TextLog_usingThreadedStream
         else:
             Log.error("Can not find class {{class}}",  {"class": path}, cause=e)
 

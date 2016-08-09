@@ -48,7 +48,6 @@ from pyLibrary.collections import MIN
 from pyLibrary.debugs.logs import Log
 from pyLibrary.dot import Null, wrap, DictList, Dict, coalesce, unwrap, inverse
 from pyLibrary.env.files import File
-from pyLibrary.queries import qb
 from pyLibrary.strings import apply_diff
 from bzETL.transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS, DIFF_FIELDS
 
@@ -381,7 +380,7 @@ class BugHistoryParser():
     def populateIntermediateVersionObjects(self):
         # Make sure the self.bugVersions are in descending order by modification time.
         # They could be mixed because of attachment activity
-        self.bugVersions = qb.sort(self.bugVersions, [
+        self.bugVersions = jx.sort(self.bugVersions, [
             {"field": "modified_ts", "sort": -1}
         ])
 
@@ -444,7 +443,7 @@ class BugHistoryParser():
 
                 # Now walk self.currBugState forward in time by applying the changes from currVersion
                 #BE SURE TO APPLY REMOVES BEFORE ADDS, JUST IN CASE BOTH HAPPENED TO ONE FIELD
-                changes = qb.sort(currVersion.changes, ["attach_id", "field_name", {"field": "old_value", "sort": -1}, "new_value"])
+                changes = jx.sort(currVersion.changes, ["attach_id", "field_name", {"field": "old_value", "sort": -1}, "new_value"])
                 currVersion.changes = changes
                 self.currBugState.changes = changes
 
@@ -770,7 +769,7 @@ class BugHistoryParser():
                 self.currActivity.changes.append({
                     "field_name": field_name,
                     "new_value": Null,
-                    "old_value": ", ".join(map(unicode, qb.sort(diff))),
+                    "old_value": ", ".join(map(unicode, jx.sort(diff))),
                     "attach_id": target.attach_id
                 })
 
@@ -787,7 +786,7 @@ class BugHistoryParser():
             if valueType == "added" and remove:
                 self.currActivity.changes.append({
                     "field_name": field_name,
-                    "new_value": u", ".join(map(unicode, qb.sort(remove))),
+                    "new_value": u", ".join(map(unicode, jx.sort(remove))),
                     "old_value": Null,
                     "attach_id": target.attach_id
                 })
@@ -823,8 +822,8 @@ class BugHistoryParser():
                         "type": valueType,
                         "object": arrayDesc,
                         "field_name": field_name,
-                        "missing": qb.sort(qb.map2set(diff, map_remove)),
-                        "existing": qb.sort(total),
+                        "missing": jx.sort(jx.map2set(diff, map_remove)),
+                        "existing": jx.sort(total),
                         "candidates": {d: self.aliases.get(d, None) for d in diff},
                         "bug_id": self.currBugID
                     })
@@ -886,18 +885,18 @@ class BugHistoryParser():
                             "diff": diff,
                             "output": output
                         })
-                    final_removed = qb.map2set(removed, map_total)
+                    final_removed = jx.map2set(removed, map_total)
                     if final_removed:
                         self.currActivity.changes.append({
                             "field_name": field_name,
-                            "new_value": u", ".join(map(unicode, qb.sort(final_removed))),
+                            "new_value": u", ".join(map(unicode, jx.sort(final_removed))),
                             "old_value": Null,
                             "attach_id": target.attach_id
                         })
                 except Exception, email:
                     Log.error("issues", email)
 
-            return qb.map2set(output, map_total)
+            return jx.map2set(output, map_total)
         else:
             removed = total & remove
             diff = remove - total
@@ -906,7 +905,7 @@ class BugHistoryParser():
             if valueType == "added" and removed:
                 self.currActivity.changes.append({
                     "field_name": field_name,
-                    "new_value": u", ".join(map(unicode, qb.sort(removed))),
+                    "new_value": u", ".join(map(unicode, jx.sort(removed))),
                     "old_value": Null,
                     "attach_id": target.attach_id
                 })
@@ -958,7 +957,7 @@ class BugHistoryParser():
         if added_values:
             self.currActivity.changes.append({
                 "field_name": "flags",
-                "new_value": ", ".join(qb.sort(added_values.value)),
+                "new_value": ", ".join(jx.sort(added_values.value)),
                 "old_value": Null,
                 "attach_id": target.attach_id
             })
@@ -972,7 +971,7 @@ class BugHistoryParser():
         self.currActivity.changes.append({
             "field_name": "flags",
             "new_value": Null,
-            "old_value": ", ".join(qb.sort(old_values)),
+            "old_value": ", ".join(jx.sort(old_values)),
             "attach_id": target.attach_id
         })
 

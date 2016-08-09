@@ -20,7 +20,7 @@ from pyLibrary.debugs.logs import Log
 from pyLibrary.dot import Dict, Null, wrap
 from pyLibrary.env.files import File
 from pyLibrary.maths.randoms import Random
-from pyLibrary.queries import qb
+from pyLibrary.queries import jx
 from pyLibrary.queries.qb_usingMySQL import esfilter2sqlwhere
 from pyLibrary.sql.mysql import MySQL, all_db
 from pyLibrary.testing import elasticsearch
@@ -376,8 +376,8 @@ class TestETL(unittest.TestCase):
             "size": 200000,
             "sort": []
         })
-        latest_bugs = qb.select(results.hits.hits, "_source")
-        latest_bugs_index = qb.unique_index(latest_bugs, "bug_id")  # IF NOT UNIQUE, THEN ETL IS WRONG
+        latest_bugs = jx.select(results.hits.hits, "_source")
+        latest_bugs_index = jx.unique_index(latest_bugs, "bug_id")  # IF NOT UNIQUE, THEN ETL IS WRONG
 
         for bug_id in private_bugs:
             if latest_bugs_index[bug_id] == None:
@@ -563,13 +563,13 @@ def verify_public_bugs(es, private_bugs):
 
 def verify_no_private_attachments(es, private_attachments):
     #VERIFY ATTACHMENTS ARE NOT IN OUTPUT
-    for b in qb.select(private_attachments, "bug_id"):
+    for b in jx.select(private_attachments, "bug_id"):
         versions = compare_es.get_all_bug_versions(es, b)
         #WE ASSUME THE ATTACHMENT, IF IT EXISTS, WILL BE SOMEWHERE IN THE BUG IT
         #BELONGS TO, IF AT ALL
         for v in versions:
             for a in v.attachments:
-                if a.attach_id in qb.select(private_attachments, "attach_id"):
+                if a.attach_id in jx.select(private_attachments, "attach_id"):
                     Log.error("Private attachment should not exist")
 
 
@@ -586,7 +586,7 @@ def verify_no_private_comments(es, private_comments):
         "sort": []
     })
 
-    if qb.select(data.hits.hits, "_source"):
+    if jx.select(data.hits.hits, "_source"):
         Log.error("Expecting no comments")
 
 
@@ -600,7 +600,7 @@ def compare_both(candidate, reference, settings, some_bugs):
         found_errors = False
         for bug_id in some_bugs:
             try:
-                versions = qb.sort(
+                versions = jx.sort(
                     get_all_bug_versions(candidate, bug_id, datetime.utcnow()),
                     "modified_ts")
                 # WE CAN NOT EXPECT candidate TO BE UP TO DATE BECAUSE IT IS USING AN OLD IMAGE
@@ -611,7 +611,7 @@ def compare_both(candidate, reference, settings, some_bugs):
 
                 pre_ref_versions = get_all_bug_versions(reference, bug_id, max_time)
                 ref_versions = \
-                    qb.sort(
+                    jx.sort(
                         #ADDED TO FIX OLD PRODUCTION BUG VERSIONS
                         [compare_es.old2new(x, settings.bugzilla.expires_on) for x in pre_ref_versions],
                         "modified_ts"

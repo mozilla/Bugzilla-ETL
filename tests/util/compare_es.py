@@ -13,7 +13,7 @@ from bzETL import transform_bugzilla, parse_bug_history
 from pyLibrary import convert
 from pyLibrary.dot import coalesce, unwrap
 from pyLibrary.maths import Math
-from pyLibrary.queries import qb
+from pyLibrary.queries import jx
 
 
 #PULL ALL BUG DOCS FROM ONE ES
@@ -36,7 +36,7 @@ def get_all_bug_versions(es, bug_id, max_time=None):
         "sort": []
     })
 
-    return qb.select(data.hits.hits, "_source")
+    return jx.select(data.hits.hits, "_source")
 
 
 def get_private_bugs(es):
@@ -98,7 +98,7 @@ def old2new(bug, max_date):
             convert.string2datetime(bug.cf_due_date, "%Y-%m-%d")
         )
     bug.changes = convert.json2value(
-        convert.value2json(qb.sort(bug.changes, "field_name")) \
+        convert.value2json(jx.sort(bug.changes, "field_name")) \
             .replace("\"field_value_removed\":", "\"old_value\":") \
             .replace("\"field_value\":", "\"new_value\":")
     )
@@ -124,7 +124,7 @@ def old2new(bug, max_date):
         else:
             c.attach_id = convert.value2int(c.attach_id)
 
-    bug.attachments = qb.sort(bug.attachments, "attach_id")
+    bug.attachments = jx.sort(bug.attachments, "attach_id")
     for a in bug.attachments:
         a.attach_id = convert.value2int(a.attach_id)
         for k, v in list(a.items()):

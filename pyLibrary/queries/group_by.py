@@ -8,19 +8,20 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
 from __future__ import absolute_import
-import sys
-import math
+from __future__ import division
+from __future__ import unicode_literals
 
-from pyLibrary.queries.containers.cube import Cube
-from pyLibrary.queries.index import value2key
-from pyLibrary.dot.dicts import Dict
-from pyLibrary.dot.lists import DictList
-from pyLibrary.dot import listwrap, wrap
-from pyLibrary.debugs.logs import Log
+import itertools
+import math
+import sys
+
 from pyLibrary.collections.multiset import Multiset
+from pyLibrary.debugs.logs import Log
+from pyLibrary.dot import wrap, listwrap
+from pyLibrary.dot.lists import DictList
+from pyLibrary.queries.containers import Container
+from pyLibrary.queries.expressions import jx_expression_to_function
 
 
 def groupby(data, keys=None, size=None, min_size=None, max_size=None, contiguous=False):
@@ -36,48 +37,16 @@ def groupby(data, keys=None, size=None, min_size=None, max_size=None, contiguous
             max_size = size
         return groupby_min_max_size(data, min_size=min_size, max_size=max_size)
 
-    if isinstance(data, Cube):
+    if isinstance(data, Container):
         return data.groupby(keys)
 
-    keys = listwrap(keys)
-    def get_keys(d):
-        output = Dict()
-        for k in keys:
-            output[k] = d[k]
-        return output
-
-    if contiguous:
-        try:
-            if not data:
-                return wrap([])
-
-            agg = DictList()
-            acc = DictList()
-            curr_key = value2key(keys, data[0])
-            for d in data:
-                key = value2key(keys, d)
-                if key != curr_key:
-                    agg.append((get_keys(acc[0]), acc))
-                    curr_key = key
-                    acc = [d]
-                else:
-                    acc.append(d)
-            agg.append((get_keys(acc[0]), acc))
-            return wrap(agg)
-        except Exception, e:
-            Log.error("Problem grouping contiguous values", e)
-
     try:
-        agg = {}
-        for d in data:
-            key = value2key(keys, d)
-            pair = agg.get(key)
-            if pair is None:
-                pair = (get_keys(d), DictList())
-                agg[key] = pair
-            pair[1].append(d)
+        keys = listwrap(keys)
+        get_key = jx_expression_to_function(keys)
+        if not contiguous:
+            data = sorted(data, key=get_key)
 
-        return agg.values()
+        return ((wrap({k: v for k, v in zip(keys, g)}), wrap(v)) for g, v in itertools.groupby(data, get_key))
     except Exception, e:
         Log.error("Problem grouping", e)
 
@@ -170,7 +139,7 @@ def groupby_min_max_size(data, min_size=0, max_size=None, ):
                 if out:
                     # AT LEAST TRY TO RETURN WHAT HAS BEEN PROCESSED SO FAR
                     yield g, out
-                Log.error("Problem inside qb.groupby", e)
+                Log.error("Problem inside jx.groupby", e)
 
         return _iter()
     elif not isinstance(data, Multiset):

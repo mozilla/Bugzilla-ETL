@@ -7,13 +7,15 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import unicode_literals
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
+
 import StringIO
 import gzip
-from io import BytesIO
 import zipfile
+from io import BytesIO
+from tempfile import TemporaryFile
 
 import boto
 from boto.s3.connection import Location
@@ -21,14 +23,15 @@ from boto.s3.connection import Location
 from pyLibrary import convert
 from pyLibrary.debugs.logs import Log
 from pyLibrary.dot import wrap, Null, coalesce, unwrap
-from pyLibrary.env.big_data import safe_size, MAX_STRING_SIZE, GzipLines, LazyLines
+from pyLibrary.env.big_data import safe_size, MAX_STRING_SIZE, GzipLines, LazyLines, ibytes2ilines, scompressed2ibytes
 from pyLibrary.meta import use_settings
 from pyLibrary.times.dates import Date
 from pyLibrary.times.timer import Timer
 
-
 READ_ERROR = "S3 read error"
 MAX_FILE_SIZE = 100 * 1024 * 1024
+VALID_KEY = r"\d+([.:]\d+)*"
+KEY_IS_WRONG_FORMAT = "key {{key}} in bucket {{bucket}} is of the wrong format"
 
 class File(object):
     def __init__(self, bucket, key):
@@ -47,6 +50,9 @@ class File(object):
     @property
     def meta(self):
         return self.bucket.meta(self.key)
+
+    def delete(self):
+        return self.bucket.delete_key(self.key)
 
 
 class Connection(object):
@@ -75,10 +81,8 @@ class Connection(object):
         except Exception, e:
             Log.error("Problem connecting to S3", e)
 
-
     def __enter__(self):
         return self
-
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.connection:
@@ -98,6 +102,8 @@ class Bucket(object):
     THIS CLASS MANAGES THE ".json" EXTENSION, AND ".gz"
     (ZIP/UNZIP) SHOULD THE FILE BE BIG ENOUGH TO
     JUSTIFY IT
+
+    ALL KEYS ARE DIGITS, SEPARATED BY DOT (.) COLON (:)
     """
 
     @use_settings
@@ -120,7 +126,7 @@ class Bucket(object):
             self.connection = Connection(settings).connection
             self.bucket = self.connection.get_bucket(self.settings.bucket, validate=False)
         except Exception, e:
-            Log.error("Problem connecting to {{bucket}}",  bucket= self.settings.bucket, cause=e)
+            Log.error("Problem connecting to {{bucket}}", bucket=self.settings.bucket, cause=e)
 
 
     def __enter__(self):
@@ -137,7 +143,7 @@ class Bucket(object):
         if must_exist:
             meta = self.get_meta(key)
             if not meta:
-                Log.error("Key {{key}} does not exist", key=key)
+                Log.error("Key {{key}} does not exist in bucket {{bucket}}", key=key, bucket=self.bucket.name)
             key = strip_extension(meta.key)
         return File(self, key)
 
@@ -152,17 +158,14 @@ class Bucket(object):
             self.get_meta(key, conforming=False)
             raise e
 
+    def delete_keys(self, keys):
+        self.bucket.delete_keys(keys)
+
     def get_meta(self, key, conforming=True):
         try:
             # key_prefix("2")
             metas = list(self.bucket.list(prefix=key))
             metas = wrap([m for m in metas if m.name.find(".json") != -1])
-
-            if self.name == "ekyle-talos" and key.find(".") == -1:
-                # VERY SPECIFIC CONDITIONS TO ALLOW DELETE, REMOVE THIS CODE IN THE FUTURE (Now==March2015)
-                for m in metas:
-                    self.bucket.delete_key(m.key)
-                return Null
 
             perfect = Null
             favorite = Null
@@ -176,9 +179,10 @@ class Bucket(object):
                     if simple == key:
                         perfect = m
                         too_many = False
-                    if favorite and not perfect:
-                        too_many = True
-                    favorite = m
+                    if simple.startswith(key + ".") or simple.startswith(key + ":"):
+                        if favorite and not perfect:
+                            too_many = True
+                        favorite = m
                 except Exception, e:
                     error = e
 
@@ -196,12 +200,22 @@ class Bucket(object):
             Log.error(READ_ERROR+" can not read {{key}} from {{bucket}}", key=key, bucket=self.bucket.name, cause=e)
 
     def keys(self, prefix=None, delimiter=None):
+        """
+        :param prefix:  NOT A STRING PREFIX, RATHER PATH ID PREFIX (MUST MATCH TO NEXT "." OR ":")
+        :param delimiter:  TO GET Prefix OBJECTS, RATHER THAN WHOLE KEYS
+        :return: SET OF KEYS IN BUCKET, OR
+        """
         if delimiter:
             # WE REALLY DO NOT GET KEYS, BUT RATHER Prefix OBJECTS
             # AT LEAST THEY ARE UNIQUE
-            return set(k.name.rstrip(delimiter) for k in self.bucket.list(prefix=prefix, delimiter=delimiter))
+            candidates = [k.name.rstrip(delimiter) for k in self.bucket.list(prefix=prefix, delimiter=delimiter)]
         else:
-            return set(strip_extension(k.key) for k in self.bucket.list(prefix=prefix))
+            candidates = [strip_extension(k.key) for k in self.bucket.list(prefix=prefix)]
+
+        if prefix == None:
+            return set(c for c in candidates if c != "0.json")
+        else:
+            return set(k for k in candidates if k == prefix or k.startswith(prefix + ".") or k.startswith(prefix + ":"))
 
     def metas(self, prefix=None, limit=None, delimiter=None):
         """
@@ -262,19 +276,12 @@ class Bucket(object):
             Log.error("{{key}} does not exist",  key= key)
         if source.size < MAX_STRING_SIZE:
             if source.key.endswith(".gz"):
-                return GzipLines(source.read())
+                return LazyLines(ibytes2ilines(scompressed2ibytes(source)))
             else:
                 return convert.utf82unicode(source.read()).split("\n")
 
         if source.key.endswith(".gz"):
-            bytes = safe_size(source)
-            if isinstance(bytes, str):
-                buff = BytesIO(bytes)
-            else:
-                # SWAP OUT FILE REFERENCE
-                bytes.file, buff = None, bytes.file
-            archive = gzip.GzipFile(fileobj=buff, mode='r')
-            return LazyLines(archive)
+            return LazyLines(ibytes2ilines(scompressed2ibytes(source)))
         else:
             return LazyLines(source)
 
@@ -302,6 +309,7 @@ class Bucket(object):
 
             if len(value) > 20 * 1000 and not disable_zip:
                 self.bucket.delete_key(key + ".json")
+                self.bucket.delete_key(key + ".json.gz")
                 if isinstance(value, str):
                     value = convert.bytes2zip(value)
                     key += ".json.gz"
@@ -322,20 +330,21 @@ class Bucket(object):
             if self.settings.public:
                 storage.set_acl('public-read')
         except Exception, e:
-            Log.error("Problem writing {{bytes}} bytes to {{key}} in {{bucket}}",
+            Log.error(
+                "Problem writing {{bytes}} bytes to {{key}} in {{bucket}}",
                 key=key,
                 bucket=self.bucket.name,
                 bytes=len(value),
                 cause=e
             )
 
-    def write_lines(self, key, *lines):
+    def write_lines(self, key, lines):
         self._verify_key_format(key)
         storage = self.bucket.new_key(key + ".json.gz")
 
-        buff = BytesIO()
+        buff = TemporaryFile()
         archive = gzip.GzipFile(fileobj=buff, mode='w')
-        count=0
+        count = 0
         for l in lines:
             if hasattr(l, "__iter__"):
                 for ll in l:
@@ -348,9 +357,17 @@ class Bucket(object):
                 count += 1
         archive.close()
         file_length = buff.tell()
-        buff.seek(0)
-        with Timer("Sending {{count}} lines in {{file_length|comma}} bytes", {"file_length": file_length, "count": count}, debug=self.settings.debug):
-            storage.set_contents_from_file(buff)
+
+        retry = 3
+        while retry:
+            try:
+                with Timer("Sending {{count}} lines in {{file_length|comma}} bytes", {"file_length": file_length, "count": count}, debug=self.settings.debug):
+                    buff.seek(0)
+                    storage.set_contents_from_file(buff)
+                break
+            except Exception, e:
+                Log.warning("could not push data to s3", cause=e)
+                retry -= 1
 
         if self.settings.public:
             storage.set_acl('public-read')
@@ -366,7 +383,7 @@ class Bucket(object):
 
         if self.key_format != _scrub_key(key):
             Log.error(
-                "key {{key}} in bucket {{bucket}} is of the wrong format",
+                KEY_IS_WRONG_FORMAT,
                 key=key,
                 bucket=self.bucket.name
             )

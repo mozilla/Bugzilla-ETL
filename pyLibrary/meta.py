@@ -11,15 +11,17 @@ from __future__ import unicode_literals
 from __future__ import division
 from __future__ import absolute_import
 from collections import Mapping
-from repr import Repr
 from types import FunctionType
-from pyLibrary import dot
-from pyLibrary.debugs.logs import Log, Except
-from pyLibrary.dot import unwrap, set_default, wrap, _get_attr, Null, Dict
+
+from pyLibrary import dot, convert
+from pyLibrary.debugs.exceptions import Except, suppress_exception
+from pyLibrary.debugs.logs import Log
+from pyLibrary.dot import set_default, wrap, _get_attr, Null, coalesce
 from pyLibrary.maths.randoms import Random
+from pyLibrary.strings import expand_template
 from pyLibrary.thread.threads import Lock
 from pyLibrary.times.dates import Date
-from pyLibrary.times.durations import SECOND, DAY
+from pyLibrary.times.durations import DAY
 
 
 def get_class(path):
@@ -38,7 +40,7 @@ def new_instance(settings):
     """
     MAKE A PYTHON INSTANCE
 
-    settings HAS ALL THE kwargs, PLUS class ATTRIBUTE TO INDICATE THE CLASS TO CREATE
+    `settings` HAS ALL THE `kwargs`, PLUS `class` ATTRIBUTE TO INDICATE THE CLASS TO CREATE
     """
     settings = set_default({}, settings)
     if not settings["class"]:
@@ -56,10 +58,8 @@ def new_instance(settings):
         Log.error("Can not find class {{class}}", {"class": path}, cause=e)
 
     settings['class'] = None
-    try:
+    with suppress_exception:
         return constructor(settings=settings)  # MAYBE IT TAKES A SETTINGS OBJECT
-    except Exception, _:
-        pass
 
     try:
         return constructor(**settings)
@@ -87,8 +87,8 @@ def get_function_by_name(full_name):
 
 def use_settings(func):
     """
-    THIS DECORATOR WILL PUT ALL PARAMETERS INTO THE settings PARAMETER AND
-    PUT ALL settings PARAMETERS INTO THE FUNCTION PARAMETERS.  THIS HAS BOTH
+    THIS DECORATOR WILL PUT ALL PARAMETERS INTO THE `settings` PARAMETER AND
+    PUT ALL `settings` PARAMETERS INTO THE FUNCTION PARAMETERS.  THIS HAS BOTH
     THE BENEFIT OF HAVING ALL PARAMETERS IN ONE PLACE (settings) AND ALL
     PARAMETERS ARE EXPLICIT FOR CLARITY.
 
@@ -188,7 +188,7 @@ def params_pack(params, *args):
 class cache(object):
 
     """
-    :param func: ASSUME FIRST PARAMETER IS self
+    :param func: ASSUME FIRST PARAMETER OF `func` IS `self`
     :param duration: USE CACHE IF LAST CALL WAS LESS THAN duration AGO
     :param lock: True if you want multithreaded monitor (default False)
     :return:
@@ -246,41 +246,45 @@ def wrap_function(cache_store, func_):
 
             if Random.int(100) == 0:
                 # REMOVE OLD CACHE
-                _cache = {k: v for k, v in _cache.items() if v[0]==None or v[0] < now}
+                _cache = {k: v for k, v in _cache.items() if v[0]==None or v[0] > now}
                 setattr(self, attr_name, _cache)
 
             timeout, key, value, exception = _cache.get(args, (Null, Null, Null, Null))
 
-            if now > timeout:
-                value = func(self, *args)
+        if now > timeout:
+            value = func(self, *args)
+            with cache_store.locker:
                 _cache[args] = (now + cache_store.timeout, args, value, None)
-                return value
+            return value
 
-            if value == None:
-                if exception == None:
-                    try:
-                        value = func(self, *args)
+        if value == None:
+            if exception == None:
+                try:
+                    value = func(self, *args)
+                    with cache_store.locker:
                         _cache[args] = (now + cache_store.timeout, args, value, None)
-                        return value
-                    except Exception, e:
-                        e = Except.wrap(e)
+                    return value
+                except Exception, e:
+                    e = Except.wrap(e)
+                    with cache_store.locker:
                         _cache[args] = (now + cache_store.timeout, args, None, e)
-                        raise e
-                else:
-                    raise exception
+                    raise e
             else:
-                return value
+                raise exception
+        else:
+            return value
 
     return output
 
 
-_repr = Repr()
-_repr.maxlevel = 3
+# _repr = Repr()
+# _repr.maxlevel = 3
 
 def repr(obj):
     """
     JUST LIKE __builtin__.repr(), BUT WITH SOME REASONABLE LIMITS
     """
+    return repr(obj)
     return _repr.repr(obj)
 
 
@@ -292,3 +296,111 @@ class _FakeLock():
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
+
+
+def DataClass(name, columns):
+    """
+    Each column has {"name", "required", "nulls", "default", "type"} properties
+    """
+
+    columns = wrap([{"name": c, "required": True, "nulls": False, "type": object} if isinstance(c, basestring) else c for c in columns])
+    slots = columns.name
+    required = wrap(filter(lambda c: c.required and not c.nulls and not c.default, columns)).name
+    nulls = wrap(filter(lambda c: c.nulls, columns)).name
+    types = {c.name: coalesce(c.type, object) for c in columns}
+
+    code = expand_template("""
+from __future__ import unicode_literals
+from collections import Mapping
+
+meta = None
+types_ = {{types}}
+
+class {{name}}(Mapping):
+    __slots__ = {{slots}}
+
+    def __init__(self, **kwargs):
+        if not kwargs:
+            return
+
+        for s in {{slots}}:
+            setattr(self, s, kwargs.get(s, kwargs.get('default', Null)))
+
+        missed = {{required}}-set(kwargs.keys())
+        if missed:
+            Log.error("Expecting properties {"+"{missed}}", missed=missed)
+
+        illegal = set(kwargs.keys())-set({{slots}})
+        if illegal:
+            Log.error("{"+"{names}} are not a valid properties", names=illegal)
+
+    def __getitem__(self, item):
+        return getattr(self, item)
+
+    def __setitem__(self, item, value):
+        setattr(self, item, value)
+        return self
+
+    def __setattr__(self, item, value):
+        if item not in {{slots}}:
+            Log.error("{"+"{item|quote}} not valid attribute", item=item)
+        #if not isinstance(value, types_[item]):
+        #    Log.error("{"+"{item|quote}} not of type "+"{"+"{type}}", item=item, type=types_[item])
+        object.__setattr__(self, item, value)
+
+    def __getattr__(self, item):
+        Log.error("{"+"{item|quote}} not valid attribute", item=item)
+
+    def __hash__(self):
+        return object.__hash__(self)
+
+    def __eq__(self, other):
+        if isinstance(other, {{name}}) and dict(self)==dict(other) and self is not other:
+            Log.error("expecting to be same object")
+        return self is other
+
+    def __dict__(self):
+        return {k: getattr(self, k) for k in {{slots}}}
+
+    def items(self):
+        return ((k, getattr(self, k)) for k in {{slots}})
+
+    def __copy__(self):
+        _set = object.__setattr__
+        output = object.__new__({{name}})
+        {{assign}}
+        return output
+
+    def __iter__(self):
+        return {{slots}}.__iter__()
+
+    def __len__(self):
+        return {{len_slots}}
+
+    def __str__(self):
+        return str({{dict}})
+
+temp = {{name}}
+""",
+        {
+            "name": name,
+            "slots": "(" + (", ".join(convert.value2quote(s) for s in slots)) + ")",
+            "required": "{" + (", ".join(convert.value2quote(s) for s in required)) + "}",
+            "nulls": "{" + (", ".join(convert.value2quote(s) for s in nulls)) + "}",
+            "len_slots": len(slots),
+            "dict": "{" + (", ".join(convert.value2quote(s) + ": self." + s for s in slots)) + "}",
+            "assign": "; ".join("_set(output, "+convert.value2quote(s)+", self."+s+")" for s in slots),
+            "types": "{" + (",".join(convert.string2quote(k) + ": " + v.__name__ for k, v in types.items())) + "}"
+        }
+    )
+
+    return _exec(code, name)
+
+def _exec(code, name):
+    temp = None
+    exec(code)
+    globals()[name]=temp
+    return temp
+
+
+

@@ -14,6 +14,7 @@ from __future__ import absolute_import
 
 from pyLibrary.collections import PRODUCT, reverse, MAX, MIN, OR
 from pyLibrary import convert
+from pyLibrary.debugs.exceptions import suppress_exception
 from pyLibrary.debugs.logs import Log
 from pyLibrary.dot import Null, Dict, coalesce
 from pyLibrary.meta import use_settings
@@ -26,7 +27,7 @@ class Matrix(object):
     ZERO = None
 
     @use_settings
-    def __init__(self, dims=[], list=None, value=None, zeros=False, settings=None):
+    def __init__(self, dims=[], list=None, value=None, zeros=None, settings=None):
         if list:
             self.num = 1
             self.dims = (len(list), )
@@ -41,16 +42,19 @@ class Matrix(object):
 
         self.num = len(dims)
         self.dims = tuple(dims)
-        if zeros:
+        if zeros != None:
             if self.num == 0 or OR(d == 0 for d in dims):  #NO DIMS, OR HAS A ZERO DIM, THEN IT IS A NULL CUBE
-                self.cube = None
+                if hasattr(zeros, "__call__"):
+                    self.cube = zeros()
+                else:
+                    self.cube = zeros
             else:
-                self.cube = _zeros(*dims)
+                self.cube = _zeros(dims, zero=zeros)
         else:
             if self.num == 0 or OR(d == 0 for d in dims):  #NO DIMS, OR HAS A ZERO DIM, THEN IT IS A NULL CUBE
                 self.cube = Null
             else:
-                self.cube = _null(*dims)
+                self.cube = _zeros(dims, zero=Null)
 
     @staticmethod
     def wrap(array):
@@ -285,23 +289,17 @@ def _iter(cube, depth):
         return iterator()
 
 
-def _null(*dims):
+def _zeros(dims, zero):
     d0 = dims[0]
     if d0 == 0:
         Log.error("Zero dimensions not allowed")
     if len(dims) == 1:
-        return [Null for i in range(d0)]
+        if hasattr(zero, "__call__"):
+            return [zero() for _ in range(d0)]
+        else:
+            return [zero] * d0
     else:
-        return [_null(*dims[1::]) for i in range(d0)]
-
-def _zeros(*dims):
-    d0 = dims[0]
-    if d0 == 0:
-        Log.error("Zero dimensions not allowed")
-    if len(dims) == 1:
-        return [0] * d0
-    else:
-        return [_zeros(*dims[1::]) for _ in range(d0)]
+        return [_zeros(dims[1::], zero) for _ in range(d0)]
 
 
 def _groupby(cube, depth, intervals, offset, output, group, new_coord):
@@ -344,9 +342,7 @@ def _getitem(c, i):
             dims, cube = zip(*[_getitem(cc, i[1::]) for cc in sub])
             return (len(cube),)+dims[0], cube
         else:
-            try:
+            with suppress_exception:
                 return _getitem(c[select], i[1::])
-            except Exception, _:
-                pass
 
 

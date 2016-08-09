@@ -18,8 +18,8 @@ from pyLibrary.debugs import startup
 from pyLibrary.debugs.logs import Log
 from pyLibrary.dot import set_default, coalesce
 from pyLibrary.env import elasticsearch
-from pyLibrary.queries import qb
-from pyLibrary.queries.qb_usingES import FromES
+from pyLibrary.queries import jx
+from pyLibrary.queries.jx_usingES import FromES
 from pyLibrary.sql.mysql import MySQL
 
 
@@ -49,7 +49,7 @@ def full_analysis(settings, bug_list=None, please_stop=None):
         end = coalesce(settings.alias.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
 
         #Perform analysis on blocks of bugs, in case we crash partway through
-        for s, e in qb.intervals(start, end, settings.alias.increment):
+        for s, e in jx.intervals(start, end, settings.alias.increment):
             Log.note(
                 "Load range {{start}}-{{end}}",
                 start=s,
@@ -125,7 +125,7 @@ class AliasAnalyzer(object):
                     if count < 0:
                         problem_agg.add(self.alias(email)["canonical"], amount=count)
 
-            problems = qb.sort([
+            problems = jx.sort([
                 {"email": e, "count": c}
                 for e, c in problem_agg.dic.iteritems()
                 if not self.not_aliases.get(e, None) and (c <= -(DIFF / 2) or last_run)
@@ -141,7 +141,7 @@ class AliasAnalyzer(object):
                 for bug_id, agg in self.bugs.iteritems():
                     if agg.dic.get(problem.email, 0) < 0:  #ONLY BUGS THAT ARE EXPERIENCING THIS problem
                         solution_agg += agg
-                solutions = qb.sort([{"email": e, "count": c} for e, c in solution_agg.dic.iteritems()], [{"field": "count", "sort": -1}, "email"])
+                solutions = jx.sort([{"email": e, "count": c} for e, c in solution_agg.dic.iteritems()], [{"field": "count", "sort": -1}, "email"])
 
                 if last_run and len(solutions) == 2 and solutions[0].count == -solutions[1].count:
                     #exact match
@@ -156,7 +156,7 @@ class AliasAnalyzer(object):
                     problem= problem.email,
                     score= problem.count,
                     solution= best_solution.email,
-                    matches= convert.value2json(qb.select(solutions, "count")[:10:])
+                    matches= convert.value2json(jx.select(solutions, "count")[:10:])
                 )
                 try_again = True
                 self.add_alias(problem.email, best_solution.email)
