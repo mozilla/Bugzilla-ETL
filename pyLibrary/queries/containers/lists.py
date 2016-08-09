@@ -15,7 +15,7 @@ from collections import Mapping
 
 from pyLibrary import convert
 from pyLibrary.debugs.logs import Log
-from pyLibrary.dot import Dict, wrap, listwrap, unwraplist, DictList, unwrap, set_default
+from pyLibrary.dot import Dict, wrap, listwrap, unwraplist, DictList, unwrap, set_default, join_field, split_field
 from pyLibrary.queries import jx
 from pyLibrary.queries.containers import Container
 from pyLibrary.queries.expression_compiler import compile_expression
@@ -125,15 +125,19 @@ class ListContainer(Container):
         else:
             new_schema = None
 
-        push_and_pull = [(s.name, jx_expression_to_function(s.value)) for s in selects]
+        if isinstance(select, list):
+            push_and_pull = [(s.name, jx_expression_to_function(s.value)) for s in selects]
+            def selector(d):
+                output = Dict()
+                for n, p in push_and_pull:
+                    output[n] = p(wrap(d))
+                return unwrap(output)
 
-        def constructor(d):
-            output = Dict()
-            for n, p in push_and_pull:
-                output[n] = p(d)
-            return _get(d, "_dict")
+            new_data = map(selector, self.data)
+        else:
+            select_value = jx_expression_to_function(select.value)
+            new_data = map(select_value, self.data)
 
-        new_data = map(constructor, self.data)
         return ListContainer("from "+self.name, data=new_data, schema=new_schema)
 
     def window(self, window):
@@ -187,7 +191,7 @@ def get_schema_from_list(frum):
     SCAN THE LIST FOR COLUMN TYPES
     """
     columns = {}
-    _get_schema_from_list(frum, columns, prefix=[], nested_path=[])
+    _get_schema_from_list(frum, columns, prefix=[], nested_path=["."])
     return columns
 
 def _get_schema_from_list(frum, columns, prefix, nested_path):
@@ -196,18 +200,31 @@ def _get_schema_from_list(frum, columns, prefix, nested_path):
     """
     names = {}
     for d in frum:
-        for name, value in d.items():
-            agg_type = names.get(name, "undefined")
-            this_type = _type_to_name[value.__class__]
-            new_type = _merge_type[agg_type][this_type]
-            names[name] = new_type
+        row_type = _type_to_name[d.__class__]
+        if row_type!="object":
+            agg_type = names.get(".", "undefined")
+            names["."] = _merge_type[agg_type][row_type]
+        else:
+            for name, value in d.items():
+                agg_type = names.get(name, "undefined")
+                if isinstance(value, list):
+                    if len(value)==0:
+                        this_type = "undefined"
+                    else:
+                        this_type=_type_to_name[value[0].__class__]
+                        if this_type=="object":
+                            this_type="nested"
+                else:
+                    this_type = _type_to_name[value.__class__]
+                new_type = _merge_type[agg_type][this_type]
+                names[name] = new_type
 
-            if this_type == "object":
-                _get_schema_from_list([value], columns, prefix + [name], nested_path)
-            elif this_type == "nested":
-                np = listwrap(nested_path)
-                newpath = unwraplist([".".join((np[0], name))]+np)
-                _get_schema_from_list(value, columns, prefix + [name], newpath)
+                if this_type == "object":
+                    _get_schema_from_list([value], columns, prefix + [name], nested_path)
+                elif this_type == "nested":
+                    np = listwrap(nested_path)
+                    newpath = unwraplist([join_field(split_field(np[0])+[name])]+np)
+                    _get_schema_from_list(value, columns, prefix + [name], newpath)
 
     for n, t in names.items():
         full_name = ".".join(prefix + [n])

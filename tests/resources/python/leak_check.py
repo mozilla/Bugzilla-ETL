@@ -1,47 +1,54 @@
-import unittest
-from datetime import datetime
-from types import MethodType
+# encoding: utf-8
 
-from pymysql.times import TimeDelta
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
+
+import unittest
 
 from bzETL.extract_bugzilla import SCREENED_WHITEBOARD_BUG_GROUPS
 from pyLibrary import convert
-from pyLibrary.debugs import startup
+from pyLibrary.debugs import startup, constants
 from pyLibrary.debugs.logs import Log
-from pyLibrary.dot import coalesce
+from pyLibrary.dot import coalesce, Dict, set_default
 from pyLibrary.dot import wrap
 from pyLibrary.env import elasticsearch
 from pyLibrary.env.emailer import Emailer
-from pyLibrary.maths import Math
 from pyLibrary.queries import jx
 
 # WRAP Log.error TO SHOW THE SPECIFIC ERROR IN THE LOGFILE
-if not hasattr(Log, "old_error"):
-    Log.old_error = Log.error
-    def new_error(cls, *args):
-        try:
-            Log.old_error(*args, stack_depth=1)
-        except Exception, e:
-            Log.warning("testing error", e, stack_depth=1)
-            raise e
+from pyLibrary.times.dates import Date
+from pyLibrary.times.durations import MINUTE
 
-    ##ASSIGN AS CLASS METHOD
-    Log.error=MethodType(new_error, Log)
+# if not hasattr(Log, "old_error"):
+#     Log.old_error = Log.error
+#     def new_error(cls, *args):
+#         try:
+#             Log.old_error(*args, stack_depth=1)
+#         except Exception, e:
+#             Log.warning("testing error", e, stack_depth=1)
+#             raise e
+#
+#     ##ASSIGN AS CLASS METHOD
+#     Log.error=MethodType(new_error, Log)
 
-NOW = convert.datetime2milli(datetime.utcnow())
-A_WHILE_AGO = int(NOW - TimeDelta(minutes=10).total_seconds()*1000)
+SETTINGS = Dict()
+_NOW = Date.now()
+NOW = _NOW.milli
+A_WHILE_AGO = (_NOW - MINUTE * 10).milli
 
 
 class TestLookForLeaks(unittest.TestCase):
     def setUp(self):
+        set_default(SETTINGS, startup.read_settings())
+        constants.set(SETTINGS.constants)
+
         test_name = self._testMethodName
-        settings = startup.read_settings(filename="leak_check_settings.json")
-        Log.start(settings.debug)
         Log.note("\nStart {{test_name}}", locals())
-        self.private = elasticsearch.Index(settings.private)
-        self.public = elasticsearch.Index(settings.public)
-        self.public_comments = elasticsearch.Index(settings.public_comments)
-        self.settings = settings
+        self.private = elasticsearch.Index(SETTINGS.private)
+        self.public = elasticsearch.Index(SETTINGS.public)
+        self.public_comments = elasticsearch.Index(SETTINGS.public_comments)
+        self.settings = SETTINGS
 
     def tearDown(self):
         test_name = self._testMethodName
@@ -103,22 +110,21 @@ class TestLookForLeaks(unittest.TestCase):
                         {"terms":{"bug_id":leaked_bugs.bug_id}}
                     )
 
-                Log.note("{{num}} leaks!! {{bugs}}", {
+                Log.note("{{num}} leaks!! {{bugs|json}}", {
                     "num": len(leaked_bugs),
                     "bugs": jx.run({
                         "from":leaked_bugs,
-                        "select":["bug_id", "bug_version_num", {"name":"modified_ts", "value":lambda d: convert.datetime2string(convert.milli2datetime(d.modified_ts))}],
+                        "select":[
+                            "bug_id",
+                            "bug_version_num",
+                            {"name": "expires_on", "value":lambda d: Date(d.expires_on/1000).format()},
+                            {"name":"modified_ts", "value":lambda d: Date(d.modified_ts/1000).format()}
+                        ],
                         "sort":"bug_id"
                     })
                 })
-                for b in leaked_bugs:
-                    Log.note("{{bug_id}} has bug groups {{bug_group}}\n{{version|indent}}", {
-                        "bug_id": b.bug_id,
-                        "bug_group": private_ids[b.bug_id],
-                        "version": milli2datetime(b)
-                    })
 
-            #CHECK FOR LEAKED COMMENTS, BEYOND THE ONES LEAKED BY BUG
+            #CHECK FOR LEAKED COMMENTS
             leaked_comments = get(
                 self.public_comments,
                 {"terms": {"bug_id": private_ids.keys()}},
@@ -132,7 +138,7 @@ class TestLookForLeaks(unittest.TestCase):
                         {"terms":{"bug_id":leaked_comments.bug_id}}
                     )
 
-                Log.warning("{{num}} comments marked private have leaked!\n{{comments|indent}}", {
+                Log.warning("{{num}} comments marked private have leaked!\n{{comments|json|indent}}", {
                     "num": len(leaked_comments),
                     "comments": leaked_comments
                 })
@@ -172,25 +178,22 @@ class TestLookForLeaks(unittest.TestCase):
                 fields=["bug_id", "bug_group", "attachments", "modified_ts"]
             )
 
+            attachments = []
+            for b in bugs_w_private_attachments:
+                for a in b.attachments:
+                    bb = b.copy()
+                    bb.attachments=a
+                    attachments.append(bb)
+
             private_attachments = jx.run({
-                "from": bugs_w_private_attachments,
+                "from": attachments,
                 "select": "attachments.attach_id",
                 "where": {"or": [
                     {"exists": "bug_group"},
                     {"terms": {"attachments.isprivate": ['1', True, 1]}}
                 ]}
             })
-            try:
-                private_attachments = [int(v) for v in private_attachments]
-            except Exception, e:
-                private_attachments = jx.run({
-                    "from": bugs_w_private_attachments,
-                    "select": "attachments.attach_id",
-                    "where": {"or": [
-                        {"exists": "bug_group"},
-                        {"terms": {"attachments.isprivate": ['1', True, 1]}}
-                    ]}
-                })
+            private_attachments = [int(v) for v in private_attachments]
 
             Log.note("Ensure {{num}} attachments did not leak", {
                 "num": len(private_attachments)
@@ -210,10 +213,7 @@ class TestLookForLeaks(unittest.TestCase):
                         }}
                     }}
                 ]}
-                # fields=["bug_id", "attachments"]
             )
-
-            #
 
             if leaked_bugs:
                 if self.settings.param.delete:
@@ -259,13 +259,13 @@ class TestLookForLeaks(unittest.TestCase):
                 {"range": {"modified_ts": {"lt": A_WHILE_AGO}}}, #OF A MINIMUM AGE
                 {"not":{"terms":{"bug_id": self.settings.param.ignore_bugs}}} if self.settings.param.ignore_bugs else {"match_all":{}}
             ]},
-            fields=["bug_id", "product", "component", "status_whiteboard", "bug_group", "modified_ts"],
+            fields=["bug_id", "product", "component", "status_whiteboard", "bug_group", "modified_ts", "expires_on"],
             limit=100
         )
 
         if leaked_whiteboard:
             for l in leaked_whiteboard:
-                l.modified_ts=convert.datetime2string(convert.milli2datetime(l.modified_ts))
+                l.modified_ts=Date(l.modified_ts/1000).format()
 
             Log.error("Whiteboard leaking:\n{{leak|indent}}", {"leak": leaked_whiteboard})
 
@@ -290,50 +290,11 @@ def get(es, esfilter, fields=None, limit=None):
         return jx.select(results.hits.hits, "_source")
 
 
-
-
-def milli2datetime(r):
-    """
-    CONVERT ANY longs INTO TIME STRINGS
-    """
-    try:
-        if r == None:
-            return None
-        elif isinstance(r, basestring):
-            return r
-        elif Math.is_number(r):
-            if convert.value2number(r) > 800000000000:
-                return convert.datetime2string(convert.milli2datetime(r), "%Y-%m-%d %H:%M:%S")
-            else:
-                return r
-        elif isinstance(r, dict):
-            output = {}
-            for k, v in r.items():
-                v = milli2datetime(v)
-                if v != None:
-                    output[k.lower()] = v
-            return output
-        elif hasattr(r, '__iter__'):
-            output = []
-            for v in r:
-                v = milli2datetime(v)
-                if v != None:
-                    output.append(v)
-            if not output:
-                return None
-            try:
-                return jx.sort(output)
-            except Exception:
-                return output
-        else:
-            return r
-    except Exception, e:
-        Log.warning("Can not scrub: {{json}}", {"json": r}, e)
-
-
-
 def main():
     try:
+        set_default(SETTINGS, startup.read_settings())
+        constants.set(SETTINGS.constants)
+
         suite = unittest.TestSuite()
         suite.addTest(unittest.defaultTestLoader.loadTestsFromName("leak_check"))
         results = unittest.TextTestRunner(failfast=False).run(suite)
@@ -341,21 +302,17 @@ def main():
         if results.errors or results.failures:
             error(results)
     except Exception, e:
-        error(Dict(errors=[e]))
-    finally:
-        pass
+        Log.error("Problem", cause=e)
 
 
 def error(results):
-    settings = startup.read_settings()
-
     content = []
     for e in results.errors:
-        content.append("ERROR: "+str(e[0]._testMethodName))
+        content.append("ERROR: "+unicode(e[0]._testMethodName))
     for f in results.failures:
-        content.append("FAIL:  "+str(f[0]._testMethodName))
+        content.append("FAIL:  "+unicode(f[0]._testMethodName))
 
-    Emailer(settings.email).send_email(
+    Emailer(SETTINGS.email).send_email(
         text_data = "\n".join(content)
     )
 

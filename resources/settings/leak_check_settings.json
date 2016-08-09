@@ -5,42 +5,43 @@
     },
     "public": {
         "host": "http://elasticsearch-zlb.bugs.scl3.mozilla.com",
-        "port": "9200",
+        "port": 9200,
         "index": "public_bugs",
         "type": "bug_version",
         "debug": false
     },
     "public_comments": {
         "host": "http://elasticsearch-zlb.bugs.scl3.mozilla.com",
-        "port": "9200",
+        "port": 9200,
         "index": "public_comments",
         "type": "bug_comment",
         "debug": false
     },
     "private": {
         "host": "http://elasticsearch-private.bugs.scl3.mozilla.com",
-        "port": "9200",
+        "port": 9200,
         "index": "private_bugs",
         "type": "bug_version",
         "debug": false
     },
     "private_comments": {
         "host": "http://elasticsearch-private.bugs.scl3.mozilla.com",
-        "port": "9200",
+        "port": 9200,
         "index": "private_comments",
         "type": "bug_comment",
         "debug": false
     },
     "email": {
-        "from": "klahnakoski@mozilla.com",
-        "to": "klahnakoski@mozilla.com",
-        "subject": "BZ ETL Leaks!",
-        "host": "mail.mozilla.com",
-        "port": 465,
-        "username": "example@example.com",
-        "password": "password",
-        "use_ssl": 1
+		"subject": "BZ ETL Leaks!",
+        "from_address": "klahnakoski@mozilla.com",
+        "to_address": "klahnakoski@mozilla.com",
+		"$ref":"~/private.json#email"
     },
+	"constants": {
+		"pyLibrary.env.http.default_headers": {
+			"Referer": "https://wiki.mozilla.org/BMO/ElasticSearch"
+		}
+	},
     "debug": {
         "trace":true,
         "log": [
