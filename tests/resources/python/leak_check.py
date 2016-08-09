@@ -80,6 +80,7 @@ class TestLookForLeaks(unittest.TestCase):
                     {"match_all": {}},
                     {"and": [
                         {"range": {"bug_id": {"gte": min_id, "lt": max_id}}},
+                        {"not": {"terms": {"bug_id": SETTINGS.param.ignore_bugs}}},
                         {"exists": {"field": "bug_group"}},
                         {"range": {"expires_on": {"gte": NOW}}},  #CURRENT RECORDS
                         {"range": {"modified_ts": {"lt": A_WHILE_AGO}}}, #OF A MINIMUM AGE
