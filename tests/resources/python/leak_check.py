@@ -10,7 +10,7 @@ from bzETL.extract_bugzilla import SCREENED_WHITEBOARD_BUG_GROUPS
 from pyLibrary import convert
 from pyLibrary.debugs import startup, constants
 from pyLibrary.debugs.logs import Log
-from pyLibrary.dot import coalesce, Dict, set_default
+from pyLibrary.dot import coalesce, Dict, set_default, listwrap
 from pyLibrary.dot import wrap
 from pyLibrary.env import elasticsearch
 from pyLibrary.env.emailer import Emailer
@@ -80,7 +80,7 @@ class TestLookForLeaks(unittest.TestCase):
                     {"match_all": {}},
                     {"and": [
                         {"range": {"bug_id": {"gte": min_id, "lt": max_id}}},
-                        {"not": {"terms": {"bug_id": SETTINGS.param.ignore_bugs}}},
+                        {"not": {"terms": {"bug_id": [0] + listwrap(SETTINGS.param.ignore_bugs)}}},
                         {"exists": {"field": "bug_group"}},
                         {"range": {"expires_on": {"gte": NOW}}},  #CURRENT RECORDS
                         {"range": {"modified_ts": {"lt": A_WHILE_AGO}}}, #OF A MINIMUM AGE
