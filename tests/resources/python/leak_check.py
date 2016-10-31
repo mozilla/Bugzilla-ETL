@@ -18,7 +18,7 @@ from pyLibrary.queries import jx
 
 # WRAP Log.error TO SHOW THE SPECIFIC ERROR IN THE LOGFILE
 from pyLibrary.times.dates import Date
-from pyLibrary.times.durations import MINUTE
+from pyLibrary.times.durations import MINUTE, Duration
 
 # if not hasattr(Log, "old_error"):
 #     Log.old_error = Log.error
@@ -148,7 +148,6 @@ class TestLookForLeaks(unittest.TestCase):
             Log.error("Bugs have leaked!")
 
 
-
     def test_private_attachments_not_leaking(self):
         for min_id, max_id in self.blocks_of_bugs():
             # FIND ALL PRIVATE ATTACHMENTS
@@ -269,6 +268,31 @@ class TestLookForLeaks(unittest.TestCase):
                 l.modified_ts=Date(l.modified_ts/1000).format()
 
             Log.error("Whiteboard leaking:\n{{leak|indent}}", {"leak": leaked_whiteboard})
+
+    def test_etl_still_working(self):
+        query = {
+        	"query":{"filtered":{
+        		"query":{"match_all":{}},
+        		"filter":{"and":[
+        			{"match_all":{}},
+        			{"range":{"modified_ts":{"gte":1475280000000}}}
+        		]}
+        	}},
+        	"from":0,
+        	"size":0,
+        	"sort":[],
+        	"facets":{"0":{"statistical":{"field":"modified_ts"}}}
+        }
+
+        result = self.public.search(query)
+        max_timestamp = Date(result.facets["0"].max / 1000)
+        if max_timestamp < Date.now() - Duration("2hour"):
+            Log.error("Public ETL is behind")
+
+        result = self.private.search(query)
+        max_timestamp = Date(result.facets["0"].max / 1000)
+        if max_timestamp < Date.now() - Duration("2hour"):
+            Log.error("Private ETL is behind")
 
 
 def get(es, esfilter, fields=None, limit=None):
