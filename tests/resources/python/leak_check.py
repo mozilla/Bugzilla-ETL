@@ -267,7 +267,8 @@ class TestLookForLeaks(unittest.TestCase):
             for l in leaked_whiteboard:
                 l.modified_ts=Date(l.modified_ts/1000).format()
 
-            Log.error("Whiteboard leaking:\n{{leak|indent}}", {"leak": leaked_whiteboard})
+            Log.note("Whiteboard leaking:\n{{leak|indent}}", leak=leaked_whiteboard)
+            Log.error("Whiteboard leaking")
 
     def test_etl_still_working(self):
         query = {
