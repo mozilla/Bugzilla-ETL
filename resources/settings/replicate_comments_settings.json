@@ -1,6 +1,6 @@
 {
 		"source":{
-			"host":"http://esfrontline.bugzilla.mozilla.org",
+			"host":"https://esfrontline.bugzilla.mozilla.org",
 			"port":80,
 			"index":"public_comments",
 			"type":"bug_comment",

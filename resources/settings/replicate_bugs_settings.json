@@ -1,7 +1,7 @@
 {
 		"source":{
 //            "filename":"results/all_bugs.txt",
-			"host":"http://esfrontline.bugzilla.mozilla.org",
+			"host":"https://esfrontline.bugzilla.mozilla.org",
 			"port":80,
 			"index":"public_bugs",
 			"type":"bug_version",

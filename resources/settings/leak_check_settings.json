@@ -2,31 +2,31 @@
     "param": {
         "increment": 10000,
         "delete": false,
-		"ignore_bugs": [1054192,1124846,1141998,1290975,1292711,1313916,1313918,1313919]
+		"ignore_bugs": [1054192,1124846,1141998,1290975,1292711,1313916,1313918,1313919,1317965]
     },
     "public": {
-        "host": "http://esfrontline-public-vip.bugs.scl3.mozilla.com",
+        "host": "https://esfrontline-public-vip.bugs.scl3.mozilla.com",
         "port": 9200,
         "index": "public_bugs",
         "type": "bug_version",
         "debug": false
     },
     "public_comments": {
-        "host": "http://esfrontline-public-vip.bugs.scl3.mozilla.com",
+        "host": "https://esfrontline-public-vip.bugs.scl3.mozilla.com",
         "port": 9200,
         "index": "public_comments",
         "type": "bug_comment",
         "debug": false
     },
     "private": {
-        "host": "http://esfrontline-private-vip.bugs.scl3.mozilla.com",
+        "host": "https://esfrontline-private-vip.bugs.scl3.mozilla.com",
         "port": 9200,
         "index": "private_bugs",
         "type": "bug_version",
         "debug": false
     },
     "private_comments": {
-        "host": "http://esfrontline-private-vip.bugs.scl3.mozilla.com",
+        "host": "https://esfrontline-private-vip.bugs.scl3.mozilla.com",
         "port": 9200,
         "index": "private_comments",
         "type": "bug_comment",
