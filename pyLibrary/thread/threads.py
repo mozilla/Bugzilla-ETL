@@ -11,12 +11,12 @@
 # THIS SIGNAL IS IMPORTANT FOR PROPER SIGNALLING WHICH ALLOWS
 # FOR FAST AND PREDICTABLE SHUTDOWN AND CLEANUP OF THREADS
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
 
 import sys
-import thread
+import _thread
 import threading
 import time
 
@@ -83,7 +83,7 @@ class Lock(object):
 
         try:
             self.monitor.wait(timeout=float(timeout) if timeout!=None else None)
-        except Exception, e:
+        except Exception as e:
             _Log.error("logic error using timeout {{timeout}}", timeout=timeout, cause=e)
 
     def notify_all(self):
@@ -117,7 +117,7 @@ class Queue(object):
                 value = self.pop()
                 if value is not Thread.STOP:
                     yield value
-            except Exception, e:
+            except Exception as e:
                 _Log.warning("Tell me about what happened here", e)
 
         _Log.note("queue iterator is done")
@@ -197,7 +197,7 @@ class Queue(object):
         with self.lock:
             return len(self.queue)
 
-    def __nonzero__(self):
+    def __bool__(self):
         with self.lock:
             return any(r != Thread.STOP for r in self.queue)
 
@@ -314,7 +314,7 @@ class AllThread(object):
                 response = t.join()
                 if "exception" in response:
                     exceptions.append(response["exception"])
-        except Exception, e:
+        except Exception as e:
             _Log.warning("Problem joining", e)
 
         if exceptions:
@@ -332,7 +332,7 @@ class AllThread(object):
 class MainThread(object):
     def __init__(self):
         self.name = "Main Thread"
-        self.id = thread.get_ident()
+        self.id = _thread.get_ident()
         self.children = []
 
     def add_child(self, child):
@@ -354,7 +354,7 @@ class MainThread(object):
                 _Log.note("Stopping thread {{name|quote}}", name=c.name)
             try:
                 c.stop()
-            except Exception, e:
+            except Exception as e:
                 join_errors.append(e)
 
         for c in children:
@@ -362,7 +362,7 @@ class MainThread(object):
                 _Log.note("Joining on thread {{name|quote}}", name=c.name)
             try:
                 c.join()
-            except Exception, e:
+            except Exception as e:
                 join_errors.append(e)
 
             if DEBUG and c.name:
@@ -378,7 +378,7 @@ MAIN_THREAD = MainThread()
 
 ALL_LOCK = Lock("threads ALL_LOCK")
 ALL = dict()
-ALL[thread.get_ident()] = MAIN_THREAD
+ALL[_thread.get_ident()] = MAIN_THREAD
 
 
 class Thread(object):
@@ -437,9 +437,9 @@ class Thread(object):
             _late_import()
 
         try:
-            self.thread = thread.start_new_thread(Thread._run, (self, ))
+            self.thread = _thread.start_new_thread(Thread._run, (self, ))
             return self
-        except Exception, e:
+        except Exception as e:
             _Log.error("Can not start thread", e)
 
     def stop(self):
@@ -458,14 +458,14 @@ class Thread(object):
     def remove_child(self, child):
         try:
             self.children.remove(child)
-        except Exception, e:
+        except Exception as e:
             # happens when multiple joins on same thread
             pass
 
     def _run(self):
         with CProfiler():
 
-            self.id = thread.get_ident()
+            self.id = _thread.get_ident()
             with ALL_LOCK:
                 ALL[self.id] = self
 
@@ -475,7 +475,7 @@ class Thread(object):
                     response = self.target(*a, **k)
                     with self.synch_lock:
                         self.end_of_thread = Dict(response=response)
-            except Exception, e:
+            except Exception as e:
                 with self.synch_lock:
                     self.end_of_thread = Dict(exception=_Except.wrap(e))
                 if self not in self.parent.children:
@@ -500,7 +500,7 @@ class Thread(object):
                     with ALL_LOCK:
                         del ALL[self.id]
 
-                except Exception, e:
+                except Exception as e:
                     if DEBUG:
                         _Log.warning("problem with thread {{name|quote}}", cause=e, name=self.name)
                 finally:
@@ -602,7 +602,7 @@ class Thread(object):
             if duration > 0:
                 try:
                     time.sleep(duration)
-                except Exception, e:
+                except Exception as e:
                     raise e
         else:
             while True:
@@ -626,12 +626,12 @@ class Thread(object):
         def stopper():
             try:
                 MAIN_THREAD.stop()
-            except Exception, e:
+            except Exception as e:
                 e = Except.wrap(e)
                 _Log.warning("Problem with threads", cause=e)
             sys.exit(0)
 
-        please_stop.on_go(lambda: thread.start_new_thread(stopper, ()))
+        please_stop.on_go(lambda: _thread.start_new_thread(stopper, ()))
 
         if Thread.current() != MAIN_THREAD:
             if not _Log:
@@ -644,7 +644,7 @@ class Thread(object):
                 _wait_for_exit(please_stop)
             else:
                 _wait_for_interrupt(please_stop)
-        except (KeyboardInterrupt, SystemExit), _:
+        except (KeyboardInterrupt, SystemExit) as _:
             please_stop.go()
             _Log.alert("SIGINT Detected!  Stopping...")
 
@@ -652,11 +652,11 @@ class Thread(object):
 
     @staticmethod
     def current():
-        id = thread.get_ident()
+        id = _thread.get_ident()
         with ALL_LOCK:
             try:
                 return ALL[id]
-            except KeyError, e:
+            except KeyError as e:
                 return MAIN_THREAD
 
 
@@ -682,7 +682,7 @@ class Signal(object):
         with self.lock:
             return self._go
 
-    def __nonzero__(self):
+    def __bool__(self):
         with self.lock:
             return self._go
 
@@ -713,7 +713,7 @@ class Signal(object):
         for j in jobs:
             try:
                 j()
-            except Exception, e:
+            except Exception as e:
                 _Log.warning("Trigger on Signal.go() failed!", cause=e)
 
     def is_go(self):
@@ -814,12 +814,12 @@ class ThreadedQueue(Queue):
                     elif item is not None:
                         _buffer.append(item)
 
-                except Exception, e:
+                except Exception as e:
                     e = Except.wrap(e)
                     if error_target:
                         try:
                             error_target(e, _buffer)
-                        except Exception, f:
+                        except Exception as f:
                             _Log.warning(
                                 "`error_target` should not throw, just deal",
                                 name=name,
@@ -842,12 +842,12 @@ class ThreadedQueue(Queue):
                             if now > next_time:
                                 next_time = now + bit_more_time
 
-                except Exception, e:
+                except Exception as e:
                     e = Except.wrap(e)
                     if error_target:
                         try:
                             error_target(e, _buffer)
-                        except Exception, f:
+                        except Exception as f:
                             _Log.warning(
                                 "`error_target` should not throw, just deal",
                                 name=name,
@@ -911,7 +911,7 @@ def _wait_for_exit(please_stop):
             Thread.sleep(seconds=3, please_stop=please_stop)
         try:
             line = sys.stdin.readline()
-        except Exception, e:
+        except Exception as e:
             if "Bad file descriptor" in e:
                 _wait_for_interrupt(please_stop)
                 break

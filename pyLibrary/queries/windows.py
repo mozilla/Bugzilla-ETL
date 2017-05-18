@@ -8,9 +8,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 from copy import copy
 import functools
 
@@ -282,7 +282,7 @@ class Percentile(WindowFunction):
         try:
             i = self.total.index(value)
             self.total = self.total[:i] + self.total[i+1:]
-        except Exception, e:
+        except Exception as e:
             Log.error("Problem with window function", e)
 
     def end(self):

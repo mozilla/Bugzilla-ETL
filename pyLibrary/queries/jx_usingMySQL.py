@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 from collections import Mapping
 
 from pyLibrary import convert
@@ -81,7 +81,7 @@ class MySQL(object):
 
 
     def _subquery(self, query, isolate=True, stacked=False):
-        if isinstance(query, basestring):
+        if isinstance(query, str):
             return self.db.quote_column(query), None
         if query.name:  # IT WOULD BE SAFER TO WRAP TABLE REFERENCES IN A TYPED OBJECT (Cube, MAYBE?)
             return self.db.quote_column(query.name), None
@@ -336,7 +336,7 @@ def _isolate(separator, list):
             return "(\n" + indent((" " + separator + "\n").join(list)) + "\n)"
         else:
             return list[0]
-    except Exception, e:
+    except Exception as e:
         Log.error("Programming problem: separator={{separator}}, list={{list}",
             list=list,
             separator=separator,
@@ -364,9 +364,9 @@ def _esfilter2sqlwhere(db, esfilter):
     elif esfilter["not"]:
         return "NOT (" + esfilter2sqlwhere(db, esfilter["not"]) + ")"
     elif esfilter.term:
-        return _isolate("AND", [db.quote_column(col) + "=" + db.quote_value(val) for col, val in esfilter.term.items()])
+        return _isolate("AND", [db.quote_column(col) + "=" + db.quote_value(val) for col, val in list(esfilter.term.items())])
     elif esfilter.terms:
-        for col, v in esfilter.terms.items():
+        for col, v in list(esfilter.terms.items()):
             if len(v) == 0:
                 return "FALSE"
 
@@ -408,25 +408,25 @@ def _esfilter2sqlwhere(db, esfilter):
             else:
                 return " AND ".join(
                     db.quote_column(col) + name2sign[sign] + db.quote_value(value)
-                    for sign, value in r.items()
+                    for sign, value in list(r.items())
                 )
 
-        output = _isolate("AND", [single(col, ranges) for col, ranges in esfilter.range.items()])
+        output = _isolate("AND", [single(col, ranges) for col, ranges in list(esfilter.range.items())])
         return output
     elif esfilter.missing:
-        if isinstance(esfilter.missing, basestring):
+        if isinstance(esfilter.missing, str):
             return "(" + db.quote_column(esfilter.missing) + " IS Null)"
         else:
             return "(" + db.quote_column(esfilter.missing.field) + " IS Null)"
     elif esfilter.exists:
-        if isinstance(esfilter.exists, basestring):
+        if isinstance(esfilter.exists, str):
             return "(" + db.quote_column(esfilter.exists) + " IS NOT Null)"
         else:
             return "(" + db.quote_column(esfilter.exists.field) + " IS NOT Null)"
     elif esfilter.match_all:
         return "1=1"
     elif esfilter.instr:
-        return _isolate("AND", ["instr(" + db.quote_column(col) + ", " + db.quote_value(val) + ")>0" for col, val in esfilter.instr.items()])
+        return _isolate("AND", ["instr(" + db.quote_column(col) + ", " + db.quote_value(val) + ")>0" for col, val in list(esfilter.instr.items())])
     else:
         Log.error("Can not convert esfilter to SQL: {{esfilter}}", esfilter=esfilter)
 
@@ -435,7 +435,7 @@ def expand_json(rows):
     # CONVERT JSON TO VALUES
     for r in rows:
         for k, json in list(r.items()):
-            if isinstance(json, basestring) and json[0:1] in ("[", "{"):
+            if isinstance(json, str) and json[0:1] in ("[", "{"):
                 with suppress_exception:
                     value = convert.json2value(json)
                     r[k] = value

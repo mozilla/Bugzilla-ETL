@@ -7,9 +7,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
 
 from collections import MutableMapping, Mapping
 from copy import deepcopy
@@ -36,7 +36,7 @@ class Dict(MutableMapping):
         """
         if DEBUG:
             d = _get(self, "_dict")
-            for k, v in kwargs.items():
+            for k, v in list(kwargs.items()):
                 d[literal_field(k)] = unwrap(v)
         else:
             if args:
@@ -55,7 +55,7 @@ class Dict(MutableMapping):
     def __bool__(self):
         return True
 
-    def __nonzero__(self):
+    def __bool__(self):
         d = _get(self, "_dict")
         if isinstance(d, dict):
             return True if d else False
@@ -83,7 +83,7 @@ class Dict(MutableMapping):
 
         if isinstance(key, str):
             key = key.decode("utf8")
-        elif not isinstance(key, unicode):
+        elif not isinstance(key, str):
             from pyLibrary.debugs.logs import Log
             Log.error("only string keys are supported")
 
@@ -137,7 +137,7 @@ class Dict(MutableMapping):
             else:
                 d[seq[-1]] = value
             return self
-        except Exception, e:
+        except Exception as e:
             raise e
 
     def __getattr__(self, key):
@@ -186,10 +186,10 @@ class Dict(MutableMapping):
             return False
         e = unwrap(other)
         d = _get(self, "_dict")
-        for k, v in d.items():
+        for k, v in list(d.items()):
             if e.get(k) != v:
                 return False
-        for k, v in e.items():
+        for k, v in list(e.items()):
             if d.get(k) != v:
                 return False
         return True
@@ -203,7 +203,7 @@ class Dict(MutableMapping):
 
     def items(self):
         d = _get(self, "_dict")
-        return [(k, wrap(v)) for k, v in d.items() if v != None or isinstance(v, Mapping)]
+        return [(k, wrap(v)) for k, v in list(d.items()) if v != None or isinstance(v, Mapping)]
 
     def leaves(self, prefix=None):
         """
@@ -214,7 +214,7 @@ class Dict(MutableMapping):
     def iteritems(self):
         # LOW LEVEL ITERATION, NO WRAPPING
         d = _get(self, "_dict")
-        return ((k, wrap(v)) for k, v in d.iteritems())
+        return ((k, wrap(v)) for k, v in d.items())
 
     def keys(self):
         d = _get(self, "_dict")
@@ -222,7 +222,7 @@ class Dict(MutableMapping):
 
     def values(self):
         d = _get(self, "_dict")
-        return listwrap(d.values())
+        return listwrap(list(d.values()))
 
     def clear(self):
         from pyLibrary.debugs.logs import Log
@@ -273,13 +273,13 @@ class Dict(MutableMapping):
     def __str__(self):
         try:
             return "Dict("+dict.__str__(_get(self, "_dict"))+")"
-        except Exception, e:
+        except Exception as e:
             return "Dict{}"
 
     def __repr__(self):
         try:
             return "Dict("+dict.__repr__(_get(self, "_dict"))+")"
-        except Exception, e:
+        except Exception as e:
             return "Dict()"
 
 
@@ -292,13 +292,13 @@ def leaves(value, prefix=None):
     """
     prefix = coalesce(prefix, "")
     output = []
-    for k, v in value.items():
+    for k, v in list(value.items()):
         try:
             if isinstance(v, Mapping):
                 output.extend(leaves(v, prefix=prefix + literal_field(k) + "."))
             else:
                 output.append((prefix + literal_field(k), unwrap(v)))
-        except Exception, e:
+        except Exception as e:
             from pyLibrary.debugs.logs import Log
 
             Log.error("Do not know how to handle", cause=e)
@@ -368,7 +368,7 @@ class _DictUsingSelf(dict):
             else:
                 dict.__setitem__(d, seq[-1], value)
             return self
-        except Exception, e:
+        except Exception as e:
             raise e
 
     def __getattr__(self, key):
@@ -414,7 +414,7 @@ class _DictUsingSelf(dict):
         for k, v in dict.items(d):
             if e.get(k) != v:
                 return False
-        for k, v in e.items():
+        for k, v in list(e.items()):
             if dict.get(d, k, None) != v:
                 return False
         return True
@@ -434,7 +434,7 @@ class _DictUsingSelf(dict):
         """
         prefix = coalesce(prefix, "")
         output = []
-        for k, v in self.items():
+        for k, v in list(self.items()):
             if isinstance(v, Mapping):
                 output.extend(wrap(v).leaves(prefix=prefix + literal_field(k) + "."))
             else:
@@ -496,13 +496,13 @@ class _DictUsingSelf(dict):
     def __str__(self):
         try:
             return dict.__str__(self)
-        except Exception, e:
+        except Exception as e:
             return "{}"
 
     def __repr__(self):
         try:
             return "Dict("+dict.__repr__(self)+")"
-        except Exception, e:
+        except Exception as e:
             return "Dict()"
 
 
@@ -517,7 +517,7 @@ def _str(value, depth):
     """
     output = []
     if depth >0 and isinstance(value, Mapping):
-        for k, v in value.items():
+        for k, v in list(value.items()):
             output.append(str(k) + "=" + _str(v, depth - 1))
         return "{" + ",\n".join(output) + "}"
     elif depth >0 and isinstance(value, list):

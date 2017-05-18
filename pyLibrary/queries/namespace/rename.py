@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 from collections import Mapping
 from copy import copy
@@ -33,7 +33,7 @@ class Rename(Namespace):
         dimensions = wrap(dimensions)
         if isinstance(dimensions, Mapping) and dimensions.name == None:
             # CONVERT TO A REAL DIMENSION DEFINITION
-            dimensions = {"name": ".", "type": "set", "edges":[{"name": k, "field": v} for k, v in dimensions.items()]}
+            dimensions = {"name": ".", "type": "set", "edges":[{"name": k, "field": v} for k, v in list(dimensions.items())]}
 
         self.dimensions = Dimension(dimensions, None, source)
 
@@ -49,7 +49,7 @@ class Rename(Namespace):
             return "."
         elif is_keyword(expr):
             return coalesce(self.dimensions[expr], expr)
-        elif isinstance(expr, basestring):
+        elif isinstance(expr, str):
             Log.error("{{name|quote}} is not a valid variable name", name=expr)
         elif isinstance(expr, Date):
             return expr
@@ -63,7 +63,7 @@ class Rename(Namespace):
                 return wrap({name: self.convert(value) for name, value in expr.leaves()})
             else:
                 # ASSUME SINGLE-CLAUSE EXPRESSION
-                k, v = expr.items()[0]
+                k, v = list(expr.items())[0]
                 return converter_map.get(k, self._convert_bop)(self, k, v)
         elif isinstance(expr, (list, set, tuple)):
             return wrap([self.convert(value) for value in expr])
@@ -88,12 +88,12 @@ class Rename(Namespace):
 
     def _convert_bop(self, op, term):
         if isinstance(term, list):
-            return {op: map(self.convert, term)}
+            return {op: list(map(self.convert, term))}
 
-        return {op: {self.convert(var): val for var, val in term.items()}}
+        return {op: {self.convert(var): val for var, val in list(term.items())}}
 
     def _convert_many(self, k, v):
-        return {k: map(self.convert, v)}
+        return {k: list(map(self.convert, v))}
 
     def _convert_from(self, frum):
         if isinstance(frum, Mapping):

@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 from boto import sqs
 from boto import utils as boto_utils
@@ -135,7 +135,7 @@ def capture_termination_signal(please_stop):
                 if response.status_code != 400:
                     please_stop.go()
                     return
-            except Exception, e:
+            except Exception as e:
                 Thread.sleep(seconds=61, please_stop=please_stop)
             Thread.sleep(seconds=11, please_stop=please_stop)
 
@@ -146,7 +146,7 @@ def get_instance_metadata(timeout=None):
     if not isinstance(timeout, (int, float)):
         timeout = Duration(timeout).seconds
 
-    output = wrap({k.replace("-", "_"): v for k, v in boto_utils.get_instance_metadata(timeout=5, num_retries=2).items()})
+    output = wrap({k.replace("-", "_"): v for k, v in list(boto_utils.get_instance_metadata(timeout=5, num_retries=2).items())})
     return output
 
 
@@ -155,7 +155,7 @@ def aws_retry(func):
         while True:
             try:
                 return func(*args, **kwargs)
-            except Exception, e:
+            except Exception as e:
                 e = Except.wrap(e)
                 if "Request limit exceeded" in e:
                     Log.warning("AWS Problem", cause=e)

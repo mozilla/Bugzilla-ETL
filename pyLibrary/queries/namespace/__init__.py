@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 from collections import Mapping
 
@@ -54,6 +54,6 @@ def convert_list(operator, operand):
     elif isinstance(operand, Mapping):
         return operator(operand)
     else:
-        return map(operator, operand)
+        return list(map(operator, operand))
 
 

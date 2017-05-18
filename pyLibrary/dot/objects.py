@@ -7,9 +7,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 from collections import Mapping
 from datetime import date, datetime
 from decimal import Decimal
@@ -47,22 +47,22 @@ class DictObject(Mapping):
     def keys(self):
         obj = _get(self, "_obj")
         try:
-            return obj.__dict__.keys()
-        except Exception, e:
+            return list(obj.__dict__.keys())
+        except Exception as e:
             raise e
 
     def items(self):
         obj = _get(self, "_obj")
         try:
-            return obj.__dict__.items()
-        except Exception, e:
+            return list(obj.__dict__.items())
+        except Exception as e:
             raise e
 
     def iteritems(self):
         obj = _get(self, "_obj")
         try:
-            return obj.__dict__.iteritems()
-        except Exception, e:
+            return iter(obj.__dict__.items())
+        except Exception as e:
             def output():
                 for k in dir(obj):
                     if k.startswith("__"):
@@ -74,7 +74,7 @@ class DictObject(Mapping):
         return self
 
     def __iter__(self):
-        return (k for k in self.keys())
+        return (k for k in list(self.keys()))
 
     def __str__(self):
         obj = _get(self, "_obj")
@@ -108,7 +108,7 @@ def dictwrap(v):
         return (wrap(vv) for vv in v)
     elif hasattr(v, "as_dict"):
         return v.as_dict()
-    elif isinstance(v, (basestring, int, float, Decimal, Date, datetime, date, Dict, DictList, NullType, NoneType)):
+    elif isinstance(v, (str, int, float, Decimal, Date, datetime, date, Dict, DictList, NullType, NoneType)):
         return v
     else:
         return DictObject(v)
@@ -128,13 +128,13 @@ class DictClass(object):
     def __call__(self, *args, **kwargs):
         settings = wrap(kwargs).settings
 
-        params = self.constructor.func_code.co_varnames[1:self.constructor.func_code.co_argcount]
-        if not self.constructor.func_defaults:
+        params = self.constructor.__code__.co_varnames[1:self.constructor.__code__.co_argcount]
+        if not self.constructor.__defaults__:
             defaults = {}
         else:
-            defaults = {k: v for k, v in zip(reversed(params), reversed(self.constructor.func_defaults))}
+            defaults = {k: v for k, v in zip(reversed(params), reversed(self.constructor.__defaults__))}
 
-        ordered_params = dict(zip(params, args))
+        ordered_params = dict(list(zip(params, args)))
 
         output = self.class_(**params_pack(params, ordered_params, kwargs, settings, defaults))
         return DictObject(output)
@@ -143,8 +143,8 @@ class DictClass(object):
 def params_pack(params, *args):
     settings = {}
     for a in args:
-        for k, v in a.items():
-            k = unicode(k)
+        for k, v in list(a.items()):
+            k = str(k)
             if k in settings:
                 continue
             settings[k] = v

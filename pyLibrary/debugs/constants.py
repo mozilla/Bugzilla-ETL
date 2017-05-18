@@ -6,9 +6,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 import sys
 from pyLibrary import dot
 from pyLibrary.dot import wrap, join_field, split_field
@@ -31,7 +31,7 @@ def set(constants):
         try:
             old_value = dot.set_attr(sys.modules, k, new_value)
             continue
-        except Exception, e:
+        except Exception as e:
             errors.append(e)
 
         # ONE MODULE IS MISSING, THE CALLING MODULE
@@ -59,7 +59,7 @@ def set(constants):
                             old_value= old_value,
                             new_value= new_value)
                     break
-        except Exception, e:
+        except Exception as e:
             errors.append[e]
 
         if errors:

@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 
 from pyLibrary.collections import PRODUCT, reverse, MAX, MIN, OR
@@ -103,13 +103,13 @@ class Matrix(object):
             for k in key[0:last:]:
                 m = m[k]
             m[key[last]] = value
-        except Exception, e:
+        except Exception as e:
             Log.error("can not set item", e)
 
     def __bool__(self):
         return self.cube != None
 
-    def __nonzero__(self):
+    def __bool__(self):
         return self.cube != None
 
     def __len__(self):
@@ -238,7 +238,7 @@ class Matrix(object):
 
         calc = [(coalesce(PRODUCT(self.dims[i+1:]), 1), mm) for i, mm in enumerate(self.dims)]
 
-        for c in xrange(combos):
+        for c in range(combos):
             yield tuple(int(c / dd) % mm for dd, mm in calc)
 
 
@@ -328,18 +328,18 @@ def _getitem(c, i):
             return (len(c), ), c
         elif isinstance(select, slice):
             sub = c[select]
-            dims, cube = zip(*[_getitem(cc, i[1::]) for cc in sub])
+            dims, cube = list(zip(*[_getitem(cc, i[1::]) for cc in sub]))
             return (len(cube),) + dims[0], cube
         else:
             return (), c[select]
     else:
         select = i[0]
         if select == None:
-            dims, cube = zip(*[_getitem(cc, i[1::]) for cc in c])
+            dims, cube = list(zip(*[_getitem(cc, i[1::]) for cc in c]))
             return (len(cube),)+dims[0], cube
         elif isinstance(select, slice):
             sub = c[select]
-            dims, cube = zip(*[_getitem(cc, i[1::]) for cc in sub])
+            dims, cube = list(zip(*[_getitem(cc, i[1::]) for cc in sub]))
             return (len(cube),)+dims[0], cube
         else:
             with suppress_exception:

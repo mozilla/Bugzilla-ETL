@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
 
 from pyLibrary import convert, strings
 from pyLibrary.debugs.exceptions import suppress_exception
@@ -64,7 +64,7 @@ class TextLog_usingElasticSearch(TextLog):
                     for g, mm in jx.groupby(messages, size=self.batch_size):
                         self.es.extend(mm)
                     bad_count = 0
-            except Exception, e:
+            except Exception as e:
                 Log.warning("Problem inserting logs into ES", cause=e)
                 bad_count += 1
                 if bad_count > 5:
@@ -76,7 +76,7 @@ class TextLog_usingElasticSearch(TextLog):
             try:
                 Thread.sleep(seconds=1)
                 self.queue.pop_all()
-            except Exception, e:
+            except Exception as e:
                 Log.warning("Should not happen", cause=e)
 
     def stop(self):

@@ -5,9 +5,9 @@ Copyright (c) 2003-2007  Gustavo Niemeyer <gustavo@niemeyer.net>
 This module offers extensions to the standard Python
 datetime module.
 """
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 __license__ = "Simplified BSD"
 
 
@@ -23,8 +23,8 @@ try:
 except ImportError:
     from io import StringIO
 
-integer_types = (int, long)
-text_type = unicode
+integer_types = (int, int)
+text_type = str
 binary_type = str
 
 from . import relativedelta
@@ -147,7 +147,7 @@ class _timelex(object):
             raise StopIteration
         return token
 
-    def next(self):
+    def __next__(self):
         return self.__next__()  # Python 2.x support
 
     def split(cls, s):

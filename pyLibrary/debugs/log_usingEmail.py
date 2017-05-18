@@ -9,9 +9,9 @@
 #
 
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 from pyLibrary.debugs.exceptions import ALARM, NOTE
 from pyLibrary.debugs.text_logs import TextLog
@@ -89,7 +89,7 @@ class TextLog_usingEmail(TextLog):
                     )
             self.next_send = Date.now() + WAIT_TO_SEND_MORE
             self.accumulation = []
-        except Exception, e:
+        except Exception as e:
             self.next_send = Date.now() + WAIT_TO_SEND_MORE
             Log.warning("Could not send", e)
 

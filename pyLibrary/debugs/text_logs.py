@@ -9,9 +9,9 @@
 #
 
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 import sys
 
@@ -94,7 +94,7 @@ class TextLog_usingThread(TextLog):
         try:
             self.queue.add({"template": template, "params": params})
             return self
-        except Exception, e:
+        except Exception as e:
             e = _Except.wrap(e)
             sys.stdout.write("IF YOU SEE THIS, IT IS LIKELY YOU FORGOT TO RUN Log.start() FIRST\n")
             raise e  # OH NO!
@@ -108,13 +108,13 @@ class TextLog_usingThread(TextLog):
             if DEBUG_LOGGING:
                 sys.stdout.write("TextLog_usingThread telling logger to stop\n")
             self.logger.stop()
-        except Exception, e:
+        except Exception as e:
             if DEBUG_LOGGING:
                 raise e
 
         try:
             self.queue.close()
-        except Exception, f:
+        except Exception as f:
             if DEBUG_LOGGING:
                 raise f
 
@@ -128,7 +128,7 @@ class TextLog_usingMulti(TextLog):
         for m in self.many:
             try:
                 m.write(template, params)
-            except Exception, e:
+            except Exception as e:
                 bad.append(m)
                 sys.stdout.write("a logger failed")
                 if not _Log:
@@ -166,7 +166,7 @@ class TextLog_usingStream(TextLog):
 
     def write(self, template, params):
         value = expand_template(template, params)
-        if isinstance(value, unicode):
+        if isinstance(value, str):
             value = value.encode('utf8')
         self.stream.write(value+b"\n")
 

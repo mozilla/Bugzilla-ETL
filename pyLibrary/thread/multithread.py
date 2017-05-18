@@ -8,9 +8,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 from collections import Iterable
 from types import GeneratorType
@@ -50,7 +50,7 @@ class Multithread(object):
 
         self.threads = []
         for t in range(coalesce(threads, 1)):
-            thread = worker_thread("worker " + unicode(t), self.inbound, self.outbound, functions)
+            thread = worker_thread("worker " + str(t), self.inbound, self.outbound, functions)
             self.threads.append(thread)
 
     def __enter__(self):
@@ -69,7 +69,7 @@ class Multithread(object):
                 for t in self.threads:
                     self.inbound.add(Thread.STOP)
             self.join()
-        except Exception, e:
+        except Exception as e:
             Log.warning("Problem sending stops", e)
 
 
@@ -81,7 +81,7 @@ class Multithread(object):
                 t.join()
         except (KeyboardInterrupt, SystemExit):
             Log.note("Shutdow Started, please be patient")
-        except Exception, e:
+        except Exception as e:
             Log.error("Unusual shutdown!", e)
         finally:
             for t in self.threads:
@@ -108,7 +108,7 @@ class Multithread(object):
         num = len(requests)
 
         def output():
-            for i in xrange(num):
+            for i in range(num):
                 result = self.outbound.pop()
                 if "exception" in result:
                     raise result["exception"]
@@ -160,7 +160,7 @@ class worker_thread(Thread):
                     result = self.function(**request)
                     if self.out_queue != None:
                         self.out_queue.add({"response": result})
-                except Exception, e:
+                except Exception as e:
                     Log.warning("Can not execute with params={{params}}",  params= request, cause=e)
                     if self.out_queue != None:
                         self.out_queue.add({"exception": e})
@@ -192,5 +192,5 @@ def get_function_name(func):
     if hasattr(func, "__name__"):
         return func.__name__
     if hasattr(func, "func_name"):
-        return func.func_name
+        return func.__name__
     return "function"

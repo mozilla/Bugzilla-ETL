@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 from pyLibrary.collections.matrix import Matrix
 from pyLibrary.collections import COUNT, PRODUCT
@@ -154,7 +154,7 @@ def es_terms_stats(esq, mvel, query):
         # WE BUILD THE PARTS BASED ON THE RESULTS WE RECEIVED
         partitions = DictList()
         map = {}
-        for facetName, parts in data.facets.items():
+        for facetName, parts in list(data.facets.items()):
             for stats in parts.terms:
                 if not map[stats]:
                     part = {"value": stats, "name": stats}
@@ -177,7 +177,7 @@ def es_terms_stats(esq, mvel, query):
     name2agg = {s.name: aggregates[s.aggregate] for s in select}
 
     # FILL CUBE
-    for edgeName, parts in data.facets.items():
+    for edgeName, parts in list(data.facets.items()):
         temp = edgeName.split(",")
         pre_coord = tuple(int(c) for c in temp[1:])
         sname = temp[0]
@@ -200,7 +200,7 @@ def register_script_field(FromES, code):
         FromES.script_fields = {}
 
     # IF CODE IS IDENTICAL, THEN USE THE EXISTING SCRIPT
-    for n, c in FromES.script_fields.items():
+    for n, c in list(FromES.script_fields.items()):
         if c.script == code:
             return n
 

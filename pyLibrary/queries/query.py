@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
 
 from collections import Mapping
 from copy import copy
@@ -102,7 +102,7 @@ class QueryOp(Expression):
         """
         def edges_get_all_vars(e):
             output = set()
-            if isinstance(e.value, basestring):
+            if isinstance(e.value, str):
                 output.add(e.value)
             if e.domain.key:
                 output.add(e.domain.key)
@@ -304,7 +304,7 @@ def _normalize_select(select, frum, schema=None):
     if not _Column:
         _late_import()
 
-    if isinstance(select, basestring):
+    if isinstance(select, str):
         canonical = select = Dict(value=select)
     else:
         select = wrap(select)
@@ -328,7 +328,7 @@ def _normalize_select(select, frum, schema=None):
             )
             for c in frum.get_leaves()
         ])
-    elif isinstance(select.value, basestring):
+    elif isinstance(select.value, str):
         if select.value.endswith(".*"):
             base_name = select.value[:-2]
             canonical.name = coalesce(select.name, base_name, select.aggregate)
@@ -377,7 +377,7 @@ def _normalize_select_no_context(select, schema=None):
     if not _Column:
         _late_import()
 
-    if isinstance(select, basestring):
+    if isinstance(select, str):
         select = Dict(value=select)
     else:
         select = wrap(select)
@@ -386,7 +386,7 @@ def _normalize_select_no_context(select, schema=None):
     if not select.value:
         output.name = coalesce(select.name, select.aggregate)
         output.value = jx_expression(".")
-    elif isinstance(select.value, basestring):
+    elif isinstance(select.value, str):
         if select.value.endswith(".*"):
             output.name = coalesce(select.name, select.value[:-2], select.aggregate)
             output.value = jx_expression({"leaves": select.value[:-2]})
@@ -425,7 +425,7 @@ def _normalize_edge(edge, schema=None):
     if not _Column:
         _late_import()
 
-    if isinstance(edge, basestring):
+    if isinstance(edge, str):
         if schema:
             e = schema[edge]
             if e:
@@ -457,7 +457,7 @@ def _normalize_edge(edge, schema=None):
         )
     else:
         edge = wrap(edge)
-        if not edge.name and not isinstance(edge.value, basestring):
+        if not edge.name and not isinstance(edge.value, str):
             Log.error("You must name compound and complex edges: {{edge}}", edge=edge)
 
         if isinstance(edge.value, (list, set)) and not edge.domain:
@@ -489,7 +489,7 @@ def _normalize_groupby(groupby, schema=None):
 
 
 def _normalize_group(edge, schema=None):
-    if isinstance(edge, basestring):
+    if isinstance(edge, str):
         return wrap({
             "name": edge,
             "value": jx_expression(edge),
@@ -501,7 +501,7 @@ def _normalize_group(edge, schema=None):
         if (edge.domain and edge.domain.type != "default") or edge.allowNulls != None:
             Log.error("groupby does not accept complicated domains")
 
-        if not edge.name and not isinstance(edge.value, basestring):
+        if not edge.name and not isinstance(edge.value, str):
             Log.error("You must name compound edges: {{edge}}",  edge= edge)
 
         return wrap({
@@ -517,7 +517,7 @@ def _normalize_domain(domain=None, schema=None):
         return Domain(type="default")
     elif isinstance(domain, Dimension):
         return domain.getDomain()
-    elif schema and isinstance(domain, basestring) and schema[domain]:
+    elif schema and isinstance(domain, str) and schema[domain]:
         return schema[domain].getDomain()
     elif isinstance(domain, Domain):
         return domain
@@ -569,14 +569,14 @@ def _map_term_using_schema(master, path, term, schema_edges):
     IF THE WHERE CLAUSE REFERS TO FIELDS IN THE SCHEMA, THEN EXPAND THEM
     """
     output = DictList()
-    for k, v in term.items():
+    for k, v in list(term.items()):
         dimension = schema_edges[k]
         if isinstance(dimension, Dimension):
             domain = dimension.getDomain()
             if dimension.fields:
                 if isinstance(dimension.fields, Mapping):
                     # EXPECTING A TUPLE
-                    for local_field, es_field in dimension.fields.items():
+                    for local_field, es_field in list(dimension.fields.items()):
                         local_value = v[local_field]
                         if local_value == None:
                             output.append({"missing": {"field": es_field}})
@@ -637,31 +637,31 @@ def _where_terms(master, where, schema):
             try:
                 output = _map_term_using_schema(master, [], where.term, schema.edges)
                 return output
-            except Exception, e:
+            except Exception as e:
                 Log.error("programmer problem?", e)
         elif where.terms:
             # MAP TERM
             output = DictList()
-            for k, v in where.terms.items():
+            for k, v in list(where.terms.items()):
                 if not isinstance(v, (list, set)):
                     Log.error("terms filter expects list of values")
                 edge = schema.edges[k]
                 if not edge:
                     output.append({"terms": {k: v}})
                 else:
-                    if isinstance(edge, basestring):
+                    if isinstance(edge, str):
                         # DIRECT FIELD REFERENCE
                         return {"terms": {edge: v}}
                     try:
                         domain = edge.getDomain()
-                    except Exception, e:
+                    except Exception as e:
                         Log.error("programmer error", e)
                     fields = domain.dimension.fields
                     if isinstance(fields, Mapping):
                         or_agg = []
                         for vv in v:
                             and_agg = []
-                            for local_field, es_field in fields.items():
+                            for local_field, es_field in list(fields.items()):
                                 vvv = vv[local_field]
                                 if vvv != None:
                                     and_agg.append({"term": {es_field: vvv}})
@@ -691,10 +691,10 @@ def _normalize_sort(sort=None):
 
     output = DictList()
     for s in listwrap(sort):
-        if isinstance(s, basestring) or Math.is_integer(s):
+        if isinstance(s, str) or Math.is_integer(s):
             output.append({"value": jx_expression(s), "sort": 1})
-        elif all(d in sort_direction for d in s.values()) and not s.sort and not s.value:
-            for v, d in s.items():
+        elif all(d in sort_direction for d in list(s.values())) and not s.sort and not s.value:
+            for v, d in list(s.items()):
                 output.append({"value": jx_expression(v), "sort": -1})
         else:
             output.append({"value": jx_expression(coalesce(s.value, s.field)), "sort": coalesce(sort_direction[s.sort], 1)})

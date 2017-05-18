@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
 
 from pyLibrary.debugs.logs import Log
 from pyLibrary.dot import listwrap, Dict, wrap, literal_field, set_default, coalesce, Null, split_field, DictList, unwrap, \
@@ -116,7 +116,7 @@ def es_aggsop(es, frum, query):
         else:
             formula.append(s)
 
-    for canonical_name, many in new_select.items():
+    for canonical_name, many in list(new_select.items()):
         representative = many[0]
         if representative.value.var == ".":
             Log.error("do not know how to handle")
@@ -138,13 +138,13 @@ def es_aggsop(es, frum, query):
             elif s.aggregate == "percentile":
                 #ES USES DIFFERENT METHOD FOR PERCENTILES
                 key = literal_field(canonical_name + " percentile")
-                if isinstance(s.percentile, basestring) or s.percetile < 0 or 1 < s.percentile:
+                if isinstance(s.percentile, str) or s.percetile < 0 or 1 < s.percentile:
                     Log.error("Expecting percentile to be a float from 0.0 to 1.0")
                 percent = Math.round(s.percentile * 100, decimal=6)
 
                 es_query.aggs[key].percentiles.field = field_name
                 es_query.aggs[key].percentiles.percents += [percent]
-                s.pull = key + ".values." + literal_field(unicode(percent))
+                s.pull = key + ".values." + literal_field(str(percent))
             elif s.aggregate == "cardinality":
                 #ES USES DIFFERENT METHOD FOR CARDINALITY
                 key = literal_field(canonical_name + " cardinality")
@@ -204,7 +204,7 @@ def es_aggsop(es, frum, query):
 
             es_query.aggs[key].percentiles.script = abs_value.to_ruby()
             es_query.aggs[key].percentiles.percents += [percent]
-            s.pull = key + ".values." + literal_field(unicode(percent))
+            s.pull = key + ".values." + literal_field(str(percent))
         elif s.aggregate == "cardinality":
             #ES USES DIFFERENT METHOD FOR CARDINALITY
             key = canonical_name + " cardinality"
@@ -319,7 +319,7 @@ def es_aggsop(es, frum, query):
         output.meta.content_type = mime_type
         output.meta.es_query = es_query
         return output
-    except Exception, e:
+    except Exception as e:
         if query.format not in format_dispatch:
             Log.error("Format {{format|quote}} not supported yet", format=query.format, cause=e)
         Log.error("Some problem", e)
@@ -354,7 +354,7 @@ def aggs_iterator(aggs, decoders, coord=True):
         agg = drill(agg)
 
         if d > 0:
-            for k, v in agg.items():
+            for k, v in list(agg.items()):
                 if k == "_match":
                     for i, b in enumerate(v.get("buckets", EMPTY_LIST)):
                         parts[d] = b
@@ -378,7 +378,7 @@ def aggs_iterator(aggs, decoders, coord=True):
                     for a in _aggs_iterator(v, d - 1):
                         yield a
         else:
-            for k, v in agg.items():
+            for k, v in list(agg.items()):
                 if k == "_match":
                     for i, b in enumerate(v.get("buckets", EMPTY_LIST)):
                         parts[d] = b

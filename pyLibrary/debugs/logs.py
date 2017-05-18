@@ -9,9 +9,9 @@
 #
 
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
 
 import os
 import platform
@@ -227,7 +227,7 @@ class Log(object):
         params = dict(unwrap(default_params), **more_params)
 
         if cause and not isinstance(cause, Except):
-            cause = Except(exceptions.UNEXPECTED, unicode(cause), trace=exceptions._extract_traceback(0))
+            cause = Except(exceptions.UNEXPECTED, str(cause), trace=exceptions._extract_traceback(0))
 
         trace = exceptions.extract_stack(1)
         e = Except(exceptions.UNEXPECTED, template, params, cause, trace)
@@ -314,7 +314,7 @@ class Log(object):
             cause = default_params
             default_params = {}
 
-        if "values" in more_params.keys():
+        if "values" in list(more_params.keys()):
             Log.error("Can not handle a logging parameter by name `values`")
         params = dict(unwrap(default_params), **more_params)
         cause = unwraplist([Except.wrap(c) for c in listwrap(cause)])
@@ -396,7 +396,7 @@ class Log(object):
         trace = exceptions.extract_stack(stack_depth + 1)
 
         e = Except(exceptions.ERROR, template, params, cause, trace)
-        str_e = unicode(e)
+        str_e = str(e)
 
         error_mode = cls.error_mode
         with suppress_exception:
@@ -435,7 +435,7 @@ def write_profile(profile_settings, stats):
         "line": f[1],
         "method": f[2].lstrip("<").rstrip(">")
     }
-        for f, d, in acc.stats.iteritems()
+        for f, d, in acc.stats.items()
     ]
     stats_file = File(profile_settings.filename, suffix=convert.datetime2string(datetime.now(), "_%Y%m%d_%H%M%S"))
     stats_file.write(convert.list2tab(stats))

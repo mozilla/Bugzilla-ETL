@@ -110,10 +110,10 @@ def old2new(bug, max_date):
 
     try:
         if Math.is_number(bug.cf_last_resolved):
-            bug.cf_last_resolved = long(bug.cf_last_resolved)
+            bug.cf_last_resolved = int(bug.cf_last_resolved)
         else:
             bug.cf_last_resolved = convert.datetime2milli(convert.string2datetime(bug.cf_last_resolved, "%Y-%m-%d %H:%M:%S"))
-    except Exception, e:
+    except Exception as e:
         pass
 
     bug = transform_bugzilla.rename_attachments(bug)

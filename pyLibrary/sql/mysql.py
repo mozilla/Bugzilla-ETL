@@ -8,9 +8,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 from collections import Mapping
 
 from datetime import datetime
@@ -94,18 +94,18 @@ class MySQL(object):
                 user=coalesce(self.settings.username, self.settings.user),
                 passwd=coalesce(self.settings.password, self.settings.passwd),
                 db=coalesce(self.settings.schema, self.settings.db),
-                charset=u"utf8",
+                charset="utf8",
                 use_unicode=True
             )
-        except Exception, e:
+        except Exception as e:
             if self.settings.host.find("://") == -1:
-                Log.error(u"Failure to connect to {{host}}:{{port}}",
+                Log.error("Failure to connect to {{host}}:{{port}}",
                     host= self.settings.host,
                     port= self.settings.port,
                     cause=e
                 )
             else:
-                Log.error(u"Failure to connect.  PROTOCOL PREFIX IS PROBABLY BAD", e)
+                Log.error("Failure to connect.  PROTOCOL PREFIX IS PROBABLY BAD", e)
         self.cursor = None
         self.partial_rollback = False
         self.transaction_level = 0
@@ -127,16 +127,16 @@ class MySQL(object):
                 if self.cursor: self.cursor.close()
                 self.cursor = None
                 self.rollback()
-            except Exception, e:
-                Log.warning(u"can not rollback()", cause=[value, e])
+            except Exception as e:
+                Log.warning("can not rollback()", cause=[value, e])
             finally:
                 self.close()
             return
 
         try:
             self.commit()
-        except Exception, e:
-            Log.warning(u"can not commit()", e)
+        except Exception as e:
+            Log.warning("can not commit()", e)
         finally:
             self.close()
 
@@ -160,7 +160,7 @@ class MySQL(object):
         self.cursor = None  # NOT NEEDED
         try:
             self.db.close()
-        except Exception, e:
+        except Exception as e:
             if e.message.find("Already closed") >= 0:
                 return
 
@@ -171,7 +171,7 @@ class MySQL(object):
     def commit(self):
         try:
             self._execute_backlog()
-        except Exception, e:
+        except Exception as e:
             with suppress_exception:
                 self.rollback()
             Log.error("Error while processing backlog", e)
@@ -194,12 +194,12 @@ class MySQL(object):
     def flush(self):
         try:
             self.commit()
-        except Exception, e:
+        except Exception as e:
             Log.error("Can not flush", e)
 
         try:
             self.begin()
-        except Exception, e:
+        except Exception as e:
             Log.error("Can not flush", e)
 
 
@@ -226,7 +226,7 @@ class MySQL(object):
             self.cursor.callproc(proc_name, params)
             self.cursor.close()
             self.cursor = self.db.cursor()
-        except Exception, e:
+        except Exception as e:
             Log.error("Problem calling procedure " + proc_name, e)
 
 
@@ -259,7 +259,7 @@ class MySQL(object):
                 self.cursor = None
 
             return result
-        except Exception, e:
+        except Exception as e:
             if isinstance(e, InterfaceError) or e.message.find("InterfaceError") >= 0:
                 Log.error("Did you close the db connection?", e)
             Log.error("Problem executing SQL:\n{{sql|indent}}",  sql= sql, cause=e, stack_depth=1)
@@ -286,14 +286,14 @@ class MySQL(object):
             self.cursor.execute(sql)
             grid = [[utf8_to_unicode(c) for c in row] for row in self.cursor]
             # columns = [utf8_to_unicode(d[0]) for d in coalesce(self.cursor.description, [])]
-            result = zip(*grid)
+            result = list(zip(*grid))
 
             if not old_cursor:   # CLEANUP AFTER NON-TRANSACTIONAL READS
                 self.cursor.close()
                 self.cursor = None
 
             return result
-        except Exception, e:
+        except Exception as e:
             if isinstance(e, InterfaceError) or e.message.find("InterfaceError") >= 0:
                 Log.error("Did you close the db connection?", e)
             Log.error("Problem executing SQL:\n{{sql|indent}}",  sql= sql, cause=e,stack_depth=1)
@@ -322,13 +322,13 @@ class MySQL(object):
             columns = tuple([utf8_to_unicode(d[0]) for d in self.cursor.description])
             for r in self.cursor:
                 num += 1
-                _execute(wrap(dict(zip(columns, [utf8_to_unicode(c) for c in r]))))
+                _execute(wrap(dict(list(zip(columns, [utf8_to_unicode(c) for c in r])))))
 
             if not old_cursor:   # CLEANUP AFTER NON-TRANSACTIONAL READS
                 self.cursor.close()
                 self.cursor = None
 
-        except Exception, e:
+        except Exception as e:
             Log.error("Problem executing SQL:\n{{sql|indent}}",  sql= sql, cause=e, stack_depth=1)
 
         return num
@@ -387,15 +387,15 @@ class MySQL(object):
                 stderr=subprocess.STDOUT,
                 bufsize=-1
             )
-            if isinstance(sql, unicode):
+            if isinstance(sql, str):
                 sql = sql.encode("utf8")
             (output, _) = proc.communicate(sql)
-        except Exception, e:
+        except Exception as e:
             Log.error("Can not call \"mysql\"", e)
 
         if proc.returncode:
             if len(sql) > 10000:
-                sql = "<" + unicode(len(sql)) + " bytes of sql>"
+                sql = "<" + str(len(sql)) + " bytes of sql>"
             Log.error("Unable to execute sql: return code {{return_code}}, {{output}}:\n {{sql}}\n",
                 sql= indent(sql),
                 return_code= proc.returncode,
@@ -435,7 +435,7 @@ class MySQL(object):
                     if self.debug:
                         Log.note("Execute SQL:\n{{sql|indent}}",  sql= sql)
                     self.cursor.execute(b)
-                except Exception, e:
+                except Exception as e:
                     Log.error("Can not execute sql:\n{{sql}}",  sql= sql, cause=e)
 
             self.cursor.close()
@@ -449,13 +449,13 @@ class MySQL(object):
                     self.cursor.execute(sql)
                     self.cursor.close()
                     self.cursor = self.db.cursor()
-                except Exception, e:
+                except Exception as e:
                     Log.error("Problem executing SQL:\n{{sql|indent}}",  sql= sql, cause=e, stack_depth=1)
 
 
     ## Insert dictionary of values into table
     def insert(self, table_name, record):
-        keys = record.keys()
+        keys = list(record.keys())
 
         try:
             command = "INSERT INTO " + self.quote_column(table_name) + "(" + \
@@ -465,7 +465,7 @@ class MySQL(object):
                       ")"
 
             self.execute(command)
-        except Exception, e:
+        except Exception as e:
             Log.error("problem with record: {{record}}",  record= record, cause=e)
 
     # candidate_key IS LIST OF COLUMNS THAT CAN BE USED AS UID (USUALLY PRIMARY KEY)
@@ -475,9 +475,9 @@ class MySQL(object):
 
         condition = " AND\n".join([self.quote_column(k) + "=" + self.quote_value(new_record[k]) if new_record[k] != None else self.quote_column(k) + " IS Null" for k in candidate_key])
         command = "INSERT INTO " + self.quote_column(table_name) + " (" + \
-                  ",".join([self.quote_column(k) for k in new_record.keys()]) + \
+                  ",".join([self.quote_column(k) for k in list(new_record.keys())]) + \
                   ")\n" + \
-                  "SELECT a.* FROM (SELECT " + ",".join([self.quote_value(v) + " " + self.quote_column(k) for k, v in new_record.items()]) + " FROM DUAL) a\n" + \
+                  "SELECT a.* FROM (SELECT " + ",".join([self.quote_value(v) + " " + self.quote_column(k) for k, v in list(new_record.items())]) + " FROM DUAL) a\n" + \
                   "LEFT JOIN " + \
                   "(SELECT 'dummy' exist FROM " + self.quote_column(table_name) + " WHERE " + condition + " LIMIT 1) b ON 1=1 WHERE exist IS Null"
         self.execute(command, {})
@@ -507,7 +507,7 @@ class MySQL(object):
                     for r in records
                 ])
             self.execute(command)
-        except Exception, e:
+        except Exception as e:
             Log.error("problem with record: {{record}}",  record= records, cause=e)
 
 
@@ -521,19 +521,19 @@ class MySQL(object):
 
         where_clause = " AND\n".join([
             self.quote_column(k) + "=" + self.quote_value(v) if v != None else self.quote_column(k) + " IS NULL"
-            for k, v in where_slice.items()
+            for k, v in list(where_slice.items())
         ])
 
         command = "UPDATE " + self.quote_column(table_name) + "\n" + \
                   "SET " + \
-                  ",\n".join([self.quote_column(k) + "=" + v for k, v in new_values.items()]) + "\n" + \
+                  ",\n".join([self.quote_column(k) + "=" + v for k, v in list(new_values.items())]) + "\n" + \
                   "WHERE " + \
                   where_clause
         self.execute(command, {})
 
 
     def quote_param(self, param):
-        return {k: self.quote_value(v) for k, v in param.items()}
+        return {k: self.quote_value(v) for k, v in list(param.items())}
 
     def quote_value(self, value):
         """
@@ -547,9 +547,9 @@ class MySQL(object):
                 if not value.param:
                     # value.template CAN BE MORE THAN A TEMPLATE STRING
                     return self.quote_sql(value.template)
-                param = {k: self.quote_sql(v) for k, v in value.param.items()}
+                param = {k: self.quote_sql(v) for k, v in list(value.param.items())}
                 return expand_template(value.template, param)
-            elif isinstance(value, basestring):
+            elif isinstance(value, str):
                 return self.db.literal(value)
             elif isinstance(value, datetime):
                 return "str_to_date('" + value.strftime("%Y%m%d%H%M%S") + "', '%Y%m%d%H%i%s')"
@@ -558,10 +558,10 @@ class MySQL(object):
             elif isinstance(value, Mapping):
                 return self.db.literal(json_encode(value))
             elif Math.is_number(value):
-                return unicode(value)
+                return str(value)
             else:
                 return self.db.literal(value)
-        except Exception, e:
+        except Exception as e:
             Log.error("problem quoting SQL", e)
 
 
@@ -573,21 +573,21 @@ class MySQL(object):
             if isinstance(value, SQL):
                 if not param:
                     return value
-                param = {k: self.quote_sql(v) for k, v in param.items()}
+                param = {k: self.quote_sql(v) for k, v in list(param.items())}
                 return expand_template(value, param)
-            elif isinstance(value, basestring):
+            elif isinstance(value, str):
                 return value
             elif isinstance(value, Mapping):
                 return self.db.literal(json_encode(value))
             elif hasattr(value, '__iter__'):
                 return "(" + ",".join([self.quote_sql(vv) for vv in value]) + ")"
             else:
-                return unicode(value)
-        except Exception, e:
+                return str(value)
+        except Exception as e:
             Log.error("problem quoting SQL", e)
 
     def quote_column(self, column_name, table=None):
-        if isinstance(column_name, basestring):
+        if isinstance(column_name, str):
             if table:
                 column_name = table + "." + column_name
             return SQL("`" + column_name.replace(".", "`.`") + "`")    # MY SQL QUOTE OF COLUMN NAMES
@@ -610,7 +610,7 @@ def utf8_to_unicode(v):
             return v.decode("utf8")
         else:
             return v
-    except Exception, e:
+    except Exception as e:
         Log.error("not expected", e)
 
 
@@ -730,5 +730,5 @@ def json_encode(value):
     FOR PUTTING JSON INTO DATABASE (sort_keys=True)
     dicts CAN BE USED AS KEYS
     """
-    return unicode(json_encoder.encode(jsons.scrub(value)))
+    return str(json_encoder.encode(jsons.scrub(value)))
 

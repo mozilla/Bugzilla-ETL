@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 import json
 from types import GeneratorType
@@ -59,7 +59,7 @@ def parse(json, path, expected_vars=NO_VARS):
     elif hasattr(json, "__call__"):
         json = List_usingStream(json)
     elif isinstance(json, GeneratorType):
-        json = List_usingStream(json.next)
+        json = List_usingStream(json.__next__)
     else:
         Log.error("Expecting json to be a stream, or a function that will return more bytes")
 
@@ -169,7 +169,7 @@ def parse(json, path, expected_vars=NO_VARS):
                     for j, i in _decode(index - 1, full_path, new_path, name2index, expected_vars=child_expected):
                         index = i
                         j = {name: j}
-                        for k, v in destination.items():
+                        for k, v in list(destination.items()):
                             j.setdefault(k, v)
                         yield j, index
                     continue
@@ -275,7 +275,7 @@ def parse(json, path, expected_vars=NO_VARS):
             c = json[index]
         return c, index + 1
 
-    for j, i in _decode(0, [], map(split_field, listwrap(path)), {}, expected_vars=expected_vars):
+    for j, i in _decode(0, [], list(map(split_field, listwrap(path))), {}, expected_vars=expected_vars):
         yield j
 
 

@@ -8,10 +8,10 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
-import __builtin__
+
+
+
+import builtins
 from collections import Mapping
 from types import GeneratorType
 
@@ -82,7 +82,7 @@ def run(query, frum=None):
         #     pass
 
         if query.where is not TRUE_FILTER:
-            frum = filter(frum, query.where)
+            frum = list(filter(frum, query.where))
 
         if query.sort:
             frum = sort(frum, query.sort, already_normalized=True)
@@ -123,7 +123,7 @@ def index(data, keys=None):
         if data.edges[0].name==keys[0]:
             #QUICK PATH
             names = list(data.data.keys())
-            for d in (set_default(dot.zip(names, r), {keys[0]: p}) for r, p in zip(zip(*data.data.values()), data.edges[0].domain.partitions.value)):
+            for d in (set_default(dot.zip(names, r), {keys[0]: p}) for r, p in zip(list(zip(*list(data.data.values()))), data.edges[0].domain.partitions.value)):
                 o.add(d)
             return o
         else:
@@ -144,7 +144,7 @@ def unique_index(data, keys=None, fail_on_dup=True):
     for d in data:
         try:
             o.add(d)
-        except Exception, e:
+        except Exception as e:
             o.add(d)
             Log.error("index {{index}} is not unique {{key}} maps to both {{value1}} and {{value2}}",
                 index= keys,
@@ -176,7 +176,7 @@ def map2set(data, relation):
                 for cod in relation.get(d, []):
                     output.add(cod)
             return output
-        except Exception, e:
+        except Exception as e:
             Log.error("Expecting a dict with lists in codomain", e)
     else:
         try:
@@ -189,7 +189,7 @@ def map2set(data, relation):
                     continue
                 output.add(cod)
             return output
-        except Exception, e:
+        except Exception as e:
             Log.error("Expecting a dict with lists in codomain", e)
     return Null
 
@@ -209,7 +209,7 @@ def tuple(data, field_name):
         field_name = field_name["value"]
 
     # SIMPLE PYTHON ITERABLE ASSUMED
-    if isinstance(field_name, basestring):
+    if isinstance(field_name, str):
         if len(split_field(field_name)) == 1:
             return [(d[field_name], ) for d in data]
         else:
@@ -277,7 +277,7 @@ def select(data, field_name):
         return data.select(field_name)
 
     if isinstance(data, UniqueIndex):
-        data = data._data.values()  # THE SELECT ROUTINE REQUIRES dicts, NOT Dict WHILE ITERATING
+        data = list(data._data.values())  # THE SELECT ROUTINE REQUIRES dicts, NOT Dict WHILE ITERATING
 
     if isinstance(data, Mapping):
         return select_one(data, field_name)
@@ -292,7 +292,7 @@ def select(data, field_name):
             field_name = field_name.value
 
     # SIMPLE PYTHON ITERABLE ASSUMED
-    if isinstance(field_name, basestring):
+    if isinstance(field_name, str):
         path = split_field(field_name)
         if len(path) == 1:
             return DictList([d[field_name] for d in data])
@@ -309,9 +309,9 @@ def select(data, field_name):
 
 
 def _select_a_field(field):
-    if isinstance(field, basestring):
+    if isinstance(field, str):
         return wrap({"name": field, "value": split_field(field)})
-    elif isinstance(wrap(field).value, basestring):
+    elif isinstance(wrap(field).value, str):
         field = wrap(field)
         return wrap({"name": field.name, "value": split_field(field.value)})
     else:
@@ -356,7 +356,7 @@ def _select_deep(v, field, depth, record):
     if hasattr(field.value, '__call__'):
         try:
             record[field.name] = field.value(wrap(v))
-        except Exception, e:
+        except Exception as e:
             record[field.name] = None
         return 0, None
 
@@ -373,7 +373,7 @@ def _select_deep(v, field, depth, record):
             record[field.name] = v
         else:
             record[field.name] = v.get(f)
-    except Exception, e:
+    except Exception as e:
         Log.error("{{value}} does not have {{field}} property",  value= v, field=f, cause=e)
     return 0, None
 
@@ -391,7 +391,7 @@ def _select_deep_meta(field, depth):
                 destination[name] = field.value(wrap(source))
                 return 0, None
             return assign
-        except Exception, e:
+        except Exception as e:
             def assign(source, destination):
                 destination[name] = None
                 return 0, None
@@ -413,7 +413,7 @@ def _select_deep_meta(field, depth):
                     destination[name] = source
                 else:
                     destination[name] = source.get(f)
-            except Exception, e:
+            except Exception as e:
                 Log.error("{{value}} does not have {{field}} property",  value= source, field=f, cause=e)
             return 0, None
         return assign
@@ -428,7 +428,7 @@ def _select_deep_meta(field, depth):
             def assign(source, destination):
                 try:
                     destination[name] = source.get(f)
-                except Exception, e:
+                except Exception as e:
                     Log.error("{{value}} does not have {{field}} property",  value= source, field=f, cause=e)
                 return 0, None
             return assign
@@ -530,7 +530,7 @@ def sort(data, fieldnames=None, already_normalized=False):
                     result = value_compare(func(left), func(right), sort_)
                     if result != 0:
                         return result
-                except Exception, e:
+                except Exception as e:
                     Log.error("problem with compare", e)
             return 0
 
@@ -543,7 +543,7 @@ def sort(data, fieldnames=None, already_normalized=False):
             output = None
 
         return output
-    except Exception, e:
+    except Exception as e:
         Log.error("Problem sorting\n{{data}}",  data=data, cause=e)
 
 
@@ -625,7 +625,7 @@ def filter(data, where):
 
     try:
         return drill_filter(where, data)
-    except Exception, _:
+    except Exception as _:
         # WOW!  THIS IS INEFFICIENT!
         return wrap([unwrap(d) for d in drill_filter(where, [DictObject(d) for d in data])])
 
@@ -650,7 +650,7 @@ def drill_filter(esfilter, data):
         for i, c in enumerate(col):
             try:
                 d = d[c]
-            except Exception, e:
+            except Exception as e:
                 Log.error("{{name}} does not exist", name=fieldname)
             if isinstance(d, list) and len(col) > 1:
                 if len(primary_column) <= depth+i:
@@ -686,7 +686,7 @@ def drill_filter(esfilter, data):
         if filter["and"]:
             result = True
             output = DictList()
-            for a in filter[u"and"]:
+            for a in filter["and"]:
                 f = pe_filter(a, data, depth)
                 if f is False:
                     result = False
@@ -698,7 +698,7 @@ def drill_filter(esfilter, data):
                 return result
         elif filter["or"]:
             output = DictList()
-            for o in filter[u"or"]:
+            for o in filter["or"]:
                 f = pe_filter(o, data, depth)
                 if f is True:
                     return True
@@ -720,7 +720,7 @@ def drill_filter(esfilter, data):
             eq = coalesce(filter.term, filter.eq)
             result = True
             output = {}
-            for col, val in eq.items():
+            for col, val in list(eq.items()):
                 first, rest = parse_field(col, data, depth)
                 d = data[first]
                 if not rest:
@@ -756,7 +756,7 @@ def drill_filter(esfilter, data):
         elif filter.terms:
             result = True
             output = {}
-            for col, vals in filter["terms"].items():
+            for col, vals in list(filter["terms"].items()):
                 first, rest = parse_field(col, data, depth)
                 d = data[first]
                 if not rest:
@@ -772,11 +772,11 @@ def drill_filter(esfilter, data):
         elif filter.range:
             result = True
             output = {}
-            for col, ranges in filter["range"].items():
+            for col, ranges in list(filter["range"].items()):
                 first, rest = parse_field(col, data, depth)
                 d = data[first]
                 if not rest:
-                    for sign, val in ranges.items():
+                    for sign, val in list(ranges.items()):
                         if sign in ("gt", ">") and d <= val:
                             result = False
                         if sign == "gte" and d < val:
@@ -792,7 +792,7 @@ def drill_filter(esfilter, data):
             else:
                 return result
         elif filter.missing:
-            if isinstance(filter.missing, basestring):
+            if isinstance(filter.missing, str):
                 field = filter["missing"]
             else:
                 field = filter["missing"]["field"]
@@ -808,7 +808,7 @@ def drill_filter(esfilter, data):
         elif filter.prefix:
             result = True
             output = {}
-            for col, val in filter["prefix"].items():
+            for col, val in list(filter["prefix"].items()):
                 first, rest = parse_field(col, data, depth)
                 d = data[first]
                 if not rest:
@@ -822,7 +822,7 @@ def drill_filter(esfilter, data):
                 return result
 
         elif filter.exists:
-            if isinstance(filter["exists"], basestring):
+            if isinstance(filter["exists"], str):
                 field = filter["exists"]
             else:
                 field = filter["exists"]["field"]
@@ -836,7 +836,7 @@ def drill_filter(esfilter, data):
             else:
                 return {"exists": rest}
         else:
-            Log.error(u"Can not interpret esfilter: {{esfilter}}", {u"esfilter": filter})
+            Log.error("Can not interpret esfilter: {{esfilter}}", {"esfilter": filter})
 
     output = []  # A LIST OF OBJECTS MAKING THROUGH THE FILTER
 
@@ -906,7 +906,7 @@ def wrap_function(func):
     """
     RETURN A THREE-PARAMETER WINDOW FUNCTION TO MATCH
     """
-    if isinstance(func, basestring):
+    if isinstance(func, str):
         return compile_expression(func)
 
     numarg = func.__code__.co_argcount
@@ -942,7 +942,7 @@ def window(data, param):
     aggregate = param.aggregate  # WindowFunction to apply
     _range = param.range         # of form {"min":-10, "max":0} to specify the size and relative position of window
 
-    data = filter(data, where)
+    data = list(filter(data, where))
 
     if not aggregate and not edges:
         if sortColumns:
@@ -1007,7 +1007,7 @@ def intervals(_min, _max=None, size=1):
     _max = int(Math.ceiling(_max))
     _min = int(Math.floor(_min))
 
-    output = ((x, min(x + size, _max)) for x in __builtin__.range(_min, _max, size))
+    output = ((x, min(x + size, _max)) for x in builtins.range(_min, _max, size))
     return output
 
 

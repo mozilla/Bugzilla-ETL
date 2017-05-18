@@ -12,7 +12,7 @@ import time
 import sys
 import os
 
-string_types = basestring
+string_types = str
 PY3 = sys.version_info[0] == 3
 
 relativedelta = None

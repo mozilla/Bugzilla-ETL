@@ -7,9 +7,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 from bzETL.extract_bugzilla import get_all_cc_changes
 from pyLibrary import convert
@@ -55,7 +55,7 @@ def full_analysis(settings, bug_list=None, please_stop=None):
                 start=s,
                 end=e
             )
-            data = get_all_cc_changes(db, range(s, e))
+            data = get_all_cc_changes(db, list(range(s, e)))
             if please_stop:
                 break
             analyzer.aggregator(data)
@@ -79,7 +79,7 @@ class AliasAnalyzer(object):
             for r in result:
                 self.aliases[r.alias] = {"canonical":r["canonical"], "dirty":False}
 
-            Log.note("{{num}} aliases loaded", num=len(self.aliases.keys()))
+            Log.note("{{num}} aliases loaded", num=len(list(self.aliases.keys())))
 
             # LOAD THE NON-MATCHES
             na = set_default({}, settings.elasticsearch, {"type":"not_alias"})
@@ -92,7 +92,7 @@ class AliasAnalyzer(object):
             for r in result:
                 self.not_aliases[r.alias] = r["canonical"]
 
-        except Exception, e:
+        except Exception as e:
             Log.error("Can not init aliases", cause=e)
 
     def aggregator(self, data):
@@ -119,15 +119,15 @@ class AliasAnalyzer(object):
         while try_again and not please_stop:
             #FIND EMAIL MOST NEEDING REPLACEMENT
             problem_agg = Multiset(allow_negative=True)
-            for bug_id, agg in self.bugs.iteritems():
+            for bug_id, agg in self.bugs.items():
                 #ONLY COUNT NEGATIVE EMAILS
-                for email, count in agg.dic.iteritems():
+                for email, count in agg.dic.items():
                     if count < 0:
                         problem_agg.add(self.alias(email)["canonical"], amount=count)
 
             problems = jx.sort([
                 {"email": e, "count": c}
-                for e, c in problem_agg.dic.iteritems()
+                for e, c in problem_agg.dic.items()
                 if not self.not_aliases.get(e, None) and (c <= -(DIFF / 2) or last_run)
             ], ["count", "email"])
 
@@ -138,10 +138,10 @@ class AliasAnalyzer(object):
 
                 #FIND MOST LIKELY MATCH
                 solution_agg = Multiset(allow_negative=True)
-                for bug_id, agg in self.bugs.iteritems():
+                for bug_id, agg in self.bugs.items():
                     if agg.dic.get(problem.email, 0) < 0:  #ONLY BUGS THAT ARE EXPERIENCING THIS problem
                         solution_agg += agg
-                solutions = jx.sort([{"email": e, "count": c} for e, c in solution_agg.dic.iteritems()], [{"field": "count", "sort": -1}, "email"])
+                solutions = jx.sort([{"email": e, "count": c} for e, c in solution_agg.dic.items()], [{"field": "count", "sort": -1}, "email"])
 
                 if last_run and len(solutions) == 2 and solutions[0].count == -solutions[1].count:
                     #exact match
@@ -189,7 +189,7 @@ class AliasAnalyzer(object):
         delete_list = []
 
         #FOLD bugs ON lost=found
-        for bug_id, agg in self.bugs.iteritems():
+        for bug_id, agg in self.bugs.items():
             v = agg.dic.get(lost, 0)
             if v != 0:
                 agg.add(lost, -v)
@@ -200,7 +200,7 @@ class AliasAnalyzer(object):
 
         #FOLD bugs ON old_canonical=new_canonical
         if old_canonical["canonical"] != lost:
-            for bug_id, agg in self.bugs.iteritems():
+            for bug_id, agg in self.bugs.items():
                 v = agg.dic.get(old_canonical["canonical"], 0)
                 if v != 0:
                     agg.add(old_canonical["canonical"], -v)
@@ -214,7 +214,7 @@ class AliasAnalyzer(object):
 
         #FOLD ALIASES
         reassign=[]
-        for k, v in self.aliases.iteritems():
+        for k, v in self.aliases.items():
             if v["canonical"] == old_canonical["canonical"]:
                 Log.note(
                     "ALIAS REMAPPED: {{alias}}->{{old}} to {{alias}}->{{new}}",
@@ -229,7 +229,7 @@ class AliasAnalyzer(object):
 
     def saveAliases(self):
         records = []
-        for k, v in self.aliases.iteritems():
+        for k, v in self.aliases.items():
             if v["dirty"]:
                 records.append({"id":k, "value":{"canonical":v["canonical"], "alias":k}})
 
@@ -261,7 +261,7 @@ def start():
         settings = startup.read_settings()
         Log.start(settings.debug)
         full_analysis(settings)
-    except Exception, e:
+    except Exception as e:
         Log.error("Can not start", e)
     finally:
         Log.stop()

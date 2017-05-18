@@ -9,9 +9,9 @@
 #
 
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
 
 import sys
 from collections import Mapping
@@ -63,9 +63,9 @@ class Except(Exception):
             return Except(**e)
         else:
             if hasattr(e, "message") and e.message:
-                cause = Except(ERROR, unicode(e.message), trace=_extract_traceback(0))
+                cause = Except(ERROR, str(e.message), trace=_extract_traceback(0))
             else:
-                cause = Except(ERROR, unicode(e), trace=_extract_traceback(0))
+                cause = Except(ERROR, str(e), trace=_extract_traceback(0))
 
             trace = extract_stack(stack_depth + 2)  # +2 = to remove the caller, and it's call to this' Except.wrap()
             cause.trace.extend(trace)
@@ -76,7 +76,7 @@ class Except(Exception):
         return expand_template(self.template, self.params)
 
     def __contains__(self, value):
-        if isinstance(value, basestring):
+        if isinstance(value, str):
             if self.template.find(value) >= 0 or self.message.find(value) >= 0:
                 return True
 
@@ -99,7 +99,7 @@ class Except(Exception):
             cause_strings = []
             for c in listwrap(self.cause):
                 with suppress_exception:
-                    cause_strings.append(unicode(c))
+                    cause_strings.append(str(c))
 
 
             output += "caused by\n\t" + "and caused by\n\t".join(cause_strings)

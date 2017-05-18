@@ -29,9 +29,9 @@ class CipherMode:
         self._iv = iv
 
     def encrypt_block(self, plaintext):
-        raise(NotImplementedError, "Abstract function")
+        raise NotImplementedError
 
     def decrypt_block(self, ciphertext):
-        raise(NotImplementedError, "Abstract function")
+        raise NotImplementedError
 
 

@@ -6,9 +6,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 import subprocess
 
@@ -49,7 +49,7 @@ class Process(object):
                 Thread.run(self.name + " stdout", self._reader, service.stdout, self.stdout, please_stop=self.stopper, parent_thread=self),
                 Thread.run(self.name + " stderr", self._reader, service.stderr, self.stderr, please_stop=self.stopper, parent_thread=self),
             ]
-        except Exception, e:
+        except Exception as e:
             Log.error("Can not call", e)
 
     def stop(self):
@@ -115,7 +115,7 @@ class Process(object):
     def _kill(self):
         try:
             self.service.kill()
-        except Exception, e:
+        except Exception as e:
             ee = Except.wrap(e)
             if 'The operation completed successfully' in ee:
                 return

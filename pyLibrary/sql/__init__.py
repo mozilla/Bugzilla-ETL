@@ -8,20 +8,20 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 from pyLibrary.debugs.logs import Log
 from pyLibrary.strings import expand_template
 
 
-class SQL(unicode):
+class SQL(str):
     """
     ACTUAL SQL, DO NOT QUOTE THIS STRING
     """
     def __init__(self, template='', param=None):
-        unicode.__init__(self)
+        str.__init__(self)
         self.template = template
         self.param = param
 

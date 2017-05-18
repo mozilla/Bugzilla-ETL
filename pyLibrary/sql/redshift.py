@@ -8,9 +8,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 # FOR WINDOWS INSTALL OF psycopg2
 # http://stickpeople.com/projects/python/win-psycopg/2.6.0/psycopg2-2.6.0.win32-py2.7-pg9.4.1-release.exe
@@ -71,7 +71,7 @@ class Redshift(object):
                         output = curs.fetchall()
                 self.connection.commit()
                 done = True
-            except Exception, e:
+            except Exception as e:
                 with suppress_exception:
                     self.connection.rollback()
                     # TODO: FIGURE OUT WHY rollback() DOES NOT HELP
@@ -83,7 +83,7 @@ class Redshift(object):
         return output
 
     def insert(self, table_name, record):
-        keys = record.keys()
+        keys = list(record.keys())
 
         try:
             command = "INSERT INTO " + self.quote_column(table_name) + "(" + \
@@ -93,7 +93,7 @@ class Redshift(object):
                       ")"
 
             self.execute(command)
-        except Exception, e:
+        except Exception as e:
             Log.error("problem with record: {{record}}",  record= record, cause=e)
 
 
@@ -120,14 +120,14 @@ class Redshift(object):
                     for r in records
                 ])
             self.execute(command)
-        except Exception, e:
+        except Exception as e:
             Log.error("problem with insert", e)
 
 
 
     def quote_param(self, param):
         output={}
-        for k, v in param.items():
+        for k, v in list(param.items()):
             if isinstance(v, SQL):
                 output[k]=v.sql
             else:
@@ -135,7 +135,7 @@ class Redshift(object):
         return output
 
     def quote_column(self, name):
-        if isinstance(name, basestring):
+        if isinstance(name, str):
             return SQL('"' + name.replace('"', '""') + '"')
         return SQL("(" + (", ".join(self.quote_value(v) for v in name)) + ")")
 
@@ -146,7 +146,7 @@ class Redshift(object):
             json = convert.value2json(value)
             return self.quote_value(json)
 
-        if isinstance(value, basestring) and len(value) > 256:
+        if isinstance(value, str) and len(value) > 256:
             value = value[:256]
         return SQL(adapt(value))
 

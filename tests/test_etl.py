@@ -127,7 +127,7 @@ class TestETL(unittest.TestCase):
                         break
                     else:
                         pass
-                except Exception, e:
+                except Exception as e:
                     Log.warning("Total failure during compare of bugs {{bugs}}", {"bugs": some_bugs}, e)
 
     def test_private_etl(self):
@@ -621,9 +621,9 @@ def compare_both(candidate, reference, settings, some_bugs):
                 ref = convert.value2json(ref_versions, pretty=True)
                 if can != ref:
                     found_errors = True
-                    File(try_dir + unicode(bug_id) + ".txt").write(can)
-                    File(ref_dir + unicode(bug_id) + ".txt").write(ref)
-            except Exception, e:
+                    File(try_dir + str(bug_id) + ".txt").write(can)
+                    File(ref_dir + str(bug_id) + ".txt").write(ref)
+            except Exception as e:
                 found_errors = True
                 Log.warning("Problem ETL'ing bug {{bug_id}}", {"bug_id": bug_id}, e)
 

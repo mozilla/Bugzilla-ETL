@@ -7,9 +7,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 from bzETL.parse_bug_history import MAX_TIME
 from pyLibrary import convert
@@ -63,7 +63,7 @@ def get_current_time(db):
     """
     RETURN GMT TIME
     """
-    output = db.query(u"""
+    output = db.query("""
         SELECT
             UNIX_TIMESTAMP(now()) `value`
         """)[0].value
@@ -78,7 +78,7 @@ def milli2string(db, value):
     """
     value = max(value, 0)
 
-    output = db.query(u"""
+    output = db.query("""
         SELECT
             CAST(CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific') AS CHAR) `value`
         """, {
@@ -137,7 +137,7 @@ def get_private_bugs_for_delete(db, param):
         with Timer("get all private bug ids"):
             private_bugs = db.query("SELECT DISTINCT bug_id FROM bug_group_map")
             return set(private_bugs.bug_id) | {0}
-    except Exception, e:
+    except Exception as e:
         Log.error("problem getting private bugs", e)
 
 
@@ -161,7 +161,7 @@ def get_recent_private_bugs(db, param):
 
         return set(output.bug_id)
 
-    except Exception, e:
+    except Exception as e:
         Log.error("problem getting recent private attachments", e)
 
 
@@ -186,7 +186,7 @@ def get_recent_private_attachments(db, param):
             bug_when >= {{start_time_str}} AND
             fieldid={{field_id}}
         """, param)
-    except Exception, e:
+    except Exception as e:
         Log.error("problem getting recent private attachments", e)
 
 
@@ -212,7 +212,7 @@ def get_recent_private_comments(db, param):
             """, param)
 
         return comments
-    except Exception, e:
+    except Exception as e:
         Log.error("problem getting recent private attachments", e)
 
 
@@ -285,12 +285,12 @@ def get_bugs(db, param):
             flatten_bugs_record(r, output)
 
         return output
-    except Exception, e:
+    except Exception as e:
         Log.error("can not get basic bug data", e)
 
 
 def flatten_bugs_record(r, output):
-    for field_name, value in r.items():
+    for field_name, value in list(r.items()):
         if value != "---":
             newRow = Dict()
             newRow.bug_id = r.bug_id
@@ -522,7 +522,7 @@ def get_attachments(db, param):
 def flatten_attachments(data):
     output = []
     for r in data:
-        for k,v in r.items():
+        for k,v in list(r.items()):
             if k=="bug_id":
                 continue
             output.append(Dict(
@@ -678,7 +678,7 @@ def get_comments(db, param):
             """, param)
 
         return comments
-    except Exception, e:
+    except Exception as e:
         Log.error("can not get comment data", e)
 
 
@@ -714,6 +714,6 @@ def get_comments_by_id(db, comments, param):
             """, param)
 
         return comments
-    except Exception, e:
+    except Exception as e:
         Log.error("can not get comment data", e)
 

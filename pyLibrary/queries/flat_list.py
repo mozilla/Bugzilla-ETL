@@ -8,9 +8,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 from collections import Mapping
 
 import functools
@@ -57,7 +57,7 @@ class FlatList(list):
         if isinstance(fields, Mapping):
             fields=fields.value
 
-        if isinstance(fields, basestring):
+        if isinstance(fields, str):
             # RETURN LIST OF VALUES
             if len(split_field(fields)) == 1:
                 if self.path[0] == fields:
@@ -66,7 +66,7 @@ class FlatList(list):
                     return [d[0][fields] for d in self.data]
             else:
                 keys = split_field(fields)
-                depth = coalesce(MIN([i for i, (k, p) in enumerate(zip(keys, self.path)) if k != p]), len(self.path))  # LENGTH OF COMMON PREFIX
+                depth = coalesce(MIN([i for i, (k, p) in enumerate(list(zip(keys, self.path))) if k != p]), len(self.path))  # LENGTH OF COMMON PREFIX
                 short_key = keys[depth:]
 
                 output = DictList()

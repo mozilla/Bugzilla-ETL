@@ -7,9 +7,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 from collections import Mapping
 from copy import deepcopy
@@ -87,7 +87,7 @@ class DictList(list):
             if key != "index":  # WE DO NOT WANT TO IMPLEMENT THE index METHOD
                 output = _get(self, key)
                 return output
-        except Exception, e:
+        except Exception as e:
             if key[0:2] == "__":  # SYSTEM LEVEL ATTRIBUTES CAN NOT BE USED FOR SELECT
                 raise e
         return DictList.get(self, key)

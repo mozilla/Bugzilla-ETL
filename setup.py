@@ -9,7 +9,7 @@ try:
     long_desc = open(path('README.txt')).read()
 except Exception:
     long_desc = "<Missing README.txt>"
-    print "Missing README.txt"
+    print("Missing README.txt")
 
 
 

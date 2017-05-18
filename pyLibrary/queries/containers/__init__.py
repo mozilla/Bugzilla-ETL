@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
 
 from collections import Mapping
 from copy import copy
@@ -76,7 +76,7 @@ class Container(object):
             return _run(frum)
         elif isinstance(frum, (list, set, GeneratorType)):
             return _ListContainer(frum)
-        elif isinstance(frum, basestring):
+        elif isinstance(frum, str):
             # USE DEFAULT STORAGE TO FIND Container
             if not config.default.settings:
                 Log.error("expecting pyLibrary.queries.query.config.default.settings to contain default elasticsearch connection info")

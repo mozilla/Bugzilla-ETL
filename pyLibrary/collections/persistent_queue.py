@@ -8,9 +8,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 from pyLibrary import convert
 from pyLibrary.debugs.exceptions import suppress_exception
@@ -55,7 +55,7 @@ class PersistentQueue(object):
 
             # SCRUB LOST VALUES
             lost = 0
-            for k in self.db.keys():
+            for k in list(self.db.keys()):
                 with suppress_exception:
                     if k!="status" and int(k) < self.start:
                         self.db[k] = None
@@ -94,7 +94,7 @@ class PersistentQueue(object):
                 value = self.pop()
                 if value is not Thread.STOP:
                     yield value
-            except Exception, e:
+            except Exception as e:
                 Log.warning("Tell me about what happened here", cause=e)
         if DEBUG:
             Log.note("queue iterator is done")
@@ -187,7 +187,7 @@ class PersistentQueue(object):
                     if DEBUG:
                         Log.note("Re-write {{num_keys}} keys to persistent queue", num_keys=self.db.status.end - self.start)
 
-                        for k in self.db.keys():
+                        for k in list(self.db.keys()):
                             if k == "status" or int(k) >= self.db.status.start:
                                 continue
                             Log.error("Not expecting {{key}}", key=k)
@@ -195,7 +195,7 @@ class PersistentQueue(object):
                     self.file.write(convert.value2json({"add": self.db}) + "\n")
                 else:
                     self._commit()
-            except Exception, e:
+            except Exception as e:
                 raise e
 
     def _commit(self):
@@ -223,7 +223,7 @@ class PersistentQueue(object):
                         self._add_pending({"remove": str(i)})
                     self.file.write(convert.value2json({"add": self.db}) + "\n" + ("\n".join(convert.value2json(p) for p in self.pending)) + "\n")
                     self._apply_pending()
-                except Exception, e:
+                except Exception as e:
                     raise e
             self.db = None
 
@@ -235,7 +235,7 @@ class PersistentQueue(object):
 
 def apply_delta(value, delta):
     if delta.add:
-        for k, v in delta.add.items():
+        for k, v in list(delta.add.items()):
             value[k] = v
     elif delta.remove:
         value[delta.remove] = None

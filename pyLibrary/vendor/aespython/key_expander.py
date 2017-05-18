@@ -18,7 +18,7 @@ __author__ = "Adam Newman"
 try:
     from . import aes_tables
 except ValueError:
-    import aes_tables
+    from . import aes_tables
 
 class KeyExpander:
     """Perform AES Key Expansion"""
@@ -105,9 +105,9 @@ class KeyExpander:
             # of 4 byte tail of extended key xor with 4 bytes n bytes from end of extended key
             if self._key_length != 128 and len_new_key < self._b:
                 if self._key_length == 192:
-                    r = range(2)
+                    r = list(range(2))
                 else:
-                    r = range(3)
+                    r = list(range(3))
 
                 for j in r:
                     t = new_key[-4:]
@@ -125,7 +125,7 @@ class TestKeyExpander(unittest.TestCase):
         try:
             from . import test_keys
         except:
-            import test_keys
+            from . import test_keys
 
         test_data = test_keys.TestKeys()
 

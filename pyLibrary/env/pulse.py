@@ -7,9 +7,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 import datetime
 from socket import timeout as socket_timeout
@@ -77,7 +77,7 @@ class Consumer(Thread):
             try:
                 self.target_queue.add(data)
                 message.ack()
-            except Exception, e:
+            except Exception as e:
                 e = Except.wrap(e)
                 if not self.target_queue.closed:  # EXPECTED TO HAPPEN, THIS THREAD MAY HAVE BEEN AWAY FOR A WHILE
                     raise e
@@ -85,7 +85,7 @@ class Consumer(Thread):
             try:
                 self.pulse_target(data)
                 message.ack()
-            except Exception, e:
+            except Exception as e:
                 Log.warning("Problem processing pulse (see `data` in structured log)", data=data, cause=e)
 
     def _worker(self, please_stop):
@@ -102,7 +102,7 @@ class Consumer(Thread):
         while not please_stop:
             try:
                 self.pulse.listen()
-            except Exception, e:
+            except Exception as e:
                 if not please_stop:
                     Log.warning("Pulse had problem (Have you set your Pulse permissions correctly?", e)
         Log.note("pulse listener is done")
@@ -117,7 +117,7 @@ class Consumer(Thread):
 
         try:
             self.pulse.disconnect()
-        except Exception, e:
+        except Exception as e:
             Log.warning("Can not disconnect during pulse exit, ignoring", e)
         Thread.__exit__(self, exc_type, exc_val, exc_tb)
 
@@ -204,10 +204,10 @@ class ModifiedGenericConsumer(GenericConsumer):
         while True:
             try:
                 self.connection.drain_events(timeout=self.timeout)
-            except socket_timeout, e:
+            except socket_timeout as e:
                 Log.warning("timeout! Restarting pulse consumer.", cause=e)
                 try:
                     self.disconnect()
-                except Exception, f:
+                except Exception as f:
                     Log.warning("Problem with disconnect()", cause=f)
                 break

@@ -7,9 +7,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 from collections import Mapping
 from types import GeneratorType, NoneType, ModuleType
 
@@ -21,7 +21,7 @@ def inverse(d):
     reverse the k:v pairs
     """
     output = {}
-    for k, v in unwrap(d).iteritems():
+    for k, v in unwrap(d).items():
         output[v] = output.get(v, [])
         output[v].append(k)
     return output
@@ -56,7 +56,7 @@ def literal_field(field):
     """
     try:
         return field.replace(".", "\.")
-    except Exception, e:
+    except Exception as e:
         from pyLibrary.debugs.logs import Log
 
         Log.error("bad literal", e)
@@ -90,7 +90,7 @@ def hash_value(v):
     elif not isinstance(v, Mapping):
         return hash(v)
     else:
-        return hash(tuple(sorted(hash_value(vv) for vv in v.values())))
+        return hash(tuple(sorted(hash_value(vv) for vv in list(v.values()))))
 
 
 
@@ -133,7 +133,7 @@ def _all_default(d, default, seen=None):
         # from pyLibrary.debugs.logs import Log
         # Log.error("strictly dict (or object) allowed: got {{type}}", type=default.__class__.__name__)
 
-    for k, default_value in default.items():
+    for k, default_value in list(default.items()):
         default_value = unwrap(default_value)  # TWO DIFFERENT Dicts CAN SHARE id() BECAUSE THEY ARE SHORT LIVED
         existing_value = _get_attr(d, [k])
 
@@ -152,7 +152,7 @@ def _all_default(d, default, seen=None):
                     # ASSUME PRIMITIVE (OR LIST, WHICH WE DO NOT COPY)
                     try:
                         _set_attr(d, [k], default_value)
-                    except Exception, e:
+                    except Exception as e:
                         if PATH_NOT_FOUND not in e:
                             from pyLibrary.debugs.logs import Log
                             Log.error("Can not set attribute {{name}}", name=k, cause=e)
@@ -175,19 +175,19 @@ def _getdefault(obj, key):
     """
     try:
         return obj[key]
-    except Exception, f:
+    except Exception as f:
         pass
 
     try:
         return getattr(obj, key)
-    except Exception, f:
+    except Exception as f:
         pass
 
 
     try:
         if float(key) == round(float(key), 0):
             return obj[int(key)]
-    except Exception, f:
+    except Exception as f:
         pass
 
 
@@ -210,7 +210,7 @@ def set_attr(obj, path, value):
     """
     try:
         return _set_attr(obj, split_field(path), value)
-    except Exception, e:
+    except Exception as e:
         from pyLibrary.debugs.logs import Log
         if PATH_NOT_FOUND in e:
             Log.warning(PATH_NOT_FOUND + ": {{path}}",  path= path)
@@ -224,7 +224,7 @@ def get_attr(obj, path):
     """
     try:
         return _get_attr(obj, split_field(path))
-    except Exception, e:
+    except Exception as e:
         from pyLibrary.debugs.logs import Log
         if PATH_NOT_FOUND in e:
             Log.error(PATH_NOT_FOUND+": {{path}}",  path=path, cause=e)
@@ -258,7 +258,7 @@ def _get_attr(obj, path):
                     #GET VARIABLE IN MODULE
                     output = __import__(obj.__name__ + "." + attr_name, globals(), locals(), [path[1]], 0)
                     return _get_attr(output, path[1:])
-            except Exception, e:
+            except Exception as e:
                 pass
 
         # TRY A CASE-INSENSITIVE MATCH
@@ -288,7 +288,7 @@ def _get_attr(obj, path):
     try:
         obj = obj[attr_name]
         return _get_attr(obj, path[1:])
-    except Exception, f:
+    except Exception as f:
         return None
 
 
@@ -308,18 +308,18 @@ def _set_attr(obj, path, value):
             new_value = value
         else:
             new_value = old_value.__class__(value)  # TRY TO MAKE INSTANCE OF SAME CLASS
-    except Exception, e:
+    except Exception as e:
         old_value = None
         new_value = value
 
     try:
         setattr(obj, attr_name, new_value)
         return old_value
-    except Exception, e:
+    except Exception as e:
         try:
             obj[attr_name] = new_value
             return old_value
-        except Exception, f:
+        except Exception as f:
             from pyLibrary.debugs.logs import Log
             Log.error(PATH_NOT_FOUND)
 
@@ -358,14 +358,14 @@ def wrap_leaves(value):
 def _wrap_leaves(value):
     if value == None:
         return None
-    if isinstance(value, (basestring, int, float)):
+    if isinstance(value, (str, int, float)):
         return value
     if isinstance(value, Mapping):
         if isinstance(value, Dict):
             value = unwrap(value)
 
         output = {}
-        for key, value in value.iteritems():
+        for key, value in value.items():
             value = _wrap_leaves(value)
 
             if key == "":

@@ -9,7 +9,7 @@ __license__ = "Simplified BSD"
 import datetime
 import calendar
 
-integer_types = (int, long)
+integer_types = (int, int)
 
 __all__ = ["relativedelta", "MO", "TU", "WE", "TH", "FR", "SA", "SU"]
 

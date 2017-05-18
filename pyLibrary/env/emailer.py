@@ -8,9 +8,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 import smtplib
 import sys
@@ -58,7 +58,7 @@ class Emailer:
     def __exit__(self, type, value, traceback):
         try:
             self.server.quit()
-        except Exception, e:
+        except Exception as e:
             Log.warning("Problem with smtp server quit(), ignoring problem", e)
 
         self.server = None
@@ -126,7 +126,7 @@ if sys.hexversion < 0x020603f0:
 
     def _get_socket_fixed(self, host, port, timeout):
         if self.debuglevel > 0:
-            print>> sys.stderr, 'connect:', (host, port)
+            print('connect:', (host, port), file=sys.stderr)
         new_socket = socket.create_connection((host, port), timeout)
         new_socket = ssl.wrap_socket(new_socket, self.keyfile, self.certfile)
         self.file = smtplib.SSLFakeFile(new_socket)

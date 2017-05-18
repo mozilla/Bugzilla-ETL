@@ -16,9 +16,9 @@
 # }}
 
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 import types
 from copy import copy
@@ -85,7 +85,7 @@ def request(method, url, zip=None, retry=None, **kwargs):
                     return response
                 if not remaining:
                     return response
-            except Exception, e:
+            except Exception as e:
                 e = Except.wrap(e)
                 failures.append(e)
         Log.error("Tried {{num}} urls", num=len(url), cause=failures)
@@ -100,7 +100,7 @@ def request(method, url, zip=None, retry=None, **kwargs):
     if zip is None:
         zip = ZIP_REQUEST
 
-    if isinstance(url, unicode):
+    if isinstance(url, str):
         # httplib.py WILL **FREAK OUT** IF IT SEES ANY UNICODE
         url = url.encode("ascii")
 
@@ -133,7 +133,7 @@ def request(method, url, zip=None, retry=None, **kwargs):
             _to_ascii_dict(headers)
         else:
             _to_ascii_dict(headers)
-    except Exception, e:
+    except Exception as e:
         Log.error("Request setup failure on {{url}}", url=url, cause=e)
 
     errors = []
@@ -145,7 +145,7 @@ def request(method, url, zip=None, retry=None, **kwargs):
             if DEBUG:
                 Log.note("http request to {{url}}", url=url)
             return session.request(method=method, url=url, **kwargs)
-        except Exception, e:
+        except Exception as e:
             errors.append(Except.wrap(e))
 
     if " Read timed out." in errors[0]:
@@ -157,14 +157,14 @@ def request(method, url, zip=None, retry=None, **kwargs):
 def _to_ascii_dict(headers):
     if headers is None:
         return
-    for k, v in copy(headers).items():
-        if isinstance(k, unicode):
+    for k, v in list(copy(headers).items()):
+        if isinstance(k, str):
             del headers[k]
-            if isinstance(v, unicode):
+            if isinstance(v, str):
                 headers[k.encode("ascii")] = v.encode("ascii")
             else:
                 headers[k.encode("ascii")] = v
-        elif isinstance(v, unicode):
+        elif isinstance(v, str):
             headers[k] = v.encode("ascii")
 
 
@@ -214,7 +214,7 @@ def post_json(url, **kwargs):
     c = response.content
     try:
         details = convert.json2value(convert.utf82unicode(c))
-    except Exception, e:
+    except Exception as e:
         Log.error("Unexpected return value {{content}}", content=c, cause=e)
 
     if response.status_code != 200:
@@ -283,7 +283,7 @@ class HttpResponse(Response):
                 return ibytes2ilines(icompressed2ibytes(iterator), encoding=encoding)
             else:
                 return ibytes2ilines(iterator, encoding=encoding, closer=self.close)
-        except Exception, e:
+        except Exception as e:
             Log.error("Can not read content", cause=e)
 
 
@@ -324,7 +324,7 @@ class Generator_usingStream(object):
     def __exit__(self, type, value, traceback):
         self.close()
 
-    def next(self):
+    def __next__(self):
         if self.position >= self.shared.length:
             raise StopIteration
 

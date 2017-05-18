@@ -46,7 +46,7 @@ class TestEncryptionMode(GeneralTestEncryptionMode):
         try:
             from aespython.test_keys import TestKeys
         except:
-            from test_keys import TestKeys
+            from .test_keys import TestKeys
 
         test_data = TestKeys()
 

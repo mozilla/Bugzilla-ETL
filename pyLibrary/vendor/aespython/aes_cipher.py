@@ -24,7 +24,7 @@ __author__ = "Adam Newman"
 try:
     from . import aes_tables
 except ValueError:
-    import aes_tables
+    from . import aes_tables
 
 class AESCipher:
     """Perform single block AES cipher/decipher"""
@@ -86,7 +86,7 @@ class AESCipher:
 
     def _add_round_key (self, state, round):
         # XOR the state with the current round key
-        for k, (i, j) in enumerate(zip(state, self._expanded_key[round * 16:(round + 1) * 16])):
+        for k, (i, j) in enumerate(list(zip(state, self._expanded_key[round * 16:(round + 1) * 16]))):
             state[k] = i ^ j
 
     def cipher_block (self, state):
@@ -132,7 +132,7 @@ class TestCipher(unittest.TestCase):
         try:
             from . import test_keys, key_expander
         except:
-            import test_keys, key_expander
+            from . import test_keys, key_expander
 
         test_data = test_keys.TestKeys()
 

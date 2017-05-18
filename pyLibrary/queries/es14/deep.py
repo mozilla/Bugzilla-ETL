@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
 
 from pyLibrary import queries, convert
 from pyLibrary.debugs.logs import Log
@@ -64,7 +64,7 @@ def es_deepop(es, query):
     wheres = split_expression_by_depth(query.where, query.frum, map_to_es_columns)
     for i, f in enumerate(es_filters):
         # PROBLEM IS {"match_all": {}} DOES NOT SURVIVE set_default()
-        for k, v in unwrap(simplify_esfilter(AndOp("and", wheres[i]).to_esfilter())).items():
+        for k, v in list(unwrap(simplify_esfilter(AndOp("and", wheres[i]).to_esfilter())).items()):
             f[k] = v
 
 
@@ -232,7 +232,7 @@ def es_deepop(es, query):
         for t in data.hits.hits:
             for i in t.inner_hits[literal_field(query_path)].hits.hits:
                 t._inner = i._source
-                for k, e in post_expressions.items():
+                for k, e in list(post_expressions.items()):
                     t[k] = e(t)
                 yield t
         if more_filter:
@@ -249,5 +249,5 @@ def es_deepop(es, query):
         output.meta.content_type = mime_type
         output.meta.es_query = es_query
         return output
-    except Exception, e:
+    except Exception as e:
         Log.error("problem formatting", e)

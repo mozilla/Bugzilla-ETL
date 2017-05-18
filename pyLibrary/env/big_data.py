@@ -6,9 +6,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 import gzip
 from io import BytesIO
@@ -62,7 +62,7 @@ class FileString(object):
             self.file.seek(i)
             output = self.file.read(j - i).decode(self.encoding)
             return output
-        except Exception, e:
+        except Exception as e:
             Log.error(
                 "Can not read file slice at {{index}}, with encoding {{encoding}}",
                 index=i,
@@ -137,7 +137,7 @@ def safe_size(source):
                 Log.note("Using file of size {{length}} instead of str()",  length= total_bytes)
 
                 return data
-            except Exception, e:
+            except Exception as e:
                 Log.error("Could not write file > {{num}} bytes",  num= total_bytes, cause=e)
         b = source.read(MIN_READ_SIZE)
 
@@ -177,12 +177,12 @@ class LazyLines(object):
     def __getitem__(self, item):
         try:
             if item == self._next:
-                return self._iter.next()
+                return next(self._iter)
             elif item == self._next - 1:
                 return self._last
             else:
                 Log.error("can not index out-of-order too much")
-        except Exception, e:
+        except Exception as e:
             Log.error("Problem indexing", e)
 
 
@@ -223,14 +223,14 @@ class CompressedLines(LazyLines):
     def __getitem__(self, item):
         try:
             if item == self._next:
-                self._last = self._iter.next()
+                self._last = next(self._iter)
                 self._next += 1
                 return self._last
             elif item == self._next - 1:
                 return self._last
             else:
                 Log.error("can not index out-of-order too much")
-        except Exception, e:
+        except Exception as e:
             Log.error("Problem indexing", e)
 
 
@@ -257,7 +257,7 @@ def compressed_bytes2ibytes(compressed, size):
         try:
             block = compressed[i: i + size]
             yield decompressor.decompress(block)
-        except Exception, e:
+        except Exception as e:
             Log.error("Not expected", e)
 
 
@@ -272,13 +272,13 @@ def ibytes2ilines(generator, encoding="utf8", closer=None):
     :return:
     """
     decode = get_decoder(encoding)
-    _buffer = generator.next()
+    _buffer = next(generator)
     s = 0
     e = _buffer.find(b"\n")
     while True:
         while e == -1:
             try:
-                next_block = generator.next()
+                next_block = next(generator)
                 _buffer = _buffer[s:] + next_block
                 s = 0
                 e = _buffer.find(b"\n")
@@ -358,7 +358,7 @@ def scompressed2ibytes(stream):
                 if not bytes_:
                     return
                 yield bytes_
-        except Exception, e:
+        except Exception as e:
             Log.error("Problem iterating through stream", cause=e)
         finally:
             with suppress_exception:
@@ -379,7 +379,7 @@ def sbytes2ilines(stream, encoding="utf8", closer=None):
                 if not bytes_:
                     return
                 yield bytes_
-        except Exception, e:
+        except Exception as e:
             Log.error("Problem iterating through stream", cause=e)
         finally:
             try:

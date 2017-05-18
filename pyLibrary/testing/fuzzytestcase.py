@@ -57,8 +57,8 @@ class FuzzyTestCase(unittest.TestCase):
         try:
             function(*args, **kwargs)
             Log.error("Expecting an exception to be raised")
-        except Exception, e:
-            if isinstance(problem, basestring):
+        except Exception as e:
+            if isinstance(problem, str):
                 if problem not in e:
                     Log.error("expecting an exception returning {{problem|quote}}", problem=problem)
             elif not isinstance(e, problem):
@@ -72,12 +72,12 @@ def zipall(*args):
 
     def _next(_iter):
         try:
-            return False, _iter.next()
+            return False, next(_iter)
         except:
             return True, None
 
     while True:
-        output = zip(*(_next(a) for a in iters))
+        output = list(zip(*(_next(a) for a in iters)))
         if all(output[0]):
             return
         else:
@@ -93,8 +93,8 @@ def assertAlmostEqual(test, expected, digits=None, places=None, msg=None, delta=
             if test ^ expected:
                 Log.error("Sets do not match")
         elif isinstance(expected, Mapping):
-            for k, v2 in expected.items():
-                if isinstance(k, basestring):
+            for k, v2 in list(expected.items()):
+                if isinstance(k, str):
                     v1 = dot.get_attr(test, literal_field(k))
                 else:
                     show_deta =False
@@ -110,7 +110,7 @@ def assertAlmostEqual(test, expected, digits=None, places=None, msg=None, delta=
                 assertAlmostEqual(a, b, msg=msg, digits=digits, places=places, delta=delta)
         else:
             assertAlmostEqualValue(test, expected, msg=msg, digits=digits, places=places, delta=delta)
-    except Exception, e:
+    except Exception as e:
         Log.error(
             "{{test|json}} does not match expected {{expected|json}}",
             test=test if show_detail else "[can not show]",
@@ -133,7 +133,7 @@ def assertAlmostEqualValue(test, expected, digits=None, places=None, msg=None, d
         # SOME SPECIAL CASES, EXPECTING EMPTY CONTAINERS IS THE SAME AS EXPECTING NULL
         if isinstance(expected, list) and len(expected)==0 and test == None:
             return
-        if isinstance(expected, Mapping) and not expected.keys() and test == None:
+        if isinstance(expected, Mapping) and not list(expected.keys()) and test == None:
             return
         if test != expected:
             raise AssertionError(expand_template("{{test}} != {{expected}}", locals()))

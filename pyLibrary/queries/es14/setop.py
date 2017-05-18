@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 from pyLibrary import queries
 from pyLibrary.collections.matrix import Matrix
@@ -186,13 +186,13 @@ def extract_rows(es, es_query, query):
         output.meta.content_type = mime_type
         output.meta.es_query = es_query
         return output
-    except Exception, e:
+    except Exception as e:
         Log.error("problem formatting", e)
 
 
 def format_list(T, select, query=None):
     data = []
-    if isinstance(query.select, list) or (isinstance(query.select.value, basestring) and query.select.value.endswith("*")):
+    if isinstance(query.select, list) or (isinstance(query.select.value, str) and query.select.value.endswith("*")):
         for row in T:
             r = Dict()
             for s in select:
@@ -255,7 +255,7 @@ def format_cube(T, select, query=None):
             data={h: Matrix(list=[]) for i, h in enumerate(table.header)}
         )
 
-    cols = zip(*unwrap(table.data))
+    cols = list(zip(*unwrap(table.data)))
     return Cube(
         select,
         edges=[{"name": "rownum", "domain": {"type": "rownum", "min": 0, "max": len(table.data), "interval": 1}}],

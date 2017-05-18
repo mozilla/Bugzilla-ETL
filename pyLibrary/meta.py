@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 from collections import Mapping
 from types import FunctionType
 
@@ -30,7 +30,7 @@ def get_class(path):
         output = __import__(".".join(path[0:-1]), globals(), locals(), [path[-1]], 0)
         return _get_attr(output, path[-1:])
         # return output
-    except Exception, e:
+    except Exception as e:
         from pyLibrary.debugs.logs import Log
 
         Log.error("Could not find module {{module|quote}}",  module= ".".join(path))
@@ -54,7 +54,7 @@ def new_instance(settings):
     try:
         temp = __import__(path, globals(), locals(), [class_name], -1)
         constructor = object.__getattribute__(temp, class_name)
-    except Exception, e:
+    except Exception as e:
         Log.error("Can not find class {{class}}", {"class": path}, cause=e)
 
     settings['class'] = None
@@ -63,7 +63,7 @@ def new_instance(settings):
 
     try:
         return constructor(**settings)
-    except Exception, e:
+    except Exception as e:
         Log.error("Can not create instance of {{name}}", name=".".join(path), cause=e)
 
 
@@ -81,7 +81,7 @@ def get_function_by_name(full_name):
         temp = __import__(path, globals(), locals(), [function_name], -1)
         output = object.__getattribute__(temp, function_name)
         return output
-    except Exception, e:
+    except Exception as e:
         Log.error("Can not find function {{name}}",  name= full_name, cause=e)
 
 
@@ -100,38 +100,38 @@ def use_settings(func):
     3) DEFAULT VALUES ASSIGNED IN FUNCTION DEFINITION
     """
 
-    params = func.func_code.co_varnames[:func.func_code.co_argcount]
-    if not func.func_defaults:
+    params = func.__code__.co_varnames[:func.__code__.co_argcount]
+    if not func.__defaults__:
         defaults = {}
     else:
-        defaults = {k: v for k, v in zip(reversed(params), reversed(func.func_defaults))}
+        defaults = {k: v for k, v in zip(reversed(params), reversed(func.__defaults__))}
 
     if "settings" not in params:
         # WE ASSUME WE ARE ONLY ADDING A settings PARAMETER TO SOME REGULAR METHOD
         def w_settings(*args, **kwargs):
             settings = wrap(kwargs).settings
 
-            params = func.func_code.co_varnames[:func.func_code.co_argcount]
-            if not func.func_defaults:
+            params = func.__code__.co_varnames[:func.__code__.co_argcount]
+            if not func.__defaults__:
                 defaults = {}
             else:
-                defaults = {k: v for k, v in zip(reversed(params), reversed(func.func_defaults))}
+                defaults = {k: v for k, v in zip(reversed(params), reversed(func.__defaults__))}
 
-            ordered_params = dict(zip(params, args))
+            ordered_params = dict(list(zip(params, args)))
 
             return func(**params_pack(params, ordered_params, kwargs, settings, defaults))
         return w_settings
 
     def wrapper(*args, **kwargs):
         try:
-            if func.func_name in ("__init__", "__new__") and "settings" in kwargs:
+            if func.__name__ in ("__init__", "__new__") and "settings" in kwargs:
                 packed = params_pack(params, kwargs, dot.zip(params[1:], args[1:]), kwargs["settings"], defaults)
                 return func(args[0], **packed)
-            elif func.func_name in ("__init__", "__new__") and len(args) == 2 and len(kwargs) == 0 and isinstance(args[1], Mapping):
+            elif func.__name__ in ("__init__", "__new__") and len(args) == 2 and len(kwargs) == 0 and isinstance(args[1], Mapping):
                 # ASSUME SECOND UNNAMED PARAM IS settings
                 packed = params_pack(params, args[1], defaults)
                 return func(args[0], **packed)
-            elif func.func_name in ("__init__", "__new__"):
+            elif func.__name__ in ("__init__", "__new__"):
                 # DO NOT INCLUDE self IN SETTINGS
                 packed = params_pack(params, kwargs, dot.zip(params[1:], args[1:]), defaults)
                 return func(args[0], **packed)
@@ -157,13 +157,13 @@ def use_settings(func):
                 # PULL SETTINGS OUT INTO PARAMS
                 packed = params_pack(params, kwargs, dot.zip(params, args), defaults)
                 return func(**packed)
-        except TypeError, e:
+        except TypeError as e:
             if e.message.find("takes at least") >= 0:
                 missing = [p for p in params if str(p) not in packed]
 
                 Log.error(
                     "Problem calling {{func_name}}:  Expecting parameter {{missing}}",
-                    func_name=func.func_name,
+                    func_name=func.__name__,
                     missing=missing,
                     stack_depth=1
                 )
@@ -174,8 +174,8 @@ def use_settings(func):
 def params_pack(params, *args):
     settings = {}
     for a in args:
-        for k, v in a.items():
-            k = unicode(k)
+        for k, v in list(a.items()):
+            k = str(k)
             if k in settings:
                 continue
             settings[k] = v
@@ -222,7 +222,7 @@ class _SimpleCache(object):
 def wrap_function(cache_store, func_):
     attr_name = "_cache_for_" + func_.__name__
 
-    if func_.func_code.co_argcount > 0 and func_.func_code.co_varnames[0] == "self":
+    if func_.__code__.co_argcount > 0 and func_.__code__.co_varnames[0] == "self":
         using_self = True
         func = lambda self, *args: func_(self, *args)
     else:
@@ -240,13 +240,13 @@ def wrap_function(cache_store, func_):
             now = Date.now()
             try:
                 _cache = getattr(self, attr_name)
-            except Exception, _:
+            except Exception as _:
                 _cache = {}
                 setattr(self, attr_name, _cache)
 
             if Random.int(100) == 0:
                 # REMOVE OLD CACHE
-                _cache = {k: v for k, v in _cache.items() if v[0]==None or v[0] > now}
+                _cache = {k: v for k, v in list(_cache.items()) if v[0]==None or v[0] > now}
                 setattr(self, attr_name, _cache)
 
             timeout, key, value, exception = _cache.get(args, (Null, Null, Null, Null))
@@ -264,7 +264,7 @@ def wrap_function(cache_store, func_):
                     with cache_store.locker:
                         _cache[args] = (now + cache_store.timeout, args, value, None)
                     return value
-                except Exception, e:
+                except Exception as e:
                     e = Except.wrap(e)
                     with cache_store.locker:
                         _cache[args] = (now + cache_store.timeout, args, None, e)
@@ -303,10 +303,10 @@ def DataClass(name, columns):
     Each column has {"name", "required", "nulls", "default", "type"} properties
     """
 
-    columns = wrap([{"name": c, "required": True, "nulls": False, "type": object} if isinstance(c, basestring) else c for c in columns])
+    columns = wrap([{"name": c, "required": True, "nulls": False, "type": object} if isinstance(c, str) else c for c in columns])
     slots = columns.name
-    required = wrap(filter(lambda c: c.required and not c.nulls and not c.default, columns)).name
-    nulls = wrap(filter(lambda c: c.nulls, columns)).name
+    required = wrap([c for c in columns if c.required and not c.nulls and not c.default]).name
+    nulls = wrap([c for c in columns if c.nulls]).name
     types = {c.name: coalesce(c.type, object) for c in columns}
 
     code = expand_template("""
@@ -390,7 +390,7 @@ temp = {{name}}
             "len_slots": len(slots),
             "dict": "{" + (", ".join(convert.value2quote(s) + ": self." + s for s in slots)) + "}",
             "assign": "; ".join("_set(output, "+convert.value2quote(s)+", self."+s+")" for s in slots),
-            "types": "{" + (",".join(convert.string2quote(k) + ": " + v.__name__ for k, v in types.items())) + "}"
+            "types": "{" + (",".join(convert.string2quote(k) + ": " + v.__name__ for k, v in list(types.items()))) + "}"
         }
     )
 

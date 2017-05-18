@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 from pyLibrary.collections.matrix import Matrix
 from pyLibrary.collections import AND
@@ -60,7 +60,7 @@ def es_terms(es, mvel, query):
 
     # GETTING ALL PARTS WILL EXPAND THE EDGES' DOMAINS
     # BUT HOW TO UNPACK IT FROM THE term FASTER IS UNKNOWN
-    for k, f in data.facets.items():
+    for k, f in list(data.facets.items()):
         for t in f.terms:
             term2Parts(t.term)
 
@@ -81,13 +81,13 @@ def es_terms(es, mvel, query):
 
     # FILL CUBE
     # EXPECTING ONLY SELECT CLAUSE FACETS
-    for facetName, facet in data.facets.items():
+    for facetName, facet in list(data.facets.items()):
         for term in facet.terms:
             term_coord = term2Parts(term.term).dataIndex
             for s in select:
                 try:
                     output[s.name][term_coord] = term[aggregates[s.aggregate]]
-                except Exception, e:
+                except Exception as e:
                     # USUALLY CAUSED BY output[s.name] NOT BEING BIG ENOUGH TO HANDLE NULL COUNTS
                     pass
     cube = Cube(query.select, query.edges, output)
@@ -124,7 +124,7 @@ def _es_terms2(es, mvel, query):
 
     # UNION ALL TERMS FROM SECOND DIMENSION
     values2 = set()
-    for k, f in data.facets.items():
+    for k, f in list(data.facets.items()):
         values2.update(f.terms.term)
     values2 = jx.sort(values2)
     term2index = {v: i for i, v in enumerate(values2)}
@@ -138,7 +138,7 @@ def _es_terms2(es, mvel, query):
 
     # FILL CUBE
     # EXPECTING ONLY SELECT CLAUSE FACETS
-    for facetName, facet in data.facets.items():
+    for facetName, facet in list(data.facets.items()):
         coord = facetName.split(",")
         s = [s for s in select if s.name == coord[0]][0]
         i1 = int(coord[1])

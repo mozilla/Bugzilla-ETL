@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
 
 from collections import Mapping
 
@@ -49,7 +49,7 @@ class Cube(Container):
 
         # ENSURE frum IS PROPER FORM
         if isinstance(select, list):
-            if edges and OR(not isinstance(v, Matrix) for v in data.values()):
+            if edges and OR(not isinstance(v, Matrix) for v in list(data.values())):
                 Log.error("Expecting data to be a dict with Matrix values")
 
         if not edges:
@@ -61,7 +61,7 @@ class Cube(Container):
                 self.edges = DictList.EMPTY
             elif isinstance(data, Mapping):
                 # EXPECTING NO MORE THAN ONE rownum EDGE IN THE DATA
-                length = MAX([len(v) for v in data.values()])
+                length = MAX([len(v) for v in list(data.values())])
                 if length >= 1:
                     self.edges = wrap([{"name": "rownum", "domain": {"type": "rownum"}}])
                 else:
@@ -95,7 +95,7 @@ class Cube(Container):
         if not self.edges:
             return 1
 
-        return len(self.data.values()[0])
+        return len(list(self.data.values())[0])
 
     def __iter__(self):
         if self.is_value:
@@ -107,7 +107,7 @@ class Cube(Container):
         if len(self.edges) == 1 and wrap(self.edges[0]).domain.type == "index":
             # ITERATE AS LIST OF RECORDS
             keys = list(self.data.keys())
-            output = (dot.zip(keys, r) for r in zip(*self.data.values()))
+            output = (dot.zip(keys, r) for r in zip(*list(self.data.values())))
             return output
 
         Log.error("This is a multicube")
@@ -122,14 +122,14 @@ class Cube(Container):
         # DEFER TO ListContainer
         from pyLibrary.queries.containers.lists import ListContainer
 
-        frum = ListContainer(name="", data=frum.values(), schema=columns)
+        frum = ListContainer(name="", data=list(frum.values()), schema=columns)
         return frum.query(q)
 
     def values(self):
         """
         TRY NOT TO USE THIS, IT IS SLOW
         """
-        matrix = self.data.values()[0]  # CANONICAL REPRESENTATIVE
+        matrix = list(self.data.values())[0]  # CANONICAL REPRESENTATIVE
         e_names = self.edges.name
         s_names = self.select.name
         parts = [e.domain.partitions.value if e.domain.primitive else e.domain.partitions for e in self.edges]
@@ -206,7 +206,7 @@ class Cube(Container):
             coordinates = [None] * len(self.edges)
 
             # MAP DICT TO NUMERIC INDICES
-            for name, v in item.items():
+            for name, v in list(item.items()):
                 ei, parts = wrap([(i, e.domain.partitions) for i, e in enumerate(self.edges) if e.name == name])[0]
                 if not parts:
                     Log.error("Can not find {{name}}=={{value|quote}} in list of edges, maybe this feature is not implemented yet",
@@ -221,15 +221,15 @@ class Cube(Container):
             edges = [e for e, v in zip(self.edges, coordinates) if v is None]
             if not edges:
                 # ZERO DIMENSIONAL VALUE
-                return wrap({k: v.__getitem__(coordinates) for k, v in self.data.items()})
+                return wrap({k: v.__getitem__(coordinates) for k, v in list(self.data.items())})
             else:
                 output = Cube(
                     select=self.select,
                     edges=wrap([e for e, v in zip(self.edges, coordinates) if v is None]),
-                    data={k: Matrix(values=c.__getitem__(coordinates)) for k, c in self.data.items()}
+                    data={k: Matrix(values=c.__getitem__(coordinates)) for k, c in list(self.data.items())}
                 )
                 return output
-        elif isinstance(item, basestring):
+        elif isinstance(item, str):
             # RETURN A VALUE CUBE
             if self.is_value:
                 if item != self.select.name:
@@ -273,7 +273,7 @@ class Cube(Container):
         if not self.is_value:
             Log.error("Not dealing with this case yet")
 
-        matrix = self.data.values()[0]
+        matrix = list(self.data.values())[0]
         parts = [e.domain.partitions for e in self.edges]
         for c in matrix._all_combos():
             method(matrix[c], [parts[i][cc] for i, cc in enumerate(c)], self)
@@ -292,7 +292,7 @@ class Cube(Container):
         if len(self.edges)==1 and self.edges[0].domain.type=="index":
             # USE THE STANDARD LIST FILTER
             from pyLibrary.queries import jx
-            return jx.filter(self.data.values()[0].cube, where)
+            return jx.filter(list(self.data.values())[0].cube, where)
         else:
             # FILTER DOES NOT ALTER DIMESIONS, JUST WHETHER THERE ARE VALUES IN THE CELLS
             Log.unexpected("Incomplete")
@@ -319,16 +319,16 @@ class Cube(Container):
 
         if isinstance(self.select, list):
             selects = listwrap(self.select)
-            index, v = zip(*self.data[selects[0].name].groupby(selector))
+            index, v = list(zip(*self.data[selects[0].name].groupby(selector)))
 
             coord = wrap([coord2term(c) for c in index])
 
             values = [v]
             for s in selects[1::]:
-                i, v = zip(*self.data[s.name].group_by(selector))
+                i, v = list(zip(*self.data[s.name].group_by(selector)))
                 values.append(v)
 
-            output = zip(coord, [Cube(self.select, remainder, {s.name: v[i] for i, s in enumerate(selects)}) for v in zip(*values)])
+            output = list(zip(coord, [Cube(self.select, remainder, {s.name: v[i] for i, s in enumerate(selects)}) for v in zip(*values)]))
         elif not remainder:
             # v IS A VALUE, NO NEED TO WRAP IT IN A Cube
             output = (
@@ -374,16 +374,16 @@ class Cube(Container):
 
         if isinstance(self.select, list):
             selects = listwrap(self.select)
-            index, v = zip(*self.data[selects[0].name].groupby(selector))
+            index, v = list(zip(*self.data[selects[0].name].groupby(selector)))
 
             coord = wrap([coord2term(c) for c in index])
 
             values = [v]
             for s in selects[1::]:
-                i, v = zip(*self.data[s.name].group_by(selector))
+                i, v = list(zip(*self.data[s.name].group_by(selector)))
                 values.append(v)
 
-            output = zip(coord, [Cube(self.select, remainder, {s.name: v[i] for i, s in enumerate(selects)}) for v in zip(*values)])
+            output = list(zip(coord, [Cube(self.select, remainder, {s.name: v[i] for i, s in enumerate(selects)}) for v in zip(*values)]))
         elif not remainder:
             # v IS A VALUE, NO NEED TO WRAP IT IN A Cube
             output = (
@@ -411,9 +411,9 @@ class Cube(Container):
         from pyLibrary.queries import jx
 
         # SET OP
-        canonical = self.data.values()[0]
+        canonical = list(self.data.values())[0]
         accessor = jx.get(window.value)
-        cnames = self.data.keys()
+        cnames = list(self.data.keys())
 
         # ANNOTATE EXISTING CUBE WITH NEW COLUMN
         m = self.data[window.name] = Matrix(dims=canonical.dims)
@@ -460,7 +460,7 @@ class Cube(Container):
         return Dict(
             select=self.select,
             edges=self.edges,
-            data={k: v.cube for k, v in self.data.items()},
+            data={k: v.cube for k, v in list(self.data.items())},
             meta=self.meta
         )
 

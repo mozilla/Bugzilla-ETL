@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
 
 import itertools
 from collections import Mapping
@@ -49,21 +49,21 @@ def jx_expression(expr):
 
     if expr in (True, False, None) or expr == None or isinstance(expr, (float, int, Decimal, Date)):
         return Literal(None, expr)
-    elif isinstance(expr, unicode):
+    elif isinstance(expr, str):
         if is_keyword(expr):
             return Variable(expr)
         else:
             Log.error("expression is not recognized: {{expr}}", expr=expr)
     elif isinstance(expr, (list, tuple)):
-        return TupleOp("tuple", map(jx_expression, expr))  # FORMALIZE
+        return TupleOp("tuple", list(map(jx_expression, expr)))  # FORMALIZE
 
     expr = wrap(expr)
     if expr.date:
         return DateOp("date", expr)
 
     try:
-        items = expr.items()
-    except Exception, e:
+        items = list(expr.items())
+    except Exception as e:
         Log.error("programmer error expr = {{value|quote}}", value=expr, cause=e)
     op, term = items[0]
 
@@ -77,7 +77,7 @@ def jx_expression(expr):
             op, term = item
             class_ = operators.get(op)
             if class_:
-                clauses = {k: jx_expression(v) for k, v in expr.items() if k != op}
+                clauses = {k: jx_expression(v) for k, v in list(expr.items()) if k != op}
                 break
         else:
             raise Log.error("{{operator|quote}} is not a known operator", operator=op)
@@ -93,10 +93,10 @@ def jx_expression(expr):
     elif term == None:
         return class_(op, [], **clauses)
     elif isinstance(term, list):
-        terms = map(jx_expression, term)
+        terms = list(map(jx_expression, term))
         return class_(op, terms, **clauses)
     elif isinstance(term, Mapping):
-        items = term.items()
+        items = list(term.items())
         if class_.has_simple_form:
             if len(items) == 1:
                 k, v = items[0]
@@ -117,7 +117,7 @@ def jx_expression_to_function(expr):
     RETURN FUNCTION THAT REQUIRES PARAMETERS (row, rownum=None, rows=None):
     """
     if isinstance(expr, Expression):
-        if isinstance(expr, ScriptOp) and not isinstance(expr.script, unicode):
+        if isinstance(expr, ScriptOp) and not isinstance(expr.script, str):
             return expr.script
         else:
             return compile_expression(expr.to_python())
@@ -134,7 +134,7 @@ class Expression(object):
             if not all(isinstance(t, Expression) for t in terms):
                 Log.error("Expecting an expression")
         elif isinstance(terms, Mapping):
-            if not all(isinstance(k, Variable) and isinstance(v, Literal) for k, v in terms.items()):
+            if not all(isinstance(k, Variable) and isinstance(v, Literal) for k, v in list(terms.items())):
                 Log.error("Expecting an {<variable>: <literal>}")
         elif terms == None:
             pass
@@ -304,7 +304,7 @@ class RowsOp(Expression):
 
     def to_python(self, not_null=False, boolean=False):
         path = split_field(self.var.to_python(not_null=True))
-        agg = "rows[rownum+" + unicode(self.offset) + "]"
+        agg = "rows[rownum+" + str(self.offset) + "]"
         if not path:
             return agg
 
@@ -377,7 +377,7 @@ class Literal(Expression):
         Expression.__init__(self, "", None)
         self.json = convert.value2json(term)
 
-    def __nonzero__(self):
+    def __bool__(self):
         return True
 
     def __eq__(self, other):
@@ -407,12 +407,12 @@ class Literal(Expression):
                 return "true"
             if v is False:
                 return "false"
-            if isinstance(v, basestring):
+            if isinstance(v, str):
                 return convert.string2quote(v)
-            if isinstance(v, (int, long, float)):
-                return unicode(v)
+            if isinstance(v, (int, float)):
+                return str(v)
             if isinstance(v, dict):
-                return "[" + ", ".join(convert.string2quote(k) + ": " + _convert(vv) for k, vv in v.items()) + "]"
+                return "[" + ", ".join(convert.string2quote(k) + ": " + _convert(vv) for k, vv in list(v.items())) + "]"
             if isinstance(v, list):
                 return "[" + ", ".join(_convert(vv) for vv in v) + "]"
 
@@ -458,7 +458,7 @@ class NullOp(Literal):
     def __init__(self, op=None, term=None):
         Literal.__init__(self, op, None)
 
-    def __nonzero__(self):
+    def __bool__(self):
         return False
 
     def __eq__(self, other):
@@ -508,7 +508,7 @@ class TrueOp(Literal):
     def __init__(self, op=None, term=None):
         Literal.__init__(self, op, True)
 
-    def __nonzero__(self):
+    def __bool__(self):
         return True
 
     def __eq__(self, other):
@@ -561,7 +561,7 @@ class FalseOp(Literal):
     def __init__(self, op=None, term=None):
         Literal.__init__(self, op, False)
 
-    def __nonzero__(self):
+    def __bool__(self):
         return False
 
     def __eq__(self, other):
@@ -616,7 +616,7 @@ class DateOp(Literal):
         return "Date("+convert.string2quote(self.value)+")"
 
     def to_sql(self, not_null=False, boolean=False):
-        return sql_quote(unicode(self.value.unix))
+        return sql_quote(str(self.value.unix))
 
     def to_esfilter(self):
         return convert.json2value(self.json)
@@ -882,7 +882,7 @@ class EqOp(Expression):
         if isinstance(terms, list):
             return object.__new__(cls, op, terms)
 
-        items = terms.items()
+        items = list(terms.items())
         if len(items) == 1:
             if isinstance(items[0][1], list):
                 return InOp("in", items[0])
@@ -944,7 +944,7 @@ class NeOp(Expression):
         if isinstance(terms, (list, tuple)):
             self.lhs, self.rhs = terms
         elif isinstance(terms, Mapping):
-            self.rhs, self.lhs = terms.items()[0]
+            self.rhs, self.lhs = list(terms.items())[0]
         else:
             Log.error("logic error")
 
@@ -1505,7 +1505,7 @@ class PrefixOp(Expression):
     def __init__(self, op, term):
         Expression.__init__(self, op, term)
         if isinstance(term, Mapping):
-            self.field, self.prefix = term.items()[0]
+            self.field, self.prefix = list(term.items())[0]
         else:
             self.field, self.prefix = term
 
@@ -1543,7 +1543,7 @@ class LeftOp(Expression):
     def __init__(self, op, term):
         Expression.__init__(self, op, term)
         if isinstance(term, Mapping):
-            self.value, self.length = term.items()[0]
+            self.value, self.length = list(term.items())[0]
         else:
             self.value, self.length = term
 
@@ -1591,7 +1591,7 @@ class NotLeftOp(Expression):
     def __init__(self, op, term):
         Expression.__init__(self, op, term)
         if isinstance(term, Mapping):
-            self.value, self.length = term.items()[0]
+            self.value, self.length = list(term.items())[0]
         else:
             self.value, self.length = term
 
@@ -1634,7 +1634,7 @@ class RightOp(Expression):
     def __init__(self, op, term):
         Expression.__init__(self, op, term)
         if isinstance(term, Mapping):
-            self.value, self.length = term.items()[0]
+            self.value, self.length = list(term.items())[0]
         else:
             self.value, self.length = term
 
@@ -1676,7 +1676,7 @@ class NotRightOp(Expression):
     def __init__(self, op, term):
         Expression.__init__(self, op, term)
         if isinstance(term, Mapping):
-            self.value, self.length = term.items()[0]
+            self.value, self.length = list(term.items())[0]
         else:
             self.value, self.length = term
 
@@ -1760,7 +1760,7 @@ class RangeOp(Expression):
     def __new__(cls, op, term, *args):
         Expression.__new__(cls, *args)
         field, comparisons = term  # comparisons IS A Literal()
-        return AndOp("and", [operators[op](op, [field, Literal(None, value)]) for op, value in convert.json2value(comparisons.json).items()])
+        return AndOp("and", [operators[op](op, [field, Literal(None, value)]) for op, value in list(convert.json2value(comparisons.json).items())])
 
     def __init__(self, op, term):
         Log.error("Should never happen!")
@@ -1876,7 +1876,7 @@ def simplify_esfilter(esfilter):
 
         output.isNormal = None
         return output
-    except Exception, e:
+    except Exception as e:
         from pyLibrary.debugs.logs import Log
 
         Log.unexpected("programmer error", cause=e)
@@ -1923,8 +1923,8 @@ def _normalize(esfilter):
                 if i0 >= i1:
                     continue  # SAME, IGNORE
                 with suppress_exception:
-                    f0, tt0 = t0.range.items()[0]
-                    f1, tt1 = t1.range.items()[0]
+                    f0, tt0 = list(t0.range.items())[0]
+                    f1, tt1 = list(t1.range.items())[0]
                     if f0 == f1:
                         set_default(terms[i0].range[literal_field(f1)], tt1)
                         terms[i1] = True
@@ -1994,14 +1994,14 @@ def _normalize(esfilter):
             continue
 
         if esfilter.term != None:
-            if esfilter.term.keys():
+            if list(esfilter.term.keys()):
                 esfilter.isNormal = True
                 return esfilter
             else:
                 return TRUE_FILTER
 
         if esfilter.terms != None:
-            for k, v in esfilter.terms.items():
+            for k, v in list(esfilter.terms.items()):
                 if len(v) > 0:
                     if OR(vv == None for vv in v):
                         rest = [vv for vv in v if vv != None]
@@ -2131,7 +2131,7 @@ def sql_quote(value):
         return "0"
     elif value is False:
         return "1"
-    elif isinstance(value, unicode):
+    elif isinstance(value, str):
         return "'" + value.replace("'", "''") + "'"
     else:
-        return unicode(value)
+        return str(value)

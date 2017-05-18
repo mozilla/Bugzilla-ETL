@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 from collections import Mapping
 from pyLibrary import dot
 from pyLibrary.collections import SUM
@@ -58,7 +58,7 @@ class Dimension(Container):
             return  # NO FIELDS TO SEARCH
         elif isinstance(fields, Mapping):
             self.fields = wrap(fields)
-            edges = wrap([{"name": k, "value": v, "allowNulls": False} for k, v in self.fields.items()])
+            edges = wrap([{"name": k, "value": v, "allowNulls": False} for k, v in list(self.fields.items())])
         else:
             self.fields = listwrap(fields)
             edges = wrap([{"name": f, "value": f, "index": i, "allowNulls": False} for i, f in enumerate(self.fields)])
@@ -132,7 +132,7 @@ class Dimension(Container):
             d2 = parts.edges[1].domain
 
             # SIMPLE LIST OF PARTS RETURNED, BE SURE TO INTERRELATE THEM
-            array = parts.data.values()[0].cube  # DIG DEEP INTO RESULT (ASSUME SINGLE VALUE CUBE, WITH NULL AT END)
+            array = list(parts.data.values())[0].cube  # DIG DEEP INTO RESULT (ASSUME SINGLE VALUE CUBE, WITH NULL AT END)
 
             def edges2value(*values):
                 if isinstance(fields, Mapping):
@@ -247,7 +247,7 @@ class Dimension(Container):
                             "style":coalesce(subpart.style, subpart.parent.style),
                             "weight":subpart.weight   # YO!  WHAT DO WE *NOT* COPY?
                         })
-                except Exception, e:
+                except Exception as e:
                     Log.error("", e)
         else:
             Log.error("deeper than 2 is not supported yet")

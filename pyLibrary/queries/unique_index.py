@@ -8,9 +8,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 from collections import Mapping, Iterable
 from sets import BaseSet
@@ -49,11 +49,11 @@ class UniqueIndex(BaseSet, Mapping):
             else:
                 output = wrap([
                     d
-                    for d in self._data.values()
-                    if all(wrap(d)[k] == v for k, v in _key.items())
+                    for d in list(self._data.values())
+                    if all(wrap(d)[k] == v for k, v in list(_key.items()))
                 ])
                 return output
-        except Exception, e:
+        except Exception as e:
             Log.error("something went wrong", e)
 
     def __setitem__(self, key, value):
@@ -70,10 +70,10 @@ class UniqueIndex(BaseSet, Mapping):
         #     Log.error("something went wrong", e)
 
     def keys(self):
-        return self._data.keys()
+        return list(self._data.keys())
 
     def pop(self):
-        output = self._data.iteritems().next()[1]
+        output = iter(self._data.items()).next()[1]
         self.remove(output)
         return wrap(output)
 
@@ -118,7 +118,7 @@ class UniqueIndex(BaseSet, Mapping):
         return self[key] != None
 
     def __iter__(self):
-        return (wrap(v) for v in self._data.itervalues())
+        return (wrap(v) for v in self._data.values())
 
     def __sub__(self, other):
         output = UniqueIndex(self._keys, fail_on_dup=self.fail_on_dup)
@@ -181,6 +181,6 @@ def value2key(keys, val):
         if isinstance(val, Mapping):
             return dictwrap({k: val[k] for k in keys})
         elif isinstance(val, (list, tuple)):
-            return dictwrap(dict(zip(keys, val)))
+            return dictwrap(dict(list(zip(keys, val))))
         else:
             Log.error("do not know what to do here")

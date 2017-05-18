@@ -8,9 +8,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
 
 from collections import Mapping
 from copy import copy
@@ -42,7 +42,7 @@ class Index(object):
 
             key = value2key(self._keys, key)
             return wrap(copy(self._data.get(key, [])))
-        except Exception, e:
+        except Exception as e:
             Log.error("something went wrong", e)
 
     def __setitem__(self, key, value):
@@ -75,7 +75,7 @@ class Index(object):
                 for k in key[:length]:
                     try:
                         d = d[k]
-                    except Exception, e:
+                    except Exception as e:
                         return False
                 return True
 
@@ -84,17 +84,17 @@ class Index(object):
             for k in key:
                 try:
                     d = d[k]
-                except Exception, e:
+                except Exception as e:
                     return False
             return True
-        except Exception, e:
+        except Exception as e:
             Log.error("something went wrong", e)
 
 
 
 
-    def __nonzero__(self):
-        if self._data.keys():
+    def __bool__(self):
+        if list(self._data.keys()):
             return True
         else:
             return False
@@ -106,7 +106,7 @@ class Index(object):
                     yield wrap(v)
                 return
 
-            for v in data.values():
+            for v in list(data.values()):
                 for v1 in iter(v, depth - 1):
                     yield wrap(v1)
 

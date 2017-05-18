@@ -7,13 +7,13 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import absolute_import
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
 
-import HTMLParser
-import StringIO
+
+
+
+
+import html.parser
+import io
 import ast
 import base64
 import cgi
@@ -49,7 +49,7 @@ def value2json(obj, pretty=False, sort_keys=False):
             Log.note(str(type(obj)) + " is not valid{{type}}JSON",  type= " (pretty) " if pretty else " ")
             Log.error("Not valid JSON: " + str(obj) + " of type " + str(type(obj)))
         return json
-    except Exception, e:
+    except Exception as e:
         e = Except.wrap(e)
         with suppress_exception:
             json = pypy_json_encode(obj)
@@ -112,8 +112,8 @@ def json2value(json_string, params={}, flexible=False, leaves=False):
             json_string = expand_template(json_string, params)
 
         try:
-            value = wrap(json_decoder(unicode(json_string)))
-        except Exception, e:
+            value = wrap(json_decoder(str(json_string)))
+        except Exception as e:
             Log.error("can not decode\n{{content}}", content=json_string, cause=e)
 
         if leaves:
@@ -121,7 +121,7 @@ def json2value(json_string, params={}, flexible=False, leaves=False):
 
         return value
 
-    except Exception, e:
+    except Exception as e:
         e = Except.wrap(e)
 
         if not json_string.strip():
@@ -147,7 +147,7 @@ def json2value(json_string, params={}, flexible=False, leaves=False):
         hexx_str = bytes2hex(base_str, " ")
         try:
             char_str = " " + "  ".join((c.decode("latin1") if ord(c) >= 32 else ".") for c in base_str)
-        except Exception, e:
+        except Exception as e:
             char_str = " "
         Log.error("Can not decode JSON:\n" + char_str + "\n" + hexx_str + "\n", e)
 
@@ -163,7 +163,7 @@ def str2datetime(value, format=None):
 def datetime2string(value, format="%Y-%m-%d %H:%M:%S"):
     try:
         return value.strftime(format)
-    except Exception, e:
+    except Exception as e:
         from pyLibrary.debugs.logs import Log
 
         Log.error("Can not format {{value}} with {{format}}", value=value, format=format, cause=e)
@@ -185,8 +185,8 @@ def datetime2unix(d):
             Log.error("Can not convert {{value}} of type {{type}}",  value= d,  type= d.__class__)
 
         diff = d - epoch
-        return Decimal(long(diff.total_seconds() * 1000000)) / 1000000
-    except Exception, e:
+        return Decimal(int(diff.total_seconds() * 1000000)) / 1000000
+    except Exception as e:
         Log.error("Can not convert {{value}}",  value= d, cause=e)
 
 
@@ -205,7 +205,7 @@ def unix2datetime(u):
         if u == 9999999999: # PYPY BUG https://bugs.pypy.org/issue1697
             return datetime.datetime(2286, 11, 20, 17, 46, 39)
         return datetime.datetime.utcfromtimestamp(u)
-    except Exception, e:
+    except Exception as e:
         Log.error("Can not convert {{value}} to datetime",  value= u, cause=e)
 
 
@@ -237,7 +237,7 @@ def table2list(
     column_names, # tuple of columns names
     rows          # list of tuples
 ):
-    return wrap([dict(zip(column_names, r)) for r in rows])
+    return wrap([dict(list(zip(column_names, r))) for r in rows])
 
 def table2tab(
     column_names, # tuple of columns names
@@ -313,12 +313,12 @@ def value2string(value):
     # PROPER NULL HANDLING
     if value == None:
         return None
-    return unicode(value)
+    return str(value)
 
 
 def value2quote(value):
     # RETURN PRETTY PYTHON CODE FOR THE SAME
-    if isinstance(value, basestring):
+    if isinstance(value, str):
         return string2quote(value)
     else:
         return repr(value)
@@ -334,7 +334,7 @@ string2regexp = re.escape
 
 
 def string2url(value):
-    if isinstance(value, unicode):
+    if isinstance(value, str):
         return "".join([_map2url[c] for c in unicode2latin1(value)])
     elif isinstance(value, str):
         return "".join([_map2url[c] for c in value])
@@ -347,15 +347,15 @@ def value2url(value):
         Log.error("")
 
     if isinstance(value, Mapping):
-        output = "&".join([value2url(k) + "=" + (value2url(v) if isinstance(v, basestring) else value2url(value2json(v))) for k,v in value.items()])
-    elif isinstance(value, unicode):
+        output = "&".join([value2url(k) + "=" + (value2url(v) if isinstance(v, str) else value2url(value2json(v))) for k,v in list(value.items())])
+    elif isinstance(value, str):
         output = "".join([_map2url[c] for c in unicode2latin1(value)])
     elif isinstance(value, str):
         output = "".join([_map2url[c] for c in value])
     elif hasattr(value, "__iter__"):
         output = ",".join(value2url(v) for v in value)
     else:
-        output = unicode(value)
+        output = str(value)
     return output
 
 
@@ -363,7 +363,7 @@ def url_param2value(param):
     """
     CONVERT URL QUERY PARAMETERS INTO DICT
     """
-    if isinstance(param, unicode):
+    if isinstance(param, str):
         param = param.encode("ascii")
 
     def _decode(v):
@@ -411,7 +411,7 @@ def url_param2value(param):
 
 def html2unicode(value):
     # http://stackoverflow.com/questions/57708/convert-xml-html-entities-into-unicode-string-in-python
-    return HTMLParser.HTMLParser().unescape(value)
+    return html.parser.HTMLParser().unescape(value)
 
 
 def unicode2html(value):
@@ -435,7 +435,7 @@ def value2code(value):
 
 
 def DataFrame2string(df, columns=None):
-    output = StringIO.StringIO()
+    output = io.StringIO()
     try:
         df.to_csv(output, sep="\t", header=True, cols=columns, engine='python')
         return output.getvalue()
@@ -484,7 +484,7 @@ def bytes2base64(value):
 
 
 def bytes2sha1(value):
-    if isinstance(value, unicode):
+    if isinstance(value, str):
         Log.error("can not convert unicode to sha1")
     sha = hashlib.sha1(value)
     return sha.hexdigest()
@@ -518,7 +518,7 @@ def value2number(v):
     except Exception:
         try:
             return float(v)
-        except Exception, e:
+        except Exception as e:
             Log.error("Not a number ({{value}})",  value= v, cause=e)
 
 
@@ -531,11 +531,11 @@ def unicode2utf8(value):
 
 
 def latin12unicode(value):
-    if isinstance(value, unicode):
+    if isinstance(value, str):
         Log.error("can not convert unicode from latin1")
     try:
-        return unicode(value.decode('iso-8859-1'))
-    except Exception, e:
+        return str(value.decode('iso-8859-1'))
+    except Exception as e:
         Log.error("Can not convert {{value|quote}} to unicode", value=value)
 
 
@@ -593,9 +593,9 @@ def ini2value(ini_content):
     """
     INI FILE CONTENT TO Dict
     """
-    from ConfigParser import ConfigParser
+    from configparser import ConfigParser
 
-    buff = StringIO.StringIO(ini_content)
+    buff = io.StringIO(ini_content)
     config = ConfigParser()
     config._read(buff, "dummy")
 
@@ -662,7 +662,7 @@ def json_schema_to_markdown(schema):
 
     def _inner(schema, parent_name, indent):
         more_lines = []
-        for k,v in schema.items():
+        for k,v in list(schema.items()):
             full_name = join_field(split_field(parent_name)+[k])
             details = indent+"* "+_md_code(full_name)
             if v.type:
@@ -684,7 +684,7 @@ def json_schema_to_markdown(schema):
     lines.append(schema.description)
     lines.append("")
 
-    for k, v in jx.sort(schema.properties.items(), 0):
+    for k, v in jx.sort(list(schema.properties.items()), 0):
         full_name = k
         if v.type in ["object", "array", "nested"]:
             lines.append("##"+_md_code(full_name)+" Property")

@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 from collections import Mapping
 
 from pyLibrary.collections.matrix import Matrix
@@ -64,7 +64,7 @@ def es_fieldop(es, query):
         elif isinstance(s, list):
             FromES.fields.extend(s)
         elif isinstance(s, Mapping):
-            FromES.fields.extend(s.values())
+            FromES.fields.extend(list(s.values()))
         else:
             FromES.fields.append(s)
     FromES.sort = [{s.field: "asc" if s.sort >= 0 else "desc"} for s in query.sort]
@@ -79,7 +79,7 @@ def es_fieldop(es, query):
         elif isinstance(s.value, Mapping):
             # for k, v in s.value.items():
             #     matricies[join_field(split_field(s.name)+[k])] = Matrix.wrap([unwrap(t.fields)[v] for t in T])
-            matricies[s.name] = Matrix.wrap([{k: unwrap(t.fields).get(v, None) for k, v in s.value.items()}for t in T])
+            matricies[s.name] = Matrix.wrap([{k: unwrap(t.fields).get(v, None) for k, v in list(s.value.items())}for t in T])
         elif isinstance(s.value, list):
             matricies[s.name] = Matrix.wrap([tuple(unwrap(t.fields).get(ss, None) for ss in s.value) for t in T])
         elif not s.value:
@@ -87,7 +87,7 @@ def es_fieldop(es, query):
         else:
             try:
                 matricies[s.name] = Matrix.wrap([unwrap(t.fields).get(s.value, None) for t in T])
-            except Exception, e:
+            except Exception as e:
                 Log.error("", e)
 
     cube = Cube(query.select, query.edges, matricies, frum=query)
@@ -172,7 +172,7 @@ def es_setop(es, mvel, query):
         if not data_list:
             cube = Cube(select, [], {s.name: Matrix.wrap([]) for s in select})
         else:
-            output = zip(*data_list)
+            output = list(zip(*data_list))
             cube = Cube(select, [], {s.name: Matrix(list=output[i]) for i, s in enumerate(select)})
 
     return Dict(
@@ -218,7 +218,7 @@ def es_deepop(es, mvel, query):
     data = es09.util.post(es, FromES, query.limit)
 
     rows = unpack_terms(data.facets.mvel, query.edges)
-    terms = zip(*rows)
+    terms = list(zip(*rows))
 
     # NUMBER ALL EDGES FOR JSON EXPRESSION INDEXING
     edges = query.edges

@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
 
 import itertools
 from copy import copy
@@ -120,19 +120,19 @@ class FromESMetadata(Schema):
             metadata = self.default_es.get_metadata(force=True)
 
         def parse_all(please_stop):
-            for abs_index, meta in jx.sort(metadata.indices.items(), {"value": 0, "sort": -1}):
+            for abs_index, meta in jx.sort(list(metadata.indices.items()), {"value": 0, "sort": -1}):
                 if meta.index != abs_index:
                     continue
 
-                for _, properties in meta.mappings.items():
+                for _, properties in list(meta.mappings.items()):
                     if please_stop:
                         return
                     self._parse_properties(abs_index, properties, meta)
 
         if table:
-            for abs_index, meta in jx.sort(metadata.indices.items(), {"value": 0, "sort": -1}):
+            for abs_index, meta in jx.sort(list(metadata.indices.items()), {"value": 0, "sort": -1}):
                 if table == meta.index:
-                    for _, properties in meta.mappings.items():
+                    for _, properties in list(meta.mappings.items()):
                         self._parse_properties(abs_index, properties, meta)
                     return
                 if table == abs_index:
@@ -250,7 +250,7 @@ class FromESMetadata(Schema):
                     return columns
                 elif all(columns.get("last_updated")):
                     return columns
-        except Exception, e:
+        except Exception as e:
             Log.error("Not expected", cause=e)
 
         if fail_when_not_found:
@@ -302,7 +302,7 @@ class FromESMetadata(Schema):
                 "aggs": {c.name: _counting_query(c)},
                 "size": 0
             })
-            r = result.aggregations.values()[0]
+            r = list(result.aggregations.values())[0]
             count = result.hits.total
             cardinality = coalesce(r.value, r._nested.value, 0 if r.doc_count==0 else None)
             if cardinality == None:
@@ -345,7 +345,7 @@ class FromESMetadata(Schema):
 
             result = self.default_es.post("/"+es_index+"/_search", data=query)
 
-            aggs = result.aggregations.values()[0]
+            aggs = list(result.aggregations.values())[0]
             if aggs._nested:
                 parts = jx.sort(aggs._nested.buckets.key)
             else:
@@ -362,7 +362,7 @@ class FromESMetadata(Schema):
                     },
                     "where": {"eq": {"es_index": c.es_index, "es_column": c.es_column}}
                 })
-        except Exception, e:
+        except Exception as e:
             if "IndexMissingException" in e and c.table.startswith(TEST_TABLE_PREFIX):
                 with self.meta.columns.locker:
                     self.meta.columns.update({
@@ -396,10 +396,7 @@ class FromESMetadata(Schema):
             try:
                 if not self.todo:
                     with self.meta.columns.locker:
-                        old_columns = filter(
-                            lambda c: (c.last_updated == None or c.last_updated < Date.now()-TOO_OLD) and c.type not in ["object", "nested"],
-                            self.meta.columns
-                        )
+                        old_columns = [c for c in self.meta.columns if (c.last_updated == None or c.last_updated < Date.now()-TOO_OLD) and c.type not in ["object", "nested"]]
                         if old_columns:
                             Log.note("Old columns wth dates {{dates|json}}", dates=wrap(old_columns).last_updated)
                             self.todo.extend(old_columns)
@@ -423,9 +420,9 @@ class FromESMetadata(Schema):
                         self._update_cardinality(column)
                         if DEBUG and not column.table.startswith(TEST_TABLE_PREFIX):
                             Log.note("updated {{column.name}}", column=column)
-                    except Exception, e:
+                    except Exception as e:
                         Log.warning("problem getting cardinality for {{column.name}}", column=column, cause=e)
-            except Exception, e:
+            except Exception as e:
                 Log.warning("problem in cardinality monitor", cause=e)
 
     def not_monitor(self, please_stop):

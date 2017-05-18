@@ -28,7 +28,7 @@ def make_test_instance(db_settings):
             Log.note("Fill {{schema}} schema with data", {"schema":db_settings.schema})
             MySQL.execute_file(filename=db_settings.filename, settings=db_settings)
 
-        except Exception, e:
+        except Exception as e:
             Log.error("Can not setup test database", e)
 
 
@@ -90,12 +90,12 @@ def diff(db, table, old_record, new_record):
     """
     now = milli2string(db, convert.datetime2milli(get_current_time(db)))
     changed = set(old_record.keys()) ^ set(new_record.keys())
-    changed |= set([k for k, v in old_record.items() if v != new_record[k]])
+    changed |= set([k for k, v in list(old_record.items()) if v != new_record[k]])
 
-    if table != u"bugs":
-        prefix = table + u"."
+    if table != "bugs":
+        prefix = table + "."
     else:
-        prefix = u""
+        prefix = ""
 
     for c in changed:
         fieldid=db.query("SELECT id FROM fielddefs WHERE name={{field_name}}", {"field_name": prefix + c})[0].id

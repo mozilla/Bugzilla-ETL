@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
 
 import itertools
 
@@ -90,7 +90,7 @@ def list_aggs(frum, query):
         # if s.aggregate == "count":
         #     continue
         m = result[s.name]
-        for c, var in m.items():
+        for c, var in list(m.items()):
             if var != None:
                 m[c] = var.end()
 

@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 from collections import Mapping
 
@@ -52,7 +52,7 @@ class Typed(Namespace):
         elif is_keyword(expr):
             #TODO: LOOKUP SCHEMA AND ADD ALL COLUMNS WITH THIS PREFIX
             return expr + ".$value"
-        elif isinstance(expr, basestring):
+        elif isinstance(expr, str):
             Log.error("{{name|quote}} is not a valid variable name", name=expr)
         elif isinstance(expr, Date):
             return expr
@@ -63,10 +63,10 @@ class Typed(Namespace):
                 return self._convert_query(expr)
             elif len(expr) >= 2:
                 #ASSUME WE HAVE A NAMED STRUCTURE, NOT AN EXPRESSION
-                return wrap({name: self.convert(value) for name, value in expr.items()})
+                return wrap({name: self.convert(value) for name, value in list(expr.items())})
             else:
                 # ASSUME SINGLE-CLAUSE EXPRESSION
-                k, v = expr.items()[0]
+                k, v = list(expr.items())[0]
                 return self.converter_map.get(k, self._convert_bop)(k, v)
         elif isinstance(expr, (list, set, tuple)):
             return wrap([self.convert(value) for value in expr])
@@ -107,11 +107,11 @@ class Typed(Namespace):
         raise NotImplementedError()
 
     def _convert_many(self, k, v):
-        return {k: map(self.convert, v)}
+        return {k: list(map(self.convert, v))}
 
     def _convert_bop(self, op, term):
         if isinstance(term, list):
-            return {op: map(self.convert, term)}
+            return {op: list(map(self.convert, term))}
 
-        return {op: {var: val for var, val in term.items()}}
+        return {op: {var: val for var, val in list(term.items())}}
 

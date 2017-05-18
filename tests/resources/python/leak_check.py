@@ -1,8 +1,8 @@
 # encoding: utf-8
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
 
 import unittest
 
@@ -92,14 +92,14 @@ class TestLookForLeaks(unittest.TestCase):
             private_ids = {b.bug_id: b.bug_group for b in results}
 
             Log.note("Ensure {{num}} bugs did not leak", {
-                "num": len(private_ids.keys())
+                "num": len(list(private_ids.keys()))
             })
 
             # VERIFY NONE IN PUBLIC
             leaked_bugs = get(
                 self.public,
                 {"and": [
-                    {"terms": {"bug_id": private_ids.keys()}},
+                    {"terms": {"bug_id": list(private_ids.keys())}},
                     {"range": {"expires_on": {"gte": NOW}}} # SOME BUGS WILL LEAK FOR A LITTLE WHILE
                 ]}
             )
@@ -128,7 +128,7 @@ class TestLookForLeaks(unittest.TestCase):
             #CHECK FOR LEAKED COMMENTS
             leaked_comments = get(
                 self.public_comments,
-                {"terms": {"bug_id": private_ids.keys()}},
+                {"terms": {"bug_id": list(private_ids.keys())}},
                 limit=20
             )
             if leaked_comments:
@@ -327,16 +327,16 @@ def main():
 
         if results.errors or results.failures:
             error(results)
-    except Exception, e:
+    except Exception as e:
         Log.error("Problem", cause=e)
 
 
 def error(results):
     content = []
     for e in results.errors:
-        content.append("ERROR: "+unicode(e[0]._testMethodName))
+        content.append("ERROR: "+str(e[0]._testMethodName))
     for f in results.failures:
-        content.append("FAIL:  "+unicode(f[0]._testMethodName))
+        content.append("FAIL:  "+str(f[0]._testMethodName))
 
     Emailer(SETTINGS.email).send_email(
         text_data = "\n".join(content)

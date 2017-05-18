@@ -8,9 +8,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
 
 import itertools
 import math
@@ -47,7 +47,7 @@ def groupby(data, keys=None, size=None, min_size=None, max_size=None, contiguous
             data = sorted(data, key=get_key)
 
         return ((wrap({k: v for k, v in zip(keys, g)}), wrap(v)) for g, v in itertools.groupby(data, get_key))
-    except Exception, e:
+    except Exception as e:
         Log.error("Problem grouping", e)
 
 
@@ -64,7 +64,7 @@ def groupby_size(data, size):
         output = DictList()
         for i in range(size):
             try:
-                output.append(iterator.next())
+                output.append(next(iterator))
             except StopIteration:
                 done.append(True)
                 break
@@ -88,7 +88,7 @@ def groupby_Multiset(data, min_size, max_size):
     total = 0
     i = 0
     g = list()
-    for k, c in data.items():
+    for k, c in list(data.items()):
         if total < min_size or total + c < max_size:
             total += c
             g.append(k)
@@ -111,9 +111,9 @@ def groupby_Multiset(data, min_size, max_size):
 
 def groupby_min_max_size(data, min_size=0, max_size=None, ):
     if max_size == None:
-        max_size = sys.maxint
+        max_size = sys.maxsize
 
-    if isinstance(data, (bytearray, basestring, list)):
+    if isinstance(data, (bytearray, str, list)):
         def _iter():
             num = int(math.ceil(len(data)/max_size))
             for i in range(num):
@@ -135,7 +135,7 @@ def groupby_min_max_size(data, min_size=0, max_size=None, ):
                         out = DictList()
                 if out:
                     yield g, out
-            except Exception, e:
+            except Exception as e:
                 if out:
                     # AT LEAST TRY TO RETURN WHAT HAS BEEN PROCESSED SO FAR
                     yield g, out

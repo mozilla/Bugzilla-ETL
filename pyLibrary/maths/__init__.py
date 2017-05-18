@@ -7,11 +7,11 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
 
-import __builtin__
+
+
+
+import builtins
 import math
 
 from pyLibrary.dot import Null, coalesce
@@ -79,7 +79,7 @@ class Math(object):
             if base == None:
                 return math.log(v)
             return math.log(v, base)
-        except Exception, e:
+        except Exception as e:
             from pyLibrary.debugs.logs import Log
             Log.error("error in log")
 
@@ -88,7 +88,7 @@ class Math(object):
     def log10(v):
         try:
             return math.log(v, 10)
-        except Exception, e:
+        except Exception as e:
             return Null
 
     # FOR GOODNESS SAKE - IF YOU PROVIDE A METHOD abs(), PLEASE PROVIDE ITS COMPLEMENT
@@ -165,25 +165,25 @@ class Math(object):
         if digits != None:
             if digits <= 0:
                 if value == 0:
-                    return int(__builtin__.round(value, digits))
+                    return int(builtins.round(value, digits))
                 try:
                     m = pow(10, math.ceil(math.log10(abs(value))))
-                    return int(__builtin__.round(value / m, digits) * m)
-                except Exception, e:
+                    return int(builtins.round(value / m, digits) * m)
+                except Exception as e:
                     from pyLibrary.debugs.logs import Log
 
                     Log.error("not expected", e)
             else:
                 if value == 0:
-                    return __builtin__.round(value, digits)
+                    return builtins.round(value, digits)
                 try:
                     m = pow(10, math.ceil(math.log10(abs(value))))
-                    return __builtin__.round(value / m, digits) * m
-                except Exception, e:
+                    return builtins.round(value / m, digits) * m
+                except Exception as e:
                     from pyLibrary.debugs.logs import Log
                     Log.error("not expected", e)
 
-        return __builtin__.round(value, decimal)
+        return builtins.round(value, decimal)
 
 
     @staticmethod
@@ -225,7 +225,7 @@ class Math(object):
     # RETURN A VALUE CLOSE TO value, BUT WITH SHORTER len(unicode(value))<len(unicode(value)):
     @staticmethod
     def approx_str(value):
-        v = unicode(value)
+        v = str(value)
         d = v.find(".")
         if d == -1:
             return value
@@ -330,7 +330,7 @@ def almost_equal(first, second, digits=None, places=None, delta=None):
                 return True
 
         return False
-    except Exception, e:
+    except Exception as e:
         from pyLibrary.debugs.logs import Log
         Log.error("problem comparing", cause=e)
 

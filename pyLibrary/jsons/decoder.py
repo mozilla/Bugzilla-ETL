@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 from collections import Mapping
 
 from pyLibrary.dot import Null
@@ -176,7 +176,7 @@ def parse_string(i, json):
             else:
                 try:
                     output.append(ESC[c])
-                except Exception, e:
+                except Exception as e:
                     output.append("\\")
                     output.append(c)
         else:
@@ -276,7 +276,7 @@ def parse_const(i, json):
             elif c in [".", "e", "E"]:
                 mode = float
             j += 1
-    except Exception, e:
+    except Exception as e:
         from pyLibrary.debugs.logs import Log
 
         Log.error("Can not parse const", e)

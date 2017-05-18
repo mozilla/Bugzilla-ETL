@@ -11,9 +11,9 @@
 # REPLACE NUMPY ARRAY FUNCTIONS
 # THIS CODE IS FASTER THAN NUMPY WHEN USING PYPY *AND* THE ARRAYS ARE SMALL
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 from pyLibrary.collections import PRODUCT
 from pyLibrary.debugs.logs import Log
@@ -94,7 +94,7 @@ def _binary_op(op):
 
 g = globals()
 MATH = g["math"].__dict__.copy()
-for k, f in MATH.items():
+for k, f in list(MATH.items()):
     if hasattr(f, '__call__'):
         g[k] = _apply(f)
 
@@ -107,7 +107,7 @@ MORE_MATH = {
     "divide": lambda a, b: a / b,
     "div": lambda a, b: a / b
 }
-for k, f in MORE_MATH.items():
+for k, f in list(MORE_MATH.items()):
     g[k] = _apply(f)
 
 AGGS = {
@@ -120,7 +120,7 @@ AGGS = {
     "mean": lambda v: sum(v) / float(len(v)) if v else None,
     "var": lambda vs: sum([v ** 2 for v in vs]) - (sum(vs) / float(len(vs))) ** 2
 }
-for k, f in AGGS.items():  # AGGREGATION
+for k, f in list(AGGS.items()):  # AGGREGATION
     g[k] = _reduce(f)
 
 IGNORE = [
@@ -147,7 +147,7 @@ def allclose(a, b):
     try:
         assertAlmostEqual(a, b)
         return True
-    except Exception, e:
+    except Exception as e:
         return False
 
 
@@ -175,7 +175,7 @@ class _array:
     def __index__(self, items):
         return [self[i] for i in items]
 
-    def __nonzero__(self):
+    def __bool__(self):
         return len(self._value) > 0
 
     def __getitem__(self, item):
@@ -223,11 +223,11 @@ class _array:
 
 
 # ADD AGGREGATES TO CLASS
-for k, f in AGGS.items():
+for k, f in list(AGGS.items()):
     _array.__dict__[k] = _reduce(f)
 
 # DEFINE THE OPERATORS ON CLASS
-for k, op in MORE_MATH.items():
+for k, op in list(MORE_MATH.items()):
     _array.__dict__["__" + k + "__"] = lambda self, other: _binary_op(op, self._value, other)
     _array.__dict__["__r" + k + "__"] = lambda self, other: _binary_op(op, self._value, other)
 

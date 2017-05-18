@@ -8,9 +8,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 from pyLibrary.collections import SUM
 
 class Relation_usingList(object):
@@ -50,7 +50,7 @@ class Relation(object):
         self.map = dict()
 
     def len(self):
-        return SUM(len(v) for k, v in self.map.items())
+        return SUM(len(v) for k, v in list(self.map.items()))
 
     def add(self, key, value):
         to = self.map.get(key)
@@ -94,6 +94,6 @@ class Relation(object):
         return o
 
     def domain(self):
-        return self.map.keys()
+        return list(self.map.keys())
 
 

@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 from collections import deque
 
 import json
@@ -46,27 +46,27 @@ def typed_encode(value):
         _typed_encode(value, _buffer)
         output = _buffer.build()
         return output
-    except Exception, e:
+    except Exception as e:
         # THE PRETTY JSON WILL PROVIDE MORE DETAIL ABOUT THE SERIALIZATION CONCERNS
         from pyLibrary.debugs.logs import Log
 
         Log.warning("Serialization of JSON problems", e)
         try:
             return pretty_json(value)
-        except Exception, f:
+        except Exception as f:
             Log.error("problem serializing object", f)
 
 
 def _typed_encode(value, _buffer):
     try:
         if value is None:
-            append(_buffer, u'{"$value": null}')
+            append(_buffer, '{"$value": null}')
             return
         elif value is True:
-            append(_buffer, u'{"$value": true}')
+            append(_buffer, '{"$value": true}')
             return
         elif value is False:
-            append(_buffer, u'{"$value": false}')
+            append(_buffer, '{"$value": false}')
             return
 
         _type = value.__class__
@@ -74,54 +74,54 @@ def _typed_encode(value, _buffer):
             if value:
                 _dict2json(value, _buffer)
             else:
-                append(_buffer, u'{"$object": "."}')
+                append(_buffer, '{"$object": "."}')
         elif _type is str:
-            append(_buffer, u'{"$value": "')
+            append(_buffer, '{"$value": "')
             try:
                 v = utf82unicode(value)
-            except Exception, e:
+            except Exception as e:
                 problem_serializing(value, e)
 
             for c in v:
                 append(_buffer, ESCAPE_DCT.get(c, c))
-            append(_buffer, u'"}')
-        elif _type is unicode:
-            append(_buffer, u'{"$value": "')
+            append(_buffer, '"}')
+        elif _type is str:
+            append(_buffer, '{"$value": "')
             for c in value:
                 append(_buffer, ESCAPE_DCT.get(c, c))
-            append(_buffer, u'"}')
-        elif _type in (int, long, Decimal):
-            append(_buffer, u'{"$value": ')
-            append(_buffer, unicode(value))
-            append(_buffer, u'}')
+            append(_buffer, '"}')
+        elif _type in (int, int, Decimal):
+            append(_buffer, '{"$value": ')
+            append(_buffer, str(value))
+            append(_buffer, '}')
         elif _type is float:
-            append(_buffer, u'{"$value": ')
-            append(_buffer, unicode(repr(value)))
-            append(_buffer, u'}')
+            append(_buffer, '{"$value": ')
+            append(_buffer, str(repr(value)))
+            append(_buffer, '}')
         elif _type in (set, list, tuple, DictList):
             _list2json(value, _buffer)
         elif _type is date:
-            append(_buffer, u'{"$value": ')
-            append(_buffer, unicode(long(time.mktime(value.timetuple()))))
-            append(_buffer, u'}')
+            append(_buffer, '{"$value": ')
+            append(_buffer, str(int(time.mktime(value.timetuple()))))
+            append(_buffer, '}')
         elif _type is datetime:
-            append(_buffer, u'{"$value": ')
-            append(_buffer, unicode(long(time.mktime(value.timetuple()))))
-            append(_buffer, u'}')
+            append(_buffer, '{"$value": ')
+            append(_buffer, str(int(time.mktime(value.timetuple()))))
+            append(_buffer, '}')
         elif _type is Date:
-            append(_buffer, u'{"$value": ')
-            append(_buffer, unicode(long(time.mktime(value.value.timetuple()))))
-            append(_buffer, u'}')
+            append(_buffer, '{"$value": ')
+            append(_buffer, str(int(time.mktime(value.value.timetuple()))))
+            append(_buffer, '}')
         elif _type is timedelta:
-            append(_buffer, u'{"$value": ')
-            append(_buffer, unicode(value.total_seconds()))
-            append(_buffer, u'}')
+            append(_buffer, '{"$value": ')
+            append(_buffer, str(value.total_seconds()))
+            append(_buffer, '}')
         elif _type is Duration:
-            append(_buffer, u'{"$value": ')
-            append(_buffer, unicode(value.seconds))
-            append(_buffer, u'}')
+            append(_buffer, '{"$value": ')
+            append(_buffer, str(value.seconds))
+            append(_buffer, '}')
         elif _type is NullType:
-            append(_buffer, u"null")
+            append(_buffer, "null")
         elif hasattr(value, '__json__'):
             j = value.__json__()
             t = json2typed(j)
@@ -132,7 +132,7 @@ def _typed_encode(value, _buffer):
             from pyLibrary.debugs.logs import Log
 
             Log.error(_repr(value) + " is not JSON serializable")
-    except Exception, e:
+    except Exception as e:
         from pyLibrary.debugs.logs import Log
 
         Log.error(_repr(value) + " is not JSON serializable", e)
@@ -140,40 +140,40 @@ def _typed_encode(value, _buffer):
 
 def _list2json(value, _buffer):
     if not value:
-        append(_buffer, u"[]")
+        append(_buffer, "[]")
     else:
-        sep = u"["
+        sep = "["
         for v in value:
             append(_buffer, sep)
-            sep = u", "
+            sep = ", "
             _typed_encode(v, _buffer)
-        append(_buffer, u"]")
+        append(_buffer, "]")
 
 
 def _iter2json(value, _buffer):
-    append(_buffer, u"[")
-    sep = u""
+    append(_buffer, "[")
+    sep = ""
     for v in value:
         append(_buffer, sep)
-        sep = u", "
+        sep = ", "
         _typed_encode(v, _buffer)
-    append(_buffer, u"]")
+    append(_buffer, "]")
 
 
 def _dict2json(value, _buffer):
-    prefix = u'{"$object": ".", "'
-    for k, v in value.iteritems():
+    prefix = '{"$object": ".", "'
+    for k, v in value.items():
         append(_buffer, prefix)
-        prefix = u", \""
+        prefix = ", \""
         if isinstance(k, str):
             k = utf82unicode(k)
-        if not isinstance(k, unicode):
+        if not isinstance(k, str):
             Log.error("Expecting property name to be a string")
         for c in k:
             append(_buffer, ESCAPE_DCT.get(c, c))
-        append(_buffer, u"\": ")
+        append(_buffer, "\": ")
         _typed_encode(v, _buffer)
-    append(_buffer, u"}")
+    append(_buffer, "}")
 
 
 VALUE = 0

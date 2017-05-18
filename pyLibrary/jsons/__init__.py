@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 from collections import Mapping
 from datetime import date, timedelta, datetime
@@ -43,18 +43,18 @@ def _late_import():
 
 
 ESCAPE_DCT = {
-    u"\\": u"\\\\",
-    u"\"": u"\\\"",
-    u"\b": u"\\b",
-    u"\f": u"\\f",
-    u"\n": u"\\n",
-    u"\r": u"\\r",
-    u"\t": u"\\t",
+    "\\": "\\\\",
+    "\"": "\\\"",
+    "\b": "\\b",
+    "\f": "\\f",
+    "\n": "\\n",
+    "\r": "\\r",
+    "\t": "\\t",
 }
 for i in range(0x20):
-    ESCAPE_DCT.setdefault(chr(i), u'\\u{0:04x}'.format(i))
+    ESCAPE_DCT.setdefault(chr(i), '\\u{0:04x}'.format(i))
 
-ESCAPE = re.compile(ur'[\x00-\x1f\\"\b\f\n\r\t]')
+ESCAPE = re.compile(r'[\x00-\x1f\\"\b\f\n\r\t]')
 
 
 def replace(match):
@@ -79,7 +79,7 @@ def _scrub(value, is_done):
 
     if type_ in (NoneType, NullType):
         return None
-    elif type_ in (unicode, int, float, long, bool):
+    elif type_ in (str, int, float, int, bool):
         return value
     elif type_ in (date, datetime):
         return float(datetime2unix(value))
@@ -103,11 +103,11 @@ def _scrub(value, is_done):
         is_done.add(_id)
 
         output = {}
-        for k, v in value.iteritems():
-            if isinstance(k, basestring):
+        for k, v in value.items():
+            if isinstance(k, str):
                 pass
             elif hasattr(k, "__unicode__"):
-                k = unicode(k)
+                k = str(k)
             else:
                 _Log.error("keys must be strings")
             v = _scrub(v, is_done)
@@ -133,7 +133,7 @@ def _scrub(value, is_done):
         try:
             output = json._default_decoder.decode(value.__json__())
             return output
-        except Exception, e:
+        except Exception as e:
             _Log.error("problem with calling __json__()", e)
     elif hasattr(value, 'co_code') or hasattr(value, "f_locals"):
         return None

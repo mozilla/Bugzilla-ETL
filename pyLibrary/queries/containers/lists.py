@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
 
 from collections import Mapping
 
@@ -53,7 +53,7 @@ class ListContainer(Container):
             try:
                 if q.filter != None or q.esfilter != None:
                     Log.error("use 'where' clause")
-            except AttributeError, e:
+            except AttributeError as e:
                 pass
 
             if q.where is not TRUE_FILTER and not isinstance(q.where, TrueOp):
@@ -78,7 +78,7 @@ class ListContainer(Container):
         """
         command = wrap(command)
         command_clear = listwrap(command["clear"])
-        command_set = command.set.items()
+        command_set = list(command.set.items())
         command_where = jx.get(command.where)
 
         for c in self.data:
@@ -100,7 +100,7 @@ class ListContainer(Container):
         else:
             temp = where
 
-        return ListContainer("from "+self.name, filter(temp, self.data), self.schema)
+        return ListContainer("from "+self.name, list(filter(temp, self.data)), self.schema)
 
     def sort(self, sort):
         return ListContainer("from "+self.name, jx.sort(self.data, sort, already_normalized=True), self.schema)
@@ -133,10 +133,10 @@ class ListContainer(Container):
                     output[n] = p(wrap(d))
                 return unwrap(output)
 
-            new_data = map(selector, self.data)
+            new_data = list(map(selector, self.data))
         else:
             select_value = jx_expression_to_function(select.value)
-            new_data = map(select_value, self.data)
+            new_data = list(map(select_value, self.data))
 
         return ListContainer("from "+self.name, data=new_data, schema=new_schema)
 
@@ -151,9 +151,9 @@ class ListContainer(Container):
 
     def format(self, format):
         if format == "table":
-            frum = convert.list2table(self.data, self.schema.keys())
+            frum = convert.list2table(self.data, list(self.schema.keys()))
         elif format == "cube":
-            frum = convert.list2cube(self.data, self.schema.keys())
+            frum = convert.list2cube(self.data, list(self.schema.keys()))
         else:
             frum = self.to_dict()
 
@@ -171,11 +171,11 @@ class ListContainer(Container):
     def to_dict(self):
         return wrap({
             "meta": {"format": "list"},
-            "data": [{k: unwraplist(v) for k, v in row.items()} for row in self.data]
+            "data": [{k: unwraplist(v) for k, v in list(row.items())} for row in self.data]
         })
 
     def get_columns(self, table_name=None):
-        return self.schema.values()
+        return list(self.schema.values())
 
     def __getitem__(self, item):
         return self.data[item]
@@ -205,7 +205,7 @@ def _get_schema_from_list(frum, columns, prefix, nested_path):
             agg_type = names.get(".", "undefined")
             names["."] = _merge_type[agg_type][row_type]
         else:
-            for name, value in d.items():
+            for name, value in list(d.items()):
                 agg_type = names.get(name, "undefined")
                 if isinstance(value, list):
                     if len(value)==0:
@@ -226,7 +226,7 @@ def _get_schema_from_list(frum, columns, prefix, nested_path):
                     newpath = unwraplist([join_field(split_field(np[0])+[name])]+np)
                     _get_schema_from_list(value, columns, prefix + [name], newpath)
 
-    for n, t in names.items():
+    for n, t in list(names.items()):
         full_name = ".".join(prefix + [n])
         column = Column(
             name=full_name,
@@ -242,9 +242,9 @@ def _get_schema_from_list(frum, columns, prefix, nested_path):
 _type_to_name = {
     None: "undefined",
     str: "string",
-    unicode: "string",
+    str: "string",
     int: "integer",
-    long: "long",
+    int: "long",
     float: "double",
     Dict: "object",
     dict: "object",
@@ -352,7 +352,7 @@ _merge_type = {
 def _exec(code):
     try:
         temp = None
-        exec "temp = " + code
+        exec("temp = " + code)
         return temp
-    except Exception, e:
+    except Exception as e:
         Log.error("Could not execute {{code|quote}}", code=code, cause=e)

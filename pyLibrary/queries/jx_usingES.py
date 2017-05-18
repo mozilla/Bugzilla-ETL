@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
 
 from collections import Mapping
 
@@ -149,7 +149,7 @@ class FromES(Container):
             if es09_aggop.is_aggop(query):
                 return es09_aggop.es_aggop(self._es, None, query)
             Log.error("Can not handle")
-        except Exception, e:
+        except Exception as e:
             e = Except.wrap(e)
             if "Data too large, data for" in e:
                 http.post(self._es.cluster.path+"/_cache/clear")
@@ -167,7 +167,7 @@ class FromES(Container):
 
         try:
             return self.meta.get_columns(table_name=table_name, column_name=column_name)
-        except Exception, e:
+        except Exception as e:
             return DictList.EMPTY
 
     def addDimension(self, dim):
@@ -217,7 +217,7 @@ class FromES(Container):
 
         # SCRIPT IS SAME FOR ALL (CAN ONLY HANDLE ASSIGNMENT TO CONSTANT)
         scripts = DictList()
-        for k, v in command.set.items():
+        for k, v in list(command.set.items()):
             if not is_keyword(k):
                 Log.error("Only support simple paths for now")
             if isinstance(v, Mapping) and v.doc:
@@ -238,5 +238,5 @@ class FromES(Container):
                 headers={"Content-Type": "application/json"}
             )
             if response.errors:
-                Log.error("could not update: {{error}}", error=[e.error for i in response["items"] for e in i.values() if e.status not in (200, 201)])
+                Log.error("could not update: {{error}}", error=[e.error for i in response["items"] for e in list(i.values()) if e.status not in (200, 201)])
 

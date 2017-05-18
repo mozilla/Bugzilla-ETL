@@ -36,9 +36,9 @@
 # cutoff time, and build all versions.  Only index versions after start_time in ElasticSearch.
 
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 import re
 import math
@@ -160,14 +160,14 @@ class BugHistoryParser():
             else:
                 Log.warning("Unhandled merge_order: {{order|quote}}", order=row_in._merge_order)
 
-        except Exception, e:
+        except Exception as e:
             Log.warning("Problem processing row: {{row}}", row=row_in, cause=e)
         finally:
             if row_in._merge_order > 1 and self.currBugState.created_ts == None:
                 Log.note("PROBLEM expecting a created_ts (did you install the timezone database into your MySQL instance?)", bug_id=self.currBugID)
 
             for b in self.currBugState.blocked:
-                if isinstance(b, basestring):
+                if isinstance(b, str):
                     Log.note("PROBLEM error", bug_id=self.currBugID)
             self.prev_row = row_in
 
@@ -176,7 +176,7 @@ class BugHistoryParser():
         if modified_ts == None:
             Log.error("modified_ts can not be Null")
 
-        return unicode(bug_id) + "_" + unicode(modified_ts)[0:-3]
+        return str(bug_id) + "_" + str(modified_ts)[0:-3]
 
     def startNewBug(self, row_in):
         self.prevBugID = row_in.bug_id
@@ -214,7 +214,7 @@ class BugHistoryParser():
         try:
             self.currBugState[field_name].add(new_value)
             return Null
-        except Exception, e:
+        except Exception as e:
             Log.warning(
                 "Unable to push {{value}} to array field {{start_time}} on bug {{curr_value}} current value: {{curr_value}}",
                 value=new_value,
@@ -245,7 +245,7 @@ class BugHistoryParser():
             self.bugVersions.append(self.currActivity)
             self.bugVersionsMap[currActivityID] = self.currActivity
 
-        att = self.currBugAttachmentsMap[unicode(row_in.attach_id)]
+        att = self.currBugAttachmentsMap[str(row_in.attach_id)]
         if att == None:
             att = {
                 "attach_id": row_in.attach_id,
@@ -254,7 +254,7 @@ class BugHistoryParser():
                 "modified_by": row_in.modified_by,
                 "flags": DictList()
             }
-            self.currBugAttachmentsMap[unicode(row_in.attach_id)] = att
+            self.currBugAttachmentsMap[str(row_in.attach_id)] = att
 
         att["created_ts"] = MIN([row_in.modified_ts, att["created_ts"]])
         if row_in.field_name == "created_ts" and row_in.new_value == None:
@@ -266,15 +266,15 @@ class BugHistoryParser():
     def processFlagsTableItem(self, row_in):
         flag = self.makeFlag(row_in.new_value, row_in.modified_ts, row_in.modified_by)
         if row_in.attach_id != None:
-            if self.currBugAttachmentsMap[unicode(row_in.attach_id)] == None:
+            if self.currBugAttachmentsMap[str(row_in.attach_id)] == None:
                 Log.note("[Bug {{bug_id}}]: Unable to find attachment {{attach_id}} for bug_id {{bug_id}}",
                     attach_id=row_in.attach_id,
                     bug_id=self.currBugID
                 )
             else:
-                if self.currBugAttachmentsMap[unicode(row_in.attach_id)].flags == None:
+                if self.currBugAttachmentsMap[str(row_in.attach_id)].flags == None:
                     Log.error("should never happen")
-                self.currBugAttachmentsMap[unicode(row_in.attach_id)].flags.append(flag)
+                self.currBugAttachmentsMap[str(row_in.attach_id)].flags.append(flag)
         else:
             self.currBugState.flags.append(flag)
 
@@ -306,7 +306,7 @@ class BugHistoryParser():
             self.prevActivityID = currActivityID
 
         if row_in.attach_id != None:
-            attachment = self.currBugAttachmentsMap[unicode(row_in.attach_id)]
+            attachment = self.currBugAttachmentsMap[str(row_in.attach_id)]
             if attachment == None:
                 #we are going backwards in time, no need to worry about these?  maybe delete this change for public bugs
                 Log.note(
@@ -362,7 +362,7 @@ class BugHistoryParser():
                     try:
                         row_in.old_value = "\n".join(apply_diff(self.currBugState[row_in.field_name].split("\n"), row_in.new_value.split("\n"), reverse=True))
                         row_in.new_value = self.currBugState[row_in.field_name]
-                    except Exception, e:
+                    except Exception as e:
                         Log.note(
                             "[Bug {{bug_id}}]: PROBLEM Unable to process {{field_name}} diff:\n{{diff|indent}}",
                             bug_id=self.currBugID,
@@ -411,7 +411,7 @@ class BugHistoryParser():
                                     bug_id=self.currBugState.bug_id
                                 )
                             nextVersion = Null
-                    except Exception, e:
+                    except Exception as e:
                         Log.error("problem", e)
                 else:
                     nextVersion = Null
@@ -438,7 +438,7 @@ class BugHistoryParser():
                 self.currBugState.expires_on = coalesce(nextVersion.modified_ts, MAX_TIME)
 
                 # Copy all attributes from the current version into self.currBugState
-                for propName, propValue in currVersion.items():
+                for propName, propValue in list(currVersion.items()):
                     self.currBugState[propName] = propValue
 
                 # Now walk self.currBugState forward in time by applying the changes from currVersion
@@ -473,12 +473,12 @@ class BugHistoryParser():
                         # Handle the special change record that signals the creation of the attachment
                         if change.field_name == "attachment_added":
                             # This change only exists when the attachment has been added to the map, so no missing case needed.
-                            att = self.currBugAttachmentsMap[unicode(attach_id)]
+                            att = self.currBugAttachmentsMap[str(attach_id)]
                             self.currBugState.attachments.append(att)
                             continue
                         else:
                             # Attachment change
-                            target = self.currBugAttachmentsMap[unicode(attach_id)]
+                            target = self.currBugAttachmentsMap[str(attach_id)]
                             targetName = "attachment"
                             if target == None:
                                 Log.note("[Bug {{bug_id}}]: Encountered a change to missing attachment: {{change}}", {
@@ -718,7 +718,7 @@ class BugHistoryParser():
         pv[caField] = aChangeAway
         try:
             duration_ms = pv[caField] - pv[ctField]
-        except Exception, e:
+        except Exception as e:
             Log.error("", e)
         pv[ddField] = math.floor(duration_ms / (1000.0 * 60 * 60 * 24))
 
@@ -769,7 +769,7 @@ class BugHistoryParser():
                 self.currActivity.changes.append({
                     "field_name": field_name,
                     "new_value": Null,
-                    "old_value": ", ".join(map(unicode, jx.sort(diff))),
+                    "old_value": ", ".join(map(str, jx.sort(diff))),
                     "attach_id": target.attach_id
                 })
 
@@ -786,7 +786,7 @@ class BugHistoryParser():
             if valueType == "added" and remove:
                 self.currActivity.changes.append({
                     "field_name": field_name,
-                    "new_value": u", ".join(map(unicode, jx.sort(remove))),
+                    "new_value": ", ".join(map(str, jx.sort(remove))),
                     "old_value": Null,
                     "attach_id": target.attach_id
                 })
@@ -889,11 +889,11 @@ class BugHistoryParser():
                     if final_removed:
                         self.currActivity.changes.append({
                             "field_name": field_name,
-                            "new_value": u", ".join(map(unicode, jx.sort(final_removed))),
+                            "new_value": ", ".join(map(str, jx.sort(final_removed))),
                             "old_value": Null,
                             "attach_id": target.attach_id
                         })
-                except Exception, email:
+                except Exception as email:
                     Log.error("issues", email)
 
             return jx.map2set(output, map_total)
@@ -905,7 +905,7 @@ class BugHistoryParser():
             if valueType == "added" and removed:
                 self.currActivity.changes.append({
                     "field_name": field_name,
-                    "new_value": u", ".join(map(unicode, jx.sort(removed))),
+                    "new_value": ", ".join(map(str, jx.sort(removed))),
                     "old_value": Null,
                     "attach_id": target.attach_id
                 })
@@ -1004,17 +1004,17 @@ class BugHistoryParser():
         try:
             try:
                 alias_json = File(self.settings.alias_file).read()
-            except Exception, e:
+            except Exception as e:
                 Log.warning("Could not load alias file", cause=e)
                 alias_json = "{}"
-            self.aliases = {k: wrap(v) for k, v in convert.json2value(alias_json).items()}
+            self.aliases = {k: wrap(v) for k, v in list(convert.json2value(alias_json).items())}
 
-            Log.note("{{num}} aliases loaded", {"num": len(self.aliases.keys())})
+            Log.note("{{num}} aliases loaded", {"num": len(list(self.aliases.keys()))})
 
-        except Exception, e:
+        except Exception as e:
             Log.error("Can not init aliases", e)
 
 def deformat(value):
     if value == None:
         Log.error("not expected")
-    return value.lower().replace(u"\u2011", u"-")
+    return value.lower().replace("\u2011", "-")

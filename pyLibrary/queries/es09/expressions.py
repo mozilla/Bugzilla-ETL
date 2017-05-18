@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 from collections import Mapping
 
 from datetime import datetime
@@ -48,7 +48,7 @@ class _MVEL(object):
         body = "var output = \"\";\n" + \
                code.replace(
                    "<CODE>",
-                   "if (" + _where(whereClause, lambda(v): self._translate(v)) + "){\n" +
+                   "if (" + _where(whereClause, lambda v: self._translate(v)) + "){\n" +
                    select.body +
                    "}\n"
                ) + \
@@ -169,9 +169,9 @@ class _MVEL(object):
         if len(split_field(self.fromData.name)) == 1 and fields:
             if isinstance(fields, Mapping):
                 # CONVERT UNORDERED FIELD DEFS
-                jx_fields, es_fields = zip(*[(k, fields[k]) for k in sorted(fields.keys())])
+                jx_fields, es_fields = list(zip(*[(k, fields[k]) for k in sorted(fields.keys())]))
             else:
-                jx_fields, es_fields = zip(*[(i, e) for i, e in enumerate(fields)])
+                jx_fields, es_fields = list(zip(*[(i, e) for i, e in enumerate(fields)]))
 
             # NO LOOPS BECAUSE QUERY IS SHALLOW
             # DOMAIN IS FROM A DIMENSION, USE IT'S FIELD DEFS TO PULL
@@ -187,9 +187,9 @@ class _MVEL(object):
                 def fromTerm(term):
                     terms = [convert.pipe2value(t) for t in convert.pipe2value(term).split("|")]
 
-                    candidate = dict(zip(jx_fields, terms))
+                    candidate = dict(list(zip(jx_fields, terms)))
                     for p in domain.partitions:
-                        for k, t in candidate.items():
+                        for k, t in list(candidate.items()):
                             if p.value[k] != t:
                                 break
                         else:
@@ -295,7 +295,7 @@ class _MVEL(object):
         return Compiled(output)
 
     def register_function(self, code):
-        for n, c in self.functions.items():
+        for n, c in list(self.functions.items()):
             if c == code:
                 break
         else:
@@ -346,7 +346,7 @@ def setValues(expression, constants):
             continue  # DO NOT MESS WITH ARRAYS
 
         if isinstance(value, Mapping):
-            for k, v in value.items():
+            for k, v in list(value.items()):
                 constants.append({"name": n + "." + k, "value": v})
 
     for c in reverse(constants):# REVERSE ORDER, SO LONGER NAMES ARE TESTED FIRST
@@ -391,7 +391,7 @@ def _where(esFilter, _translate):
     if not esFilter or esFilter is True:
         return "true"
 
-    keys = esFilter.keys()
+    keys = list(esFilter.keys())
     if len(keys) != 1:
         Log.error("Expecting only one filter aggregate")
 
@@ -416,13 +416,13 @@ def _where(esFilter, _translate):
         return "!(" + _where(esFilter[op, _translate]) + ")"
     elif op == "term":
         pair = esFilter[op]
-        if len(pair.keys()) == 1:
-            return [_translate(k) + "==" + value2MVEL(v) for k, v in pair.items()][0]
+        if len(list(pair.keys())) == 1:
+            return [_translate(k) + "==" + value2MVEL(v) for k, v in list(pair.items())][0]
         else:
-            return "(" + " && ".join(_translate(k) + "==" + value2MVEL(v) for k, v in pair.items()) + ")"
+            return "(" + " && ".join(_translate(k) + "==" + value2MVEL(v) for k, v in list(pair.items())) + ")"
     elif op == "terms":
         output = []
-        for variableName, valueList in esFilter[op].items():
+        for variableName, valueList in list(esFilter[op].items()):
             if not valueList:
                 Log.error("Expecting something in 'terms' array")
             if len(valueList) == 1:
@@ -450,7 +450,7 @@ def _where(esFilter, _translate):
         pair = esFilter[op]
         ranges = []
 
-        for variableName, r in pair.items():
+        for variableName, r in list(pair.items()):
             if r.gte:
                 ranges.append(value2MVEL(r.gte) + "<=" + _translate(variableName))
             elif r.gt:
@@ -478,7 +478,7 @@ def _where(esFilter, _translate):
         return _translate(script)
     elif op == "prefix":
         pair = esFilter[op]
-        variableName, value = pair.items()[0]
+        variableName, value = list(pair.items())[0]
         return _translate(variableName) + ".startsWith(" + convert.string2quote(value) + ")"
     elif op == "match_all":
         return "true"
@@ -496,7 +496,7 @@ def isKeyword(value):
     """
     RETURN TRUE IF THE value IS JUST A NAME OF A FIELD, A LIST OF FIELDS, (OR A VALUE)
     """
-    if not value or not isinstance(value, basestring):
+    if not value or not isinstance(value, str):
         Log.error("Expecting a string")
 
     if keyword_pattern.match(value):
@@ -557,7 +557,7 @@ def addFunctions(mvel):
     keepAdding = True
     while keepAdding:
         keepAdding = False
-        for func_name, func_code in FUNCTIONS.items():
+        for func_name, func_code in list(FUNCTIONS.items()):
             if isAdded[func_name]:
                 continue
             if mvel.find(func_name) == -1:
@@ -734,5 +734,5 @@ def replacePrefix(value, prefix, new_prefix):
         if value.startswith(prefix):
             return new_prefix+value[len(prefix)::]
         return value
-    except Exception, e:
+    except Exception as e:
         Log.error("can not replace prefix", e)

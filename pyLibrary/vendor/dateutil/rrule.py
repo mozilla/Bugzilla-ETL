@@ -12,7 +12,7 @@ import calendar
 try:
     import _thread
 except ImportError:
-    import thread as _thread
+    import _thread as _thread
 import sys
 
 from six import advance_iterator, integer_types

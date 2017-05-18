@@ -7,9 +7,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 from pyLibrary import convert
 from pyLibrary.env.elasticsearch import Index, Cluster
@@ -59,7 +59,7 @@ class Fake_ES():
     def search(self, query):
         query = wrap(query)
         f = jx.get(query.query.filtered.filter)
-        filtered = wrap([{"_id": i, "_source": d} for i, d in self.data.items() if f(d)])
+        filtered = wrap([{"_id": i, "_source": d} for i, d in list(self.data.items()) if f(d)])
         if query.fields:
             return wrap({"hits": {"total": len(filtered), "hits": [{"_id": d._id, "fields": unwrap(jx.select([unwrap(d._source)], query.fields)[0])} for d in filtered]}})
         else:
@@ -85,7 +85,7 @@ class Fake_ES():
 
     def delete_record(self, filter):
         f = convert.esfilter2where(filter)
-        self.data = wrap({k: v for k, v in self.data.items() if not f(v)})
+        self.data = wrap({k: v for k, v in list(self.data.items()) if not f(v)})
 
     def set_refresh_interval(self, seconds):
         pass

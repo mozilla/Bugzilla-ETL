@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
 
 import itertools
 
@@ -51,7 +51,7 @@ def cube_aggs(frum, query):
         for s in select
     }
     where = jx_expression_to_function(query.where)
-    for d in filter(where, frum.values()):
+    for d in filter(where, list(frum.values())):
         coord = []  # LIST OF MATCHING COORDINATE FAMILIES, USUALLY ONLY ONE PER FAMILY BUT JOINS WITH EDGES CAN CAUSE MORE
         for e in query.edges:
             matches = get_matches(e, d)
@@ -89,7 +89,7 @@ def cube_aggs(frum, query):
         if s.aggregate == "count":
             continue
         m = result[s.name]
-        for c, var in m.items():
+        for c, var in list(m.items()):
             if var != None:
                 m[c] = var.end()
 

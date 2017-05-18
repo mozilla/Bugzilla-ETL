@@ -16,9 +16,9 @@
 # 3) The slave can be configured with better hardware
 # 4) The slave's exclusivity increases availability (Mozilla's public cluster may have high load)
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 from datetime import datetime, timedelta
 from bzETL import transform_bugzilla
@@ -43,17 +43,11 @@ def extract_from_file(source_settings, destination):
     file = File(source_settings.filename)
     for g, d in jx.groupby(file, size=BATCH_SIZE):
         try:
-            d2 = map(
-                lambda (x): {"id": x.id, "value": x},
-                map(
-                    lambda(x): transform_bugzilla.normalize(convert.json2value(x)),
-                    d
-                )
-            )
+            d2 = [{"id": x.id, "value": x} for x in [transform_bugzilla.normalize(convert.json2value(x)) for x in d]]
             Log.note("add {{num}} records", {"num":len(d2)})
             destination.extend(d2)
-        except Exception, e:
-            filename = "Error_" + unicode(g) + ".txt"
+        except Exception as e:
+            filename = "Error_" + str(g) + ".txt"
             File(filename).write(d)
             Log.warning("Can not convert block {{block}} (file={{host}})", {
                 "block": g,
@@ -83,7 +77,7 @@ def get_last_updated(es):
         if results.facets.modified_ts.count == 0:
             return convert.milli2datetime(0)
         return convert.milli2datetime(results.facets.modified_ts.max)
-    except Exception, e:
+    except Exception as e:
         Log.error("Can not get_last_updated from {{host}}/{{index}}",{
             "host": es.settings.host,
             "index": es.settings.index
@@ -182,13 +176,7 @@ def replicate(source, destination, pending, last_updated):
                 "sort": []
             })
 
-            d2 = map(
-                lambda(x): {"id": x.id, "value": x},
-                map(
-                    lambda(x): transform_bugzilla.normalize(transform_bugzilla.rename_attachments(x._source), old_school=True),
-                    data.hits.hits
-                )
-            )
+            d2 = [{"id": x.id, "value": x} for x in [transform_bugzilla.normalize(transform_bugzilla.rename_attachments(x._source), old_school=True) for x in data.hits.hits]]
             destination.extend(d2)
 
 
@@ -241,7 +229,7 @@ def main(settings):
             replicate(source, data_sink, pending, last_updated)
 
     # RECORD LAST UPDATED
-    time_file.write(unicode(convert.datetime2milli(current_time)))
+    time_file.write(str(convert.datetime2milli(current_time)))
 
 
 def start():
@@ -249,7 +237,7 @@ def start():
         settings=startup.read_settings()
         Log.start(settings.debug)
         main(settings)
-    except Exception, e:
+    except Exception as e:
         Log.error("Problems exist", e)
     finally:
         Log.stop()

@@ -26,7 +26,7 @@ def locker(i):
             return locker(i)
     else:
         with lock:
-            sys.stdout.write("hi " + unicode(i) + "\n")
+            sys.stdout.write("hi " + str(i) + "\n")
             state["count"] += 1
 
 

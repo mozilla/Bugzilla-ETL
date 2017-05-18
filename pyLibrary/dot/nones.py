@@ -7,9 +7,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 from pyLibrary.dot import split_field, _setdefault
 
@@ -40,7 +40,7 @@ class NullType(object):
     def __bool__(self):
         return False
 
-    def __nonzero__(self):
+    def __bool__(self):
         return False
 
     def __add__(self, other):
@@ -63,7 +63,7 @@ class NullType(object):
             key = d["__key__"]
 
             _assign(o, [key], other)
-        except Exception, e:
+        except Exception as e:
             raise e
         return other
 
@@ -161,7 +161,7 @@ class NullType(object):
         try:
             output = _get(self, key)
             return output
-        except Exception, e:
+        except Exception as e:
             return NullType(self, key)
 
     def __setattr__(self, key, value):
@@ -177,7 +177,7 @@ class NullType(object):
 
             seq = [path] + split_field(key)
             _assign(o, seq, value)
-        except Exception, e:
+        except Exception as e:
             raise e
 
     def keys(self):

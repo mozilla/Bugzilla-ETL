@@ -7,7 +7,7 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import unicode_literals
+
 from collections import Mapping
 
 from pyLibrary.debugs.logs import Log
@@ -63,7 +63,7 @@ def wrap_from(frum, schema=None):
 
     frum = wrap(frum)
 
-    if isinstance(frum, basestring):
+    if isinstance(frum, str):
         if not _containers.config.default.settings:
             Log.error("expecting pyLibrary.queries.query.config.default.settings to contain default elasticsearch connection info")
 

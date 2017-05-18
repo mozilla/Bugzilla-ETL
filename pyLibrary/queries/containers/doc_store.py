@@ -6,9 +6,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
 
 from copy import copy
 
@@ -64,7 +64,7 @@ class DocStore(Container):
             self._unindex_values(existing, _source_index)
             for c in clear:
                 existing[c] = None
-            for k, v in set.items():
+            for k, v in list(set.items()):
                 existing[k] = v
             self._index_values(existing, _source_index)
 
@@ -91,7 +91,7 @@ class DocStore(Container):
             short_list = self._sort(query.sort)
 
         if isinstance(query.select, list):
-            accessors = map(jx.get, query.select.value)
+            accessors = list(map(jx.get, query.select.value))
 
         if query.window:
             for w in query.window:
@@ -117,7 +117,7 @@ class DocStore(Container):
 
             indexed_values[i] = index = self._index[function_name] = {}
             accessor = jx.get(s.value)
-            for k, ii in self._unique_index.items():
+            for k, ii in list(self._unique_index.items()):
                 v = accessor(self._source[ii])
                 j = index.get(v)
                 if j is None:
@@ -180,11 +180,11 @@ class DocStore(Container):
         if format == "list":
             return {
                 "meta": {"format": "list"},
-                "data": [self._source[i] for i in self._unique_index.values()]
+                "data": [self._source[i] for i in list(self._unique_index.values())]
             }
         elif format == "table":
             columns = list(self._index.keys())
-            data = [[self._source[i].get(c, None) for c in columns] for i in self._unique_index.values()]
+            data = [[self._source[i].get(c, None) for c in columns] for i in list(self._unique_index.values())]
             return {
                 "meta": {"format": "table"},
                 "header": columns,
@@ -194,7 +194,7 @@ class DocStore(Container):
             Log.error("not supported")
 
     def get_leaves(self, table_name):
-        return {"name":c for c in self._index.keys()}
+        return {"name":c for c in list(self._index.keys())}
 
 
 
@@ -207,7 +207,7 @@ class DocStore(Container):
 
     def _and(self, op):
         if not op.terms:
-            return self._unique_index.values()
+            return list(self._unique_index.values())
 
         agg = filters[op.name](self, op.terms[0])
         for t in op.terms[1:]:
@@ -215,7 +215,7 @@ class DocStore(Container):
         return agg
 
     def _true(self, op):
-        return self._unique_index.values()
+        return list(self._unique_index.values())
 
 
 filters={

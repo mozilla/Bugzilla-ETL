@@ -7,9 +7,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 from datetime import date
 import re
@@ -53,7 +53,7 @@ def rename_attachments(bug_version):
 #NORMALIZE BUG VERSION TO STANDARD FORM
 def normalize(bug, old_school=False):
     bug=bug.copy()
-    bug.id = unicode(bug.bug_id) + "_" + unicode(bug.modified_ts)[:-3]
+    bug.id = str(bug.bug_id) + "_" + str(bug.modified_ts)[:-3]
     bug._id = None
 
     #ENSURE STRUCTURES ARE SORTED
@@ -103,9 +103,9 @@ def normalize(bug, old_school=False):
         try:
             if isinstance(v, date):
                 bug[dateField] = convert.datetime2milli(v)
-            elif isinstance(v, (long, int, float)) and len(unicode(v)) in [12, 13]:
+            elif isinstance(v, (int, float)) and len(str(v)) in [12, 13]:
                 bug[dateField] = v
-            elif not isinstance(v, basestring):
+            elif not isinstance(v, str):
                 Log.error("situation not handled")
             elif DATE_PATTERN_STRICT.match(v):
                 # Convert to "2012/01/01 00:00:00.000"
@@ -122,7 +122,7 @@ def normalize(bug, old_school=False):
                 # Example: bug 643420 (deadline)
                 #          bug 726635 (cf_due_date)
                 bug[dateField] = convert.datetime2milli(convert.string2datetime(v[0:10], "%Y-%m-%d"))
-        except Exception, e:
+        except Exception as e:
             Log.error("problem with converting date to milli (type={{type}}, value={{value}})", {"value":bug[dateField], "type":type(bug[dateField]).name}, e)
 
     bug.votes = None

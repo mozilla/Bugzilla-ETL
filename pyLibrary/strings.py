@@ -8,12 +8,12 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
 
-import __builtin__
-from __builtin__ import unicode as _unicode
+
+
+
+import builtins
+from builtins import str as _unicode
 
 
 import re
@@ -68,7 +68,7 @@ def datetime(value):
     return _convert.datetime2string(value, "%Y-%m-%d %H:%M:%S")
 
 
-def unicode(value):
+def str(value):
     if value == None:
         return ""
     return _unicode(value)
@@ -138,7 +138,7 @@ def tab(value):
         _late_import()
 
     if isinstance(value, Mapping):
-        h, d = zip(*wrap(value).leaves())
+        h, d = list(zip(*wrap(value).leaves()))
         return \
             "\t".join(map(_convert.value2json, h)) + \
             "\n" + \
@@ -146,7 +146,7 @@ def tab(value):
     else:
         _unicode(value)
 
-def indent(value, prefix=u"\t", indent=None):
+def indent(value, prefix="\t", indent=None):
     if indent != None:
         prefix = prefix * indent
 
@@ -155,9 +155,9 @@ def indent(value, prefix=u"\t", indent=None):
         content = value.rstrip()
         suffix = value[len(content):]
         lines = content.splitlines()
-        return prefix + (u"\n" + prefix).join(lines) + suffix
-    except Exception, e:
-        raise Exception(u"Problem with indent of value (" + e.message + u")\n" + _unicode(toString(value)))
+        return prefix + ("\n" + prefix).join(lines) + suffix
+    except Exception as e:
+        raise Exception("Problem with indent of value (" + e.message + ")\n" + _unicode(toString(value)))
 
 
 def outdent(value):
@@ -168,8 +168,8 @@ def outdent(value):
             trim = len(l.lstrip())
             if trim > 0:
                 num = min(num, len(l) - len(l.lstrip()))
-        return u"\n".join([l[num:] for l in lines])
-    except Exception, e:
+        return "\n".join([l[num:] for l in lines])
+    except Exception as e:
         if not _Log:
             _late_import()
 
@@ -195,7 +195,7 @@ def round(value, decimal=None, digits=None, places=None):
 
     right_of_decimal = max(decimal, 0)
     format = "{:." + _unicode(right_of_decimal) + "f}"
-    return format.format(__builtin__.round(value, decimal))
+    return format.format(builtins.round(value, decimal))
 
 
 def percent(value, decimal=None, digits=None, places=None):
@@ -211,7 +211,7 @@ def percent(value, decimal=None, digits=None, places=None):
     decimal = coalesce(decimal, 0)
     right_of_decimal = max(decimal, 0)
     format = "{:." + _unicode(right_of_decimal) + "%}"
-    return format.format(__builtin__.round(value, decimal + 2))
+    return format.format(builtins.round(value, decimal + 2))
 
 
 def find(value, find, start=0):
@@ -250,7 +250,7 @@ def strip(value):
     else:
         return ""
 
-    for i in reversed(range(s, e)):
+    for i in reversed(list(range(s, e))):
         if ord(value[i]) > 32:
             return value[s:i + 1]
 
@@ -286,13 +286,13 @@ def between(value, prefix, suffix, start=0):
 
 def right(value, len):
     if len <= 0:
-        return u""
+        return ""
     return value[-len:]
 
 
 def right_align(value, length):
     if length <= 0:
-        return u""
+        return ""
 
     value = _unicode(value)
 
@@ -304,7 +304,7 @@ def right_align(value, length):
 
 def left(value, len):
     if len <= 0:
-        return u""
+        return ""
     return value[0:len]
 
 
@@ -313,7 +313,7 @@ def comma(value):
     FORMAT WITH THOUSANDS COMMA (,) SEPARATOR
     """
     try:
-        if float(value) == __builtin__.round(float(value), 0):
+        if float(value) == builtins.round(float(value), 0):
             output = "{:,}".format(int(value))
         else:
             output = "{:,}".format(float(value))
@@ -391,7 +391,7 @@ def expand_template(template, value):
     BE EXPANDED TO WHAT IS IS IN THE value dict
     """
     value = wrap(value)
-    if isinstance(template, basestring):
+    if isinstance(template, str):
         return _simple_expand(template, (value,))
 
     return _expand(template, (value,))
@@ -401,7 +401,7 @@ def _expand(template, seq):
     """
     seq IS TUPLE OF OBJECTS IN PATH ORDER INTO THE DATA TREE
     """
-    if isinstance(template, basestring):
+    if isinstance(template, str):
         return _simple_expand(template, seq)
     elif isinstance(template, Mapping):
         template = wrap(template)
@@ -447,13 +447,13 @@ def _simple_expand(template, seq):
                     val = globals()[func_name](val)
             val = toString(val)
             return val
-        except Exception, e:
+        except Exception as e:
             try:
                 if e.message.find("is not JSON serializable"):
                     # WORK HARDER
                     val = toString(val)
                     return val
-            except Exception, f:
+            except Exception as f:
                 if not _Log:
                     _late_import()
 
@@ -467,7 +467,7 @@ def _simple_expand(template, seq):
     return pattern.sub(replacer, template)
 
 
-delchars = "".join(c.decode("latin1") for c in map(chr, range(256)) if not c.decode("latin1").isalnum())
+delchars = "".join(c.decode("latin1") for c in map(chr, list(range(256))) if not c.decode("latin1").isalnum())
 
 
 def deformat(value):
@@ -504,7 +504,7 @@ def toString(val):
 
     try:
         return _unicode(val)
-    except Exception, e:
+    except Exception as e:
         if not _Log:
             _late_import()
 
@@ -523,7 +523,7 @@ def edit_distance(s1, s2):
     if len(s2) == 0:
         return 1.0
 
-    previous_row = xrange(len(s2) + 1)
+    previous_row = range(len(s2) + 1)
     for i, c1 in enumerate(s1):
         current_row = [i + 1]
         for j, c2 in enumerate(s2):
@@ -607,18 +607,18 @@ def utf82unicode(value):
     """
     try:
         return value.decode("utf8")
-    except Exception, e:
+    except Exception as e:
         if not _Log:
             _late_import()
 
-        if not isinstance(value, basestring):
+        if not isinstance(value, str):
             _Log.error("Can not _convert {{type}} to unicode because it's not a string",  type= type(value).__name__)
 
         e = _Except.wrap(e)
         for i, c in enumerate(value):
             try:
                 c.decode("utf8")
-            except Exception, f:
+            except Exception as f:
                 _Log.error("Can not _convert charcode {{c}} in string  index {{i}}", i=i, c=ord(c), cause=[e, _Except.wrap(f)])
 
         try:

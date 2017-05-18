@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
 
 from pyLibrary import convert
 from pyLibrary.debugs.logs import Log
@@ -38,11 +38,11 @@ def compile_expression(source):
     _ = EMPTY_DICT
 
     output = None
-    exec """
+    exec("""
 def output(row, rownum=None, rows=None):
     try:
         return """ + source + """
     except Exception, e:
         Log.error("Problem with dynamic function {{func|quote}}",  func= """ + convert.value2quote(source) + """, cause=e)
-"""
+""")
     return output

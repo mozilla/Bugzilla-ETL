@@ -10,7 +10,7 @@ def use():
 
     globals()["_using_mozlog"] = True
     with suppress_exception:
-        from mozlog.structured import structuredlog
+        from .mozlog.structured import structuredlog
 
         global logger
         logger = structuredlog.get_default_logger()

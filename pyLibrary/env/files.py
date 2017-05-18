@@ -33,7 +33,7 @@ class File(object):
             from pyLibrary.debugs.logs import Log
 
             Log.error("File must be given a filename")
-        elif isinstance(filename, basestring):
+        elif isinstance(filename, str):
             self.key = None
             if filename.startswith("~"):
                 home_path = os.path.expanduser("~")
@@ -179,7 +179,7 @@ class File(object):
                 self.parent.create()
             with open(self._filename, "rb") as f:
                 return f.read()
-        except Exception, e:
+        except Exception as e:
             from pyLibrary.debugs.logs import Log
 
             Log.error("Problem reading file {{filename}}", self.abspath)
@@ -201,13 +201,13 @@ class File(object):
 
             if isinstance(data, list):
                 pass
-            elif isinstance(data, basestring):
+            elif isinstance(data, str):
                 data=[data]
             elif hasattr(data, "__iter__"):
                 pass
 
             for d in data:
-                if not isinstance(d, unicode):
+                if not isinstance(d, str):
                     from pyLibrary.debugs.logs import Log
 
                     Log.error("Expecting unicode data only")
@@ -230,7 +230,7 @@ class File(object):
                 with io.open(path, "rb") as f:
                     for line in f:
                         yield utf82unicode(line)
-            except Exception, e:
+            except Exception as e:
                 from pyLibrary.debugs.logs import Log
 
                 Log.error("Can not read line from {{filename}}",  filename= self._filename, cause=e)
@@ -267,7 +267,7 @@ class File(object):
 
                     output_file.write(c.encode("utf-8"))
                     output_file.write(b"\n")
-        except Exception, e:
+        except Exception as e:
             from pyLibrary.debugs.logs import Log
 
             Log.error("Could not write to file", e)
@@ -279,7 +279,7 @@ class File(object):
             elif os.path.isfile(self._filename):
                 os.remove(self._filename)
             return self
-        except Exception, e:
+        except Exception as e:
             if e.strerror == "The system cannot find the path specified":
                 return
             from pyLibrary.debugs.logs import Log
@@ -295,7 +295,7 @@ class File(object):
     def create(self):
         try:
             os.makedirs(self._filename)
-        except Exception, e:
+        except Exception as e:
             from pyLibrary.debugs.logs import Log
 
             Log.error("Could not make directory {{dir_name}}",  dir_name= self._filename, cause=e)
@@ -314,14 +314,14 @@ class File(object):
             return True
         try:
             return os.path.exists(self._filename)
-        except Exception, e:
+        except Exception as e:
             return False
 
     def __bool__(self):
         return self.__nonzero__()
 
 
-    def __nonzero__(self):
+    def __bool__(self):
         """
         USED FOR FILE EXISTENCE TESTING
         """
@@ -329,7 +329,7 @@ class File(object):
             return True
         try:
             return os.path.exists(self._filename)
-        except Exception, e:
+        except Exception as e:
             return False
 
     @classmethod

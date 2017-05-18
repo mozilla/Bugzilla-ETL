@@ -7,9 +7,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 # REPLACES THE KETTLE FLOW CONTROL PROGRAM, AND BASH SCRIPT
 
@@ -134,7 +134,7 @@ def setup_es(settings, db, es, es_comments):
 
     if File(settings.param.first_run_time).exists and File(settings.param.last_run_time).exists:
         # INCREMENTAL UPDATE; DO NOT MAKE NEW INDEX
-        last_run_time = long(File(settings.param.last_run_time).read())
+        last_run_time = int(File(settings.param.last_run_time).read())
         if not es:
             es = elasticsearch.Index(settings.es)
             es_comments = elasticsearch.Index(settings.es_comments)
@@ -142,7 +142,7 @@ def setup_es(settings, db, es, es_comments):
         # DO NOT MAKE NEW INDEX, CONTINUE INITIAL FILL
         try:
             last_run_time = 0
-            current_run_time = long(File(settings.param.first_run_time).read())
+            current_run_time = int(File(settings.param.first_run_time).read())
             if not es:
                 if not settings.es.alias:
                     temp = Cluster(settings.es).get_proto(settings.es.index)
@@ -156,7 +156,7 @@ def setup_es(settings, db, es, es_comments):
                     settings.es_comments.alias = settings.es_comments.index
                     settings.es_comments.index = temp.last()
                 es_comments = elasticsearch.Index(settings.es_comments)
-        except Exception, e:
+        except Exception as e:
             Log.warning("can not resume ETL, restarting", cause=e)
             File(settings.param.first_run_time).delete()
             return setup_es(settings, db, es, es_comments)
@@ -184,7 +184,7 @@ def setup_es(settings, db, es, es_comments):
                 settings.es_comments.index = Cluster.proto_name(settings.es_comments.alias)
             es_comments = Cluster.create_index(settings.es_comments, comment_schema, limit_replicas=True)
 
-        File(settings.param.first_run_time).write(unicode(convert.datetime2milli(current_run_time)))
+        File(settings.param.first_run_time).write(str(convert.datetime2milli(current_run_time)))
 
     return current_run_time, es, es_comments, last_run_time
 
@@ -234,7 +234,7 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
         try:
             etl(db, output_queue, refresh_param.copy(), please_stop=None)
             etl_comments(db, es_comments, refresh_param.copy(), please_stop=None)
-        except Exception, e:
+        except Exception as e:
             Log.error(
                 "Problem with etl using parameters {{parameters}}",
                 parameters=refresh_param,
@@ -261,7 +261,7 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
                     delta_ts >= {{start_time_str}}
             """, {
                 "start_time_str": param.start_time_str
-            }), u"bug_id")
+            }), "bug_id")
         else:
             bug_list = jx.select(db.query("""
                 SELECT
@@ -275,7 +275,7 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
                     m.bug_id IS NULL
             """, {
                 "start_time_str": param.start_time_str
-            }), u"bug_id")
+            }), "bug_id")
 
     if not bug_list:
         return
@@ -329,7 +329,7 @@ def full_etl(resume_from_last_run, settings, param, db, es, es_comments, output_
                             "min": min,
                             "max": max,
                             "start_time_str": param.start_time_str
-                        }), u"bug_id")
+                        }), "bug_id")
                     else:
                         bug_list = jx.select(db.query("""
                             SELECT
@@ -346,7 +346,7 @@ def full_etl(resume_from_last_run, settings, param, db, es, es_comments, output_
                             "min": min,
                             "max": max,
                             "start_time_str": param.start_time_str
-                        }), u"bug_id")
+                        }), "bug_id")
 
                 if not bug_list:
                     continue
@@ -359,7 +359,7 @@ def full_etl(resume_from_last_run, settings, param, db, es, es_comments, output_
                     "param": param.copy()
                 })
 
-            except Exception, e:
+            except Exception as e:
                 Log.error(
                     "Problem with dispatch loop in range [{{min}}, {{max}})",
                     min=min,
@@ -408,17 +408,17 @@ def main(settings, es=None, es_comments=None):
             es.delete_all_but(settings.es_comments.alias, settings.es_comments.index)
             es_comments.add_alias(settings.es_comments.alias)
 
-        File(settings.param.last_run_time).write(unicode(convert.datetime2milli(current_run_time)))
-    except Exception, e:
+        File(settings.param.last_run_time).write(str(convert.datetime2milli(current_run_time)))
+    except Exception as e:
         Log.error("Problem with main ETL loop", cause=e)
     finally:
         try:
             close_db_connections()
-        except Exception, e:
+        except Exception as e:
             pass
         try:
             es.set_refresh_interval(1)
-        except Exception, e:
+        except Exception as e:
             pass
 
 def get_bug_ids(es, filter):
@@ -435,7 +435,7 @@ def get_bug_ids(es, filter):
         })
 
         return set(results.hits.hits.fields.bug_id)
-    except Exception, e:
+    except Exception as e:
         Log.error(
             "Can not get_max_bug from {{host}}/{{index}}",
             host=es.settings.host,
@@ -461,7 +461,7 @@ def get_max_bug_id(es):
         if results.facets["0"].count == 0:
             return 0
         return results.facets["0"].max
-    except Exception, e:
+    except Exception as e:
         Log.error(
             "Can not get_max_bug from {{host}}/{{index}}",
             host=es.settings.host,
@@ -507,7 +507,7 @@ def start():
 
             Log.start(settings.debug)
             main(settings)
-    except Exception, e:
+    except Exception as e:
         Log.fatal("Can not start", e)
     finally:
         Log.stop()

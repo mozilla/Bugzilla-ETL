@@ -12,7 +12,7 @@ def main(settings):
     file = File(settings.param.alias_file)
     aliases = convert.json2value(file.read())
 
-    for v in aliases.values():
+    for v in list(aliases.values()):
         v.candidates = convert.dict2Multiset(v.candidates)
 
     data = [
@@ -20,7 +20,7 @@ def main(settings):
             "lost": n,
             "found": d.canonical
         }
-        for n, d in aliases.items()
+        for n, d in list(aliases.items())
         if d.canonical != None and n != d.canonical
     ]
 
@@ -30,14 +30,14 @@ def main(settings):
 
     clean = {
         n: d.canonical
-        for n, d in aliases.items()
+        for n, d in list(aliases.items())
         if d.canonical != None and n != d.canonical and n != ""
     }
 
     rev_clean = struct.inverse(clean)
     Log.note(convert.value2json(rev_clean, pretty=True))
 
-    for k, v in rev_clean.items():
+    for k, v in list(rev_clean.items()):
         if len(v) > 3:
             Log.note(convert.value2json({k: v}, pretty=True))
 
@@ -47,7 +47,7 @@ def start():
         settings = startup.read_settings()
         Log.start(settings.debug)
         main(settings)
-    except Exception, e:
+    except Exception as e:
         Log.fatal("Problems exist", e)
     finally:
         Log.stop()

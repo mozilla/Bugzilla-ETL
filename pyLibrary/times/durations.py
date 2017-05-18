@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 import datetime
 
 from pyLibrary import regex
@@ -51,7 +51,7 @@ class Duration(object):
             output._milli = float(value) * 1000
             output.month = 0
             return output
-        elif isinstance(value, basestring):
+        elif isinstance(value, str):
             return parse(value)
         elif isinstance(value, Duration):
             output.milli = value.milli
@@ -242,25 +242,25 @@ class Duration(object):
         # MILLI
         rem = rest % 1000
         if rem != 0:
-            output = "+" + unicode(rem) + "milli" + output
+            output = "+" + str(rem) + "milli" + output
         rest = Math.floor(rest / 1000)
 
         # SECOND
         rem = rest % 60
         if rem != 0:
-            output = "+" + unicode(rem) + "second" + output
+            output = "+" + str(rem) + "second" + output
         rest = Math.floor(rest / 60)
 
         # MINUTE
         rem = rest % 60
         if rem != 0:
-            output = "+" + unicode(rem) + "minute" + output
+            output = "+" + str(rem) + "minute" + output
         rest = Math.floor(rest / 60)
 
         # HOUR
         rem = rest % 24
         if rem != 0:
-            output = "+" + unicode(rem) + "hour" + output
+            output = "+" + str(rem) + "hour" + output
         rest = Math.floor(rest / 24)
 
         # DAY
@@ -272,11 +272,11 @@ class Duration(object):
             rest = Math.floor(rest / 7)
 
         if rem != 0:
-            output = "+" + unicode(rem) + "day" + output
+            output = "+" + str(rem) + "day" + output
 
         # WEEK
         if rest != 0:
-            output = "+" + unicode(rest) + "week" + output
+            output = "+" + str(rest) + "week" + output
 
         if isNegative:
             output = output.replace("+", "-")
@@ -287,13 +287,13 @@ class Duration(object):
             month = Math.abs(self.month)
 
             if month <= 18 and month != 12:
-                output = sign + unicode(month) + "month" + output
+                output = sign + str(month) + "month" + output
             else:
                 m = month % 12
                 if m != 0:
-                    output = sign + unicode(m) + "month" + output
+                    output = sign + str(m) + "month" + output
                 y = Math.floor(month / 12)
-                output = sign + unicode(y) + "year" + output
+                output = sign + str(y) + "year" + output
 
         if output[0] == "+":
             output = output[1::]

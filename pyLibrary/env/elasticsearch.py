@@ -7,9 +7,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
 
 import re
 from collections import Mapping
@@ -97,7 +97,7 @@ class Index(Features):
                 if len(candidate_types) != 1:
                     Log.error("Expecting `type` parameter")
                 self.settings.type = type = candidate_types[0]
-        except Exception, e:
+        except Exception as e:
             # EXPLORING (get_metadata()) IS NOT ALLOWED ON THE PUBLIC CLUSTER
             Log.error("not expected", cause=e)
 
@@ -208,7 +208,7 @@ class Index(Features):
     def flush(self):
         try:
             self.cluster.post("/" + self.settings.index + "/_flush", data={"wait_if_ongoing": True, "forced": False})
-        except Exception, e:
+        except Exception as e:
             if "FlushNotAllowedEngineException" in e:
                 Log.note("Flush is ignored")
             else:
@@ -241,7 +241,7 @@ class Index(Features):
             timeout=60
         )
 
-        for name, status in result._indices.items():
+        for name, status in list(result._indices.items()):
             if status._shards.failed > 0:
                 Log.error("Failure to delete from {{index}}", index=name)
 
@@ -284,7 +284,7 @@ class Index(Features):
             with Timer("Add {{num}} documents to {{index}}", {"num": len(lines) / 2, "index":self.settings.index}, debug=self.debug):
                 try:
                     data_bytes = b"\n".join(l for l in lines) + b"\n"
-                except Exception, e:
+                except Exception as e:
                     Log.error("can not make request body from\n{{lines|indent}}", lines=lines, cause=e)
 
                 response = self.cluster.post(
@@ -322,7 +322,7 @@ class Index(Features):
                         for i in fails
                     ])
 
-        except Exception, e:
+        except Exception as e:
             if e.message.startswith("sequence item "):
                 Log.error("problem with {{data}}", data=repr(lines[int(e.message[14:16].strip())]), cause=e)
             Log.error("problem sending to ES", e)
@@ -341,7 +341,7 @@ class Index(Features):
         if seconds <= 0:
             interval = -1
         else:
-            interval = unicode(seconds) + "s"
+            interval = str(seconds) + "s"
 
         if self.cluster.version.startswith("0.90."):
             response = self.cluster.put(
@@ -372,9 +372,9 @@ class Index(Features):
         query = wrap(query)
         try:
             if self.debug:
-                if len(query.facets.keys()) > 20:
+                if len(list(query.facets.keys())) > 20:
                     show_query = query.copy()
-                    show_query.facets = {k: "..." for k in query.facets.keys()}
+                    show_query.facets = {k: "..." for k in list(query.facets.keys())}
                 else:
                     show_query = query
                 Log.note("Query:\n{{query|indent}}", query=show_query)
@@ -384,7 +384,7 @@ class Index(Features):
                 timeout=coalesce(timeout, self.settings.timeout),
                 retry=retry
             )
-        except Exception, e:
+        except Exception as e:
             Log.error(
                 "Problem with search (path={{path}}):\n{{query|indent}}",
                 path=self.path + "/_search",
@@ -454,7 +454,7 @@ class Cluster(object):
         self.metadata_locker = Lock()
         self.debug = settings.debug
         self.version = None
-        self.path = settings.host + ":" + unicode(settings.port)
+        self.path = settings.host + ":" + str(settings.port)
         self.get_metadata()
 
     @use_settings
@@ -481,7 +481,7 @@ class Cluster(object):
 
         index = settings.index
         meta = self.get_metadata()
-        columns = parse_properties(index, [], meta.indices[index].mappings.values()[0].properties)
+        columns = parse_properties(index, [], list(meta.indices[index].mappings.values())[0].properties)
         if len(columns)!=0:
             settings.tjson = tjson or any(c.name.endswith("$value") for c in columns)
 
@@ -577,7 +577,7 @@ class Cluster(object):
 
         if schema == None:
             Log.error("Expecting a schema")
-        elif isinstance(schema, basestring):
+        elif isinstance(schema, str):
             schema = convert.json2value(schema, leaves=True)
         else:
             schema = convert.json2value(convert.value2json(schema), leaves=True)
@@ -605,7 +605,7 @@ class Cluster(object):
                 if index in state.metadata.indices:
                     break
                 Log.note("Waiting for index {{index}} to appear", index=index)
-            except Exception, e:
+            except Exception as e:
                 Log.warning("Problem while waiting for index {{index}} to appear", index=index, cause=e)
             Thread.sleep(seconds=1)
         Log.alert("Made new index {{index|quote}}", index=index)
@@ -625,7 +625,7 @@ class Cluster(object):
                 data={"actions": [{"remove": a} for a in aliases]}
             )
 
-        url = self.settings.host + ":" + unicode(self.settings.port) + "/" + index_name
+        url = self.settings.host + ":" + str(self.settings.port) + "/" + index_name
         try:
             response = http.delete(url)
             if response.status_code != 200:
@@ -634,7 +634,7 @@ class Cluster(object):
             if self.debug:
                 Log.note("delete response {{response}}", response=details)
             return response
-        except Exception, e:
+        except Exception as e:
             Log.error("Problem with call to {{url}}", url=url, cause=e)
 
 
@@ -645,7 +645,7 @@ class Cluster(object):
         """
         data = self.get("/_cluster/state")
         output = []
-        for index, desc in data.metadata.indices.items():
+        for index, desc in list(data.metadata.indices.items()):
             if not desc["aliases"]:
                 output.append({"index": index, "alias": None})
             else:
@@ -664,7 +664,7 @@ class Cluster(object):
                 self._metadata = wrap(response.metadata)
                 # REPLICATE MAPPING OVER ALL ALIASES
                 indices = self._metadata.indices
-                for i, m in jx.sort(indices.items(), {"value": 0, "sort": -1}):
+                for i, m in jx.sort(list(indices.items()), {"value": 0, "sort": -1}):
                     m.index = i
                     for a in m.aliases:
                         if not indices[a]:
@@ -676,7 +676,7 @@ class Cluster(object):
         return self._metadata
 
     def post(self, path, **kwargs):
-        url = self.settings.host + ":" + unicode(self.settings.port) + path
+        url = self.settings.host + ":" + str(self.settings.port) + path
 
         try:
             wrap(kwargs).headers["Accept-Encoding"] = "gzip,deflate"
@@ -706,7 +706,7 @@ class Cluster(object):
                     failures="---\n".join(r.replace(";", ";\n") for r in details._shards.failures.reason)
                 )
             return details
-        except Exception, e:
+        except Exception as e:
             if url[0:4] != "http":
                 suggestion = " (did you forget \"http://\" prefix on the host name?)"
             else:
@@ -725,7 +725,7 @@ class Cluster(object):
 
 
     def get(self, path, **kwargs):
-        url = self.settings.host + ":" + unicode(self.settings.port) + path
+        url = self.settings.host + ":" + str(self.settings.port) + path
         try:
             response = http.get(url, **kwargs)
             if response.status_code not in [200]:
@@ -736,11 +736,11 @@ class Cluster(object):
             if details.error:
                 Log.error(details.error)
             return details
-        except Exception, e:
+        except Exception as e:
             Log.error("Problem with call to {{url}}", url=url, cause=e)
 
     def head(self, path, **kwargs):
-        url = self.settings.host + ":" + unicode(self.settings.port) + path
+        url = self.settings.host + ":" + str(self.settings.port) + path
         try:
             response = http.head(url, **kwargs)
             if response.status_code not in [200]:
@@ -754,11 +754,11 @@ class Cluster(object):
                 return details
             else:
                 return None  # WE DO NOT EXPECT content WITH HEAD REQUEST
-        except Exception, e:
+        except Exception as e:
             Log.error("Problem with call to {{url}}",  url= url, cause=e)
 
     def put(self, path, **kwargs):
-        url = self.settings.host + ":" + unicode(self.settings.port) + path
+        url = self.settings.host + ":" + str(self.settings.port) + path
 
         if self.debug:
             sample = kwargs["data"][:300]
@@ -770,7 +770,7 @@ class Cluster(object):
             if self.debug:
                 Log.note("response: {{response}}",  response= utf82unicode(response.all_content)[0:300:])
             return response
-        except Exception, e:
+        except Exception as e:
             Log.error("Problem with call to {{url}}",  url= url, cause=e)
 
 
@@ -797,7 +797,7 @@ def _scrub(r):
     try:
         if r == None:
             return None
-        elif isinstance(r, basestring):
+        elif isinstance(r, str):
             if r == "":
                 return None
             return r
@@ -807,7 +807,7 @@ def _scrub(r):
             if isinstance(r, Dict):
                 r = object.__getattribute__(r, "_dict")
             output = {}
-            for k, v in r.items():
+            for k, v in list(r.items()):
                 v = _scrub(v)
                 if v != None:
                     output[k.lower()] = v
@@ -832,7 +832,7 @@ def _scrub(r):
                 return output
         else:
             return r
-    except Exception, e:
+    except Exception as e:
         Log.warning("Can not scrub: {{json}}",  json= r)
 
 
@@ -863,7 +863,7 @@ class Alias(Features):
             indices = self.cluster.get_metadata().indices
             if not self.settings.alias or self.settings.alias==self.settings.index:
                 alias_list = self.cluster.get("/_alias/"+self.settings.index)
-                candidates = [(name, i) for name, i in alias_list.items() if self.settings.index in i.aliases.keys()]
+                candidates = [(name, i) for name, i in list(alias_list.items()) if self.settings.index in list(i.aliases.keys())]
                 full_name = jx.sort(candidates, 0).last()[0]
                 index = self.cluster.get("/" + full_name + "/_mapping")[full_name]
             else:
@@ -871,10 +871,10 @@ class Alias(Features):
 
             # FIND MAPPING WITH MOST PROPERTIES (AND ASSUME THAT IS THE CANONICAL TYPE)
             max_prop = -1
-            for _type, mapping in index.mappings.items():
+            for _type, mapping in list(index.mappings.items()):
                 if _type == "_default_":
                     continue
-                num_prop = len(mapping.properties.keys())
+                num_prop = len(list(mapping.properties.keys()))
                 if max_prop < num_prop:
                     max_prop = num_prop
                     self.settings.type = _type
@@ -894,7 +894,7 @@ class Alias(Features):
             indices = self.cluster.get_metadata().indices
             if not self.settings.alias or self.settings.alias==self.settings.index:
                 #PARTIALLY DEFINED settings
-                candidates = [(name, i) for name, i in indices.items() if self.settings.index in i.aliases]
+                candidates = [(name, i) for name, i in list(indices.items()) if self.settings.index in i.aliases]
                 # TODO: MERGE THE mappings OF ALL candidates, DO NOT JUST PICK THE LAST ONE
 
                 index = "dummy value"
@@ -958,7 +958,7 @@ class Alias(Features):
                 timeout=60
             )
             keep_trying = False
-            for name, status in result._indices.items():
+            for name, status in list(result._indices.items()):
                 if status._shards.failed > 0:
                     if status._shards.failures[0].reason.find("rejected execution (queue capacity ") >= 0:
                         keep_trying = True
@@ -966,7 +966,7 @@ class Alias(Features):
                         break
 
             if not keep_trying:
-                for name, status in result._indices.items():
+                for name, status in list(result._indices.items()):
                     if status._shards.failed > 0:
                         Log.error(
                             "ES shard(s) report Failure to delete from {{index}}: {{message}}.  Query was {{query}}",
@@ -979,9 +979,9 @@ class Alias(Features):
         query = wrap(query)
         try:
             if self.debug:
-                if len(query.facets.keys()) > 20:
+                if len(list(query.facets.keys())) > 20:
                     show_query = query.copy()
-                    show_query.facets = {k: "..." for k in query.facets.keys()}
+                    show_query.facets = {k: "..." for k in list(query.facets.keys())}
                 else:
                     show_query = query
                 Log.note("Query {{path}}\n{{query|indent}}", path=self.path + "/_search", query=show_query)
@@ -990,7 +990,7 @@ class Alias(Features):
                 data=query,
                 timeout=coalesce(timeout, self.settings.timeout)
             )
-        except Exception, e:
+        except Exception as e:
             Log.error(
                 "Problem with search (path={{path}}):\n{{query|indent}}",
                 path=self.path + "/_search",
@@ -1006,7 +1006,7 @@ def parse_properties(parent_index_name, parent_query_path, esProperties):
     from pyLibrary.queries.meta import Column
 
     columns = DictList()
-    for name, property in esProperties.items():
+    for name, property in list(esProperties.items()):
         if parent_query_path:
             index_name, query_path = parent_index_name, join_field(split_field(parent_query_path) + [name])
         else:
@@ -1047,7 +1047,7 @@ def parse_properties(parent_index_name, parent_query_path, esProperties):
             continue
         if property.type == "multi_field":
             property.type = property.fields[name].type  # PULL DEFAULT TYPE
-            for i, (n, p) in enumerate(property.fields.items()):
+            for i, (n, p) in enumerate(list(property.fields.items())):
                 if n == name:
                     # DEFAULT
                     columns.append(Column(
@@ -1104,7 +1104,7 @@ def _merge_mapping(a, b):
     """
     MERGE TWO MAPPINGS, a TAKES PRECEDENCE
     """
-    for name, b_details in b.items():
+    for name, b_details in list(b.items()):
         a_details = a[literal_field(name)]
         if a_details.properties and not a_details.type:
             a_details.type = "object"

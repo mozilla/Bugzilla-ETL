@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 import json
 import time
@@ -20,7 +20,7 @@ from decimal import Decimal
 from collections import Mapping
 from json import encoder as json_encoder_module
 from math import floor
-from repr import Repr
+from reprlib import Repr
 
 from pyLibrary.dot import Dict, DictList, NullType, Null
 from pyLibrary.jsons import quote, ESCAPE_DCT, scrub
@@ -49,7 +49,7 @@ try:
     from __pypy__.builders import UnicodeBuilder
 
     use_pypy = True
-except Exception, e:
+except Exception as e:
     if use_pypy:
         sys.stdout.write(
             "*********************************************************\n"
@@ -63,7 +63,7 @@ except Exception, e:
             list.__init__(self)
 
         def build(self):
-            return u"".join(self)
+            return "".join(self)
 
 append = UnicodeBuilder.append
 
@@ -83,7 +83,7 @@ def pypy_json_encode(value, pretty=False):
         _value2json(value, _buffer)
         output = _buffer.build()
         return output
-    except Exception, e:
+    except Exception as e:
         # THE PRETTY JSON WILL PROVIDE MORE DETAIL ABOUT THE SERIALIZATION CONCERNS
         from pyLibrary.debugs.logs import Log
 
@@ -94,7 +94,7 @@ def pypy_json_encode(value, pretty=False):
         _dealing_with_problem = True
         try:
             return pretty_json(value)
-        except Exception, f:
+        except Exception as f:
             Log.error("problem serializing object", f)
         finally:
             _dealing_with_problem = False
@@ -145,8 +145,8 @@ class cPythonJSONEncoder(object):
 
         try:
             scrubbed = scrub(value)
-            return unicode(self.encoder.encode(scrubbed))
-        except Exception, e:
+            return str(self.encoder.encode(scrubbed))
+        except Exception as e:
             from pyLibrary.debugs.exceptions import Except
             from pyLibrary.debugs.logs import Log
 
@@ -158,55 +158,55 @@ class cPythonJSONEncoder(object):
 def _value2json(value, _buffer):
     try:
         if value is None:
-            append(_buffer, u"null")
+            append(_buffer, "null")
             return
         elif value is True:
-            append(_buffer, u"true")
+            append(_buffer, "true")
             return
         elif value is False:
-            append(_buffer, u"false")
+            append(_buffer, "false")
             return
         elif isinstance(value, Mapping):
             if value:
                 _dict2json(value, _buffer)
             else:
-                append(_buffer, u"{}")
+                append(_buffer, "{}")
             return
 
         type = value.__class__
         if type is str:
-            append(_buffer, u"\"")
+            append(_buffer, "\"")
             try:
                 v = utf82unicode(value)
-            except Exception, e:
+            except Exception as e:
                 problem_serializing(value, e)
 
             for c in v:
                 append(_buffer, ESCAPE_DCT.get(c, c))
-            append(_buffer, u"\"")
-        elif type is unicode:
-            append(_buffer, u"\"")
+            append(_buffer, "\"")
+        elif type is str:
+            append(_buffer, "\"")
             for c in value:
                 append(_buffer, ESCAPE_DCT.get(c, c))
-            append(_buffer, u"\"")
-        elif type in (int, long, Decimal):
-            append(_buffer, unicode(value))
+            append(_buffer, "\"")
+        elif type in (int, int, Decimal):
+            append(_buffer, str(value))
         elif type is float:
-            append(_buffer, unicode(repr(value)))
+            append(_buffer, str(repr(value)))
         elif type in (set, list, tuple, DictList):
             _list2json(value, _buffer)
         elif type is date:
-            append(_buffer, unicode(Decimal(time.mktime(value.timetuple()))))
+            append(_buffer, str(Decimal(time.mktime(value.timetuple()))))
         elif type is datetime:
-            append(_buffer, unicode(Decimal(time.mktime(value.timetuple()))))
+            append(_buffer, str(Decimal(time.mktime(value.timetuple()))))
         elif type is Date:
-            append(_buffer, unicode(value.unix))
+            append(_buffer, str(value.unix))
         elif type is timedelta:
-            append(_buffer, unicode(value.total_seconds()))
+            append(_buffer, str(value.total_seconds()))
         elif type is Duration:
-            append(_buffer, unicode(value.seconds))
+            append(_buffer, str(value.seconds))
         elif type is NullType:
-            append(_buffer, u"null")
+            append(_buffer, "null")
         elif hasattr(value, '__json__'):
             j = value.__json__()
             append(_buffer, j)
@@ -216,7 +216,7 @@ def _value2json(value, _buffer):
             from pyLibrary.debugs.logs import Log
 
             Log.error(_repr(value) + " is not JSON serializable")
-    except Exception, e:
+    except Exception as e:
         from pyLibrary.debugs.logs import Log
 
         Log.error(_repr(value) + " is not JSON serializable", cause=e)
@@ -224,40 +224,40 @@ def _value2json(value, _buffer):
 
 def _list2json(value, _buffer):
     if not value:
-        append(_buffer, u"[]")
+        append(_buffer, "[]")
     else:
-        sep = u"["
+        sep = "["
         for v in value:
             append(_buffer, sep)
-            sep = u", "
+            sep = ", "
             _value2json(v, _buffer)
-        append(_buffer, u"]")
+        append(_buffer, "]")
 
 
 def _iter2json(value, _buffer):
-    append(_buffer, u"[")
-    sep = u""
+    append(_buffer, "[")
+    sep = ""
     for v in value:
         append(_buffer, sep)
-        sep = u", "
+        sep = ", "
         _value2json(v, _buffer)
-    append(_buffer, u"]")
+    append(_buffer, "]")
 
 
 def _dict2json(value, _buffer):
     try:
-        prefix = u"{\""
-        for k, v in value.iteritems():
+        prefix = "{\""
+        for k, v in value.items():
             append(_buffer, prefix)
-            prefix = u", \""
+            prefix = ", \""
             if isinstance(k, str):
                 k = utf82unicode(k)
             for c in k:
                 append(_buffer, ESCAPE_DCT.get(c, c))
-            append(_buffer, u"\": ")
+            append(_buffer, "\": ")
             _value2json(v, _buffer)
-        append(_buffer, u"}")
-    except Exception, e:
+        append(_buffer, "}")
+    except Exception as e:
         from pyLibrary.debugs.logs import Log
 
         Log.error(_repr(value) + " is not JSON serializable", cause=e)
@@ -285,51 +285,51 @@ def pretty_json(value):
                 items = sorted(items, lambda a, b: value_compare(a[0], b[0]))
                 values = [unicode_key(k) + ": " + indent(pretty_json(v)).strip() for k, v in items if v != None]
                 return "{\n" + INDENT + (",\n" + INDENT).join(values) + "\n}"
-            except Exception, e:
+            except Exception as e:
                 from pyLibrary.debugs.logs import Log
                 from pyLibrary.collections import OR
 
-                if OR(not isinstance(k, basestring) for k in value.keys()):
+                if OR(not isinstance(k, str) for k in list(value.keys())):
                     Log.error(
                         "JSON must have string keys: {{keys}}:",
-                        keys=[k for k in value.keys()],
+                        keys=[k for k in list(value.keys())],
                         cause=e
                     )
 
                 Log.error(
                     "problem making dict pretty: keys={{keys}}:",
-                    keys=[k for k in value.keys()],
+                    keys=[k for k in list(value.keys())],
                     cause=e
                 )
         elif value in (None, Null):
             return "null"
-        elif isinstance(value, basestring):
+        elif isinstance(value, str):
             if isinstance(value, str):
                 value = utf82unicode(value)
             try:
                 return quote(value)
-            except Exception, e:
+            except Exception as e:
                 from pyLibrary.debugs.logs import Log
 
                 try:
                     Log.note("try explicit convert of string with length {{length}}", length=len(value))
-                    acc = [u"\""]
+                    acc = ["\""]
                     for c in value:
                         try:
                             try:
                                 c2 = ESCAPE_DCT[c]
                             except Exception:
                                 c2 = c
-                            c3 = unicode(c2)
+                            c3 = str(c2)
                             acc.append(c3)
                         except BaseException:
                             pass
                             # Log.warning("odd character {{ord}} found in string.  Ignored.",  ord= ord(c)}, cause=g)
-                    acc.append(u"\"")
-                    output = u"".join(acc)
+                    acc.append("\"")
+                    output = "".join(acc)
                     Log.note("return value of length {{length}}", length=len(output))
                     return output
-                except BaseException, f:
+                except BaseException as f:
                     Log.warning("can not even explicit convert {{type}}", type=f.__class__.__name__, cause=f)
                     return "null"
         elif isinstance(value, list):
@@ -358,7 +358,7 @@ def pretty_json(value):
 
                 content = ",\n".join(
                     ", ".join(j.rjust(max_len) for j in js[r:r + num_columns])
-                    for r in xrange(0, len(js), num_columns)
+                    for r in range(0, len(js), num_columns)
                 )
                 return "[\n" + indent(content) + "\n]"
 
@@ -370,7 +370,7 @@ def pretty_json(value):
                     if i > 0:
                         output.append(",\n")
                     output.append(indent(p))
-                except Exception, e:
+                except Exception as e:
                     from pyLibrary.debugs.logs import Log
 
                     Log.warning("problem concatenating string of length {{len1}} and {{len2}}",
@@ -405,7 +405,7 @@ def pretty_json(value):
 
             return pypy_json_encode(value)
 
-    except Exception, e:
+    except Exception as e:
         problem_serializing(value, e)
 
 
@@ -422,7 +422,7 @@ def problem_serializing(value, e=None):
 
     try:
         rep = _repr(value)
-    except Exception, _:
+    except Exception as _:
         rep = None
 
     if rep == None:
@@ -445,9 +445,9 @@ def indent(value, prefix=INDENT):
         content = value.rstrip()
         suffix = value[len(content):]
         lines = content.splitlines()
-        return prefix + (u"\n" + prefix).join(lines) + suffix
-    except Exception, e:
-        raise Exception(u"Problem with indent of value (" + e.message + u")\n" + value)
+        return prefix + ("\n" + prefix).join(lines) + suffix
+    except Exception as e:
+        raise Exception("Problem with indent of value (" + e.message + ")\n" + value)
 
 
 def value_compare(a, b):
@@ -473,8 +473,8 @@ def datetime2milli(d, type):
         else:
             diff = d - date(1970, 1, 1)
 
-        return long(diff.total_seconds()) * 1000L + long(diff.microseconds / 1000)
-    except Exception, e:
+        return int(diff.total_seconds()) * 1000 + int(diff.microseconds / 1000)
+    except Exception as e:
         problem_serializing(d, e)
 
 
@@ -482,10 +482,10 @@ def unicode_key(key):
     """
     CONVERT PROPERTY VALUE TO QUOTED NAME OF SAME
     """
-    if not isinstance(key, basestring):
+    if not isinstance(key, str):
         from pyLibrary.debugs.logs import Log
         Log.error("{{key|quote}} is not a valid key", key=key)
-    return quote(unicode(key))
+    return quote(str(key))
 
 
 _repr_ = Repr()

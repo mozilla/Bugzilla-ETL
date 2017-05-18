@@ -12,7 +12,7 @@ def main():
     try:
         settings=startup.read_settings()
         Log.start(settings.debug)
-        input=raw_input("We are going to totally wipe out the "+settings.bugzilla.schema.upper()+" schema at "+settings.bugzilla.host.upper()+"!  Type \"YES\" to continue: ")
+        input=input("We are going to totally wipe out the "+settings.bugzilla.schema.upper()+" schema at "+settings.bugzilla.host.upper()+"!  Type \"YES\" to continue: ")
         if input!="YES":
             Log.note("Aborted.  No Changes made.")
             return

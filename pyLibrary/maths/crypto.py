@@ -8,9 +8,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 from pyLibrary import convert
 from pyLibrary.debugs.logs import Log
@@ -28,7 +28,7 @@ def encrypt(text, _key, salt=None):
     """
     from pyLibrary.queries import jx
 
-    if not isinstance(text, unicode):
+    if not isinstance(text, str):
         Log.error("only unicode is encrypted")
     if _key is None:
         Log.error("Expecting a key")

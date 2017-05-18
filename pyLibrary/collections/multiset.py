@@ -8,9 +8,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 
 
@@ -33,7 +33,7 @@ class Multiset(object):
                 return _NegMultiset(list, key_field, count_field)
             else:
                 return _Multiset(list, key_field, count_field)
-        except Exception, e:
+        except Exception as e:
             from pyLibrary.debugs.logs import Log
 
             Log.error("Not expected", e)
@@ -66,16 +66,16 @@ class _Multiset(Multiset):
 
 
     def __iter__(self):
-        for k, m in self.dic.items():
+        for k, m in list(self.dic.items()):
             for i in range(m):
                 yield k
 
 
     def items(self):
-        return self.dic.items()
+        return list(self.dic.items())
 
     def keys(self):
-        return self.dic.keys()
+        return list(self.dic.keys())
 
     def add(self, value):
         if value in self.dic:
@@ -122,7 +122,7 @@ class _Multiset(Multiset):
         output = self.copy()
 
         if isinstance(other, Multiset):
-            for k, c in other.dic.items():
+            for k, c in list(other.dic.items()):
                 output.dic[k] = output.dic.get(k, 0) + c
         else:
             for o in other:
@@ -135,7 +135,7 @@ class _Multiset(Multiset):
     def __len__(self):
         return sum(self.dic.values())
 
-    def __nonzero__(self):
+    def __bool__(self):
         if self.dic:
             return True
         return False
@@ -170,10 +170,10 @@ class _NegMultiset(Multiset):
 
 
     def items(self):
-        return self.dic.items()
+        return list(self.dic.items())
 
     def keys(self):
-        return self.dic.keys()
+        return list(self.dic.keys())
 
     def add(self, value, amount=None):
         count = self.dic.get(value)
@@ -209,7 +209,7 @@ class _NegMultiset(Multiset):
         output = self.copy()
 
         if isinstance(other, _NegMultiset):
-            for k, c in other.dic.items():
+            for k, c in list(other.dic.items()):
                 output.add(k, c)
         else:
             for o in other:
@@ -232,7 +232,7 @@ class _NegMultiset(Multiset):
     def __len__(self):
         return sum(self.dic.values())
 
-    def __nonzero__(self):
+    def __bool__(self):
         if self.dic:
             return True
         return False

@@ -9,9 +9,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 
 class Queue(object):
@@ -30,7 +30,7 @@ class Queue(object):
     def __init__(self):
         self.list = []
 
-    def __nonzero__(self):
+    def __bool__(self):
         return len(self.list) > 0
 
     def __len__(self):

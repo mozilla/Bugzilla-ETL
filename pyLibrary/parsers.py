@@ -1,4 +1,4 @@
-from urlparse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs
 from pyLibrary.dot import Null, coalesce, wrap
 from pyLibrary.dot.dicts import Dict
 
@@ -68,9 +68,9 @@ class URL(object):
                 self.path = output.path
                 self.query = wrap(_convert.url_param2value(output.query))
                 self.fragment = output.fragment
-        except Exception, e:
+        except Exception as e:
             _Log.error("problem parsing {{value}} to URL", value=value, cause=e)
-    def __nonzero__(self):
+    def __bool__(self):
         if self.scheme or self.host or self.port or self.path or self.query or self.fragment:
             return True
         return False

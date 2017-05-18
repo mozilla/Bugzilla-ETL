@@ -8,9 +8,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 import sqlite3
 
@@ -86,7 +86,7 @@ class Sqlite(object):
                             curr = self.db.execute(command)
                             result.meta.format = "table"
                             result.data = curr.fetchall()
-                        except Exception, e:
+                        except Exception as e:
                             e=Except.wrap(e)
                             result.exception = Except(ERROR, "Problem with\n{{command|indent}}", command=command, cause=e)
                         finally:
@@ -94,7 +94,7 @@ class Sqlite(object):
                     else:
                         try:
                             self.db.execute(command)
-                        except Exception, e:
+                        except Exception as e:
                             e = Except.wrap(e)
                             e.cause = Except(
                                 type=ERROR,
@@ -103,7 +103,7 @@ class Sqlite(object):
                             )
                             Log.warning("Failure to execute", cause=e)
 
-        except Exception, e:
+        except Exception as e:
             Log.error("Problem with sql thread", e)
         finally:
             self.db.close()

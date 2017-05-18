@@ -9,9 +9,9 @@
 #
 
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
 
 from collections import Mapping
 from copy import copy
@@ -82,7 +82,7 @@ class Table_usingSQLite(Container):
                 cs.add(column)
         else:
             command = "CREATE TABLE " + quote_table(name) + "(" + \
-                      (",".join(_quote_column(c) + " " + c.type for u, cs in self.columns.items() for c in cs)) + \
+                      (",".join(_quote_column(c) + " " + c.type for u, cs in list(self.columns.items()) for c in cs)) + \
                       ", PRIMARY KEY (" + \
                       (", ".join(_quote_column(c) for u in self.uid for c in self.columns[u])) + \
                       "))"
@@ -97,7 +97,7 @@ class Table_usingSQLite(Container):
 
     def get_leaves(self, table_name=None):
         output = []
-        for columns_by_type in self.columns.values():
+        for columns_by_type in list(self.columns.values()):
             for c in columns_by_type:
                 if c.type in ["nested", "object"]:
                     continue
@@ -118,7 +118,7 @@ class Table_usingSQLite(Container):
             uid = wrap({u: d[u] for u in self.uid})
             self.flatten(d, uid, doc_collection)
 
-        for nested_path, insertion in doc_collection.items():
+        for nested_path, insertion in list(doc_collection.items()):
             active_columns = list(insertion.active_columns)
             vals = [[quote_value(get_document_value(d, c)) for c in active_columns] for d in insertion.rows]
 
@@ -141,7 +141,7 @@ class Table_usingSQLite(Container):
         if column.type == "nested":
             nested_table_name = join_field(split_field(self.name) + split_field(column.name))
             # MAKE THE TABLE
-            table = Table_usingSQLite(nested_table_name, self.db, self.uid + [UID_PREFIX+"id"+unicode(len(self.uid))], exists=False)
+            table = Table_usingSQLite(nested_table_name, self.db, self.uid + [UID_PREFIX+"id"+str(len(self.uid))], exists=False)
             self.nested_tables[nested_table_name] = table
         else:
             self.db.execute(
@@ -153,7 +153,7 @@ class Table_usingSQLite(Container):
         counter = self.db.query("SELECT COUNT(*) FROM " + quote_table(self.name))[0][0]
         return counter
 
-    def __nonzero__(self):
+    def __bool__(self):
         counter = self.db.query("SELECT COUNT(*) FROM " + quote_table(self.name))[0][0]
         return bool(counter)
 
@@ -174,7 +174,7 @@ class Table_usingSQLite(Container):
         return [o[0] for o in output]
 
     def __iter__(self):
-        columns = [c for c, cs in self.columns.items() for c in cs if c.type not in ["object", "nested"]]
+        columns = [c for c, cs in list(self.columns.items()) for c in cs if c.type not in ["object", "nested"]]
         command = "SELECT " + \
                   ",\n".join(_quote_column(c) for c in columns) + \
                   " FROM " + quote_table(self.name)
@@ -202,7 +202,7 @@ class Table_usingSQLite(Container):
         command = wrap(command)
 
         # REJECT DEEP UPDATES
-        touched_columns = command.set.keys() | set(listwrap(command["clear"]))
+        touched_columns = list(command.set.keys()) | set(listwrap(command["clear"]))
         for c in self.get_leaves():
             if c.name in touched_columns and c.nested_path and len(c.name) > len(c.nested_path[0]):
                 Log.error("Deep update not supported")
@@ -231,12 +231,12 @@ class Table_usingSQLite(Container):
             self.add_column(column)
 
         # UPDATE THE NESTED VALUES
-        for nested_column_name, nested_value in command.set.items():
+        for nested_column_name, nested_value in list(command.set.items()):
             if get_type(nested_value) == "nested":
                 nested_table_name = join_field(split_field(self.name)+split_field(nested_column_name))
                 nested_table = self.nested_tables[nested_table_name]
                 self_primary_key = ",".join(quote_table(c.es_column) for u in self.uid for c in self.columns[u])
-                extra_key_name = UID_PREFIX+"id"+unicode(len(self.uid))
+                extra_key_name = UID_PREFIX+"id"+str(len(self.uid))
                 extra_key = [e for e in nested_table.columns[extra_key_name]][0]
 
                 sql_command = "DELETE FROM " + quote_table(nested_table.name) + \
@@ -309,7 +309,7 @@ class Table_usingSQLite(Container):
 
                 # THE CHILD COLUMNS COULD HAVE EXPANDED
                 # ADD COLUMNS TO SELF
-                for n, cs in nested_table.columns.items():
+                for n, cs in list(nested_table.columns.items()):
                     for c in cs:
                         column = Column(
                             name=c.name,
@@ -328,7 +328,7 @@ class Table_usingSQLite(Container):
                   ",\n".join(
                       [
                           _quote_column(c) + "=" + quote_value(get_if_type(v, c.type))
-                          for k, v in command.set.items()
+                          for k, v in list(command.set.items())
                           if get_type(v) != "nested"
                           for c in self.columns[k]
                           if c.type != "nested" and not c.nested_path
@@ -361,7 +361,7 @@ class Table_usingSQLite(Container):
         """
         select = []
         column_names = []
-        for cname, cs in self.columns.items():
+        for cname, cs in list(self.columns.items()):
             cs = [c for c in cs if c.type not in ["nested", "object"] and not c.nested_path]
             if len(cs) == 0:
                 continue
@@ -437,7 +437,7 @@ class Table_usingSQLite(Container):
                     data={}
                 )
 
-            columns = zip(*result.data)
+            columns = list(zip(*result.data))
 
             edges = []
             ci = []
@@ -497,7 +497,7 @@ class Table_usingSQLite(Container):
         groupby_prefix = "\nGROUP BY "
 
         for i, e in enumerate(query.edges):
-            edge_alias = "e" + unicode(i)
+            edge_alias = "e" + str(i)
             edge_value = e.value.to_sql()
             value = edge_value
             for v in e.value.vars():
@@ -568,8 +568,8 @@ class Table_usingSQLite(Container):
                    " ORDER BY " + (", ".join(window.edges.sort)) + \
                    ") AS " + quote_table(window.name)
 
-        range_min = unicode(coalesce(window.range.min, "UNBOUNDED"))
-        range_max = unicode(coalesce(window.range.max, "UNBOUNDED"))
+        range_min = str(coalesce(window.range.min, "UNBOUNDED"))
+        range_max = str(coalesce(window.range.max, "UNBOUNDED"))
 
         return sql_aggs[window.aggregate] + "(" + window.value.to_sql() + ") OVER (" + \
                " PARTITION BY " + (", ".join(window.edges.values)) + \
@@ -580,7 +580,7 @@ class Table_usingSQLite(Container):
     def _normalize_select(self, select):
         output = []
         if select.value == ".":
-            for cname, cs in self.columns.items():
+            for cname, cs in list(self.columns.items()):
                 num_types = 0
                 for c in cs:
                     if c.type in ["nested", "object"]:
@@ -612,7 +612,7 @@ class Table_usingSQLite(Container):
             row = uid.copy()
             insertion.rows.append(row)
             if isinstance(d, Mapping):
-                for k, v in d.items():
+                for k, v in list(d.items()):
                     cname = join_field(split_field(path)+[k])
                     ctype = get_type(v)
                     if ctype is None:
@@ -641,7 +641,7 @@ class Table_usingSQLite(Container):
                                 rows=[]
                             )
                         for i, r in enumerate(v):
-                            child_uid = set_default({UID_PREFIX+"id"+unicode(len(uid)): i}, uid)
+                            child_uid = set_default({UID_PREFIX+"id"+str(len(uid)): i}, uid)
                             _flatten(r, child_uid, cname, deeper)
                     elif ctype == "object":
                         row[cname] = "."
@@ -679,7 +679,7 @@ class Table_usingSQLite(Container):
                             rows=[]
                         )
                     for i, r in enumerate(v):
-                        child_uid = set_default({UID_PREFIX+"id"+unicode(len(uid)): i}, uid)
+                        child_uid = set_default({UID_PREFIX+"id"+str(len(uid)): i}, uid)
                         _flatten(r, child_uid, cname, deeper)
                 elif ctype == "object":
                     row[cname] = "."
@@ -708,7 +708,7 @@ def _quote_column(column):
 def quote_value(value):
     if isinstance(value, (Mapping, list)):
         return "."
-    elif isinstance(value, basestring):
+    elif isinstance(value, str):
         return "'" + value.replace("'", "''") + "'"
     elif value == None:
         return "NULL"
@@ -717,7 +717,7 @@ def quote_value(value):
     elif value is False:
         return "0"
     else:
-        return unicode(value)
+        return str(value)
 
 
 def unique_name():
@@ -728,7 +728,7 @@ def column_key(k, v):
 
     if v == None:
         return None
-    elif isinstance(v, basestring):
+    elif isinstance(v, str):
         return k, "text"
     elif isinstance(v, list):
         return k, None
@@ -743,7 +743,7 @@ def column_key(k, v):
 def get_type(v):
     if v == None:
         return None
-    elif isinstance(v, basestring):
+    elif isinstance(v, str):
         return "text"
     elif isinstance(v, Mapping):
         return "object"
@@ -779,7 +779,7 @@ def get_if_type(value, type):
 def is_type(value, type):
     if value == None:
         return False
-    elif isinstance(value, basestring) and type == "text":
+    elif isinstance(value, str) and type == "text":
         return value
     elif isinstance(value, list):
         return False

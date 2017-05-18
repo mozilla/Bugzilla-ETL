@@ -8,9 +8,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 from collections import Mapping
 
 import os
@@ -62,7 +62,7 @@ def get(url):
     try:
         phase2 = _replace_locals(phase1, [phase1])
         return wrap(phase2)
-    except Exception, e:
+    except Exception as e:
         _Log.error("problem replacing locals in\n{{phase1}}", phase1=phase1)
 
 
@@ -89,7 +89,7 @@ def _replace_ref(node, url):
     if isinstance(node, Mapping):
         ref = None
         output = {}
-        for k, v in node.items():
+        for k, v in list(node.items()):
             if k == "$ref":
                 ref = URL(v)
             else:
@@ -145,7 +145,7 @@ def _replace_locals(node, doc_path):
         # RECURS, DEEP COPY
         ref = None
         output = {}
-        for k, v in node.items():
+        for k, v in list(node.items()):
             if k == "$ref":
                 ref = v
             else:
@@ -221,20 +221,20 @@ def get_file(ref, url):
         if DEBUG:
             _Log.note("reading file {{path}}", path=path)
         content = File(path).read()
-    except Exception, e:
+    except Exception as e:
         content = None
         _Log.error("Could not read file {{filename}}", filename=path, cause=e)
 
     try:
         new_value = _convert.json2value(content, params=ref.query, flexible=True, leaves=True)
-    except Exception, e:
+    except Exception as e:
         if not _Except:
             _late_import()
 
         e = _Except.wrap(e)
         try:
             new_value = _convert.ini2value(content)
-        except Exception, f:
+        except Exception as f:
             raise _Log.error("Can not read {{file}}", file=path, cause=e)
     new_value = _replace_ref(new_value, ref)
     return new_value
@@ -253,7 +253,7 @@ def get_env(ref, url):
     ref = ref.host
     try:
         new_value = _convert.json2value(os.environ[ref])
-    except Exception, e:
+    except Exception as e:
         new_value = os.environ[ref]
     return new_value
 

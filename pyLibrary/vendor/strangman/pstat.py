@@ -134,16 +134,16 @@ Returns: a list-of-lists corresponding to the columns from listoflists
     column = 0
     if type(cnums) in [ListType, TupleType]:   # if multiple columns to get
         index = cnums[0]
-        column = map(lambda x: x[index], listoflists)
+        column = [x[index] for x in listoflists]
         for col in cnums[1:]:
             index = col
-            column = zip(column, map(lambda x: x[index], listoflists))
+            column = list(zip(column, [x[index] for x in listoflists]))
     elif type(cnums) == StringType:              # if an 'x[3:]' type expr.
         evalstring = 'map(lambda x: x' + cnums + ', listoflists)'
         column = eval(evalstring)
     else:                                     # else it's just 1 col to get
         index = cnums
-        column = map(lambda x: x[index], listoflists)
+        column = [x[index] for x in listoflists]
     return column
 
 

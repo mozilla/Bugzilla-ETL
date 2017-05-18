@@ -9,9 +9,9 @@
 #
 
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 from datetime import timedelta
 import logging
@@ -68,7 +68,7 @@ def make_log_from_settings(settings):
     try:
         temp = __import__(path, globals(), locals(), [class_name], -1)
         constructor = object.__getattribute__(temp, class_name)
-    except Exception, e:
+    except Exception as e:
         if settings.stream and not constructor:
             # PROVIDE A DEFAULT STREAM HANLDER
             constructor = TextLog_usingThreadedStream

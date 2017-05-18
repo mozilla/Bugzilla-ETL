@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
 
 from collections import Mapping
 
@@ -30,7 +30,7 @@ def format_cube(decoders, aggs, start, query, select):
             try:
                 v = _pull(s, agg)
                 m[coord] = v
-            except Exception, e:
+            except Exception as e:
                 Log.error("", e)
     cube = Cube(query.select, new_edges, {s.name: m for s, m in matricies})
     cube.frum = query
@@ -235,7 +235,7 @@ def _pull(s, agg):
     if not p:
         Log.error("programmer error")
     elif isinstance(p, Mapping):
-        return {k: _get(agg, v, None) for k, v in p.items()}
+        return {k: _get(agg, v, None) for k, v in list(p.items())}
     else:
         return _get(agg, p, s.default)
 

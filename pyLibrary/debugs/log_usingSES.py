@@ -9,9 +9,9 @@
 #
 
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
 
 from boto.ses import connect_to_region
 
@@ -80,7 +80,7 @@ class TextLog_usingSES(TextLog):
                 conn.close()
             self.next_send = Date.now() + WAIT_TO_SEND_MORE
             self.accumulation = []
-        except Exception, e:
+        except Exception as e:
             self.next_send = Date.now() + WAIT_TO_SEND_MORE
             Log.warning("Could not send", e)
 

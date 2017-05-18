@@ -7,9 +7,9 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
 
 from collections import Mapping
 
@@ -37,7 +37,7 @@ class AggsDecoder(object):
             if query.groupby:
                 return object.__new__(DefaultDecoder, e)
 
-            if isinstance(e.value, basestring):
+            if isinstance(e.value, str):
                 Log.error("Expecting Variable or Expression, not plain string")
 
             if isinstance(e.value, Variable):
@@ -186,7 +186,7 @@ class SetDecoder(AggsDecoder):
         try:
             part = row[self.start]
             return self.domain.getIndexByKey(part["key"])
-        except Exception, e:
+        except Exception as e:
             Log.error("problem", cause=e)
 
     @property
@@ -288,7 +288,7 @@ class GeneralRangeDecoder(AggsDecoder):
                 BinaryOp("lte", [range.min, Literal("literal", self.to_float(p.min))]),
                 BinaryOp("gt", [range.max, Literal("literal", self.to_float(p.min))])
             ])
-            aggs["_join_" + unicode(i)] = set_default(
+            aggs["_join_" + str(i)] = set_default(
                 {"filter": filter_.to_esfilter()},
                 es_query
             )
@@ -512,8 +512,8 @@ class DimFieldListDecoder(SetDecoder):
         self.parts.append(value)
 
     def done_count(self):
-        columns = map(unicode, range(len(self.fields)))
-        parts = wrap([{unicode(i): p for i, p in enumerate(part)} for part in set(self.parts)])
+        columns = list(map(str, list(range(len(self.fields)))))
+        parts = wrap([{str(i): p for i, p in enumerate(part)} for part in set(self.parts)])
         self.parts = None
         sorted_parts = jx.sort(parts, columns)
 

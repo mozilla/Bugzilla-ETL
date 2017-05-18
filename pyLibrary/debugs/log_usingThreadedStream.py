@@ -9,9 +9,9 @@
 #
 
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 from datetime import datetime, timedelta
 import sys
@@ -30,7 +30,7 @@ class TextLog_usingThreadedStream(TextLog):
 
         use_UTF8 = False
 
-        if isinstance(stream, basestring):
+        if isinstance(stream, str):
             if stream.startswith("sys."):
                 use_UTF8 = True  # sys.* ARE OLD AND CAN NOT HANDLE unicode
             self.stream = eval(stream)
@@ -44,7 +44,7 @@ class TextLog_usingThreadedStream(TextLog):
 
         if use_UTF8:
             def utf8_appender(value):
-                if isinstance(value, unicode):
+                if isinstance(value, str):
                     value = value.encode('utf8')
                 self.stream.write(value)
 
@@ -61,7 +61,7 @@ class TextLog_usingThreadedStream(TextLog):
         try:
             self.queue.add({"template": template, "params": params})
             return self
-        except Exception, e:
+        except Exception as e:
             raise e  # OH NO!
 
     def stop(self):
@@ -72,13 +72,13 @@ class TextLog_usingThreadedStream(TextLog):
             self.thread.join()
             if DEBUG_LOGGING:
                 sys.stdout.write("TextLog_usingThreadedStream done\n")
-        except Exception, e:
+        except Exception as e:
             if DEBUG_LOGGING:
                 raise e
 
         try:
             self.queue.close()
-        except Exception, f:
+        except Exception as f:
             if DEBUG_LOGGING:
                 raise f
 
@@ -111,16 +111,16 @@ def time_delta_pusher(please_stop, appender, queue, interval):
                     else:
                         expanded = expand_template(log.get("template"), log.get("params"))
                         lines.append(expanded)
-                except Exception, e:
+                except Exception as e:
                     Log.warning("Trouble formatting logs", e)
                     # SWALLOW ERROR, GOT TO KEEP RUNNING
             try:
                 if DEBUG_LOGGING and please_stop:
                     sys.stdout.write("Call to appender with " + str(len(lines)) + " lines\n")
-                appender(u"\n".join(lines) + u"\n")
+                appender("\n".join(lines) + "\n")
                 if DEBUG_LOGGING and please_stop:
                     sys.stdout.write("Done call to appender with " + str(len(lines)) + " lines\n")
-            except Exception, e:
+            except Exception as e:
                 sys.stderr.write("Trouble with appender: " + str(e.message) + "\n")
                 # SWALLOW ERROR, GOT TO KEEP RUNNNIG
 

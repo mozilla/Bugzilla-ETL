@@ -8,9 +8,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+
+
+
 
 import math
 import re
@@ -47,7 +47,7 @@ class Date(object):
         if self.unix is None:
             self.unix = parse(*args).unix
 
-    def __nonzero__(self):
+    def __bool__(self):
         return True
 
     def floor(self, duration=None):
@@ -65,7 +65,7 @@ class Date(object):
     def format(self, format="%Y-%m-%d %H:%M:%S"):
         try:
             return unix2datetime(self.unix).strftime(format)
-        except Exception, e:
+        except Exception as e:
             from pyLibrary.debugs.logs import Log
 
             Log.error("Can not format {{value}} with {{format}}", value=unix2datetime(self.unix), format=format, cause=e)
@@ -198,30 +198,30 @@ def parse(*args):
                 output = unix2Date(datetime2unix(a0))
             elif isinstance(a0, Date):
                 output = unix2Date(a0.unix)
-            elif isinstance(a0, (int, long, float, Decimal)):
+            elif isinstance(a0, (int, float, Decimal)):
                 a0 = float(a0)
                 if a0 > 9999999999:    # WAY TOO BIG IF IT WAS A UNIX TIMESTAMP
                     output = unix2Date(a0 / 1000)
                 else:
                     output = unix2Date(a0)
-            elif isinstance(a0, basestring) and len(a0) in [9, 10, 12, 13] and Math.is_integer(a0):
+            elif isinstance(a0, str) and len(a0) in [9, 10, 12, 13] and Math.is_integer(a0):
                 a0 = float(a0)
                 if a0 > 9999999999:    # WAY TOO BIG IF IT WAS A UNIX TIMESTAMP
                     output = unix2Date(a0 / 1000)
                 else:
                     output = unix2Date(a0)
-            elif isinstance(a0, basestring):
+            elif isinstance(a0, str):
                 output = unicode2Date(a0)
             else:
                 output = unix2Date(datetime2unix(datetime(*args)))
         else:
-            if isinstance(args[0], basestring):
+            if isinstance(args[0], str):
                 output = unicode2Date(*args)
             else:
                 output = unix2Date(datetime2unix(datetime(*args)))
 
         return output
-    except Exception, e:
+    except Exception as e:
         from pyLibrary.debugs.logs import Log
 
         Log.error("Can not convert {{args}} to Date", args=args, cause=e)
@@ -280,7 +280,7 @@ def parse_time_expression(value):
     else:
         floor = None
 
-    if type in MILLI_VALUES.keys():
+    if type in list(MILLI_VALUES.keys()):
         value = Duration(dig+type)
     else:
         value = simple_date(sign, dig, type, floor)
@@ -295,7 +295,7 @@ def parse_time_expression(value):
             floor = None
 
         op = {"+": "__add__", "-": "__sub__"}[sign]
-        if type in MILLI_VALUES.keys():
+        if type in list(MILLI_VALUES.keys()):
             if floor:
                 from pyLibrary.debugs.logs import Log
                 Log.error("floor (|) of duration not accepted")
@@ -319,7 +319,7 @@ def unicode2Date(value, format=None):
             if format.endswith("%S.%f") and "." not in value:
                 value += ".000"
             return unix2Date(datetime2unix(datetime.strptime(value, format)))
-        except Exception, e:
+        except Exception as e:
             from pyLibrary.debugs.logs import Log
 
             Log.error("Can not format {{value}} with {{format}}", value=value, format=format, cause=e)
@@ -398,7 +398,7 @@ def datetime2unix(value):
         else:
             from pyLibrary.debugs.logs import Log
             Log.error("Can not convert {{value}} of type {{type}}", value=value, type=value.__class__)
-    except Exception, e:
+    except Exception as e:
         from pyLibrary.debugs.logs import Log
         Log.error("Can not convert {{value}}", value=value, cause=e)
 

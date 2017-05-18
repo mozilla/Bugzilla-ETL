@@ -7,9 +7,9 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
-from __future__ import absolute_import
+
+
+
 
 import cProfile
 import pstats
@@ -108,7 +108,7 @@ def write(profile_settings):
     if not max_samples:
         return
 
-    r = range(max_samples)
+    r = list(range(max_samples))
     profs.insert(0, Dict(description="index", samples=r))
     stats = [
         {p.description: wrap(p.samples)[i] for p in profs if p.samples}
