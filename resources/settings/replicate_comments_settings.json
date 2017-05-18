@@ -1,0 +1,33 @@
+{
+		"source":{
+			"host":"https://esfrontline.bugzilla.mozilla.org",
+			"port":80,
+			"index":"public_comments",
+			"type":"bug_comment",
+            "explore_metadata":false
+		},
+		"destination":{
+			"host":"http://localhost",
+			"port": 9200,
+			"index":"comments20140416_000000",
+			"type":"bug_comment",
+            "schema_file":"./resources/json/bug_comments.json"
+		},
+		"param":{
+			"last_replication_time":"./results/data/last_comment_replication_time.txt"
+		},
+		"debug":{
+			"log":[{
+				"class": "logging.handlers.RotatingFileHandler",
+				"filename": "./results/logs/replication.log",
+				"maxBytes": 10000000,
+				"backupCount": 200,
+				"encoding": "utf8"
+			},{
+				"log_type": "stream",
+				"stream":"sys.stdout"
+			}]
+	}
+
+
+}

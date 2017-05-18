@@ -10,8 +10,8 @@
 
 import sys
 import threading
-from bzETL.util.thread import threads
-from bzETL.util.maths.randoms import Random
+from pyLibrary.thread import threads
+from pyLibrary.maths.randoms import Random
 
 
 num_thread = 800
@@ -26,7 +26,7 @@ def locker(i):
             return locker(i)
     else:
         with lock:
-            sys.stdout.write("hi " + unicode(i) + "\n")
+            sys.stdout.write("hi " + str(i) + "\n")
             state["count"] += 1
 
 

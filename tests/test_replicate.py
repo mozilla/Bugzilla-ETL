@@ -9,10 +9,10 @@
 #
 
 from bzETL import replicate
-from bzETL.util.env import startup
-from bzETL.util.cnv import CNV
-from bzETL.util.env.elasticsearch import ElasticSearch
-from bzETL.util.env.logs import Log
+from pyLibrary import convert
+from pyLibrary.debugs import startup
+from pyLibrary.debugs.logs import Log
+from pyLibrary.env import elasticsearch
 
 
 def test_replication():
@@ -20,10 +20,10 @@ def test_replication():
         settings=startup.read_settings(filename="replication_settings.json")
         Log.start(settings.debug)
 
-        source=ElasticSearch(settings.source)
+        source=elasticsearch.Index(settings.source)
         destination=replicate.get_or_create_index(settings["destination"], source)
 
-        replicate.replicate(source, destination, [537285], CNV.string2datetime("19900101", "%Y%m%d"))
+        replicate.replicate(source, destination, [537285], convert.string2datetime("19900101", "%Y%m%d"))
     finally:
         Log.stop()
 

@@ -1,46 +1,48 @@
 {
     "param": {
         "increment": 10000,
-        "delete": false
+        "delete": false,
+		"ignore_bugs": [1054192,1124846,1141998,1290975,1292711,1313916,1313918,1313919,1317965]
     },
     "public": {
-        "host": "http://elasticsearch-zlb.bugs.scl3.mozilla.com",
-        "port": "9200",
+        "host": "https://esfrontline-public-vip.bugs.scl3.mozilla.com",
+        "port": 9200,
         "index": "public_bugs",
         "type": "bug_version",
         "debug": false
     },
     "public_comments": {
-        "host": "http://elasticsearch-zlb.bugs.scl3.mozilla.com",
-        "port": "9200",
+        "host": "https://esfrontline-public-vip.bugs.scl3.mozilla.com",
+        "port": 9200,
         "index": "public_comments",
         "type": "bug_comment",
         "debug": false
     },
     "private": {
-        "host": "http://elasticsearch-private.bugs.scl3.mozilla.com",
-        "port": "9200",
+        "host": "https://esfrontline-private-vip.bugs.scl3.mozilla.com",
+        "port": 9200,
         "index": "private_bugs",
         "type": "bug_version",
         "debug": false
     },
     "private_comments": {
-        "host": "http://elasticsearch-private.bugs.scl3.mozilla.com",
-        "port": "9200",
+        "host": "https://esfrontline-private-vip.bugs.scl3.mozilla.com",
+        "port": 9200,
         "index": "private_comments",
         "type": "bug_comment",
         "debug": false
     },
     "email": {
-        "from": "klahnakoski@mozilla.com",
-        "to": "klahnakoski@mozilla.com",
-        "subject": "BZ ETL Leaks!",
-        "host": "mail.mozilla.com",
-        "port": 465,
-        "username": "example@example.com",
-        "password": "password",
-        "use_ssl": 1
+		"subject": "BZ ETL Leaks!",
+        "from_address": "klahnakoski@mozilla.com",
+        "to_address": "klahnakoski@mozilla.com",
+		"$ref":"~/private.json#email"
     },
+	"constants": {
+		"pyLibrary.env.http.default_headers": {
+			"Referer": "https://wiki.mozilla.org/BMO/ElasticSearch"
+		}
+	},
     "debug": {
         "trace":true,
         "log": [
@@ -52,7 +54,7 @@
                 "encoding": "utf8"
             },
             {
-                "class": "bzETL.util.env.logs.Log_usingStream",
+                "class": "pyLibrary.env.logs.Log_usingStream",
                 "stream": "sys.stdout"
             }
         ]

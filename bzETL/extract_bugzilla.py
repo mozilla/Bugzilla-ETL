@@ -1,26 +1,26 @@
 # encoding: utf-8
 #
-#
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-# PYTHON VERSION OF https://github.com/mozilla-metrics/bugzilla_etl/blob/master/transformations/bugzilla_to_json.ktr
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
+
+
+
+
+
 from bzETL.parse_bug_history import MAX_TIME
-from bzETL.util.cnv import CNV
-from bzETL.util.queries.db_query import esfilter2sqlwhere
-from bzETL.util.sql.db import SQL
-
-from bzETL.util.env.logs import Log
-from bzETL.util.queries import Q
-from bzETL.util.struct import Struct
-
+from pyLibrary import convert
+from pyLibrary.debugs.logs import Log
+from pyLibrary.dot import Dict
+from pyLibrary.queries import jx
+from pyLibrary.queries.jx_usingMySQL import esfilter2sqlwhere
+from pyLibrary.sql import SQL
+from pyLibrary.times.timer import Timer
 
 #ALL BUGS IN PRIVATE ETL HAVE SCREENED FIELDS
-from bzETL.util.times.timer import Timer
-
 SCREENED_FIELDDEFS = [
     19, #bug_file_loc
     24, #short_desc
@@ -63,11 +63,13 @@ def get_current_time(db):
     """
     RETURN GMT TIME
     """
-    output = db.query(u"""
+    output = db.query("""
         SELECT
             UNIX_TIMESTAMP(now()) `value`
         """)[0].value
-    return CNV.unix2datetime(output)
+    if output == None:
+        Log.error("I am guessing you did not add the timezone database!  See tests/resources/mySQL/README.md")
+    return convert.unix2datetime(output)
 
 
 def milli2string(db, value):
@@ -76,7 +78,7 @@ def milli2string(db, value):
     """
     value = max(value, 0)
 
-    output = db.query(u"""
+    output = db.query("""
         SELECT
             CAST(CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific') AS CHAR) `value`
         """, {
@@ -90,7 +92,7 @@ def get_screened_whiteboard(db):
         groups = db.query("SELECT id FROM groups WHERE {{where}}", {
             "where": esfilter2sqlwhere(db, {"terms": {"name": SCREENED_WHITEBOARD_BUG_GROUPS}})
         })
-        globals()["SCREENED_BUG_GROUP_IDS"] = Q.select(groups, "id")
+        globals()["SCREENED_BUG_GROUP_IDS"] = jx.select(groups, "id")
 
 
 def get_bugs_table_columns(db, schema_name):
@@ -135,7 +137,7 @@ def get_private_bugs_for_delete(db, param):
         with Timer("get all private bug ids"):
             private_bugs = db.query("SELECT DISTINCT bug_id FROM bug_group_map")
             return set(private_bugs.bug_id) | {0}
-    except Exception, e:
+    except Exception as e:
         Log.error("problem getting private bugs", e)
 
 
@@ -159,7 +161,7 @@ def get_recent_private_bugs(db, param):
 
         return set(output.bug_id)
 
-    except Exception, e:
+    except Exception as e:
         Log.error("problem getting recent private attachments", e)
 
 
@@ -184,7 +186,7 @@ def get_recent_private_attachments(db, param):
             bug_when >= {{start_time_str}} AND
             fieldid={{field_id}}
         """, param)
-    except Exception, e:
+    except Exception as e:
         Log.error("problem getting recent private attachments", e)
 
 
@@ -210,7 +212,7 @@ def get_recent_private_comments(db, param):
             """, param)
 
         return comments
-    except Exception, e:
+    except Exception as e:
         Log.error("problem getting recent private attachments", e)
 
 
@@ -226,7 +228,7 @@ def get_bugs(db, param):
             else:
                 return db.quote_column(col.column_name)
 
-        param.bugs_columns = Q.select(bugs_columns, "column_name")
+        param.bugs_columns = jx.select(bugs_columns, "column_name")
         param.bugs_columns_SQL = SQL(",\n".join([lower(c) for c in bugs_columns]))
         param.bug_filter = esfilter2sqlwhere(db, {"terms": {"b.bug_id": param.bug_list}})
         param.screened_whiteboard = esfilter2sqlwhere(db, {"and": [
@@ -283,14 +285,14 @@ def get_bugs(db, param):
             flatten_bugs_record(r, output)
 
         return output
-    except Exception, e:
+    except Exception as e:
         Log.error("can not get basic bug data", e)
 
 
 def flatten_bugs_record(r, output):
-    for field_name, value in r.items():
+    for field_name, value in list(r.items()):
         if value != "---":
-            newRow = Struct()
+            newRow = Dict()
             newRow.bug_id = r.bug_id
             newRow.modified_ts = r.modified_ts
             newRow.modified_by = r.modified_by
@@ -520,10 +522,10 @@ def get_attachments(db, param):
 def flatten_attachments(data):
     output = []
     for r in data:
-        for k,v in r.items():
+        for k,v in list(r.items()):
             if k=="bug_id":
                 continue
-            output.append(Struct(
+            output.append(Dict(
                 bug_id=r.bug_id,
                 modified_ts=r.modified_ts,
                 modified_by=r.modified_by,
@@ -676,7 +678,7 @@ def get_comments(db, param):
             """, param)
 
         return comments
-    except Exception, e:
+    except Exception as e:
         Log.error("can not get comment data", e)
 
 
@@ -712,6 +714,6 @@ def get_comments_by_id(db, comments, param):
             """, param)
 
         return comments
-    except Exception, e:
+    except Exception as e:
         Log.error("can not get comment data", e)
 

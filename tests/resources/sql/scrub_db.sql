@@ -24,6 +24,9 @@ WHERE
 ;
 COMMIT;
 
+
+
+
 START TRANSACTION;
 DELETE FROM
 	tracking_flags_bugs
@@ -106,11 +109,32 @@ COMMIT;
 
 START TRANSACTION;
 DELETE FROM
+	bug_tag
+WHERE
+	bug_id not in {{bug_list}}
+;
+COMMIT;
+
+START TRANSACTION;
+DELETE FROM
+	flag_state_activity
+WHERE
+	bug_id not in {{bug_list}}
+;
+COMMIT;
+
+START TRANSACTION;
+DELETE FROM
 	bugs
 WHERE
 	bug_id not in {{bug_list}}
 ;
 COMMIT;
+
+
+
+
+
 
 START TRANSACTION;
 DELETE FROM series_data;
@@ -120,9 +144,17 @@ DELETE FROM attach_data;
 DELETE FROM votes;
 DELETE FROM bz_schema;
 DELETE FROM profile_setting;
+DELETE FROM profiles_statistics;
+DELETE FROM profiles_statistics_products;
+DELETE FROM profiles_statistics_recalc;
+DELETE FROM profiles_statistics_status;
+DELETE FROM component_reviewers;
+DELETE FROM component_watch;
 
-DELETE FROM components WHERE id NOT IN (SELECT component_id FROM bugs WHERE component_id IS NOT NULL); 
+DELETE FROM components WHERE id NOT IN (SELECT component_id FROM bugs WHERE component_id IS NOT NULL);
 DELETE FROM products WHERE id NOT IN (SELECT product_id FROM bugs WHERE product_id IS NOT NULL);
+delete from milestones where product_id not in (select id from products);
+delete from versions where product_id not in (select id from products);
 
 COMMIT;
 
@@ -132,7 +164,6 @@ DELETE FROM audit_log;
 DELETE FROM user_group_map;
 DELETE FROM watch;
 COMMIT;
-
 
 START TRANSACTION;
 DROP TABLE IF EXISTS keep_profiles;
@@ -154,16 +185,24 @@ INSERT INTO keep_profiles SELECT watch_user FROM components;
 
 DELETE FROM keep_profiles WHERE id IS NULL;
 DELETE FROM profiles WHERE userid NOT IN (SELECT DISTINCT id FROM keep_profiles);
+DELETE FROM bug_mentors
+
 DROP TABLE IF EXISTS keep_profiles;
 UPDATE profiles SET public_key=NULL;
 COMMIT;
 
 
-
-
 DELETE FROM series;
-DROP TABLE IF EXISTS cf_blocking_191;
+
+DROP TABLE IF EXISTS antispam_comment_blocklist;
+DROP TABLE IF EXISTS antispam_domain_blocklist;
+DROP TABLE IF EXISTS antispam_ip_blocklist;
+
+
 DROP TABLE IF EXISTS bug_cf_blocking_192;
+DROP TABLE IF EXISTS bug_cf_locale;
+
+DROP TABLE IF EXISTS cf_blocking_191;
 DROP TABLE IF EXISTS cf_blocking_192;
 DROP TABLE IF EXISTS cf_blocking_20;
 DROP TABLE IF EXISTS cf_blocking_b2g;
@@ -179,7 +218,9 @@ DROP TABLE IF EXISTS cf_blocking_thunderbird32;
 DROP TABLE IF EXISTS cf_blocking_thunderbird33;
 DROP TABLE IF EXISTS cf_colo_site;
 DROP TABLE IF EXISTS cf_fixed_in;
-DROP TABLE IF EXISTS bug_cf_locale;
+
+DROP TABLE IF EXISTS `cf_machine_state`;
+
 DROP TABLE IF EXISTS cf_locale;
 DROP TABLE IF EXISTS cf_office;
 DROP TABLE IF EXISTS cf_status192;
@@ -330,6 +371,18 @@ DROP TABLE IF EXISTS cf_tracking_thunderbird8;
 DROP TABLE IF EXISTS cf_tracking_thunderbird9;
 DROP TABLE IF EXISTS cf_tracking_thunderbird_esr10;
 DROP TABLE IF EXISTS cf_tracking_thunderbird_esr17;
+
+DROP TABLE IF EXISTS nag_defer;
+DROP TABLE IF EXISTS nag_watch;
+
+DROP TABLE IF EXISTS profiles_statistics_products;
+DROP TABLE IF EXISTS profiles_statistics_recalc;
+DROP TABLE IF EXISTS profiles_statistics_status;
+DROP TABLE IF EXISTS profiles_statistics;
+DROP TABLE IF EXISTS push_notify;
+
+
+
 COMMIT;
 
 START TRANSACTION;
@@ -338,6 +391,11 @@ DELETE FROM whine_queries;
 DELETE FROM whine_schedules;
 DELETE FROM quips;
 COMMIT;
+
+
+START TRANSACTION ;
+DELETE FROM
+
 
 SET foreign_key_checks = 1;
 

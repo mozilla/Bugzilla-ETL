@@ -1,6 +1,5 @@
 # encoding: utf-8
 #
-#
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -8,71 +7,77 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
+#
+# REPLICATION
+#
+# Replication has a few benefits:
+# 1) The slave can have scripting enabled, allowing more powerful set of queries
+# 2) Physical proximity reduces latency
+# 3) The slave can be configured with better hardware
+# 4) The slave's exclusivity increases availability (Mozilla's public cluster may have high load)
+
+
+
+
 
 from datetime import datetime, timedelta
-from bzETL.util.collections import MIN
-from bzETL.util.struct import nvl
-from bzETL.util.thread.threads import ThreadedQueue
-from bzETL.util.times.timer import Timer
-import transform_bugzilla
-from bzETL.util.cnv import CNV
-from bzETL.util.env.logs import Log
-from bzETL.util.queries import Q
-from bzETL.util.env import startup
-from bzETL.util.env.files import File
-from bzETL.util.collections.multiset import Multiset
-from bzETL.util.env.elasticsearch import ElasticSearch
+from bzETL import transform_bugzilla
+from pyLibrary import convert
+from pyLibrary.collections import MIN, Multiset
+from pyLibrary.debugs import startup
+from pyLibrary.debugs.logs import Log
+from pyLibrary.dot import coalesce, Dict
+from pyLibrary.env import elasticsearch
+from pyLibrary.env.elasticsearch import Cluster
+from pyLibrary.env.files import File
+from pyLibrary.queries import jx
+from pyLibrary.thread.threads import ThreadedQueue
+from pyLibrary.times.timer import Timer
 
 
 far_back = datetime.utcnow() - timedelta(weeks=52)
 BATCH_SIZE = 1000
 
 
-def fix_json(json):
-    json = json.replace("attachments.", "attachments_")
-    return json.decode('iso-8859-1').encode('utf8')
-
-
 def extract_from_file(source_settings, destination):
-    with File(source_settings.filename) as handle:
-        for g, d in Q.groupby(handle, size=BATCH_SIZE):
-            try:
-                d2 = map(
-                    lambda (x): {"id": x.id, "value": x},
-                    map(
-                        lambda(x): transform_bugzilla.normalize(CNV.JSON2object(fix_json(x))),
-                        d
-                    )
-                )
-                destination.add(d2)
-            except Exception, e:
-                filename = "Error_" + unicode(g) + ".txt"
-                File(filename).write(d)
-                Log.warning("Can not convert block {{block}} (file={{host}})", {
-                    "block": g,
-                    "filename": filename
-                }, e)
+    file = File(source_settings.filename)
+    for g, d in jx.groupby(file, size=BATCH_SIZE):
+        try:
+            d2 = [{"id": x.id, "value": x} for x in [transform_bugzilla.normalize(convert.json2value(x)) for x in d]]
+            Log.note("add {{num}} records", {"num":len(d2)})
+            destination.extend(d2)
+        except Exception as e:
+            filename = "Error_" + str(g) + ".txt"
+            File(filename).write(d)
+            Log.warning("Can not convert block {{block}} (file={{host}})", {
+                "block": g,
+                "filename": filename
+            }, e)
 
 
 def get_last_updated(es):
+
+    if not isinstance(es, elasticsearch.Index):
+        return convert.milli2datetime(0)
+
     try:
         results = es.search({
             "query": {"filtered": {
                 "query": {"match_all": {}},
                 "filter": {
                     "range": {
-                    "modified_ts": {"gte": CNV.datetime2milli(far_back)}}}
+                    "modified_ts": {"gte": convert.datetime2milli(far_back)}}}
             }},
             "from": 0,
             "size": 0,
             "sort": [],
-            "facets": {"0": {"statistical": {"field": "modified_ts"}}}
+            "facets": {"modified_ts": {"statistical": {"field": "modified_ts"}}}
         })
 
-        if results.facets["0"].count == 0:
-            return datetime.min
-        return CNV.milli2datetime(results.facets["0"].max)
-    except Exception, e:
+        if results.facets.modified_ts.count == 0:
+            return convert.milli2datetime(0)
+        return convert.milli2datetime(results.facets.modified_ts.max)
+    except Exception as e:
         Log.error("Can not get_last_updated from {{host}}/{{index}}",{
             "host": es.settings.host,
             "index": es.settings.index
@@ -81,25 +86,47 @@ def get_last_updated(es):
 
 def get_pending(es, since):
     result = es.search({
-        "query": {"filtered": {
-            "query": {"match_all": {}},
-            "filter": {
-            "range": {"modified_ts": {"gte": CNV.datetime2milli(since)}}}
-        }},
+        "query": {"match_all": {}},
         "from": 0,
         "size": 0,
         "sort": [],
-        "facets": {"default": {"terms": {"field": "bug_id", "size": 200000}}}
+        "facets": {"default": {"statistical": {"field": "bug_id"}}}
     })
 
-    if len(result.facets.default.terms) >= 200000:
-        Log.error("Can not handle more than 200K bugs changed")
+    max_bug = int(result.facets.default.max)
 
-    pending_bugs = Multiset(
-        result.facets.default.terms,
-        key_field="term",
-        count_field="count"
-    )
+
+    pending_bugs = None
+
+    for s, e in jx.intervals(0, max_bug+1, 100000):
+        Log.note("Collect history for bugs from {{start}}..{{end}}", {"start":s, "end":e})
+        result = es.search({
+            "query": {"filtered": {
+                "query": {"match_all": {}},
+                "filter": {"and":[
+                    {"range": {"modified_ts": {"gte": convert.datetime2milli(since)}}},
+                    {"range": {"bug_id": {"gte": s, "lte": e}}}
+                ]}
+            }},
+            "from": 0,
+            "size": 0,
+            "sort": [],
+            "facets": {"default": {"terms": {"field": "bug_id", "size": 200000}}}
+        })
+
+        temp = Multiset(
+            result.facets.default.terms,
+            key_field="term",
+            count_field="count"
+        )
+
+        if pending_bugs is None:
+            pending_bugs = temp
+        else:
+            pending_bugs = pending_bugs + temp
+
+
+
     Log.note("Source has {{num}} bug versions for updating", {
         "num": len(pending_bugs)
     })
@@ -109,38 +136,38 @@ def get_pending(es, since):
 # USE THE source TO GET THE INDEX SCHEMA
 def get_or_create_index(destination_settings, source):
     #CHECK IF INDEX, OR ALIAS, EXISTS
-    es = ElasticSearch(destination_settings)
+    es = elasticsearch.Index(destination_settings)
     aliases = es.get_aliases()
 
-    indexes = [a for a in aliases if a.alias == destination_settings.index]
+    indexes = [a for a in aliases if a.alias == destination_settings.index or a.index == destination_settings.index]
     if not indexes:
         #CREATE INDEX
-        schema = source.get_schema()
+        schema = convert.json2value(File(destination_settings.schema_file).read(), paths=True)
         assert schema.settings
         assert schema.mappings
-        ElasticSearch.create_index(destination_settings, schema, limit_replicas=True)
+        Cluster(destination_settings).create_index(destination_settings, schema, limit_replicas=True)
     elif len(indexes) > 1:
         Log.error("do not know how to replicate to more than one index")
     elif indexes[0].alias != None:
-        destination_settings.alias = destination_settings.index
+        destination_settings.alias = indexes[0].alias
         destination_settings.index = indexes[0].index
 
-    return ElasticSearch(destination_settings)
+    return elasticsearch.Index(destination_settings)
 
 
 def replicate(source, destination, pending, last_updated):
     """
     COPY source RECORDS TO destination
     """
-    for g, bugs in Q.groupby(pending, max_size=BATCH_SIZE):
+    for g, bugs in jx.groupby(pending, max_size=BATCH_SIZE):
         with Timer("Replicate {{num_bugs}} bug versions", {"num_bugs": len(bugs)}):
             data = source.search({
                 "query": {"filtered": {
                     "query": {"match_all": {}},
                     "filter": {"and": [
                         {"terms": {"bug_id": set(bugs)}},
-                        {"range": {"modified_ts":
-                            {"gte": CNV.datetime2milli(last_updated)}
+                        {"range": {"expires_on":
+                            {"gte": convert.datetime2milli(last_updated)}
                         }}
                     ]}
                 }},
@@ -149,53 +176,60 @@ def replicate(source, destination, pending, last_updated):
                 "sort": []
             })
 
-            d2 = map(
-                lambda(x): {"id": x.id, "value": x},
-                map(
-                    lambda(x): transform_bugzilla.normalize(transform_bugzilla.rename_attachments(x._source), old_school=True),
-                    data.hits.hits
-                )
-            )
+            d2 = [{"id": x.id, "value": x} for x in [transform_bugzilla.normalize(transform_bugzilla.rename_attachments(x._source), old_school=True) for x in data.hits.hits]]
             destination.extend(d2)
 
 
 def main(settings):
-    #USE A FILE
+    current_time = datetime.utcnow()
+    time_file = File(settings.param.last_replication_time)
+
+    #USE A SOURCE FILE
     if settings.source.filename != None:
         settings.destination.alias = settings.destination.index
-        settings.destination.index = ElasticSearch.proto_name(settings.destination.alias)
-        schema = CNV.JSON2object(File(settings.source.schema_filename).read())
+        settings.destination.index = Cluster.proto_name(settings.destination.alias)
+        schema = convert.json2value(File(settings.destination.schema_file).read(), paths=True, flexible=True)
         if transform_bugzilla.USE_ATTACHMENTS_DOT:
-            schema = CNV.JSON2object(CNV.object2JSON(schema).replace("attachments_", "attachments."))
+            schema = convert.json2value(convert.value2json(schema).replace("attachments_", "attachments."))
 
-        dest = ElasticSearch.create_index(settings.destination, schema, limit_replicas=True)
+        dest = Cluster(settings.destination).create_index(settings.destination, schema, limit_replicas=True)
         dest.set_refresh_interval(-1)
         extract_from_file(settings.source, dest)
         dest.set_refresh_interval(1)
 
         dest.delete_all_but(settings.destination.alias, settings.destination.index)
         dest.add_alias(settings.destination.alias)
-        return
 
-    # SYNCH WITH source ES INDEX
-    source=ElasticSearch(settings.source)
-    destination=get_or_create_index(settings["destination"], source)
+    else:
+        # SYNCH WITH source ES INDEX
+        source=elasticsearch.Index(settings.source)
 
-    # GET LAST UPDATED
-    time_file = File(settings.param.last_replication_time)
-    from_file = None
-    if time_file.exists:
-        from_file = CNV.milli2datetime(CNV.value2int(time_file.read()))
-    from_es = get_last_updated(destination)
-    last_updated = nvl(MIN(from_file, from_es), CNV.milli2datetime(0))
-    current_time = datetime.utcnow()
 
-    pending = get_pending(source, last_updated)
-    with ThreadedQueue(destination, size=1000) as data_sink:
-        replicate(source, data_sink, pending, last_updated)
+        # USE A DESTINATION FILE
+        if settings.destination.filename:
+            Log.note("Sending records to file: {{filename}}", {"filename":settings.destination.filename})
+            file = File(settings.destination.filename)
+            destination = Dict(
+                extend=lambda x: file.extend([convert.value2json(v["value"]) for v in x]),
+                file=file
+            )
+        else:
+            destination=get_or_create_index(settings["destination"], source)
+
+        # GET LAST UPDATED
+        from_file = None
+        if time_file.exists:
+            from_file = convert.milli2datetime(convert.value2int(time_file.read()))
+        from_es = get_last_updated(destination) - timedelta(hours=1)
+        last_updated = MIN(coalesce(from_file, convert.milli2datetime(0)), from_es)
+        Log.note("updating records with modified_ts>={{last_updated}}", {"last_updated":last_updated})
+
+        pending = get_pending(source, last_updated)
+        with ThreadedQueue(destination, max_size=1000) as data_sink:
+            replicate(source, data_sink, pending, last_updated)
 
     # RECORD LAST UPDATED
-    time_file.write(unicode(CNV.datetime2milli(current_time)))
+    time_file.write(str(convert.datetime2milli(current_time)))
 
 
 def start():
@@ -203,7 +237,7 @@ def start():
         settings=startup.read_settings()
         Log.start(settings.debug)
         main(settings)
-    except Exception, e:
+    except Exception as e:
         Log.error("Problems exist", e)
     finally:
         Log.stop()

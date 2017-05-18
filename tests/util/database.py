@@ -1,12 +1,12 @@
 # encoding: utf-8
 #
 from bzETL.extract_bugzilla import milli2string, get_current_time
-from bzETL.util.cnv import CNV
-from bzETL.util.queries.db_query import esfilter2sqlwhere
-from bzETL.util.sql.db import DB
-from bzETL.util.env.logs import Log
-from bzETL.util.struct import Struct
-from bzETL.util.times.timer import Timer
+from pyLibrary import convert
+from pyLibrary.debugs.logs import Log
+from pyLibrary.dot import Dict
+from pyLibrary.queries.qb_usingMySQL import esfilter2sqlwhere
+from pyLibrary.sql.mysql import MySQL
+from pyLibrary.times.timer import Timer
 
 
 def make_test_instance(db_settings):
@@ -20,26 +20,15 @@ def make_test_instance(db_settings):
             Log.note("Make empty {{schema}} schema", {"schema":db_settings.schema})
             no_schema=db_settings.copy()
             no_schema.schema = None
-            with DB(no_schema) as db:
+            with MySQL(no_schema) as db:
                 db.execute("DROP DATABASE IF EXISTS {{schema}}", {"schema":db.quote_column(db_settings.schema)})
                 db.execute("CREATE DATABASE {{schema}}", {"schema":db.quote_column(db_settings.schema)})
 
             #FILL SCHEMA
             Log.note("Fill {{schema}} schema with data", {"schema":db_settings.schema})
-            DB.execute_file(db_settings, db_settings.filename)
+            MySQL.execute_file(filename=db_settings.filename, settings=db_settings)
 
-            #ADD MISSING TABLES
-            with DB(db_settings) as db:
-                db.execute("""
-                CREATE TABLE `longdescs_tags` (
-                  `id` mediumint(9) NOT NULL AUTO_INCREMENT,
-                  `comment_id` int(11) DEFAULT NULL,
-                  `tag` varchar(24) NOT NULL,
-                  PRIMARY KEY (`id`),
-                  UNIQUE KEY `longdescs_tags_idx` (`comment_id`,`tag`),
-                  CONSTRAINT `fk_longdescs_tags_comment_id_longdescs_comment_id` FOREIGN KEY (`comment_id`) REFERENCES `longdescs` (`comment_id`) ON DELETE CASCADE ON UPDATE CASCADE
-                ) DEFAULT CHARSET=utf8""")
-        except Exception, e:
+        except Exception as e:
             Log.error("Can not setup test database", e)
 
 
@@ -74,8 +63,8 @@ def add_bug_group(db, bug_id, group_name):
     group_id=group_exists[0].id
 
     diff(db, "bugs",
-        Struct(bug_id=bug_id, bug_group=None),
-        Struct(bug_id=bug_id, bug_group=group_name)
+        Dict(bug_id=bug_id, bug_group=None),
+        Dict(bug_id=bug_id, bug_group=group_name)
     )
     db.insert("bug_group_map", {"bug_id":bug_id, "group_id":group_id})
 
@@ -84,8 +73,8 @@ def remove_bug_group(db, bug_id, group_name):
     group_id=db.query("SELECT id FROM groups WHERE name={{name}}", {"name": group_name})[0].id
 
     diff(db, "bugs",
-        Struct(bug_id=bug_id, bug_group=group_name),
-        Struct(bug_id=bug_id, bug_group=None)
+        Dict(bug_id=bug_id, bug_group=group_name),
+        Dict(bug_id=bug_id, bug_group=None)
     )
     db.execute("DELETE FROM bug_group_map WHERE bug_id={{bug_id}} and group_id={{group_id}}", {
         "bug_id":bug_id,
@@ -99,14 +88,14 @@ def diff(db, table, old_record, new_record):
     """
     UPDATE bugs_activity WITH THE CHANGES IN RECORDS
     """
-    now = milli2string(db, CNV.datetime2milli(get_current_time(db)))
+    now = milli2string(db, convert.datetime2milli(get_current_time(db)))
     changed = set(old_record.keys()) ^ set(new_record.keys())
-    changed |= set([k for k, v in old_record.items() if v != new_record[k]])
+    changed |= set([k for k, v in list(old_record.items()) if v != new_record[k]])
 
-    if table != u"bugs":
-        prefix = table + u"."
+    if table != "bugs":
+        prefix = table + "."
     else:
-        prefix = u""
+        prefix = ""
 
     for c in changed:
         fieldid=db.query("SELECT id FROM fielddefs WHERE name={{field_name}}", {"field_name": prefix + c})[0].id
@@ -114,7 +103,7 @@ def diff(db, table, old_record, new_record):
         if fieldid == None:
             Log.error("Expecting a valid field name")
 
-        activity = Struct(
+        activity = Dict(
             bug_id=old_record.bug_id,
             who=1,
             bug_when=now,
