@@ -45,7 +45,7 @@ MoDevMetrics is a collection of javascript libraries and helper methods to write
 
 The MoDevMetrics has a few main parts
 
-* **The ES query translator** - ES does not have a SQL interface, it was not designed for data warehouse queries. As such, all queries are translated to ElasticSearch queries. This translation is quite complex since ESv0.9 had limited query ability. This part can be ripped out, since ActiveData can accept these queries directly. 
+* **The ES query translator** - ES does not have a SQL interface, it was not designed for data warehouse queries. As such, all queries are translated to ElasticSearch queries. This translation is quite complex since ESv0.9 had limited query ability.
 * **Internal Query Runner** - Accepts queries and operates on data locally. Since I come from a database background, I find expressing data transformation as queries more clear than using javascript. 
 * **Charting libraries** - Since every charting library has some lethal deficiency, I made a common API to a couple charting of libraries. 
 * **Dimension Definitions** - Maps business concepts like "open bug" or "current bug state" into filters required to extract that, which at times gets complicated. 
