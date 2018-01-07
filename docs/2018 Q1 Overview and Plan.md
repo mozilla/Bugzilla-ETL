@@ -55,7 +55,7 @@ The MoDevMetrics has a few main parts
 1. Remove the javascript ES query translator code so that queries are sent directly to ActiveData, and existing dashboards still work with the new architecture. This can only be done after we have a prototype for the new Bugzilla-ETL, and a (dev) cluster exists to test with.
 2. Work with `armenzg` and `wlach` to identify any common ground when it comes to charting libraries and  resources in the dashboarding space.
 3. Optional - Add testing to the internal query runner. There are currently no tests for this code, but there is a comprehensive Python test suite. There should be a simple solution here.
-4. Optional - Use the React/JSX stack. A good part of MoDevMetrics can be removed if it gets moved to a React app. It will make everything faster.
+4. Optional - Use the React/JSX stack. A good part of MoDevMetrics can be removed if it gets moved to a React app. plus, it will make everything faster.
 
 
 ## Other parts
@@ -74,7 +74,7 @@ An ActiveData instance will replace the esFrontLine in front of the public clust
 
 ### Metrics Graphics [[code](https://github.com/mozilla/metrics-graphics)] [[docs](https://www.metricsgraphicsjs.org/)]
 
-This is one of the charting libraries used by MoDevMetrics.  A person n my team is interested in dashboarding and has expressed interest in upgrading it so it can be easily used in JSX/React apps.   
+This is one of the charting libraries used by MoDevMetrics.  A `armenzg` is interested in dashboarding and has expressed interest in upgrading it so it can be easily used in JSX/React apps.   
 
 
 
