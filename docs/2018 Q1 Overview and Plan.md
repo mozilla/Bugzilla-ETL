@@ -41,7 +41,7 @@ esFrontline is a very basic proxy server for the public cluster that limits http
 
 ### MoDevMetrics [[code](https://github.com/klahnakoski/MoDevMetrics)]
 
-MoDevMetrics is a collection of javascript libraries and helper methods to write dashboards using the ES clusters directly. With this collection, dashboards are usually one page of HTML, queries, and javascript. Queries are in a special format called [JSON Query Expressions](https://github.com/klahnakoski/ActiveData/blob/dev/docs/jx.md), which are best described as SQL parse trees in JSON.
+MoDevMetrics is a collection of javascript libraries and helper methods to write dashboards using the ES clusters directly. With this collection, dashboards are usually one page of HTML, queries, and javascript. Queries are in a special format called [JSON Query Expressions](https://github.com/klahnakoski/ActiveData/blob/dev/docs/jx.md), which are succinctly described as "SQL parse trees in JSON".
 
 The MoDevMetrics has a few main parts
 
