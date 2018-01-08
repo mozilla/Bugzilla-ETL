@@ -51,7 +51,7 @@ def extract_from_file(source_settings, destination):
                     d
                 )
             )
-            Log.note("add {{num}} records", {"num":len(d2)})
+            Log.note("add {{num}} records", num=len(d2))
             destination.extend(d2)
         except Exception as e:
             filename = "Error_" + unicode(g) + ".txt"
@@ -106,7 +106,7 @@ def get_pending(es, since):
     pending_bugs = None
 
     for s, e in jx.intervals(0, max_bug+1, 100000):
-        Log.note("Collect history for bugs from {{start}}..{{end}}", {"start":s, "end":e})
+        Log.note("Collect history for bugs from {{start}}..{{end}}", start=s, end=e)
         result = es.search({
             "query": {"filtered": {
                 "query": {"match_all": {}},
@@ -217,7 +217,7 @@ def main(settings):
 
         # USE A DESTINATION FILE
         if settings.destination.filename:
-            Log.note("Sending records to file: {{filename}}", {"filename":settings.destination.filename})
+            Log.note("Sending records to file: {{filename}}", filename=settings.destination.filename)
             file = File(settings.destination.filename)
             destination = Data(
                 extend=lambda x: file.extend([value2json(v["value"]) for v in x]),
@@ -232,7 +232,7 @@ def main(settings):
             from_file = convert.milli2datetime(convert.value2int(time_file.read()))
         from_es = get_last_updated(destination) - timedelta(hours=1)
         last_updated = MIN(coalesce(from_file, convert.milli2datetime(0)), from_es)
-        Log.note("updating records with modified_ts>={{last_updated}}", {"last_updated":last_updated})
+        Log.note("updating records with modified_ts>={{last_updated}}", last_updated=last_updated)
 
         pending = get_pending(source, last_updated)
         with ThreadedQueue(destination, max_size=1000) as data_sink:

@@ -59,21 +59,6 @@
 			"debug": true
 		}
 	},
-	"alias": {
-		"increment": 1000000,
-		"file": {
-			"path": "./resources/json/bugzilla_aliases.json",
-			"$ref": "~/private.json#alias_file"
-		},
-		"elasticsearch": {
-			"host": "http://localhost",
-			"port": 9200,
-			"index": "alias",
-			"type": "alias",
-			"debug": true
-
-		}
-	},
 	"param": {
 		"increment": 10000,
 		"bugs": [
@@ -120,8 +105,22 @@
 		"allow_private_bugs": true,
 		"last_run_time": "./tests/results/last_run_time.txt",
 		"first_run_time": "./tests/results/first_run_time.txt",
-		"look_back": 3600000
-		//1hour
+		"look_back": 3600000  //1hour
+	},
+	"alias": {
+		"increment": 1000000,
+		"file": {
+			"path": "./resources/json/bugzilla_aliases.json",
+			"$ref": "~/private.json#alias_file"
+		},
+		"elasticsearch": {
+			"host": "http://localhost",
+			"port": 9200,
+			"index": "bug_aliases",
+			"type": "alias",
+			"debug": true
+
+		}
 	},
 	"bugzilla": {
 		"filename": "./tests/resources/sql/small_bugzilla.sql",
@@ -148,7 +147,7 @@
 	},
 	"debug": {
 		"profile": false,
-		"trace": false,
+		"trace": true,
 		"log": [
 			{
 				"class": "logging.handlers.RotatingFileHandler",

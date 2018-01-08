@@ -65,7 +65,7 @@ def etl_comments(db, es, param, please_stop):
             es.extend({"id": cc.comment_id, "value": cc} for cc in c)
 
 
-def etl(db, output_queue, param, please_stop):
+def etl(db, output_queue, param, alias_config, please_stop):
     """
     PROCESS RANGE, AS SPECIFIED IN param AND PUSH
     BUG VERSION RECORDS TO output_queue
@@ -106,15 +106,15 @@ def etl(db, output_queue, param, please_stop):
         "modified_by"
     ])
 
-    process = BugHistoryParser(param, output_queue)
+    process = BugHistoryParser(param, alias_config, output_queue)
     for s in sorted:
         process.processRow(s)
     process.processRow(wrap({"bug_id": parse_bug_history.STOP_BUG, "_merge_order": 1}))
 
 
-def run_both_etl(db, output_queue, es_comments, param):
+def run_both_etl(db, output_queue, es_comments, param, alias_config):
     comment_thread = Thread.run("etl comments", etl_comments, db, es_comments, param)
-    process_thread = Thread.run("etl", etl, db, output_queue, param)
+    process_thread = Thread.run("etl", etl, db, output_queue, param, alias_config)
 
     result = comment_thread.join()
     if result.exception:
@@ -223,7 +223,7 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
         refresh_param.start_time_str = extract_bugzilla.milli2string(db, 0)
 
         try:
-            etl(db, output_queue, refresh_param.copy(), please_stop=None)
+            etl(db, output_queue, refresh_param.copy(), settings.alias, please_stop=None)
             etl_comments(db, es_comments, refresh_param.copy(), please_stop=None)
         except Exception as e:
             Log.error(
@@ -282,7 +282,8 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
             "db": db,
             "output_queue": output_queue,
             "es_comments": es_comments,
-            "param": param.copy()
+            "param": param.copy(),
+            "alias_config": settings.alias
         })
 
 
@@ -347,7 +348,8 @@ def full_etl(resume_from_last_run, settings, param, db, es, es_comments, output_
                     "db": db,
                     "output_queue": output_queue,
                     "es_comments": es_comments,
-                    "param": param.copy()
+                    "param": param.copy(),
+                    "alias_config": settings.alias
                 })
 
             except Exception as e:
@@ -389,7 +391,7 @@ def main(settings, es=None, es_comments=None):
                     with Timer("run full etl"):
                         full_etl(resume_from_last_run, settings, param, db, es, es_comments, output_queue)
 
-                output_queue.add(Thread.STOP)
+                output_queue.add(THREAD_STOP)
 
         if settings.es.alias:
             es.delete_all_but(settings.es.alias, settings.es.index)

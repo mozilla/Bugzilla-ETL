@@ -64,7 +64,7 @@ class TestOneETL(unittest.TestCase):
             param.allow_private_bugs = self.settings.param.allow_private_bugs
 
             with ThreadedQueue("etl queue", candidate, batch_size=1000) as output:
-                etl(db, output, param, please_stop=None)
+                etl(db, output, param, self.settings.alias, please_stop=None)
 
 
         #TODO: INCLUDE OPTION TO USE REAL ES (AND ENSURE REALLY WORKING)

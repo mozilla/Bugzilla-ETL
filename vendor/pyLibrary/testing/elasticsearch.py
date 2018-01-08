@@ -50,7 +50,7 @@ def open_test_instance(name, settings):
             if "Can not find index" not in e:
                 Log.error("unexpected", cause=e)
 
-        es = cluster.create_index(limit_replicas=True, kwargs=settings)
+        es = cluster.create_index(limit_replicas=True, limit_replicas_warning=False, kwargs=settings)
         return es
 
 

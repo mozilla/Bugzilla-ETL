@@ -76,7 +76,7 @@ class TestETL(unittest.TestCase):
             param.allow_private_bugs = self.settings.param.allow_private_bugs
 
             with ThreadedQueue("etl_queue", candidate, batch_size=1000) as output:
-                etl(db, output, param, please_stop=None)
+                etl(db, output, param, self.settings.alias, please_stop=None)
 
             #COMPARE ALL BUGS
             Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
@@ -108,7 +108,7 @@ class TestETL(unittest.TestCase):
             while True:
                 some_bugs = [b for b in [Random.int(MAX_BUG_ID) for i in range(NUM_TO_TEST)] if b not in private_bugs]
 
-                Log.note("Test with the following bug_ids: {{bugs}}", {"bugs":some_bugs})
+                Log.note("Test with the following bug_ids: {{bugs}}", bugs=some_bugs)
 
                 #SETUP RUN PARAMETERS
                 param = Data()
@@ -119,7 +119,7 @@ class TestETL(unittest.TestCase):
 
                 try:
                     with ThreadedQueue("etl queue", candidate, batch_size=100) as output:
-                        etl(db, output, param, please_stop=None)
+                        etl(db, output, param, self.settings.alias, please_stop=None)
 
                     #COMPARE ALL BUGS
                     Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
@@ -192,7 +192,7 @@ class TestETL(unittest.TestCase):
         File(self.settings.param.last_run_time).delete()
 
         private_bugs = set(Random.sample(self.settings.param.bugs, 3))
-        Log.note("The private bugs for this test are {{bugs}}", {"bugs": private_bugs})
+        Log.note("The private bugs for this test are {{bugs}}", bugs= private_bugs)
 
         database.make_test_instance(self.settings.bugzilla)
 
@@ -223,7 +223,7 @@ class TestETL(unittest.TestCase):
         with MySQL(self.settings.bugzilla) as db:
             #BUGS
             private_bugs = set(Random.sample(self.settings.param.bugs, 3))
-            Log.note("The private bugs are {{bugs}}", {"bugs": private_bugs})
+            Log.note("The private bugs are {{bugs}}", bugs= private_bugs)
             for b in private_bugs:
                 database.add_bug_group(db, b, BUG_GROUP_FOR_TESTING)
 
@@ -240,12 +240,12 @@ class TestETL(unittest.TestCase):
                 "where": esfilter2sqlwhere(db, {"terms":{"bug_id":private_bugs}})
             }).comment_id
             private_comments = marked_private_comments + implied_private_comments
-            Log.note("The private comments are {{comments}}", {"comments": private_comments})
+            Log.note("The private comments are {{comments}}", comments= private_comments)
 
             #ATTACHMENTS
             attachments = db.query("SELECT bug_id, attach_id FROM attachments")
             private_attachments = Random.sample(attachments, 5)
-            Log.note("The private attachments are {{attachments}}", {"attachments": private_attachments})
+            Log.note("The private attachments are {{attachments}}", attachments= private_attachments)
             for a in private_attachments:
                 database.mark_attachment_private(db, a.attach_id, isprivate=1)
 
@@ -337,7 +337,7 @@ class TestETL(unittest.TestCase):
 
         private_bugs = set(Random.sample(self.settings.param.bugs, 3))
 
-        Log.note("The private bugs for this test are {{bugs}}", {"bugs": private_bugs})
+        Log.note("The private bugs for this test are {{bugs}}", bugs= private_bugs)
 
         database.make_test_instance(self.settings.bugzilla)
 
@@ -413,7 +413,7 @@ class TestETL(unittest.TestCase):
             param.allow_private_bugs = self.settings.param.allow_private_bugs
 
             with es.threaded_queue(batch_size=1000) as output:
-                etl(db, output, param, please_stop=None)
+                etl(db, output, param, self.settings.alias, please_stop=None)
 
             Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
             versions = get_all_bug_versions(es, 813650)
@@ -448,7 +448,7 @@ class TestETL(unittest.TestCase):
             param.allow_private_bugs = True
 
             with ThreadedQueue("etl queue", es, batch_size=1000) as output:
-                etl(db, output, param, please_stop=None)
+                etl(db, output, param, self.settings.alias, please_stop=None)
 
             Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
             versions = get_all_bug_versions(es, GOOD_BUG_TO_TEST)
@@ -482,7 +482,7 @@ class TestETL(unittest.TestCase):
             param.allow_private_bugs = True
 
             with ThreadedQueue("etl", es, batch_size=1000) as output:
-                etl(db, output, param, please_stop=None)
+                etl(db, output, param, self.settings.alias, please_stop=None)
 
             Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
             versions = get_all_bug_versions(es, GOOD_BUG_TO_TEST)
@@ -509,7 +509,7 @@ class TestETL(unittest.TestCase):
             param.allow_private_bugs = False
 
             with ThreadedQueue("etl queue", es, batch_size=1000) as output:
-                etl(db, output, param, please_stop=None)
+                etl(db, output, param, self.settings.alias, please_stop=None)
 
             #SETUP INCREMENTAL RUN PARAMETERS
             param = Data()
@@ -522,7 +522,7 @@ class TestETL(unittest.TestCase):
             param.allow_private_bugs = False
 
             with ThreadedQueue("etl queue", es, batch_size=1000) as output:
-                etl(db, output, param, please_stop=None)
+                etl(db, output, param, self.settings.alias, please_stop=None)
 
         for b in bugs:
             results = es.search({

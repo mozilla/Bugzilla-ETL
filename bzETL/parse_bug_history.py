@@ -78,15 +78,16 @@ MAX_TIME = 9999999999000
 
 
 
-class BugHistoryParser():
-    def __init__(self, settings, output_queue):
-        self.aliases = Null
+class BugHistoryParser(object):
+    def __init__(self, settings, alias_config, output_queue):
         self.startNewBug(wrap({"bug_id": 0, "modified_ts": 0, "_merge_order": 1}))
         self.prevActivityID = Null
         self.prev_row = Null
         self.settings = settings
         self.output = output_queue
 
+        self.alias_config=alias_config
+        self.aliases = Null
         self.initializeAliases()
 
 
@@ -539,7 +540,7 @@ class BugHistoryParser():
                         })
             finally:
                 if self.currBugState.blocked == None:
-                    Log.note("[Bug {{bug_id}}]: expecting a created_ts", {"bug_id": currVersion.bug_id})
+                    Log.note("[Bug {{bug_id}}]: expecting a created_ts", bug_id= currVersion.bug_id)
                 pass
 
     def findFlag(self, flag_list, flag):
@@ -571,7 +572,7 @@ class BugHistoryParser():
 
     def processFlagChange(self, target, change, modified_ts, modified_by):
         if target.flags == None:
-            Log.note("[Bug {{bug_id}}]: PROBLEM  processFlagChange called with unset 'flags'", {"bug_id": self.currBugState.bug_id})
+            Log.note("[Bug {{bug_id}}]: PROBLEM  processFlagChange called with unset 'flags'", bug_id= self.currBugState.bug_id)
             target.flags = FlatList()
 
         addedFlags = BugHistoryParser.getMultiFieldValue("flags", change.new_value)
@@ -604,6 +605,7 @@ class BugHistoryParser():
                 duration_ms = existingFlag["modified_ts"] - existingFlag["previous_modified_ts"]
                 existingFlag["duration_days"] = math.floor(duration_ms / (1000.0 * 60 * 60 * 24))
             else:
+                self.findFlag(target.flags, removed_flag)
                 Log.note("[Bug {{bug_id}}]: PROBLEM: Did not find removed FLAG {{removed}} in {{existing}}", {
                     "removed": flagStr,
                     "existing": target.flags,
@@ -678,11 +680,11 @@ class BugHistoryParser():
 
                     if matched_both:
                         if DEBUG_FLAG_MATCHES:
-                            Log.note("[Bug {{bug_id}}]: Matching on modified_ts and requestee fixed it", {"bug_id": self.currBugState.bug_id})
+                            Log.note("[Bug {{bug_id}}]: Matching on modified_ts and requestee fixed it", bug_id= self.currBugState.bug_id)
                         chosen_one = matched_both[0]  #PICK ANY
                     else:
                         if DEBUG_FLAG_MATCHES:
-                            Log.note("[Bug {{bug_id}}]: Matching on modified_ts fixed it", {"bug_id": self.currBugState.bug_id})
+                            Log.note("[Bug {{bug_id}}]: Matching on modified_ts fixed it", bug_id= self.currBugState.bug_id)
                         chosen_one = matched_ts[0]
             else:
                 # Obvious case - matched exactly one.
@@ -899,7 +901,7 @@ class BugHistoryParser():
                             "old_value": Null,
                             "attach_id": target.attach_id
                         })
-                except Exception, email:
+                except Exception as email:
                     Log.error("issues", email)
 
             return jx.map2set(output, map_total)
@@ -983,8 +985,6 @@ class BugHistoryParser():
 
         return total
 
-
-
     @staticmethod
     def getMultiFieldValue(name, value):
         if value == None:
@@ -999,7 +999,6 @@ class BugHistoryParser():
 
         return {value}
 
-
     def alias(self, name):
         if name == None:
             return Null
@@ -1009,13 +1008,13 @@ class BugHistoryParser():
     def initializeAliases(self):
         try:
             try:
-                alias_json = File(self.settings.alias_file).read()
+                alias_json = File(self.alias_config.file).read()
             except Exception as e:
                 Log.warning("Could not load alias file", cause=e)
                 alias_json = "{}"
             self.aliases = {k: wrap(v) for k, v in json2value(alias_json).items()}
 
-            Log.note("{{num}} aliases loaded", {"num": len(self.aliases.keys())})
+            Log.note("{{num}} aliases loaded", num=len(self.aliases.keys()))
 
         except Exception as e:
             Log.error("Can not init aliases", e)

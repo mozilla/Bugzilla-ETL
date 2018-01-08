@@ -31,7 +31,7 @@ class TestPyPyJSON(unittest.TestCase):
 
     def test_date(self):
         output = value2json({"test": datetime.date(2013, 11, 13)})
-        Log.note("JSON = {{json}}", {"json": output})
+        Log.note("JSON = {{json}}", json= output)
 
 
     def test_unicode1(self):

@@ -125,7 +125,6 @@ class MySQL(object):
 
     def __exit__(self, type, value, traceback):
         if self.readonly:
-            self.commit()
             self.close()
             return
 
@@ -164,7 +163,10 @@ class MySQL(object):
 
     def close(self):
         if self.transaction_level > 0:
-            Log.error("expecting commit() or rollback() before close")
+            if self.readonly:
+                self.commit()  # AUTO-COMMIT
+            else:
+                Log.error("expecting commit() or rollback() before close")
         self.cursor = None  # NOT NEEDED
         try:
             self.db.close()
@@ -464,12 +466,13 @@ class MySQL(object):
         keys = record.keys()
 
         try:
-            command = "INSERT INTO " + self.quote_column(table_name) + "(" + \
-                      ",".join([self.quote_column(k) for k in keys]) + \
-                      ") VALUES (" + \
-                      ",".join([self.quote_value(record[k]) for k in keys]) + \
-                      ")"
-
+            command = (
+                "INSERT INTO " + self.quote_column(table_name) + "(" +
+                SQL(",").join([self.quote_column(k) for k in keys]) +
+                ") VALUES (" +
+                SQL(",").join([self.quote_value(record[k]) for k in keys]) +
+                ")"
+            )
             self.execute(command)
         except Exception as e:
             Log.error("problem with record: {{record}}",  record= record, cause=e)
@@ -480,12 +483,14 @@ class MySQL(object):
         candidate_key = listwrap(candidate_key)
 
         condition = " AND\n".join([self.quote_column(k) + "=" + self.quote_value(new_record[k]) if new_record[k] != None else self.quote_column(k) + " IS Null" for k in candidate_key])
-        command = "INSERT INTO " + self.quote_column(table_name) + " (" + \
-                  ",".join([self.quote_column(k) for k in new_record.keys()]) + \
-                  ")\n" + \
-                  "SELECT a.* FROM (SELECT " + ",".join([self.quote_value(v) + " " + self.quote_column(k) for k, v in new_record.items()]) + " FROM DUAL) a\n" + \
-                  "LEFT JOIN " + \
-                  "(SELECT 'dummy' exist FROM " + self.quote_column(table_name) + " WHERE " + condition + " LIMIT 1) b ON 1=1 WHERE exist IS Null"
+        command = (
+            "INSERT INTO " + self.quote_column(table_name) + " (" +
+            ",".join([self.quote_column(k) for k in new_record.keys()]) +
+            ")\n" +
+            "SELECT a.* FROM (SELECT " + ",".join([self.quote_value(v) + " " + self.quote_column(k) for k, v in new_record.items()]) + " FROM DUAL) a\n" +
+            "LEFT JOIN " +
+            "(SELECT 'dummy' exist FROM " + self.quote_column(table_name) + " WHERE " + condition + " LIMIT 1) b ON 1=1 WHERE exist IS Null"
+        )
         self.execute(command, {})
 
 
@@ -505,13 +510,14 @@ class MySQL(object):
         keys = jx.sort(keys)
 
         try:
-            command = \
-                "INSERT INTO " + self.quote_column(table_name) + "(" + \
-                ",".join([self.quote_column(k) for k in keys]) + \
+            command = (
+                "INSERT INTO " + self.quote_column(table_name) + "(" +
+                ",".join([self.quote_column(k) for k in keys]) +
                 ") VALUES " + ",\n".join([
                     "(" + ",".join([self.quote_value(r[k]) for k in keys]) + ")"
                     for r in records
                 ])
+            )
             self.execute(command)
         except Exception as e:
             Log.error("problem with record: {{record}}",  record= records, cause=e)
@@ -530,11 +536,13 @@ class MySQL(object):
             for k, v in where_slice.items()
         ])
 
-        command = "UPDATE " + self.quote_column(table_name) + "\n" + \
-                  "SET " + \
-                  ",\n".join([self.quote_column(k) + "=" + v for k, v in new_values.items()]) + "\n" + \
-                  "WHERE " + \
-                  where_clause
+        command = (
+            "UPDATE " + self.quote_column(table_name) + "\n" +
+            "SET " +
+            ",\n".join([self.quote_column(k) + "=" + v for k, v in new_values.items()]) + "\n" +
+            "WHERE " +
+            where_clause
+        )
         self.execute(command, {})
 
 

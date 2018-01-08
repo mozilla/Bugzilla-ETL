@@ -28,7 +28,7 @@ def make_test_instance(db_settings):
     with Timer("Make database instance"):
         try:
             #CLEAR SCHEMA
-            Log.note("Make empty {{schema}} schema", {"schema":db_settings.schema})
+            Log.note("Make empty {{schema}} schema", schema=db_settings.schema)
             no_schema=db_settings.copy()
             no_schema.schema = None
             with MySQL(no_schema) as db:
@@ -36,7 +36,7 @@ def make_test_instance(db_settings):
                 db.execute("CREATE DATABASE {{schema}}", {"schema":db.quote_column(db_settings.schema)})
 
             #FILL SCHEMA
-            Log.note("Fill {{schema}} schema with data", {"schema":db_settings.schema})
+            Log.note("Fill {{schema}} schema with data", schema=db_settings.schema)
             MySQL.execute_file(filename=db_settings.filename, kwargs=db_settings)
 
         except Exception as e:

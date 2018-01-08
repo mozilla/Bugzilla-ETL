@@ -82,8 +82,8 @@ class Index(Features):
     ):
         if index==None:
             Log.error("not allowed")
-        if index == alias:
-            Log.error("must have a unique index name")
+        # if index == alias:
+        #     Log.error("must have a unique index name")
 
         self.cluster_state = None
         self.debug = debug
@@ -191,6 +191,7 @@ class Index(Features):
             },
             timeout=coalesce(self.settings.timeout, 30)
         )
+        self.settings.alias = alias
 
         # WAIT FOR ALIAS TO APPEAR
         while True:
@@ -199,6 +200,8 @@ class Index(Features):
                 return
             Log.note("Waiting for alias {{alias}} to appear", alias=alias)
             Till(seconds=1).wait()
+
+
 
     def get_index(self, alias):
         """
@@ -400,16 +403,15 @@ class Index(Features):
                     "error": utf82unicode(response.all_content)
                 })
         elif self.cluster.version.startswith(("1.4.", "1.5.", "1.6.", "1.7.", "5.", "6.")):
-            response = self.cluster.put(
+            result = self.cluster.put(
                 "/" + self.settings.index + "/_settings",
                 data=convert.unicode2utf8('{"index":{"refresh_interval":' + value2json(interval) + '}}'),
                 **kwargs
             )
 
-            result = mo_json.json2value(utf82unicode(response.all_content))
             if not result.acknowledged:
                 Log.error("Can not set refresh interval ({{error}})", {
-                    "error": utf82unicode(response.all_content)
+                    "error": result
                 })
         else:
             Log.error("Do not know how to handle ES version {{version}}", version=self.cluster.version)
@@ -629,6 +631,7 @@ class Cluster(object):
         create_timestamp=None,
         schema=None,
         limit_replicas=None,
+        limit_replicas_warning=True,
         read_only=False,
         tjson=True,
         kwargs=None
@@ -665,7 +668,7 @@ class Cluster(object):
         if limit_replicas:
             # DO NOT ASK FOR TOO MANY REPLICAS
             health = self.get("/_cluster/health")
-            if schema.settings.index.number_of_replicas >= health.number_of_nodes:
+            if schema.settings.index.number_of_replicas >= health.number_of_nodes and limit_replicas_warning:
                 Log.warning(
                     "Reduced number of replicas: {{from}} requested, {{to}} realized",
                     {"from": schema.settings.index.number_of_replicas},
@@ -1169,27 +1172,9 @@ def parse_properties(parent_index_name, parent_name, esProperties):
             continue
         if not property.type:
             continue
-        if property.type == "multi_field":
-            property.type = property.fields[name].type  # PULL DEFAULT TYPE
-            for i, (n, p) in enumerate(property.fields.items()):
-                if n == name:
-                    # DEFAULT
-                    columns.append(Column(
-                        es_index=index_name,
-                        es_column=column_name,
-                        names={".": jx_name},
-                        nested_path=ROOT_PATH,
-                        type=p.type
-                    ))
-                else:
-                    columns.append(Column(
-                        es_index=index_name,
-                        es_column=column_name + "\\." + n,
-                        names={".": jx_name + "\\." + n},
-                        nested_path=ROOT_PATH,
-                        type=p.type
-                    ))
-            continue
+        if property.fields:
+            child_columns = parse_properties(index_name, column_name, property.fields)
+            columns.extend(child_columns)
 
         if property.type in es_type_to_json_type.keys():
             columns.append(Column(

@@ -221,7 +221,7 @@ class TestLookForLeaks(unittest.TestCase):
                         {"terms":{"bug_id":leaked_bugs.bug_id}}
                     )
 
-                Log.note("{{num}} bugs with private attachments have leaked!", {"num": len(leaked_bugs)})
+                Log.note("{{num}} bugs with private attachments have leaked!", num= len(leaked_bugs))
                 for b in leaked_bugs:
                     Log.note("{{bug_id}} has private_attachment\n{{version|indent}}", {
                         "bug_id": b.bug_id,

@@ -181,17 +181,24 @@ class TypedInserter(object):
                     append(_buffer, ESCAPE_DCT.get(c, c))
                 append(_buffer, '"}')
             elif _type is text_type:
-                try:
+                if isinstance(sub_schema, Column):
+                    # WE WILL NOT COMPLAIN IF ELASTICSEARCH HAS A PROPERTY FOR THIS ALREADY
+                    if sub_schema.type not in ["keyword", "text", "string"]:
+                        from mo_logs import Log
+                        Log.warning("this is going to fail!")
+                    append(_buffer, '"')
+                    for c in value:
+                        append(_buffer, ESCAPE_DCT.get(c, c))
+                    append(_buffer, '"')
+                else:
                     if STRING_TYPE not in sub_schema:
                         sub_schema[STRING_TYPE] = True
                         net_new_properties.append(path + [STRING_TYPE])
-                except Exception as e:
-                    Log.error("", cause=e)
 
-                append(_buffer, '{'+QUOTED_STRING_TYPE+COLON+'"')
-                for c in value:
-                    append(_buffer, ESCAPE_DCT.get(c, c))
-                append(_buffer, '"}')
+                    append(_buffer, '{'+QUOTED_STRING_TYPE+COLON+'"')
+                    for c in value:
+                        append(_buffer, ESCAPE_DCT.get(c, c))
+                    append(_buffer, '"}')
             elif _type in (int, long, Decimal):
                 if NUMBER_TYPE not in sub_schema:
                     sub_schema[NUMBER_TYPE] = True
