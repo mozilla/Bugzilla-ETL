@@ -54,9 +54,24 @@
 			"host": "http://localhost",
 			"port": 9200,
 			"index": "test_comments",
-			"type": "bug_version",
+			"type": "bug_comment",
 			"schema": {"$ref": "../../../resources/json/bug_comments.json"},
 			"debug": true
+		}
+	},
+	"alias": {
+		"increment": 1000000,
+		"file": {
+			"path": "./resources/json/bugzilla_aliases.json",
+			"$ref": "~/private.json#alias_file"
+		},
+		"elasticsearch": {
+			"host": "http://localhost",
+			"port": 9200,
+			"index": "alias",
+			"type": "alias",
+			"debug": true
+
 		}
 	},
 	"param": {
@@ -90,7 +105,7 @@
 			643420,
 			692436,
 			726635,
-			813650,
+			813650
 			// 1165765 VERY LONG short_desc
 			// 1007019 does not have bug_status, or component, or product
 			// 372836 (REVIEW FLAGS TEST)
@@ -100,11 +115,6 @@
 			// 937428 whitespace after comma in user story, complex diff
 			// 248970 another cutoff review request
 		],
-		"alias_increment": 1000000,
-		"alias_file": {
-			"path": "./resources/json/bugzilla_aliases.json",
-			"$ref": "~/private.json#alias_file"
-		},
 		"temp_dir": "./tests/resources",
 		"errors": "./tests/results/errors",
 		"allow_private_bugs": true,

@@ -11,6 +11,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+import jx_elasticsearch
 from bzETL.extract_bugzilla import get_all_cc_changes
 from jx_python import jx
 from mo_collections.multiset import Multiset
@@ -36,13 +37,13 @@ def full_analysis(settings, bug_list=None, please_stop=None):
     analyzer = AliasAnalyzer(settings.alias)
 
     if bug_list:
-        with MySQL(settings.bugzilla, readonly=True) as db:
+        with MySQL(kwargs=settings.bugzilla, readonly=True) as db:
             data = get_all_cc_changes(db, bug_list)
             analyzer.aggregator(data)
             analyzer.analysis(True, please_stop)
         return
 
-    with MySQL(settings=settings.bugzilla, readonly=True) as db:
+    with MySQL(kwargs=settings.bugzilla, readonly=True) as db:
         start = coalesce(settings.alias.start, 0)
         end = coalesce(settings.alias.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
 
@@ -67,9 +68,13 @@ class AliasAnalyzer(object):
         self.aliases={}
         self.not_aliases={}  # EXPLICIT LIST OF NON-MATCHES (HUMAN ADDED)
         try:
-            a = set_default({}, settings.elasticsearch, {"type":"alias"})
-            self.es = elasticsearch.Cluster(settings.elasticsearch).get_or_create_index(settings=a, schema=ALIAS_SCHEMA, limit_replicas=True)
-            self.esq = FromES(self.es.settings)
+            self.es = elasticsearch.Cluster(settings.elasticsearch).get_or_create_index(
+                kwargs=settings.elasticsearch,
+                schema=ALIAS_SCHEMA,
+
+                limit_replicas=True
+            )
+            self.esq = jx_elasticsearch.new_instance(self.es.settings)
             result = self.esq.query({
                 "from":"bug_aliases",
                 "select":["canonical", "alias"]
@@ -82,7 +87,7 @@ class AliasAnalyzer(object):
             # LOAD THE NON-MATCHES
             na = set_default({}, settings.elasticsearch, {"type":"not_alias"})
             es = elasticsearch.Cluster(na).get_or_create_index(na)
-            esq = FromES(es.settings)
+            esq = jx_elasticsearch.new_instance(es.settings)
             result = esq.query({
                 "from":"bug_aliases",
                 "select":["canonical", "alias"]
@@ -267,39 +272,14 @@ def start():
 ALIAS_SCHEMA = {
     "settings": {"index": {
         "number_of_shards": 3,
-        "number_of_replicas": 0,
-        "store": {"throttle": {
-            "type": "merge",
-            "max_bytes_per_sec": "2mb"
-        }},
-        "cache": {
-            "expire": "1m",
-            "field.type": "soft"
-        }
+        "number_of_replicas": 0
     }},
     "mappings": {
         "alias": {
             "_all": {
                 "enabled": False
             },
-            "_source": {
-                "compress": False,
-                "enabled": True
-            },
-            "_id":{
-                "path": "canonical"
-            },
             "properties": {
-                "canonical": {
-                    "type": "string",
-                    "index": "not_analyzed",
-                    "store": "yes"
-                },
-                "alias": {
-                    "type": "string",
-                    "index": "not_analyzed",
-                    "store": "yes"
-                }
             }
         },
         "not_alias": {

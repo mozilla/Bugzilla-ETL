@@ -90,7 +90,10 @@ def normalize(bug, old_school=False):
         if v == None:
             continue
         elif f in MULTI_FIELDS:
-            bug[f] = convert.value2intlist(v)
+            try:
+                bug[f] = convert.value2intlist(v)
+            except Exception as e:
+                Log.error("not expected", cause=e)
         elif convert.value2number(v) == 0:
             del bug[f]
         else:

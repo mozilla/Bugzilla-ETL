@@ -115,7 +115,8 @@ class MySQL(object):
         self.partial_rollback = False
         self.transaction_level = 0
         self.backlog = []     # accumulate the write commands so they are sent at once
-
+        if self.readonly:
+            self.begin()
 
     def __enter__(self):
         if not self.readonly:
@@ -124,6 +125,7 @@ class MySQL(object):
 
     def __exit__(self, type, value, traceback):
         if self.readonly:
+            self.commit()
             self.close()
             return
 

@@ -181,9 +181,12 @@ class TypedInserter(object):
                     append(_buffer, ESCAPE_DCT.get(c, c))
                 append(_buffer, '"}')
             elif _type is text_type:
-                if STRING_TYPE not in sub_schema:
-                    sub_schema[STRING_TYPE] = True
-                    net_new_properties.append(path + [STRING_TYPE])
+                try:
+                    if STRING_TYPE not in sub_schema:
+                        sub_schema[STRING_TYPE] = True
+                        net_new_properties.append(path + [STRING_TYPE])
+                except Exception as e:
+                    Log.error("", cause=e)
 
                 append(_buffer, '{'+QUOTED_STRING_TYPE+COLON+'"')
                 for c in value:

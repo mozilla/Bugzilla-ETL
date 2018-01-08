@@ -7,27 +7,23 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 
-# REPLACES THE KETTLE FLOW CONTROL PROGRAM, AND BASH SCRIPT
-import mo_json_config
-from bzETL import extract_bugzilla, transform_bugzilla, alias_analysis, parse_bug_history
+from bzETL import extract_bugzilla, alias_analysis, parse_bug_history
 from bzETL.extract_bugzilla import *
 from bzETL.parse_bug_history import BugHistoryParser
-
 from jx_python import jx
 from mo_dots import set_default, wrap, coalesce, listwrap
 from mo_files import File
-from mo_json import json2value
-from mo_json_config import convert
 from mo_logs import Log, startup, constants
 from mo_math import Math
 from mo_threads.lock import Lock
-from mo_threads.queues import ThreadedQueue, Queue
+from mo_threads.queues import Queue
 from mo_threads.threads import AllThread, Thread, THREAD_STOP
 from mo_times.timer import Timer
+from pyLibrary import convert
 from pyLibrary.env import elasticsearch
 from pyLibrary.env.elasticsearch import Cluster
 from pyLibrary.sql.mysql import MySQL
@@ -37,7 +33,7 @@ db_cache = []
 comment_db_cache_lock = Lock()
 comment_db_cache = []
 
-#HERE ARE ALL THE FUNCTIONS WE WANT TO RUN, IN PARALLEL
+#HERE ARE ALL THE FUNCTIONS WE WANT TO RUN, IN PARALLEL (b
 get_stuff_from_bugzilla = [
     get_bugs,
     get_dependencies,
@@ -371,7 +367,7 @@ def main(settings, es=None, es_comments=None):
 
     #MAKE HANDLES TO CONTAINERS
     try:
-        with MySQL(settings.bugzilla, readonly=True) as db:
+        with MySQL(kwargs=settings.bugzilla, readonly=True) as db:
             current_run_time, es, es_comments, last_run_time = setup_es(settings, db, es, es_comments)
 
             with es.threaded_queue(max_size=500, silent=True) as output_queue:
