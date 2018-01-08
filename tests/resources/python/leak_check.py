@@ -1,4 +1,11 @@
 # encoding: utf-8
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this file,
+# You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Author: Kyle Lahnakoski (kyle@lahnakoski.com)
+#
 
 from __future__ import absolute_import
 from __future__ import division
@@ -7,30 +14,12 @@ from __future__ import unicode_literals
 import unittest
 
 from bzETL.extract_bugzilla import SCREENED_WHITEBOARD_BUG_GROUPS
-from pyLibrary import convert
-from pyLibrary.debugs import startup, constants
-from pyLibrary.debugs.logs import Log
-from pyLibrary.dot import coalesce, Data, set_default, listwrap
-from pyLibrary.dot import wrap
+from jx_python import jx
+from mo_dots import Data, set_default, listwrap, wrap, coalesce
+from mo_logs import startup, constants, Log
+from mo_times import Date, MINUTE, Duration
 from pyLibrary.env import elasticsearch
 from pyLibrary.env.emailer import Emailer
-from pyLibrary.queries import jx
-
-# WRAP Log.error TO SHOW THE SPECIFIC ERROR IN THE LOGFILE
-from pyLibrary.times.dates import Date
-from pyLibrary.times.durations import MINUTE, Duration
-
-# if not hasattr(Log, "old_error"):
-#     Log.old_error = Log.error
-#     def new_error(cls, *args):
-#         try:
-#             Log.old_error(*args, stack_depth=1)
-#         except Exception as e:
-#             Log.warning("testing error", e, stack_depth=1)
-#             raise e
-#
-#     ##ASSIGN AS CLASS METHOD
-#     Log.error=MethodType(new_error, Log)
 
 SETTINGS = Data()
 _NOW = Date.now()

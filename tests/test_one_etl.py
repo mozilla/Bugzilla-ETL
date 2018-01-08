@@ -31,7 +31,7 @@ class TestOneETL(unittest.TestCase):
     I USE THIS TO IDENTIFY CANDIDATES TO ADD TO THE TEST SUITE
     """
     def setUp(self):
-        self.settings = startup.read_settings(filename="test_one_settings.json")
+        self.settings = startup.read_settings(filename="tests/resources/config/test_settings.json")
         Log.start(self.settings.debug)
 
 
@@ -51,7 +51,7 @@ class TestOneETL(unittest.TestCase):
         THIS TEST LOCAL) WITH VERSIONS OF BUGS FROM settings.param.bugs.
         """
         with MySQL(self.settings.bugzilla) as db:
-            candidate = elasticsearch.make_test_instance("candidate", self.settings.elasticsearch)
+            candidate = elasticsearch.make_test_instance("candidate", self.settings.fake.bugs)
 
             #SETUP RUN PARAMETERS
             param = Data()
