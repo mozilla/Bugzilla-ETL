@@ -11,7 +11,7 @@
 			"port": 9200,
 			"index":"comments20140416_000000",
 			"type":"bug_comment",
-            "schema_file":"./resources/json/bug_comments.json"
+			"schema": {"$ref": "../json/bug_comments.json"}
 		},
 		"param":{
 			"last_replication_time":"./results/data/last_comment_replication_time.txt"

@@ -10,7 +10,7 @@ from pyLibrary.env import startup
 
 def main(settings):
     file = File(settings.param.alias_file)
-    aliases = convert.json2value(file.read())
+    aliases = json2value(file.read())
 
     for v in aliases.values():
         v.candidates = convert.dict2Multiset(v.candidates)
@@ -35,11 +35,11 @@ def main(settings):
     }
 
     rev_clean = struct.inverse(clean)
-    Log.note(convert.value2json(rev_clean, pretty=True))
+    Log.note(value2json(rev_clean, pretty=True))
 
     for k, v in rev_clean.items():
         if len(v) > 3:
-            Log.note(convert.value2json({k: v}, pretty=True))
+            Log.note(value2json({k: v}, pretty=True))
 
 
 def start():
@@ -47,7 +47,7 @@ def start():
         settings = startup.read_settings()
         Log.start(settings.debug)
         main(settings)
-    except Exception, e:
+    except Exception as e:
         Log.fatal("Problems exist", e)
     finally:
         Log.stop()

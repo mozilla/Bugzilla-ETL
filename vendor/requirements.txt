@@ -1,0 +1,4 @@
+future
+pymysql
+requests
+boto

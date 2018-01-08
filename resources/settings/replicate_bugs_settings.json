@@ -13,7 +13,7 @@
 			"port": 9200,
 			"index":"bugs20140416_000000",
 			"type":"bug_version",
-            "schema_file":"./resources/json/bug_version.json"
+			"schema": {"$ref": "../json/bug_version.json"}
 		},
 		"param":{
 			"last_replication_time":"./results/data/last_bug_replication_time.txt"

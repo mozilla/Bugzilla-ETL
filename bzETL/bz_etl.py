@@ -12,23 +12,25 @@ from __future__ import division
 from __future__ import absolute_import
 
 # REPLACES THE KETTLE FLOW CONTROL PROGRAM, AND BASH SCRIPT
-
+import mo_json_config
 from bzETL import extract_bugzilla, transform_bugzilla, alias_analysis, parse_bug_history
 from bzETL.extract_bugzilla import *
 from bzETL.parse_bug_history import BugHistoryParser
-from pyLibrary import jsons, convert
-from pyLibrary.debugs import startup, constants
-from pyLibrary.debugs.logs import Log
-from pyLibrary.dot import wrap, coalesce, Dict, listwrap, set_default
+
+from jx_python import jx
+from mo_dots import set_default, wrap, coalesce, listwrap
+from mo_files import File
+from mo_json import json2value
+from mo_json_config import convert
+from mo_logs import Log, startup, constants
+from mo_math import Math
+from mo_threads.lock import Lock
+from mo_threads.queues import ThreadedQueue, Queue
+from mo_threads.threads import AllThread, Thread, THREAD_STOP
+from mo_times.timer import Timer
 from pyLibrary.env import elasticsearch
 from pyLibrary.env.elasticsearch import Cluster
-from pyLibrary.env.files import File
-from pyLibrary.maths import Math
-from pyLibrary.queries import jx
 from pyLibrary.sql.mysql import MySQL
-from pyLibrary.thread.threads import Lock, AllThread, Thread, Queue, ThreadedQueue
-from pyLibrary.times.timer import Timer
-
 
 db_cache_lock = Lock()
 db_cache = []
@@ -84,21 +86,22 @@ def etl(db, output_queue, param, please_stop):
     db_results = Queue(name="db results", max=2**30)
 
     def get_records_from_bugzilla(db, param, please_stop):
-        for get_stuff in get_stuff_from_bugzilla:
-            if please_stop:
-                break
-            db_results.extend(get_stuff(db, param))
+        with db.transaction():
+            for get_stuff in get_stuff_from_bugzilla:
+                if please_stop:
+                    break
+                db_results.extend(get_stuff(db, param))
 
     with AllThread() as all:
         with db_cache_lock:
             # SPLIT TASK EVENLY, HAVE EACH BUG USE SAME CONNECTION FOR ALL DATA
-            size = Math.ceiling(float(len(param.bug_list))/float(10))
+            size = Math.ceiling(len(param.bug_list)/len(db_cache))
             for g, bug_ids in jx.groupby(param.bug_list, size=size):
                 all.add(get_records_from_bugzilla, db_cache[g], set_default(
                     {"bug_list": bug_ids},
                     param
                 ))
-    db_results.add(Thread.STOP)
+    db_results.add(THREAD_STOP)
 
     sorted = jx.sort(db_results, [
         "bug_id",
@@ -156,7 +159,7 @@ def setup_es(settings, db, es, es_comments):
                     settings.es_comments.alias = settings.es_comments.index
                     settings.es_comments.index = temp.last()
                 es_comments = elasticsearch.Index(settings.es_comments)
-        except Exception, e:
+        except Exception as e:
             Log.warning("can not resume ETL, restarting", cause=e)
             File(settings.param.first_run_time).delete()
             return setup_es(settings, db, es, es_comments)
@@ -165,24 +168,16 @@ def setup_es(settings, db, es, es_comments):
         last_run_time = 0
         if not es:
             # BUG VERSIONS
-            schema = File(settings.es.schema_file).read()
-            if transform_bugzilla.USE_ATTACHMENTS_DOT:
-                schema = schema.replace("attachments_", "attachments\\.")
-            schema=convert.json2value(schema, paths=True)
-            schema.settings=jsons.expand_dot(schema.settings)
             if not settings.es.alias:
                 settings.es.alias = settings.es.index
                 settings.es.index = Cluster.proto_name(settings.es.alias)
-            es = Cluster.create_index(settings.es, schema, limit_replicas=True)
+            es = Cluster.create_index(kwargs=settings.es, limit_replicas=True)
 
             # BUG COMMENTS
-            comment_schema = File(settings.es_comments.schema_file).read()
-            comment_schema=convert.json2value(comment_schema, paths=True)
-            comment_schema.settings=jsons.expand_dot(comment_schema.settings)
             if not settings.es_comments.alias:
                 settings.es_comments.alias = settings.es_comments.index
                 settings.es_comments.index = Cluster.proto_name(settings.es_comments.alias)
-            es_comments = Cluster.create_index(settings.es_comments, comment_schema, limit_replicas=True)
+            es_comments = Cluster.create_index(kwargs=settings.es_comments, limit_replicas=True)
 
         File(settings.param.first_run_time).write(unicode(convert.datetime2milli(current_run_time)))
 
@@ -234,7 +229,7 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
         try:
             etl(db, output_queue, refresh_param.copy(), please_stop=None)
             etl_comments(db, es_comments, refresh_param.copy(), please_stop=None)
-        except Exception, e:
+        except Exception as e:
             Log.error(
                 "Problem with etl using parameters {{parameters}}",
                 parameters=refresh_param,
@@ -359,7 +354,7 @@ def full_etl(resume_from_last_run, settings, param, db, es, es_comments, output_
                     "param": param.copy()
                 })
 
-            except Exception, e:
+            except Exception as e:
                 Log.error(
                     "Problem with dispatch loop in range [{{min}}, {{max}})",
                     min=min,
@@ -379,9 +374,9 @@ def main(settings, es=None, es_comments=None):
         with MySQL(settings.bugzilla, readonly=True) as db:
             current_run_time, es, es_comments, last_run_time = setup_es(settings, db, es, es_comments)
 
-            with ThreadedQueue(es, max_size=500, silent=True) as output_queue:
+            with es.threaded_queue(max_size=500, silent=True) as output_queue:
                 #SETUP RUN PARAMETERS
-                param = Dict()
+                param = Data()
                 param.end_time = convert.datetime2milli(get_current_time(db))
                 # MySQL WRITES ARE DELAYED, RESULTING IN UNORDERED bug_when IN bugs_activity (AS IS ASSUMED FOR bugs(delats_ts))
                 # THIS JITTER IS USUALLY NO MORE THAN ONE SECOND, BUT WE WILL GO BACK 60sec, JUST IN CASE.
@@ -409,16 +404,16 @@ def main(settings, es=None, es_comments=None):
             es_comments.add_alias(settings.es_comments.alias)
 
         File(settings.param.last_run_time).write(unicode(convert.datetime2milli(current_run_time)))
-    except Exception, e:
+    except Exception as e:
         Log.error("Problem with main ETL loop", cause=e)
     finally:
         try:
             close_db_connections()
-        except Exception, e:
+        except Exception as e:
             pass
         try:
             es.set_refresh_interval(1)
-        except Exception, e:
+        except Exception as e:
             pass
 
 def get_bug_ids(es, filter):
@@ -435,7 +430,7 @@ def get_bug_ids(es, filter):
         })
 
         return set(results.hits.hits.fields.bug_id)
-    except Exception, e:
+    except Exception as e:
         Log.error(
             "Can not get_max_bug from {{host}}/{{index}}",
             host=es.settings.host,
@@ -461,7 +456,7 @@ def get_max_bug_id(es):
         if results.facets["0"].count == 0:
             return 0
         return results.facets["0"].max
-    except Exception, e:
+    except Exception as e:
         Log.error(
             "Can not get_max_bug from {{host}}/{{index}}",
             host=es.settings.host,
@@ -507,7 +502,7 @@ def start():
 
             Log.start(settings.debug)
             main(settings)
-    except Exception, e:
+    except Exception as e:
         Log.fatal("Can not start", e)
     finally:
         Log.stop()

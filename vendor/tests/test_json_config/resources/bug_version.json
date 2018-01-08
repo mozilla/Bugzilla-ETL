@@ -1,0 +1,405 @@
+{
+    "settings": {
+        "index.number_of_shards": 3,
+        "index.number_of_replicas": 2,
+        "index.store.throttle.type": "merge",
+        "index.store.throttle.max_bytes_per_sec": "2mb",
+        "index.cache.filter.expire": "1m",
+        "index.cache.field.type": "soft",
+        "analysis": {
+            "analyzer": {
+                "bz_text_analyzer": {
+                    "type": "standard",
+                    "filter": ["lowercase", "stop"],
+                    "max_token_length": "20"
+                },
+                "whiteboard_words": {
+                    "type": "custom",
+                    "tokenizer": "whiteboard_words_pattern",
+                    "filter": [
+                        "stop"
+                    ]
+                },
+                "whiteboard_shingle_words": {
+                    "type": "custom",
+                    "tokenizer": "whiteboard_words_pattern",
+                    "filter": [
+                        "stop",
+                        "shingle"
+                    ]
+                },
+                "whiteboard_tokens": {
+                    "type": "custom",
+                    "tokenizer": "whiteboard_tokens_pattern",
+                    "filter": [
+                        "stop"
+                    ]
+                },
+                "whiteboard_shingle_tokens": {
+                    "type": "custom",
+                    "tokenizer": "whiteboard_tokens_pattern",
+                    "filter": [
+                        "stop",
+                        "shingle"
+                    ]
+                }
+            },
+            "tokenizer": {
+                "whiteboard_tokens_pattern": {
+                    "type": "pattern",
+                    "pattern": "\\s*([,;]*\\[|\\][\\s\\[]*|[;,])\\s*"
+                },
+                "whiteboard_words_pattern": {
+                    "type": "pattern",
+                    "pattern": "[\\[\\];,\\s]+"
+                }
+            }
+        }
+    },
+    "mappings": {
+        "bug_version": {
+            "dynamic_templates": [
+                {
+                    "default_dates": {
+                        "match": "*_ts",
+                        "mapping": {
+                            "type": "long"
+                        }
+                    }
+                },
+                {
+                    "default_durations": {
+                        "match": "*_days",
+                        "mapping": {
+                            "type": "integer"
+                        }
+                    }
+                },
+                {
+                    "previous_values_strings": {
+                        "match": "previous_values.*_value",
+                        "mapping": {
+                            "type": "string",
+                            "index": "not_analyzed"
+                        }
+                    }
+                },
+                {
+                    "default_strings": {
+                        "match": "*",
+                        "mapping": {
+                            "type": "string",
+                            "index": "not_analyzed"
+                        }
+                    }
+                }
+            ],
+            "_all": {
+                "enabled": false
+            },
+            "_source": {
+                "compress": true,
+                "enabled": true
+            },
+            "_id": {
+                "path": "id"
+            },
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "index": "not_analyzed",
+                    "store": "yes"
+                },
+                "attachments": {
+                    "properties": {
+                        "attach_id": {
+                            "index": "not_analyzed",
+                            "type": "integer"
+                        },
+                        "created_by": {
+                            "index": "not_analyzed",
+                            "type": "string"
+                        },
+                        "created_ts": {
+                            "type": "long"
+                        },
+                        "flags": {
+                            "properties": {
+                                "modified_by": {
+                                    "index": "not_analyzed",
+                                    "type": "string"
+                                },
+                                "modified_ts": {
+                                    "type": "long"
+                                },
+                                "value": {
+                                    "index": "not_analyzed",
+                                    "type": "string"
+                                },
+                                "previous_value": {
+                                    "index": "not_analyzed",
+                                    "type": "string"
+                                },
+                                "request_type": {
+                                    "index": "not_analyzed",
+                                    "type": "string"
+                                },
+                                "request_status": {
+                                    "index": "not_analyzed",
+                                    "type": "string"
+                                },
+                                "previous_status": {
+                                    "index": "not_analyzed",
+                                    "type": "string"
+                                },
+                                "requestee": {
+                                    "index": "not_analyzed",
+                                    "type": "string"
+                                },
+                                "previous_modified_ts": {
+                                    "type": "long"
+                                },
+                                "previous_modified_by": {
+                                    "index": "not_analyzed",
+                                    "type": "string"
+                                },
+                                "duration_days": {
+                                    "type": "integer"
+                                }
+                            },
+                            "index_name": "flag",
+                            "type": "nested",
+                            "dynamic": "strict"
+                        },
+                        "modified_by": {
+                            "index": "not_analyzed",
+                            "type": "string"
+                        },
+                        "modified_ts": {
+                            "type": "long"
+                        },
+                        "attachments.ispatch": {
+                            "type": "boolean"
+                        },
+                        "attachments.isobsolete": {
+                            "type": "boolean"
+                        },
+                        "attachments.isprivate": {
+                            "type": "boolean"
+                        },
+                        "attachments_description": {
+                            "enabled": false,
+                            "type": "string"
+                        },
+                        "attachments_mimetype": {
+                            "enabled": false,
+                            "type": "string"
+                        },
+                        "attachments_filename": {
+                            "enabled": false,
+                            "type": "string"
+                        },
+                        "ispatch": {
+                            "type": "boolean"
+                        },
+                        "isobsolete": {
+                            "type": "boolean"
+                        },
+                        "isprivate": {
+                            "type": "boolean"
+                        },
+                        "description": {
+                            "enabled": false,
+                            "type": "string"
+                        },
+                        "mimetype": {
+                            "enabled": false,
+                            "type": "string"
+                        },
+                        "filename": {
+                            "enabled": false,
+                            "type": "string"
+                        },
+                        "previous_values": {
+                            "type": "object"
+                        }
+                    },
+                    "type": "nested",
+                    "dynamic": "strict"
+                },
+                "blocked": {
+                    "index_name": "blocked_by",
+                    "type": "integer"
+                },
+                "bug_file_loc": {
+                    "index": "not_analyzed",
+                    "index_name": "url",
+                    "type": "string"
+                },
+                "bug_id": {
+                    "type": "integer"
+                },
+                "bug_severity": {
+                    "index": "not_analyzed",
+                    "index_name": "severity",
+                    "type": "string"
+                },
+                "bug_status": {
+                    "index": "not_analyzed",
+                    "index_name": "status",
+                    "type": "string"
+                },
+                "bug_version_num": {
+                    "type": "integer"
+                },
+                "changes": {
+                    "properties": {
+                        "attach_id": {
+                            "type": "integer",
+                            "index": "not_analyzed"
+                        },
+                        "field_name": {
+                            "type": "string",
+                            "index": "not_analyzed"
+                        },
+                        "new_value": {
+                            "type": "string",
+                            "index": "not_analyzed"
+                        },
+                        "old_value": {
+                            "type": "string",
+                            "index": "not_analyzed"
+                        }
+                    },
+                    "type": "nested",
+                    "dynamic": "strict"
+                },
+                "dependson": {
+                    "index_name": "dependson",
+                    "type": "integer"
+                },
+                "expires_on": {
+                    "type": "long",
+                    "null_value": 9999999999000
+                },
+                "cf_last_resolved": {
+                    "type": "long",
+                    "format": "yyyy-MM-dd HH:mm:ss"
+                },
+                "flags": {
+                    "properties": {
+                        "modified_by": {
+                            "index": "not_analyzed",
+                            "type": "string"
+                        },
+                        "modified_ts": {
+                            "type": "long"
+                        },
+                        "value": {
+                            "index": "not_analyzed",
+                            "type": "string"
+                        },
+                        "previous_value": {
+                            "index": "not_analyzed",
+                            "type": "string"
+                        },
+                        "request_type": {
+                            "index": "not_analyzed",
+                            "type": "string"
+                        },
+                        "request_status": {
+                            "index": "not_analyzed",
+                            "type": "string"
+                        },
+                        "previous_status": {
+                            "index": "not_analyzed",
+                            "type": "string"
+                        },
+                        "requestee": {
+                            "index": "not_analyzed",
+                            "type": "string"
+                        },
+                        "previous_modified_ts": {
+                            "type": "long"
+                        },
+                        "previous_modified_by": {
+                            "index": "not_analyzed",
+                            "type": "string"
+                        },
+                        "duration_days": {
+                            "type": "integer"
+                        }
+                    },
+                    "index_name": "flag",
+                    "type": "nested",
+                    "dynamic": "strict"
+                },
+                "previous_values": {
+                    "type": "object"
+                },
+                "keywords": {
+                    "index": "not_analyzed",
+                    "index_name": "keyword",
+                    "type": "string"
+                },
+                "cf_due_date": {
+                    "index": "not_analyzed",
+                    "type": "string"
+                },
+                "rep_platform": {
+                    "index": "not_analyzed",
+                    "index_name": "platform",
+                    "type": "string"
+                },
+                "short_desc": {
+                    "type": "multi_field",
+                    "fields": {
+                        "short_desc": {
+                            "type": "string",
+                            "index": "no",
+                            "store": "yes"
+                        },
+                        "lowercase": {
+                            "type": "string",
+                            "index": "analyzed",
+                            "store": "no",
+                            "analyzer": "bz_text_analyzer"
+                        }
+                    }
+                },
+                "status_whiteboard": {
+                    "type": "multi_field",
+                    "fields": {
+                        "status_whiteboard": {
+                            "type": "string",
+                            "index": "not_analyzed"
+                        },
+                        "words": {
+                            "index": "analyzed",
+                            "type": "string",
+                            "analyzer": "whiteboard_words"
+                        },
+                        "words_shingled": {
+                            "index": "analyzed",
+                            "type": "string",
+                            "analyzer": "whiteboard_shingle_words"
+                        },
+                        "tokenized": {
+                            "index": "analyzed",
+                            "type": "string",
+                            "analyzer": "whiteboard_tokens"
+                        },
+                        "tokenized_shingled": {
+                            "index": "analyzed",
+                            "type": "string",
+                            "analyzer": "whiteboard_shingle_tokens"
+                        }
+                    }
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

@@ -7,17 +7,20 @@
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
+
 from datetime import datetime
 
 from bzETL import transform_bugzilla, parse_bug_history
+from jx_python import jx
+from mo_dots import coalesce, unwrap
+from mo_json import json2value, value2json
+from mo_math import Math
+from mo_times.timer import Timer
 from pyLibrary import convert
-from pyLibrary.dot import coalesce, unwrap
-from pyLibrary.maths import Math
-from pyLibrary.queries import jx
-
-
-#PULL ALL BUG DOCS FROM ONE ES
-from pyLibrary.times.timer import Timer
 
 
 def get_all_bug_versions(es, bug_id, max_time=None):
@@ -82,7 +85,7 @@ def old2new(bug, max_date):
         else:
             bug.everconfirmed = int(bug.everconfirmed)
 
-    bug = convert.json2value(convert.value2json(bug).replace("bugzilla: other b.m.o issues ", "bugzilla: other b.m.o issues"))
+    bug = json2value(value2json(bug).replace("bugzilla: other b.m.o issues ", "bugzilla: other b.m.o issues"))
 
     if bug.expires_on > max_date:
         bug.expires_on = parse_bug_history.MAX_TIME
@@ -97,8 +100,8 @@ def old2new(bug, max_date):
         bug.cf_due_date = convert.datetime2milli(
             convert.string2datetime(bug.cf_due_date, "%Y-%m-%d")
         )
-    bug.changes = convert.json2value(
-        convert.value2json(jx.sort(bug.changes, "field_name")) \
+    bug.changes = json2value(
+        value2json(jx.sort(bug.changes, "field_name")) \
             .replace("\"field_value_removed\":", "\"old_value\":") \
             .replace("\"field_value\":", "\"new_value\":")
     )
@@ -113,7 +116,7 @@ def old2new(bug, max_date):
             bug.cf_last_resolved = long(bug.cf_last_resolved)
         else:
             bug.cf_last_resolved = convert.datetime2milli(convert.string2datetime(bug.cf_last_resolved, "%Y-%m-%d %H:%M:%S"))
-    except Exception, e:
+    except Exception as e:
         pass
 
     bug = transform_bugzilla.rename_attachments(bug)

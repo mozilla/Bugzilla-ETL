@@ -1,0 +1,27 @@
+{
+	"a": "some_value",
+	"list": {
+		"deep": [
+			{
+				"a": "a",
+				"$ref": "//simple.json"
+			},
+			{
+				"a": "b",
+				"$ref": "//simple.json"
+			},
+			{
+				"a": "c",
+				"$ref": "//simple.json"
+			},
+			{
+				"a": "d",
+				"$ref": "//simple.json"
+			},
+			{
+				"a": "e",
+				"$ref": "//simple.json"
+			}
+		]
+	}
+}

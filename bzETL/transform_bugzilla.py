@@ -7,18 +7,18 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 
-from datetime import date
 import re
+from datetime import date
 
+from jx_python import jx
+from mo_json import json2value, value2json
+from mo_logs import Log
 from pyLibrary import convert
-from pyLibrary.debugs.logs import Log
 from pyLibrary.env import elasticsearch
-from pyLibrary.queries import jx
-
 
 USE_ATTACHMENTS_DOT = True
 
@@ -45,7 +45,7 @@ DATE_PATTERN_RELAXED = re.compile("^[0-9]{4}[\\/-][0-9]{2}[\\/-][0-9]{2}")
 def rename_attachments(bug_version):
     if bug_version.attachments == None: return bug_version
     if not USE_ATTACHMENTS_DOT:
-        bug_version.attachments=convert.json2value(convert.value2json(bug_version.attachments).replace("attachments.", "attachments_"))
+        bug_version.attachments=json2value(value2json(bug_version.attachments).replace("attachments.", "attachments_"))
     return bug_version
 
 
@@ -62,7 +62,7 @@ def normalize(bug, old_school=False):
 
     if bug.attachments:
         if USE_ATTACHMENTS_DOT:
-            bug.attachments=convert.json2value(convert.value2json(bug.attachments).replace("attachments_", "attachments."))
+            bug.attachments=json2value(value2json(bug.attachments).replace("attachments_", "attachments."))
         bug.attachments = jx.sort(bug.attachments, "attach_id")
         for a in bug.attachments:
             for k,v in list(a.items()):
@@ -76,8 +76,8 @@ def normalize(bug, old_school=False):
 
     if bug.changes != None:
         if USE_ATTACHMENTS_DOT:
-            json = convert.value2json(bug.changes).replace("attachments_", "attachments.")
-            bug.changes=convert.json2value(json)
+            json = value2json(bug.changes).replace("attachments_", "attachments.")
+            bug.changes=json2value(json)
         bug.changes = jx.sort(bug.changes, ["attach_id", "field_name"])
 
     #bug IS CONVERTED TO A 'CLEAN' COPY
@@ -122,7 +122,7 @@ def normalize(bug, old_school=False):
                 # Example: bug 643420 (deadline)
                 #          bug 726635 (cf_due_date)
                 bug[dateField] = convert.datetime2milli(convert.string2datetime(v[0:10], "%Y-%m-%d"))
-        except Exception, e:
+        except Exception as e:
             Log.error("problem with converting date to milli (type={{type}}, value={{value}})", {"value":bug[dateField], "type":type(bug[dateField]).name}, e)
 
     bug.votes = None

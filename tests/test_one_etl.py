@@ -1,23 +1,28 @@
 # encoding: utf-8
 #
-#
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 #
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
+
 import unittest
+
+from mo_dots import Data
+from mo_logs import startup, Log
+
 from bzETL import bz_etl, extract_bugzilla
 from bzETL.bz_etl import etl
 from bzETL.extract_bugzilla import get_current_time
+from mo_threads import ThreadedQueue
 from pyLibrary import convert
-from pyLibrary.debugs import startup
-from pyLibrary.debugs.logs import Log
-from pyLibrary.dot import Dict
 from pyLibrary.sql.mysql import all_db, MySQL
 from pyLibrary.testing import elasticsearch
-from pyLibrary.thread.threads import ThreadedQueue
 
 
 class TestOneETL(unittest.TestCase):
@@ -49,7 +54,7 @@ class TestOneETL(unittest.TestCase):
             candidate = elasticsearch.make_test_instance("candidate", self.settings.elasticsearch)
 
             #SETUP RUN PARAMETERS
-            param = Dict()
+            param = Data()
             param.end_time = convert.datetime2milli(get_current_time(db))
             param.start_time = 0
             param.start_time_str = extract_bugzilla.milli2string(db, 0)
@@ -58,14 +63,14 @@ class TestOneETL(unittest.TestCase):
             param.bug_list = self.settings.param.bugs
             param.allow_private_bugs = self.settings.param.allow_private_bugs
 
-            with ThreadedQueue(candidate, size=1000) as output:
+            with ThreadedQueue("etl queue", candidate, batch_size=1000) as output:
                 etl(db, output, param, please_stop=None)
 
 
         #TODO: INCLUDE OPTION TO USE REAL ES (AND ENSURE REALLY WORKING)
-        # es_settings=Dict(**{
+        # es_settings=Data(**{
         #     "host": "http://localhost",
-        #     "port": "9200",
+        #     "port": 9200,
         #     "index": ElasticSearch.proto_name("test_public_bugs"),
         #     "type": "bug_version",
         #     "schema_file": "./resources/json/bug_version.json"

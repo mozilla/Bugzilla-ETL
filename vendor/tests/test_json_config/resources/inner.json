@@ -1,0 +1,10 @@
+{
+	"area":{"$ref":"#definitions.object_style"},
+	"definitions":{
+		"object_style":{
+			"$ref":"#definitions.style.properties",
+			"border":{"$ref":"#definitions.style"}
+		},
+		"style":{"properties":{"color":{"description":"css color"}}}
+	}
+}

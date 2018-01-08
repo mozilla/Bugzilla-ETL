@@ -1,12 +1,23 @@
 # encoding: utf-8
 #
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this file,
+# You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Author: Kyle Lahnakoski (kyle@lahnakoski.com)
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
+
 from bzETL.extract_bugzilla import milli2string, get_current_time
+from mo_dots.datas import Data
+from mo_logs import Log
+from mo_times.timer import Timer
 from pyLibrary import convert
-from pyLibrary.debugs.logs import Log
-from pyLibrary.dot import Dict
-from pyLibrary.queries.qb_usingMySQL import esfilter2sqlwhere
+from pyLibrary.queries.jx_usingMySQL import esfilter2sqlwhere
 from pyLibrary.sql.mysql import MySQL
-from pyLibrary.times.timer import Timer
 
 
 def make_test_instance(db_settings):
@@ -26,9 +37,9 @@ def make_test_instance(db_settings):
 
             #FILL SCHEMA
             Log.note("Fill {{schema}} schema with data", {"schema":db_settings.schema})
-            MySQL.execute_file(filename=db_settings.filename, settings=db_settings)
+            MySQL.execute_file(filename=db_settings.filename, kwargs=db_settings)
 
-        except Exception, e:
+        except Exception as e:
             Log.error("Can not setup test database", e)
 
 
@@ -63,8 +74,8 @@ def add_bug_group(db, bug_id, group_name):
     group_id=group_exists[0].id
 
     diff(db, "bugs",
-        Dict(bug_id=bug_id, bug_group=None),
-        Dict(bug_id=bug_id, bug_group=group_name)
+        Data(bug_id=bug_id, bug_group=None),
+        Data(bug_id=bug_id, bug_group=group_name)
     )
     db.insert("bug_group_map", {"bug_id":bug_id, "group_id":group_id})
 
@@ -73,8 +84,8 @@ def remove_bug_group(db, bug_id, group_name):
     group_id=db.query("SELECT id FROM groups WHERE name={{name}}", {"name": group_name})[0].id
 
     diff(db, "bugs",
-        Dict(bug_id=bug_id, bug_group=group_name),
-        Dict(bug_id=bug_id, bug_group=None)
+        Data(bug_id=bug_id, bug_group=group_name),
+        Data(bug_id=bug_id, bug_group=None)
     )
     db.execute("DELETE FROM bug_group_map WHERE bug_id={{bug_id}} and group_id={{group_id}}", {
         "bug_id":bug_id,
@@ -103,7 +114,7 @@ def diff(db, table, old_record, new_record):
         if fieldid == None:
             Log.error("Expecting a valid field name")
 
-        activity = Dict(
+        activity = Data(
             bug_id=old_record.bug_id,
             who=1,
             bug_when=now,

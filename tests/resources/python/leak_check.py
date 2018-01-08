@@ -10,7 +10,7 @@ from bzETL.extract_bugzilla import SCREENED_WHITEBOARD_BUG_GROUPS
 from pyLibrary import convert
 from pyLibrary.debugs import startup, constants
 from pyLibrary.debugs.logs import Log
-from pyLibrary.dot import coalesce, Dict, set_default, listwrap
+from pyLibrary.dot import coalesce, Data, set_default, listwrap
 from pyLibrary.dot import wrap
 from pyLibrary.env import elasticsearch
 from pyLibrary.env.emailer import Emailer
@@ -25,14 +25,14 @@ from pyLibrary.times.durations import MINUTE, Duration
 #     def new_error(cls, *args):
 #         try:
 #             Log.old_error(*args, stack_depth=1)
-#         except Exception, e:
+#         except Exception as e:
 #             Log.warning("testing error", e, stack_depth=1)
 #             raise e
 #
 #     ##ASSIGN AS CLASS METHOD
 #     Log.error=MethodType(new_error, Log)
 
-SETTINGS = Dict()
+SETTINGS = Data()
 _NOW = Date.now()
 NOW = _NOW.milli
 A_WHILE_AGO = (_NOW - MINUTE * 10).milli
@@ -327,7 +327,7 @@ def main():
 
         if results.errors or results.failures:
             error(results)
-    except Exception, e:
+    except Exception as e:
         Log.error("Problem", cause=e)
 
 

@@ -12,15 +12,16 @@ from __future__ import division
 from __future__ import absolute_import
 
 from bzETL.parse_bug_history import MAX_TIME
-from pyLibrary import convert
-from pyLibrary.debugs.logs import Log
-from pyLibrary.dot import Dict
-from pyLibrary.queries import jx
-from pyLibrary.queries.jx_usingMySQL import esfilter2sqlwhere
-from pyLibrary.sql import SQL
-from pyLibrary.times.timer import Timer
 
 #ALL BUGS IN PRIVATE ETL HAVE SCREENED FIELDS
+from jx_python import jx
+from mo_dots.datas import Data
+from mo_logs import Log
+from mo_times.timer import Timer
+from pyLibrary import convert
+from pyLibrary.queries.jx_usingMySQL import esfilter2sqlwhere
+from pyLibrary.sql import SQL
+
 SCREENED_FIELDDEFS = [
     19, #bug_file_loc
     24, #short_desc
@@ -137,7 +138,7 @@ def get_private_bugs_for_delete(db, param):
         with Timer("get all private bug ids"):
             private_bugs = db.query("SELECT DISTINCT bug_id FROM bug_group_map")
             return set(private_bugs.bug_id) | {0}
-    except Exception, e:
+    except Exception as e:
         Log.error("problem getting private bugs", e)
 
 
@@ -161,7 +162,7 @@ def get_recent_private_bugs(db, param):
 
         return set(output.bug_id)
 
-    except Exception, e:
+    except Exception as e:
         Log.error("problem getting recent private attachments", e)
 
 
@@ -186,7 +187,7 @@ def get_recent_private_attachments(db, param):
             bug_when >= {{start_time_str}} AND
             fieldid={{field_id}}
         """, param)
-    except Exception, e:
+    except Exception as e:
         Log.error("problem getting recent private attachments", e)
 
 
@@ -212,7 +213,7 @@ def get_recent_private_comments(db, param):
             """, param)
 
         return comments
-    except Exception, e:
+    except Exception as e:
         Log.error("problem getting recent private attachments", e)
 
 
@@ -285,14 +286,14 @@ def get_bugs(db, param):
             flatten_bugs_record(r, output)
 
         return output
-    except Exception, e:
+    except Exception as e:
         Log.error("can not get basic bug data", e)
 
 
 def flatten_bugs_record(r, output):
     for field_name, value in r.items():
         if value != "---":
-            newRow = Dict()
+            newRow = Data()
             newRow.bug_id = r.bug_id
             newRow.modified_ts = r.modified_ts
             newRow.modified_by = r.modified_by
@@ -525,7 +526,7 @@ def flatten_attachments(data):
         for k,v in r.items():
             if k=="bug_id":
                 continue
-            output.append(Dict(
+            output.append(Data(
                 bug_id=r.bug_id,
                 modified_ts=r.modified_ts,
                 modified_by=r.modified_by,
@@ -678,7 +679,7 @@ def get_comments(db, param):
             """, param)
 
         return comments
-    except Exception, e:
+    except Exception as e:
         Log.error("can not get comment data", e)
 
 
@@ -714,6 +715,6 @@ def get_comments_by_id(db, comments, param):
             """, param)
 
         return comments
-    except Exception, e:
+    except Exception as e:
         Log.error("can not get comment data", e)
 

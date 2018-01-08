@@ -7,19 +7,17 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 
 from bzETL.extract_bugzilla import get_all_cc_changes
-from pyLibrary import convert
-from pyLibrary.collections import Multiset
-from pyLibrary.debugs import startup
-from pyLibrary.debugs.logs import Log
-from pyLibrary.dot import set_default, coalesce
+from jx_python import jx
+from mo_collections.multiset import Multiset
+from mo_dots import coalesce, set_default
+from mo_json import value2json
+from mo_logs import Log, startup
 from pyLibrary.env import elasticsearch
-from pyLibrary.queries import jx
-from pyLibrary.queries.jx_usingES import FromES
 from pyLibrary.sql.mysql import MySQL
 
 
@@ -92,7 +90,7 @@ class AliasAnalyzer(object):
             for r in result:
                 self.not_aliases[r.alias] = r["canonical"]
 
-        except Exception, e:
+        except Exception as e:
             Log.error("Can not init aliases", cause=e)
 
     def aggregator(self, data):
@@ -156,7 +154,7 @@ class AliasAnalyzer(object):
                     problem= problem.email,
                     score= problem.count,
                     solution= best_solution.email,
-                    matches= convert.value2json(jx.select(solutions, "count")[:10:])
+                    matches= value2json(jx.select(solutions, "count")[:10:])
                 )
                 try_again = True
                 self.add_alias(problem.email, best_solution.email)
@@ -261,7 +259,7 @@ def start():
         settings = startup.read_settings()
         Log.start(settings.debug)
         full_analysis(settings)
-    except Exception, e:
+    except Exception as e:
         Log.error("Can not start", e)
     finally:
         Log.stop()

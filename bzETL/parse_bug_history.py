@@ -36,25 +36,30 @@
 # cutoff time, and build all versions.  Only index versions after start_time in ElasticSearch.
 
 
-from __future__ import unicode_literals
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 
-import re
 import math
+import re
 
-from pyLibrary import convert, strings
-from pyLibrary.collections import MIN
-from pyLibrary.debugs.logs import Log
-from pyLibrary.dot import Null, wrap, DictList, Dict, coalesce, unwrap, inverse
-from pyLibrary.env.files import File
-from pyLibrary.strings import apply_diff
 from bzETL.transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS, DIFF_FIELDS
-
+from jx_python import jx
+from mo_dots import inverse, coalesce, wrap, unwrap
+from mo_dots.datas import Data
+from mo_dots.lists import FlatList
+from mo_dots.nones import Null
+from mo_files import File
+from mo_json import json2value, value2json
+from mo_logs import Log, strings
+from mo_logs.strings import apply_diff
+from mo_math import MIN
+from pyLibrary import convert
 
 # Used to split a flag into (type, status [,requestee])
 # Example: "review?(mreid@mozilla.com)" -> (review, ?, mreid@mozilla.com)
 # Example: "review-" -> (review, -)
+
 FLAG_PATTERN = re.compile("^(.*)([?+-])(\\([^)]*\\))?$")
 
 DEBUG_CHANGES = False   # SHOW ACTIVITY RECORDS BEING PROCESSED
@@ -70,6 +75,7 @@ KNOWN_MISSING_KEYWORDS = {
 }
 STOP_BUG = 999999999  # AN UNFORTUNATE SIDE EFFECT OF DATAFLOW PROGRAMMING (http://en.wikipedia.org/wiki/Dataflow_programming)
 MAX_TIME = 9999999999000
+
 
 
 class BugHistoryParser():
@@ -160,7 +166,7 @@ class BugHistoryParser():
             else:
                 Log.warning("Unhandled merge_order: {{order|quote}}", order=row_in._merge_order)
 
-        except Exception, e:
+        except Exception as e:
             Log.warning("Problem processing row: {{row}}", row=row_in, cause=e)
         finally:
             if row_in._merge_order > 1 and self.currBugState.created_ts == None:
@@ -180,11 +186,11 @@ class BugHistoryParser():
 
     def startNewBug(self, row_in):
         self.prevBugID = row_in.bug_id
-        self.bugVersions = DictList()
-        self.bugVersionsMap = Dict()
-        self.currActivity = Dict()
-        self.currBugAttachmentsMap = Dict()
-        self.currBugState = Dict(
+        self.bugVersions = FlatList()
+        self.bugVersionsMap = Data()
+        self.currActivity = Data()
+        self.currBugAttachmentsMap = Data()
+        self.currBugState = Data(
             _id=BugHistoryParser.uid(row_in.bug_id, row_in.modified_ts),
             bug_id=row_in.bug_id,
             modified_ts=row_in.modified_ts,
@@ -198,7 +204,7 @@ class BugHistoryParser():
         #WE FORCE ADD ALL SETS, AND WE WILL scrub() THEM OUT LATER IF NOT USED
         for f in MULTI_FIELDS:
             self.currBugState[f] = set([])
-        self.currBugState.flags = DictList()  #FLAGS ARE MULTI_FIELDS, BUT ARE ALSO STRUCTS, SO MUST BE IN AN ARRAY
+        self.currBugState.flags = FlatList()  #FLAGS ARE MULTI_FIELDS, BUT ARE ALSO STRUCTS, SO MUST BE IN AN ARRAY
 
         if row_in._merge_order != 1:
             # Problem: No entry found in the 'bugs' table.
@@ -214,7 +220,7 @@ class BugHistoryParser():
         try:
             self.currBugState[field_name].add(new_value)
             return Null
-        except Exception, e:
+        except Exception as e:
             Log.warning(
                 "Unable to push {{value}} to array field {{start_time}} on bug {{curr_value}} current value: {{curr_value}}",
                 value=new_value,
@@ -230,7 +236,7 @@ class BugHistoryParser():
         if currActivityID != self.prevActivityID:
             self.prevActivityID = currActivityID
 
-            self.currActivity = Dict(
+            self.currActivity = Data(
                 _id=currActivityID,
                 modified_ts=row_in.modified_ts,
                 modified_by=row_in.modified_by,
@@ -252,7 +258,7 @@ class BugHistoryParser():
                 "modified_ts": row_in.modified_ts,
                 "created_ts": row_in.created_ts,
                 "modified_by": row_in.modified_by,
-                "flags": DictList()
+                "flags": FlatList()
             }
             self.currBugAttachmentsMap[unicode(row_in.attach_id)] = att
 
@@ -293,7 +299,7 @@ class BugHistoryParser():
         if currActivityID != self.prevActivityID:
             self.currActivity = self.bugVersionsMap[currActivityID]
             if self.currActivity == None:
-                self.currActivity = Dict(
+                self.currActivity = Data(
                     _id=currActivityID,
                     modified_ts=row_in.modified_ts,
                     modified_by=row_in.modified_by,
@@ -362,7 +368,7 @@ class BugHistoryParser():
                     try:
                         row_in.old_value = "\n".join(apply_diff(self.currBugState[row_in.field_name].split("\n"), row_in.new_value.split("\n"), reverse=True))
                         row_in.new_value = self.currBugState[row_in.field_name]
-                    except Exception, e:
+                    except Exception as e:
                         Log.note(
                             "[Bug {{bug_id}}]: PROBLEM Unable to process {{field_name}} diff:\n{{diff|indent}}",
                             bug_id=self.currBugID,
@@ -388,7 +394,7 @@ class BugHistoryParser():
         prevValues = {}
         currVersion = Null
         # Prime the while loop with an empty next version so our first iteration outputs the initial bug state
-        nextVersion = Dict(_id=self.currBugState._id, changes=[])
+        nextVersion = Data(_id=self.currBugState._id, changes=[])
 
         flagMap = {}
         # A monotonically increasing version number (useful for debugging)
@@ -411,7 +417,7 @@ class BugHistoryParser():
                                     bug_id=self.currBugState.bug_id
                                 )
                             nextVersion = Null
-                    except Exception, e:
+                    except Exception as e:
                         Log.error("problem", e)
                 else:
                     nextVersion = Null
@@ -465,7 +471,7 @@ class BugHistoryParser():
                             continue
 
                     if DEBUG_CHANGES:
-                        Log.note("Processing change: " + convert.value2json(change))
+                        Log.note("Processing change: " + value2json(change))
                     target = self.currBugState
                     targetName = "currBugState"
                     attach_id = change.attach_id
@@ -566,7 +572,7 @@ class BugHistoryParser():
     def processFlagChange(self, target, change, modified_ts, modified_by):
         if target.flags == None:
             Log.note("[Bug {{bug_id}}]: PROBLEM  processFlagChange called with unset 'flags'", {"bug_id": self.currBugState.bug_id})
-            target.flags = DictList()
+            target.flags = FlatList()
 
         addedFlags = BugHistoryParser.getMultiFieldValue("flags", change.new_value)
         removedFlags = BugHistoryParser.getMultiFieldValue("flags", change.old_value)
@@ -718,7 +724,7 @@ class BugHistoryParser():
         pv[caField] = aChangeAway
         try:
             duration_ms = pv[caField] - pv[ctField]
-        except Exception, e:
+        except Exception as e:
             Log.error("", e)
         pv[ddField] = math.floor(duration_ms / (1000.0 * 60 * 60 * 24))
 
@@ -728,7 +734,7 @@ class BugHistoryParser():
         # if flag==u'review?(bjacob@mozilla.co':
         #     Log.debug()
 
-        flagParts = Dict(
+        flagParts = Data(
             modified_ts=modified_ts,
             modified_by=modified_by,
             value=flag
@@ -747,7 +753,7 @@ class BugHistoryParser():
     def addValues(self, total, add, valueType, field_name, target):
         if not add:
             return total
-            #        Log.note("[Bug {{bug_id}}]: Adding " + valueType + " " + fieldName + " values:" + convert.value2json(someValues))
+            #        Log.note("[Bug {{bug_id}}]: Adding " + valueType + " " + fieldName + " values:" + value2json(someValues))
         if field_name == "flags":
             Log.error("use processFlags")
         else:
@@ -923,7 +929,7 @@ class BugHistoryParser():
             return output
 
     def processFlags(self, total, old_values, new_values, modified_ts, modified_by, target_type, target):
-        added_values = DictList() #FOR SOME REASON, REMOVAL BY OBJECT DOES NOT WORK, SO WE USE THIS LIST OF STRING  VALUES
+        added_values = FlatList() #FOR SOME REASON, REMOVAL BY OBJECT DOES NOT WORK, SO WE USE THIS LIST OF STRING  VALUES
         for v in new_values:
             flag = BugHistoryParser.makeFlag(v, modified_ts, modified_by)
 
@@ -964,7 +970,7 @@ class BugHistoryParser():
 
         if not old_values:
             return total
-            #        Log.note("[Bug {{bug_id}}]: Adding " + valueType + " " + fieldName + " values:" + convert.value2json(someValues))
+            #        Log.note("[Bug {{bug_id}}]: Adding " + valueType + " " + fieldName + " values:" + value2json(someValues))
         for v in old_values:
             total.append(BugHistoryParser.makeFlag(v, target.modified_ts, target.modified_by))
 
@@ -1004,14 +1010,14 @@ class BugHistoryParser():
         try:
             try:
                 alias_json = File(self.settings.alias_file).read()
-            except Exception, e:
+            except Exception as e:
                 Log.warning("Could not load alias file", cause=e)
                 alias_json = "{}"
-            self.aliases = {k: wrap(v) for k, v in convert.json2value(alias_json).items()}
+            self.aliases = {k: wrap(v) for k, v in json2value(alias_json).items()}
 
             Log.note("{{num}} aliases loaded", {"num": len(self.aliases.keys())})
 
-        except Exception, e:
+        except Exception as e:
             Log.error("Can not init aliases", e)
 
 def deformat(value):

@@ -22,18 +22,19 @@ from __future__ import absolute_import
 
 from datetime import datetime, timedelta
 from bzETL import transform_bugzilla
+from jx_python import jx
+from mo_collections.multiset import Multiset
+from mo_dots import coalesce
+from mo_dots.datas import Data
+from mo_files import File
+from mo_json import json2value, value2json
+from mo_logs import Log, startup
+from mo_math import MIN
+from mo_threads.queues import ThreadedQueue
+from mo_times.timer import Timer
 from pyLibrary import convert
-from pyLibrary.collections import MIN, Multiset
-from pyLibrary.debugs import startup
-from pyLibrary.debugs.logs import Log
-from pyLibrary.dot import coalesce, Dict
 from pyLibrary.env import elasticsearch
 from pyLibrary.env.elasticsearch import Cluster
-from pyLibrary.env.files import File
-from pyLibrary.queries import jx
-from pyLibrary.thread.threads import ThreadedQueue
-from pyLibrary.times.timer import Timer
-
 
 far_back = datetime.utcnow() - timedelta(weeks=52)
 BATCH_SIZE = 1000
@@ -46,13 +47,13 @@ def extract_from_file(source_settings, destination):
             d2 = map(
                 lambda (x): {"id": x.id, "value": x},
                 map(
-                    lambda(x): transform_bugzilla.normalize(convert.json2value(x)),
+                    lambda(x): transform_bugzilla.normalize(json2value(x)),
                     d
                 )
             )
             Log.note("add {{num}} records", {"num":len(d2)})
             destination.extend(d2)
-        except Exception, e:
+        except Exception as e:
             filename = "Error_" + unicode(g) + ".txt"
             File(filename).write(d)
             Log.warning("Can not convert block {{block}} (file={{host}})", {
@@ -83,7 +84,7 @@ def get_last_updated(es):
         if results.facets.modified_ts.count == 0:
             return convert.milli2datetime(0)
         return convert.milli2datetime(results.facets.modified_ts.max)
-    except Exception, e:
+    except Exception as e:
         Log.error("Can not get_last_updated from {{host}}/{{index}}",{
             "host": es.settings.host,
             "index": es.settings.index
@@ -148,10 +149,7 @@ def get_or_create_index(destination_settings, source):
     indexes = [a for a in aliases if a.alias == destination_settings.index or a.index == destination_settings.index]
     if not indexes:
         #CREATE INDEX
-        schema = convert.json2value(File(destination_settings.schema_file).read(), paths=True)
-        assert schema.settings
-        assert schema.mappings
-        Cluster(destination_settings).create_index(destination_settings, schema, limit_replicas=True)
+        Cluster(destination_settings).create_index(limit_replicas=True, kwargs=destination_settings)
     elif len(indexes) > 1:
         Log.error("do not know how to replicate to more than one index")
     elif indexes[0].alias != None:
@@ -200,11 +198,11 @@ def main(settings):
     if settings.source.filename != None:
         settings.destination.alias = settings.destination.index
         settings.destination.index = Cluster.proto_name(settings.destination.alias)
-        schema = convert.json2value(File(settings.destination.schema_file).read(), paths=True, flexible=True)
-        if transform_bugzilla.USE_ATTACHMENTS_DOT:
-            schema = convert.json2value(convert.value2json(schema).replace("attachments_", "attachments."))
+        # schema = json2value(File(settings.destination.schema_file).read(), paths=True, flexible=True)
+        # if transform_bugzilla.USE_ATTACHMENTS_DOT:
+        #     schema = json2value(value2json(schema).replace("attachments_", "attachments."))
 
-        dest = Cluster(settings.destination).create_index(settings.destination, schema, limit_replicas=True)
+        dest = Cluster(settings.destination).create_index(kwargs=settings.destination, limit_replicas=True)
         dest.set_refresh_interval(-1)
         extract_from_file(settings.source, dest)
         dest.set_refresh_interval(1)
@@ -221,8 +219,8 @@ def main(settings):
         if settings.destination.filename:
             Log.note("Sending records to file: {{filename}}", {"filename":settings.destination.filename})
             file = File(settings.destination.filename)
-            destination = Dict(
-                extend=lambda x: file.extend([convert.value2json(v["value"]) for v in x]),
+            destination = Data(
+                extend=lambda x: file.extend([value2json(v["value"]) for v in x]),
                 file=file
             )
         else:
@@ -249,7 +247,7 @@ def start():
         settings=startup.read_settings()
         Log.start(settings.debug)
         main(settings)
-    except Exception, e:
+    except Exception as e:
         Log.error("Problems exist", e)
     finally:
         Log.stop()
