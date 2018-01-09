@@ -19,10 +19,12 @@ from mo_logs import startup, Log
 from bzETL import bz_etl, extract_bugzilla
 from bzETL.bz_etl import etl
 from bzETL.extract_bugzilla import get_current_time
-from mo_threads import ThreadedQueue
+from mo_threads import ThreadedQueue, Till
 from pyLibrary import convert
 from pyLibrary.sql.mysql import all_db, MySQL
 from pyLibrary.testing import elasticsearch
+from pyLibrary.testing.elasticsearch import FakeES
+from test_etl import compare_both
 
 
 class TestOneETL(unittest.TestCase):
@@ -31,7 +33,7 @@ class TestOneETL(unittest.TestCase):
     I USE THIS TO IDENTIFY CANDIDATES TO ADD TO THE TEST SUITE
     """
     def setUp(self):
-        self.settings = startup.read_settings(filename="tests/resources/config/test_settings.json")
+        self.settings = startup.read_settings(filename="test_one_settings.json")
         Log.start(self.settings.debug)
 
 
@@ -50,8 +52,10 @@ class TestOneETL(unittest.TestCase):
         USE A MYSQL DATABASE TO FILL AN ES INSTANCE (USE Fake_ES() INSTANCES TO KEEP
         THIS TEST LOCAL) WITH VERSIONS OF BUGS FROM settings.param.bugs.
         """
+        reference = FakeES(self.settings.reference)
+        candidate = elasticsearch.make_test_instance("candidate", self.settings.elasticsearch)
+
         with MySQL(self.settings.bugzilla) as db:
-            candidate = elasticsearch.make_test_instance("candidate", self.settings.fake.bugs)
 
             #SETUP RUN PARAMETERS
             param = Data()
@@ -65,6 +69,10 @@ class TestOneETL(unittest.TestCase):
 
             with ThreadedQueue("etl queue", candidate, batch_size=1000) as output:
                 etl(db, output, param, self.settings.alias, please_stop=None)
+
+        #COMPARE ALL BUGS
+        Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
+        compare_both(candidate, reference, self.settings, self.settings.param.bugs)
 
 
         #TODO: INCLUDE OPTION TO USE REAL ES (AND ENSURE REALLY WORKING)

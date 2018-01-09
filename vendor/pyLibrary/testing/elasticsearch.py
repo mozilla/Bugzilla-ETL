@@ -32,10 +32,10 @@ def open_test_instance(name, settings):
     if settings.filename:
         Log.note(
             "Using {{filename}} as {{type}}",
-            filename= settings.filename,
-            type= name
+            filename=settings.filename,
+            type=name
         )
-        return Fake_ES(settings)
+        return FakeES(settings)
     else:
         Log.note(
             "Using ES cluster at {{host}} as {{type}}",
@@ -54,9 +54,7 @@ def open_test_instance(name, settings):
         return es
 
 
-
-
-class Fake_ES():
+class FakeES():
     @override
     def __init__(self, filename, host="fake", index="fake", kwargs=None):
         self.settings = kwargs
