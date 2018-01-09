@@ -11,6 +11,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+from mo_future import text_type
+
 from bzETL import extract_bugzilla, alias_analysis, parse_bug_history
 from bzETL.extract_bugzilla import *
 from bzETL.parse_bug_history import BugHistoryParser
@@ -175,7 +177,7 @@ def setup_es(settings, db, es, es_comments):
                 settings.es_comments.index = Cluster.proto_name(settings.es_comments.alias)
             es_comments = Cluster.create_index(kwargs=settings.es_comments, limit_replicas=True)
 
-        File(settings.param.first_run_time).write(unicode(convert.datetime2milli(current_run_time)))
+        File(settings.param.first_run_time).write(text_type(convert.datetime2milli(current_run_time)))
 
     return current_run_time, es, es_comments, last_run_time
 
@@ -401,7 +403,7 @@ def main(settings, es=None, es_comments=None):
             es.delete_all_but(settings.es_comments.alias, settings.es_comments.index)
             es_comments.add_alias(settings.es_comments.alias)
 
-        File(settings.param.last_run_time).write(unicode(convert.datetime2milli(current_run_time)))
+        File(settings.param.last_run_time).write(text_type(convert.datetime2milli(current_run_time)))
     except Exception as e:
         Log.error("Problem with main ETL loop", cause=e)
     finally:

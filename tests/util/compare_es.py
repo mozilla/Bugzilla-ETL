@@ -14,6 +14,10 @@ from __future__ import unicode_literals
 
 from datetime import datetime
 
+from mo_logs import Log
+
+import jx_elasticsearch
+import jx_python
 from bzETL import transform_bugzilla, parse_bug_history
 from jx_python import jx
 from mo_dots import coalesce, unwrap
@@ -21,26 +25,29 @@ from mo_json import json2value, value2json
 from mo_math import Math
 from mo_times.timer import Timer
 from pyLibrary import convert
+from pyLibrary.env import elasticsearch
+from pyLibrary.testing.elasticsearch import FakeES
 
 
 def get_all_bug_versions(es, bug_id, max_time=None):
     max_time = coalesce(max_time, datetime.max)
 
-    data = es.search({
-        "query": {"filtered": {
-            "query": {"match_all": {}},
-            "filter": {"and": [
-                {"term": {"bug_id": bug_id}},
-                {"range": {"modified_ts": {"lte": convert.datetime2milli(max_time)}}}
-            ]}
-        }},
-        "from": 0,
-        "size": 200000,
-        "sort": []
+    if isinstance(es, elasticsearch.Index):
+        esq = jx_elasticsearch.new_instance(es.settings)
+    elif isinstance(es, FakeES):
+        esq = jx_python.wrap_from(es.data.values())
+    else:
+        raise Log.error("unknown container")
+
+    response = esq.query({
+        "from": es.settings.alias,
+        "where": {"and": [
+            {"eq": {"bug_id": bug_id}},
+            {"lte": {"modified_ts": convert.datetime2milli(max_time)}}
+        ]},
+        "format": "list"
     })
-
-    return jx.select(data.hits.hits, "_source")
-
+    return response.data
 
 def get_private_bugs(es):
     """

@@ -14,6 +14,8 @@ from __future__ import unicode_literals
 import unittest
 from datetime import datetime
 
+from mo_future import text_type
+
 from bzETL import extract_bugzilla, bz_etl
 from bzETL.bz_etl import etl, esfilter2sqlwhere
 from bzETL.extract_bugzilla import get_current_time, SCREENED_WHITEBOARD_BUG_GROUPS
@@ -605,7 +607,8 @@ def compare_both(candidate, reference, settings, some_bugs):
             try:
                 versions = jx.sort(
                     get_all_bug_versions(candidate, bug_id, datetime.utcnow()),
-                    "modified_ts")
+                    "modified_ts"
+                )
                 # WE CAN NOT EXPECT candidate TO BE UP TO DATE BECAUSE IT IS USING AN OLD IMAGE
                 if not versions:
                     max_time = convert.milli2datetime(settings.bugzilla.expires_on)
@@ -624,11 +627,11 @@ def compare_both(candidate, reference, settings, some_bugs):
                 ref = value2json(ref_versions, pretty=True)
                 if can != ref:
                     found_errors = True
-                    File(try_dir + unicode(bug_id) + ".txt").write(can)
-                    File(ref_dir + unicode(bug_id) + ".txt").write(ref)
+                    File(try_dir + text_type(bug_id) + ".txt").write(can)
+                    File(ref_dir + text_type(bug_id) + ".txt").write(ref)
             except Exception as e:
                 found_errors = True
-                Log.warning("Problem ETL'ing bug {{bug_id}}", {"bug_id": bug_id}, e)
+                Log.warning("Problem ETL'ing bug {{bug_id}}", bug_id=bug_id, cause=e)
 
         if found_errors:
             Log.error("DIFFERENCES FOUND (Differences shown in {{path}})", {

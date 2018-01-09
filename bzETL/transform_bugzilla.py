@@ -14,6 +14,8 @@ from __future__ import unicode_literals
 import re
 from datetime import date
 
+from mo_future import text_type
+
 from jx_python import jx
 from mo_json import json2value, value2json
 from mo_logs import Log
@@ -53,7 +55,7 @@ def rename_attachments(bug_version):
 #NORMALIZE BUG VERSION TO STANDARD FORM
 def normalize(bug, old_school=False):
     bug=bug.copy()
-    bug.id = unicode(bug.bug_id) + "_" + unicode(bug.modified_ts)[:-3]
+    bug.id = text_type(bug.bug_id) + "_" + text_type(bug.modified_ts)[:-3]
     bug._id = None
 
     #ENSURE STRUCTURES ARE SORTED
@@ -106,9 +108,9 @@ def normalize(bug, old_school=False):
         try:
             if isinstance(v, date):
                 bug[dateField] = convert.datetime2milli(v)
-            elif isinstance(v, (long, int, float)) and len(unicode(v)) in [12, 13]:
+            elif isinstance(v, (long, int, float)) and len(text_type(v)) in [12, 13]:
                 bug[dateField] = v
-            elif not isinstance(v, basestring):
+            elif not isinstance(v, text_type):
                 Log.error("situation not handled")
             elif DATE_PATTERN_STRICT.match(v):
                 # Convert to "2012/01/01 00:00:00.000"

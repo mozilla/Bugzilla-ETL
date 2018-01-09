@@ -14,7 +14,7 @@ from __future__ import unicode_literals
 import unittest
 
 from mo_dots import Data
-from mo_logs import startup, Log
+from mo_logs import startup, Log, constants
 
 from bzETL import bz_etl, extract_bugzilla
 from bzETL.bz_etl import etl
@@ -25,6 +25,7 @@ from pyLibrary.sql.mysql import all_db, MySQL
 from pyLibrary.testing import elasticsearch
 from pyLibrary.testing.elasticsearch import FakeES
 from test_etl import compare_both
+from util.database import make_test_instance
 
 
 class TestOneETL(unittest.TestCase):
@@ -34,8 +35,8 @@ class TestOneETL(unittest.TestCase):
     """
     def setUp(self):
         self.settings = startup.read_settings(filename="test_one_settings.json")
+        constants.set(self.settings.constants)
         Log.start(self.settings.debug)
-
 
     def tearDown(self):
         #CLOSE THE CACHED MySQL CONNECTIONS
@@ -55,6 +56,7 @@ class TestOneETL(unittest.TestCase):
         reference = FakeES(self.settings.reference)
         candidate = elasticsearch.make_test_instance("candidate", self.settings.elasticsearch)
 
+        make_test_instance(self.settings.bugzilla)
         with MySQL(self.settings.bugzilla) as db:
 
             #SETUP RUN PARAMETERS

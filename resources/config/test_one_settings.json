@@ -36,7 +36,7 @@
                 "class": "logging.handlers.RotatingFileHandler",
                 "filename": "./tests/results/logs/test_etl.log",
                 "maxBytes": 10000000,
-                "backupCount": 200,
+                "backupCount": 20,
                 "encoding": "utf8"
             },
             {

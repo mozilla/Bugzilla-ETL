@@ -51,6 +51,8 @@ def open_test_instance(name, settings):
                 Log.error("unexpected", cause=e)
 
         es = cluster.create_index(limit_replicas=True, limit_replicas_warning=False, kwargs=settings)
+        es.delete_all_but_self()
+        es.add_alias(settings.index)
         return es
 
 

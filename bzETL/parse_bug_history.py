@@ -43,6 +43,8 @@ from __future__ import unicode_literals
 import math
 import re
 
+from mo_future import text_type
+
 from bzETL.transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS, DIFF_FIELDS
 from jx_python import jx
 from mo_dots import inverse, coalesce, wrap, unwrap
@@ -183,7 +185,7 @@ class BugHistoryParser(object):
         if modified_ts == None:
             Log.error("modified_ts can not be Null")
 
-        return unicode(bug_id) + "_" + unicode(modified_ts)[0:-3]
+        return text_type(bug_id) + "_" + text_type(modified_ts)[0:-3]
 
     def startNewBug(self, row_in):
         self.prevBugID = row_in.bug_id
@@ -252,7 +254,7 @@ class BugHistoryParser(object):
             self.bugVersions.append(self.currActivity)
             self.bugVersionsMap[currActivityID] = self.currActivity
 
-        att = self.currBugAttachmentsMap[unicode(row_in.attach_id)]
+        att = self.currBugAttachmentsMap[text_type(row_in.attach_id)]
         if att == None:
             att = {
                 "attach_id": row_in.attach_id,
@@ -261,7 +263,7 @@ class BugHistoryParser(object):
                 "modified_by": row_in.modified_by,
                 "flags": FlatList()
             }
-            self.currBugAttachmentsMap[unicode(row_in.attach_id)] = att
+            self.currBugAttachmentsMap[text_type(row_in.attach_id)] = att
 
         att["created_ts"] = MIN([row_in.modified_ts, att["created_ts"]])
         if row_in.field_name == "created_ts" and row_in.new_value == None:
@@ -273,15 +275,15 @@ class BugHistoryParser(object):
     def processFlagsTableItem(self, row_in):
         flag = self.makeFlag(row_in.new_value, row_in.modified_ts, row_in.modified_by)
         if row_in.attach_id != None:
-            if self.currBugAttachmentsMap[unicode(row_in.attach_id)] == None:
+            if self.currBugAttachmentsMap[text_type(row_in.attach_id)] == None:
                 Log.note("[Bug {{bug_id}}]: Unable to find attachment {{attach_id}} for bug_id {{bug_id}}",
                     attach_id=row_in.attach_id,
                     bug_id=self.currBugID
                 )
             else:
-                if self.currBugAttachmentsMap[unicode(row_in.attach_id)].flags == None:
+                if self.currBugAttachmentsMap[text_type(row_in.attach_id)].flags == None:
                     Log.error("should never happen")
-                self.currBugAttachmentsMap[unicode(row_in.attach_id)].flags.append(flag)
+                self.currBugAttachmentsMap[text_type(row_in.attach_id)].flags.append(flag)
         else:
             self.currBugState.flags.append(flag)
 
@@ -313,7 +315,7 @@ class BugHistoryParser(object):
             self.prevActivityID = currActivityID
 
         if row_in.attach_id != None:
-            attachment = self.currBugAttachmentsMap[unicode(row_in.attach_id)]
+            attachment = self.currBugAttachmentsMap[text_type(row_in.attach_id)]
             if attachment == None:
                 #we are going backwards in time, no need to worry about these?  maybe delete this change for public bugs
                 Log.note(
@@ -480,12 +482,12 @@ class BugHistoryParser(object):
                         # Handle the special change record that signals the creation of the attachment
                         if change.field_name == "attachment_added":
                             # This change only exists when the attachment has been added to the map, so no missing case needed.
-                            att = self.currBugAttachmentsMap[unicode(attach_id)]
+                            att = self.currBugAttachmentsMap[text_type(attach_id)]
                             self.currBugState.attachments.append(att)
                             continue
                         else:
                             # Attachment change
-                            target = self.currBugAttachmentsMap[unicode(attach_id)]
+                            target = self.currBugAttachmentsMap[text_type(attach_id)]
                             targetName = "attachment"
                             if target == None:
                                 Log.note("[Bug {{bug_id}}]: Encountered a change to missing attachment: {{change}}", {

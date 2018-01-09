@@ -323,9 +323,9 @@ def main():
 def error(results):
     content = []
     for e in results.errors:
-        content.append("ERROR: "+unicode(e[0]._testMethodName))
+        content.append("ERROR: "+text_type(e[0]._testMethodName))
     for f in results.failures:
-        content.append("FAIL:  "+unicode(f[0]._testMethodName))
+        content.append("FAIL:  "+text_type(f[0]._testMethodName))
 
     Emailer(SETTINGS.email).send_email(
         text_data = "\n".join(content)

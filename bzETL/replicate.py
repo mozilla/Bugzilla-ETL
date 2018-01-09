@@ -21,6 +21,9 @@ from __future__ import division
 from __future__ import absolute_import
 
 from datetime import datetime, timedelta
+
+from mo_future import text_type
+
 from bzETL import transform_bugzilla
 from jx_python import jx
 from mo_collections.multiset import Multiset
@@ -54,7 +57,7 @@ def extract_from_file(source_settings, destination):
             Log.note("add {{num}} records", num=len(d2))
             destination.extend(d2)
         except Exception as e:
-            filename = "Error_" + unicode(g) + ".txt"
+            filename = "Error_" + text_type(g) + ".txt"
             File(filename).write(d)
             Log.warning("Can not convert block {{block}} (file={{host}})", {
                 "block": g,
@@ -239,7 +242,7 @@ def main(settings):
             replicate(source, data_sink, pending, last_updated)
 
     # RECORD LAST UPDATED
-    time_file.write(unicode(convert.datetime2milli(current_time)))
+    time_file.write(text_type(convert.datetime2milli(current_time)))
 
 
 def start():
