@@ -1,6 +1,5 @@
 # encoding: utf-8
 #
-#
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -8,28 +7,33 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from datetime import datetime
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
+
 import unittest
+from datetime import datetime
+
+from mo_future import text_type
+
 from bzETL import extract_bugzilla, bz_etl
-from bzETL.bz_etl import etl
+from bzETL.bz_etl import etl, esfilter2sqlwhere
 from bzETL.extract_bugzilla import get_current_time, SCREENED_WHITEBOARD_BUG_GROUPS
+from jx_python import jx
+from mo_dots import Data, Null, wrap
+from mo_files import File
+from mo_json import json2value, value2json
+from mo_logs import startup, constants, Log
+from mo_math import MIN
+from mo_math.randoms import Random
+from mo_threads import ThreadedQueue, Till
+from mo_times import Timer
 from pyLibrary import convert
-from pyLibrary.collections import MIN
-from pyLibrary.debugs import startup, constants
-from pyLibrary.debugs.logs import Log
-from pyLibrary.dot import Dict, Null, wrap
-from pyLibrary.env.files import File
-from pyLibrary.maths.randoms import Random
-from pyLibrary.queries import jx
-from pyLibrary.queries.qb_usingMySQL import esfilter2sqlwhere
-from pyLibrary.sql.mysql import MySQL, all_db
+from pyLibrary.sql.mysql import all_db, MySQL
 from pyLibrary.testing import elasticsearch
-from pyLibrary.thread.threads import ThreadedQueue, Thread
-from pyLibrary.times.timer import Timer
 from util import database, compare_es
 from util.compare_es import get_all_bug_versions
 from util.database import diff
-
 
 BUG_GROUP_FOR_TESTING = "super secret"
 
@@ -64,7 +68,7 @@ class TestETL(unittest.TestCase):
             reference = elasticsearch.open_test_instance("reference", self.settings.private_bugs_reference)
 
             #SETUP RUN PARAMETERS
-            param = Dict()
+            param = Data()
             param.end_time = convert.datetime2milli(get_current_time(db))
             param.start_time = 0
             param.start_time_str = extract_bugzilla.milli2string(db, 0)
@@ -73,11 +77,11 @@ class TestETL(unittest.TestCase):
             param.bug_list = self.settings.param.bugs
             param.allow_private_bugs = self.settings.param.allow_private_bugs
 
-            with ThreadedQueue("etl_queue", candidate, max_size=1000) as output:
-                etl(db, output, param, please_stop=None)
+            with ThreadedQueue("etl_queue", candidate, batch_size=1000) as output:
+                etl(db, output, param, self.settings.alias, please_stop=None)
 
             #COMPARE ALL BUGS
-            Thread.sleep(2)  # MUST SLEEP WHILE ES DOES ITS INDEXING
+            Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
             compare_both(candidate, reference, self.settings, self.settings.param.bugs)
 
 
@@ -97,37 +101,37 @@ class TestETL(unittest.TestCase):
             #GO FASTER BY STORING LOCAL FILE
             local_cache = File(self.settings.param.temp_dir + "/private_bugs.json")
             if local_cache.exists:
-                private_bugs = set(convert.json2value(local_cache.read()))
+                private_bugs = set(json2value(local_cache.read()))
             else:
                 with Timer("get private bugs"):
                     private_bugs = compare_es.get_private_bugs(reference)
-                    local_cache.write(convert.value2json(private_bugs))
+                    local_cache.write(value2json(private_bugs))
 
             while True:
                 some_bugs = [b for b in [Random.int(MAX_BUG_ID) for i in range(NUM_TO_TEST)] if b not in private_bugs]
 
-                Log.note("Test with the following bug_ids: {{bugs}}", {"bugs":some_bugs})
+                Log.note("Test with the following bug_ids: {{bugs}}", bugs=some_bugs)
 
                 #SETUP RUN PARAMETERS
-                param = Dict()
+                param = Data()
                 param.end_time = convert.datetime2milli(get_current_time(db))
                 param.start_time = 0
                 param.start_time_str = extract_bugzilla.milli2string(db, 0)
                 param.alias_file = self.settings.param.alias_file
 
                 try:
-                    with ThreadedQueue(candidate, 100) as output:
-                        etl(db, output, param, please_stop=None)
+                    with ThreadedQueue("etl queue", candidate, batch_size=100) as output:
+                        etl(db, output, param, self.settings.alias, please_stop=None)
 
                     #COMPARE ALL BUGS
-                    Thread.sleep(2)  # MUST SLEEP WHILE ES DOES ITS INDEXING
+                    Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
                     found_errors = compare_both(candidate, reference, self.settings, some_bugs)
                     if found_errors:
                         Log.note("Errors found")
                         break
                     else:
                         pass
-                except Exception, e:
+                except Exception as e:
                     Log.warning("Total failure during compare of bugs {{bugs}}", {"bugs": some_bugs}, e)
 
     def test_private_etl(self):
@@ -190,7 +194,7 @@ class TestETL(unittest.TestCase):
         File(self.settings.param.last_run_time).delete()
 
         private_bugs = set(Random.sample(self.settings.param.bugs, 3))
-        Log.note("The private bugs for this test are {{bugs}}", {"bugs": private_bugs})
+        Log.note("The private bugs for this test are {{bugs}}", bugs= private_bugs)
 
         database.make_test_instance(self.settings.bugzilla)
 
@@ -203,7 +207,7 @@ class TestETL(unittest.TestCase):
         es_c = elasticsearch.make_test_instance("candidate_comments", self.settings.real.comments)
         bz_etl.main(self.settings, es, es_c)
 
-        Thread.sleep(2)  # MUST SLEEP WHILE ES DOES ITS INDEXING
+        Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
         verify_no_private_bugs(es, private_bugs)
 
     def test_recent_private_stuff_does_not_show(self):
@@ -221,7 +225,7 @@ class TestETL(unittest.TestCase):
         with MySQL(self.settings.bugzilla) as db:
             #BUGS
             private_bugs = set(Random.sample(self.settings.param.bugs, 3))
-            Log.note("The private bugs are {{bugs}}", {"bugs": private_bugs})
+            Log.note("The private bugs are {{bugs}}", bugs= private_bugs)
             for b in private_bugs:
                 database.add_bug_group(db, b, BUG_GROUP_FOR_TESTING)
 
@@ -238,12 +242,12 @@ class TestETL(unittest.TestCase):
                 "where": esfilter2sqlwhere(db, {"terms":{"bug_id":private_bugs}})
             }).comment_id
             private_comments = marked_private_comments + implied_private_comments
-            Log.note("The private comments are {{comments}}", {"comments": private_comments})
+            Log.note("The private comments are {{comments}}", comments= private_comments)
 
             #ATTACHMENTS
             attachments = db.query("SELECT bug_id, attach_id FROM attachments")
             private_attachments = Random.sample(attachments, 5)
-            Log.note("The private attachments are {{attachments}}", {"attachments": private_attachments})
+            Log.note("The private attachments are {{attachments}}", attachments= private_attachments)
             for a in private_attachments:
                 database.mark_attachment_private(db, a.attach_id, isprivate=1)
 
@@ -251,7 +255,7 @@ class TestETL(unittest.TestCase):
             Log.error("last_run_time should exist")
         bz_etl.main(self.settings, es, es_c)
 
-        Thread.sleep(2)  # MUST SLEEP WHILE ES DOES ITS INDEXING
+        Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
         verify_no_private_bugs(es, private_bugs)
         verify_no_private_attachments(es, private_attachments)
         verify_no_private_comments(es_c, private_comments)
@@ -265,7 +269,7 @@ class TestETL(unittest.TestCase):
         bz_etl.main(self.settings, es, es_c)
 
         #VERIFY BUG IS PUBLIC, BUT PRIVATE ATTACHMENTS AND COMMENTS STILL NOT
-        Thread.sleep(2)  # MUST SLEEP WHILE ES DOES ITS INDEXING
+        Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
         verify_public_bugs(es, private_bugs)
         verify_no_private_attachments(es, private_attachments)
         verify_no_private_comments(es_c, marked_private_comments)
@@ -296,7 +300,7 @@ class TestETL(unittest.TestCase):
         es_c = elasticsearch.make_test_instance("candidate_comments", self.settings.real.comments)
         bz_etl.main(self.settings, es, es_c)
 
-        Thread.sleep(2)  # MUST SLEEP WHILE ES DOES ITS INDEXING
+        Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
         verify_no_private_attachments(es, private_attachments)
 
     def test_private_comments_do_not_show(self):
@@ -325,7 +329,7 @@ class TestETL(unittest.TestCase):
         es_c = elasticsearch.make_test_instance("candidate_comments", self.settings.real.comments)
         bz_etl.main(self.settings, es, es_c)
 
-        Thread.sleep(2)  # MUST SLEEP WHILE ES DOES ITS INDEXING
+        Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
         verify_no_private_comments(es, private_comments)
 
     def test_changes_to_private_bugs_still_have_bug_group(self):
@@ -335,7 +339,7 @@ class TestETL(unittest.TestCase):
 
         private_bugs = set(Random.sample(self.settings.param.bugs, 3))
 
-        Log.note("The private bugs for this test are {{bugs}}", {"bugs": private_bugs})
+        Log.note("The private bugs for this test are {{bugs}}", bugs= private_bugs)
 
         database.make_test_instance(self.settings.bugzilla)
 
@@ -351,8 +355,9 @@ class TestETL(unittest.TestCase):
         # MAKE A CHANGE TO THE PRIVATE BUGS
         with MySQL(self.settings.bugzilla) as db:
             for b in private_bugs:
-                old_bug = db.query("SELECT * FROM bugs WHERE bug_id={{bug_id}}", {"bug_id": b})[0]
-                new_bug = old_bug.copy()
+                with db:
+                    old_bug = db.query("SELECT * FROM bugs WHERE bug_id={{bug_id}}", {"bug_id": b})[0]
+                    new_bug = old_bug.copy()
 
                 new_bug.bug_status = "NEW STATUS"
                 diff(db, "bugs", old_bug, new_bug)
@@ -362,7 +367,7 @@ class TestETL(unittest.TestCase):
         bz_etl.main(self.settings, es, es_c)
 
         #VERIFY BUG GROUP STILL EXISTS
-        Thread.sleep(2)  # MUST SLEEP WHILE ES DOES ITS INDEXING
+        Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
         now = datetime.utcnow()
         results = es.search({
             "query": {"filtered": {
@@ -399,7 +404,7 @@ class TestETL(unittest.TestCase):
             es = elasticsearch.make_test_instance("candidate", self.settings.candidate)
 
             #SETUP RUN PARAMETERS
-            param = Dict()
+            param = Data()
             param.end_time = convert.datetime2milli(get_current_time(db))
             # FLAGS ADDED TO BUG 813650 ON 18/12/2012 2:38:08 AM (PDT), SO START AT SOME LATER TIME
             param.start_time = convert.datetime2milli(convert.string2datetime("02/01/2013 10:09:15", "%d/%m/%Y %H:%M:%S"))
@@ -409,10 +414,10 @@ class TestETL(unittest.TestCase):
             param.bug_list = wrap([813650])
             param.allow_private_bugs = self.settings.param.allow_private_bugs
 
-            with ThreadedQueue(es, size=1000) as output:
-                etl(db, output, param, please_stop=None)
+            with es.threaded_queue(batch_size=1000) as output:
+                etl(db, output, param, self.settings.alias, please_stop=None)
 
-            Thread.sleep(2)  # MUST SLEEP WHILE ES DOES ITS INDEXING
+            Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
             versions = get_all_bug_versions(es, 813650)
 
             flags = ["cf_status_firefox18", "cf_status_firefox19", "cf_status_firefox_esr17", "cf_status_b2g18"]
@@ -435,7 +440,7 @@ class TestETL(unittest.TestCase):
             db.flush()
 
             #SETUP RUN PARAMETERS
-            param = Dict()
+            param = Data()
             param.end_time = convert.datetime2milli(get_current_time(db))
             param.start_time = 0
             param.start_time_str = extract_bugzilla.milli2string(db, 0)
@@ -444,10 +449,10 @@ class TestETL(unittest.TestCase):
             param.bug_list = wrap([GOOD_BUG_TO_TEST]) # bug 1046 sees lots of whiteboard, and other field, changes
             param.allow_private_bugs = True
 
-            with ThreadedQueue(es, size=1000) as output:
-                etl(db, output, param, please_stop=None)
+            with ThreadedQueue("etl queue", es, batch_size=1000) as output:
+                etl(db, output, param, self.settings.alias, please_stop=None)
 
-            Thread.sleep(2)  # MUST SLEEP WHILE ES DOES ITS INDEXING
+            Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
             versions = get_all_bug_versions(es, GOOD_BUG_TO_TEST)
 
             for v in versions:
@@ -455,7 +460,7 @@ class TestETL(unittest.TestCase):
                     Log.error("Expecting whiteboard to be screened")
 
     def test_ambiguous_whiteboard_screened(self):
-        GOOD_BUG_TO_TEST=1046
+        GOOD_BUG_TO_TEST = 1046
 
         database.make_test_instance(self.settings.bugzilla)
 
@@ -469,7 +474,7 @@ class TestETL(unittest.TestCase):
             db.flush()
 
             #SETUP RUN PARAMETERS
-            param = Dict()
+            param = Data()
             param.end_time = convert.datetime2milli(get_current_time(db))
             param.start_time = 0
             param.start_time_str = extract_bugzilla.milli2string(db, 0)
@@ -478,10 +483,10 @@ class TestETL(unittest.TestCase):
             param.bug_list = wrap([GOOD_BUG_TO_TEST]) # bug 1046 sees lots of whiteboard, and other field, changes
             param.allow_private_bugs = True
 
-            with ThreadedQueue(es, size=1000) as output:
-                etl(db, output, param, please_stop=None)
+            with ThreadedQueue("etl", es, batch_size=1000) as output:
+                etl(db, output, param, self.settings.alias, please_stop=None)
 
-            Thread.sleep(2)  # MUST SLEEP WHILE ES DOES ITS INDEXING
+            Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
             versions = get_all_bug_versions(es, GOOD_BUG_TO_TEST)
 
             for v in versions:
@@ -496,7 +501,7 @@ class TestETL(unittest.TestCase):
         es = elasticsearch.make_test_instance("candidate", self.settings.candidate)
         with MySQL(self.settings.bugzilla) as db:
             #SETUP FIRST RUN PARAMETERS
-            param = Dict()
+            param = Data()
             param.end_time = start_incremental
             param.start_time = 0
             param.start_time_str = extract_bugzilla.milli2string(db, param.start_time)
@@ -505,11 +510,11 @@ class TestETL(unittest.TestCase):
             param.bug_list = bugs
             param.allow_private_bugs = False
 
-            with ThreadedQueue(es, size=1000) as output:
-                etl(db, output, param, please_stop=None)
+            with ThreadedQueue("etl queue", es, batch_size=1000) as output:
+                etl(db, output, param, self.settings.alias, please_stop=None)
 
             #SETUP INCREMENTAL RUN PARAMETERS
-            param = Dict()
+            param = Data()
             param.end_time = convert.datetime2milli(datetime.utcnow())
             param.start_time = start_incremental
             param.start_time_str = extract_bugzilla.milli2string(db, param.start_time)
@@ -518,8 +523,8 @@ class TestETL(unittest.TestCase):
             param.bug_list = bugs
             param.allow_private_bugs = False
 
-            with ThreadedQueue(es, size=1000) as output:
-                etl(db, output, param, please_stop=None)
+            with ThreadedQueue("etl queue", es, batch_size=1000) as output:
+                etl(db, output, param, self.settings.alias, please_stop=None)
 
         for b in bugs:
             results = es.search({
@@ -602,7 +607,8 @@ def compare_both(candidate, reference, settings, some_bugs):
             try:
                 versions = jx.sort(
                     get_all_bug_versions(candidate, bug_id, datetime.utcnow()),
-                    "modified_ts")
+                    "modified_ts"
+                )
                 # WE CAN NOT EXPECT candidate TO BE UP TO DATE BECAUSE IT IS USING AN OLD IMAGE
                 if not versions:
                     max_time = convert.milli2datetime(settings.bugzilla.expires_on)
@@ -617,15 +623,15 @@ def compare_both(candidate, reference, settings, some_bugs):
                         "modified_ts"
                     )
 
-                can = convert.value2json(versions, pretty=True)
-                ref = convert.value2json(ref_versions, pretty=True)
+                can = value2json(versions, pretty=True)
+                ref = value2json(ref_versions, pretty=True)
                 if can != ref:
                     found_errors = True
-                    File(try_dir + unicode(bug_id) + ".txt").write(can)
-                    File(ref_dir + unicode(bug_id) + ".txt").write(ref)
-            except Exception, e:
+                    File(try_dir + text_type(bug_id) + ".txt").write(can)
+                    File(ref_dir + text_type(bug_id) + ".txt").write(ref)
+            except Exception as e:
                 found_errors = True
-                Log.warning("Problem ETL'ing bug {{bug_id}}", {"bug_id": bug_id}, e)
+                Log.warning("Problem ETL'ing bug {{bug_id}}", bug_id=bug_id, cause=e)
 
         if found_errors:
             Log.error("DIFFERENCES FOUND (Differences shown in {{path}})", {

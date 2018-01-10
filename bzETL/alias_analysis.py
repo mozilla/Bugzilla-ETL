@@ -7,19 +7,18 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 
+import jx_elasticsearch
 from bzETL.extract_bugzilla import get_all_cc_changes
-from pyLibrary import convert
-from pyLibrary.collections import Multiset
-from pyLibrary.debugs import startup
-from pyLibrary.debugs.logs import Log
-from pyLibrary.dot import set_default, coalesce
+from jx_python import jx
+from mo_collections.multiset import Multiset
+from mo_dots import coalesce, set_default
+from mo_json import value2json
+from mo_logs import Log, startup
 from pyLibrary.env import elasticsearch
-from pyLibrary.queries import jx
-from pyLibrary.queries.jx_usingES import FromES
 from pyLibrary.sql.mysql import MySQL
 
 
@@ -38,18 +37,18 @@ def full_analysis(settings, bug_list=None, please_stop=None):
     analyzer = AliasAnalyzer(settings.alias)
 
     if bug_list:
-        with MySQL(settings.bugzilla, readonly=True) as db:
+        with MySQL(kwargs=settings.bugzilla, readonly=True) as db:
             data = get_all_cc_changes(db, bug_list)
             analyzer.aggregator(data)
             analyzer.analysis(True, please_stop)
         return
 
-    with MySQL(settings=settings.bugzilla, readonly=True) as db:
-        start = coalesce(settings.alias.start, 0)
-        end = coalesce(settings.alias.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
+    with MySQL(kwargs=settings.bugzilla, readonly=True) as db:
+        start = coalesce(settings.param.start, 0)
+        end = coalesce(settings.param.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
 
         #Perform analysis on blocks of bugs, in case we crash partway through
-        for s, e in jx.intervals(start, end, settings.alias.increment):
+        for s, e in jx.intervals(start, end, settings.param.increment):
             Log.note(
                 "Load range {{start}}-{{end}}",
                 start=s,
@@ -69,30 +68,36 @@ class AliasAnalyzer(object):
         self.aliases={}
         self.not_aliases={}  # EXPLICIT LIST OF NON-MATCHES (HUMAN ADDED)
         try:
-            a = set_default({}, settings.elasticsearch, {"type":"alias"})
-            self.es = elasticsearch.Cluster(settings.elasticsearch).get_or_create_index(settings=a, schema=ALIAS_SCHEMA, limit_replicas=True)
-            self.esq = FromES(self.es.settings)
+            self.es = elasticsearch.Cluster(settings.elasticsearch).get_or_create_index(
+                kwargs=settings.elasticsearch,
+                schema=ALIAS_SCHEMA,
+                limit_replicas=True
+            )
+            self.es.add_alias(settings.elasticsearch.index)
+
+            self.esq = jx_elasticsearch.new_instance(self.es.settings)
             result = self.esq.query({
                 "from":"bug_aliases",
-                "select":["canonical", "alias"]
+                "select":["canonical", "alias"],
+                "where": {"missing": "ignore"},
+                "format": "list"
             })
-            for r in result:
+            for r in result.data:
                 self.aliases[r.alias] = {"canonical":r["canonical"], "dirty":False}
 
             Log.note("{{num}} aliases loaded", num=len(self.aliases.keys()))
 
             # LOAD THE NON-MATCHES
-            na = set_default({}, settings.elasticsearch, {"type":"not_alias"})
-            es = elasticsearch.Cluster(na).get_or_create_index(na)
-            esq = FromES(es.settings)
-            result = esq.query({
-                "from":"bug_aliases",
-                "select":["canonical", "alias"]
+            result = self.esq.query({
+                "from": "bug_aliases",
+                "select": ["canonical", "alias"],
+                "where": {"exists": "ignore"},
+                "format": "list"
             })
-            for r in result:
+            for r in result.data:
                 self.not_aliases[r.alias] = r["canonical"]
 
-        except Exception, e:
+        except Exception as e:
             Log.error("Can not init aliases", cause=e)
 
     def aggregator(self, data):
@@ -156,7 +161,7 @@ class AliasAnalyzer(object):
                     problem= problem.email,
                     score= problem.count,
                     solution= best_solution.email,
-                    matches= convert.value2json(jx.select(solutions, "count")[:10:])
+                    matches= value2json(jx.select(solutions, "count")[:10:])
                 )
                 try_again = True
                 self.add_alias(problem.email, best_solution.email)
@@ -214,7 +219,7 @@ class AliasAnalyzer(object):
 
         #FOLD ALIASES
         reassign=[]
-        for k, v in self.aliases.iteritems():
+        for k, v in self.aliases.items():
             if v["canonical"] == old_canonical["canonical"]:
                 Log.note(
                     "ALIAS REMAPPED: {{alias}}->{{old}} to {{alias}}->{{new}}",
@@ -229,7 +234,7 @@ class AliasAnalyzer(object):
 
     def saveAliases(self):
         records = []
-        for k, v in self.aliases.iteritems():
+        for k, v in self.aliases.items():
             if v["dirty"]:
                 records.append({"id":k, "value":{"canonical":v["canonical"], "alias":k}})
 
@@ -261,7 +266,7 @@ def start():
         settings = startup.read_settings()
         Log.start(settings.debug)
         full_analysis(settings)
-    except Exception, e:
+    except Exception as e:
         Log.error("Can not start", e)
     finally:
         Log.stop()
@@ -269,59 +274,17 @@ def start():
 ALIAS_SCHEMA = {
     "settings": {"index": {
         "number_of_shards": 3,
-        "number_of_replicas": 0,
-        "store": {"throttle": {
-            "type": "merge",
-            "max_bytes_per_sec": "2mb"
-        }},
-        "cache": {
-            "expire": "1m",
-            "field.type": "soft"
-        }
+        "number_of_replicas": 0
     }},
     "mappings": {
         "alias": {
             "_all": {
                 "enabled": False
             },
-            "_source": {
-                "compress": False,
-                "enabled": True
-            },
-            "_id":{
-                "path": "canonical"
-            },
             "properties": {
-                "canonical": {
-                    "type": "string",
-                    "index": "not_analyzed",
-                    "store": "yes"
-                },
-                "alias": {
-                    "type": "string",
-                    "index": "not_analyzed",
-                    "store": "yes"
-                }
-            }
-        },
-        "not_alias": {
-            "_all": {
-                "enabled": False
-            },
-            "_source": {
-                "compress": False,
-                "enabled": True
-            },
-            "properties": {
-                "a": {
-                    "type": "string",
-                    "index": "not_analyzed",
-                    "store": "yes"
-                },
-                "b": {
-                    "type": "string",
-                    "index": "not_analyzed",
-                    "store": "yes"
+                "canonical":{
+                    "type": "keyword",
+                    "store": True
                 }
             }
         }

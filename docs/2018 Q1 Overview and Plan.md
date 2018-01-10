@@ -4,7 +4,18 @@ What follows is the general high-level architecture of all the important parts, 
 
 ## Overview 
 
-[![](Architecture.png)
+### Old Architecture
+
+This has been around for a while now. The "Toronto Server" connections no longer exist.
+
+![](Architecture_2015.png)
+
+### New Architecture
+
+This is the plan for 2018. Overall, it is correct, but the details must be refined as the details are understood.
+
+![](Architecture_2018.png)
+
 
 ### Public and Private Clusters [[wiki](https://wiki.mozilla.org/BMO/ElasticSearch)]
 
@@ -28,8 +39,9 @@ The ETL pipeline is scheduled to run every 10 minutes, scan the Bugzilla databas
   * This may already be written, but not tested, in the `v2` branch
 2. Add the Typed Encoder - The new version of Elasticsearch is more like a pedantic database than a flexible data lake; we must use the [Typed Encoder](https://github.com/klahnakoski/mo-json/blob/master/mo_json/typed_encoder.py) to transform the JSON documents. The format allows us to automate the schema management, as Bugzilla schema inevitably changes over the years.
   * Jan8 - Looks like the typed encoder must be enhanced to handle [Elasticsearch multifields](https://www.elastic.co/guide/en/elasticsearch/reference/current/multi-fields.html)
-3. Optional - Upgrade the `pyLibrary` - This is copy of my old pyLibrary, which has split into multiple packages, and made to work with Python3. The ETL code should be upgraded to use these new libs; which must also be vendorded into the repo so there are no pip dependencies (except maybe `requests`). 
-4. Optional - Upgrade to Python 3 - Since this program will not be touched again in many years, it may be a good time to get it to work on Python3.
+3. Optional - Use Pulse - Pulse emits a list of all bug numbers that have changed; rather than running the ETL in batch mode, it can run continuously and be only a ?couple? seconds behind.
+4. Optional - Upgrade the `pyLibrary` - This is copy of my old pyLibrary, which has split into multiple packages, and made to work with Python3. The ETL code should be upgraded to use these new libs; which must also be vendorded into the repo so there are no pip dependencies (except maybe `requests`). 
+5. Optional - Upgrade to Python 3 - Since this program will not be touched again in many years, it may be a good time to get it to work on Python3.
 
 
 Deploying will take time because the production code runs on servers we can not access. OPS will be involved as inevitable production bugs appear.

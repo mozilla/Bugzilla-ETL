@@ -1,0 +1,26 @@
+{
+	"content": {
+		"key": "value",
+		"another_key": "another value"
+	},
+	"env_variable":{
+		"$ref":"env://test_variable",
+	},
+	"relative_file1":{
+		"$ref":"file://../resources/bug_version.json#mappings.bug_version.dynamic_templates.0.default_dates.match"
+	},
+	"relative_file2":{
+		"$ref":"file://bug_version.json#mappings.bug_version.dynamic_templates.0.default_dates.match"
+	},
+	"relative_doc":{
+		"$ref":"#..content.key"
+	},
+	"absolute_doc":{
+		"$ref":"#content.another_key"
+	},
+	"relative_object_doc":{
+		"key":"new value",
+		"$ref":"#content"
+	}
+
+}

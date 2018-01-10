@@ -1,0 +1,21 @@
+graft tests
+graft docs
+prune .git
+prune .svn
+exclude build
+prune dist
+prune .idea
+exclude *.egg-info
+exclude *.iml
+exclude *.txt
+exclude *.tab
+exclude README.md
+exclude *.json
+exclude .git*
+recursive-exclude . *.pyc
+recursive-include . __init__.py
+include README.txt
+exclude MANIFEST.in
+
+
+

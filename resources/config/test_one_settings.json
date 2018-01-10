@@ -1,0 +1,103 @@
+{
+    "param": {
+        "increment": 10000,
+        "bugs": [
+//			384,
+//			1108,
+//			1045,
+//			1046,
+//			1157,
+//			1877,
+//			1865,
+//			1869,
+//			2586,
+//			3140,
+//			6810,
+//			9622,
+//			10575,
+			11040
+//			12911,
+//			67742,
+//			96421,
+//			123203,
+//			178960,
+//			367518,
+//			457765,
+//			458397,
+//			471427,
+//			544327,
+//			547727,
+//			643420,
+//			692436,
+//			726635,
+//			813650
+			// 1165765 VERY LONG short_desc
+			// 1007019 does not have bug_status, or component, or product
+			// 372836 (REVIEW FLAGS TEST)
+			// 13534 (REVIEW MOVES TO OTHER PERSON)
+			// 393845  added blocking1.9+ twice
+			// 671185 *many* review requests
+			// 937428 whitespace after comma in user story, complex diff
+			// 248970 another cutoff review request
+			// 248971 another cutoff review request
+		],
+        "temp_dir": "./tests/resources",
+        "errors": "./tests/results/errors",
+        "allow_private_bugs": false,
+        "last_run_time": "./tests/results/last_run_time.txt",
+        "first_run_time": "./tests/results/first_run_time.txt",
+        "look_back": 3600000 //1hour
+    },
+	"alias":{
+		"increment": 1000000,
+		"file": {
+			"path": "./resources/json/bugzilla_aliases.json",
+			"$ref": "file://~/private.json#alias_file"
+		}
+	},
+    "elasticsearch": {
+        "description": "pointer to es with test results",
+        "filename": "./tests/results/test_results.json",
+        "schema": {"$ref":"resources/schema/bug_version.json"},
+        "host": "http://localhost",
+        "port": 9200,
+        "index": "test_bugs",
+        "type": "bug_version"
+    },
+	"reference":{
+		"filename": "./tests/resources/reference/public_bugs.json"
+	},
+    "bugzilla": {
+		"filename": "./tests/resources/sql/small_bugzilla.sql",
+        "preamble": "from https://github.com/klahnakoski/Bugzilla-ETL",
+        "host": "localhost",
+        "port": 3306,
+		"$ref":"file://~/private.json#bugzilla",
+        "schema": "test_bugzilla",
+        "expires_on": 1372867005000,
+        "debug": true,
+		"readonly": true
+    },
+	"constants": {
+		"pyLibrary.env.http.default_headers": {
+			"Referer": "https://wiki.mozilla.org/BMO/ElasticSearch"
+		}
+    },
+    "debug": {
+		"trace": true,
+        "profile":false,
+        "log": [
+            {
+                "class": "logging.handlers.RotatingFileHandler",
+                "filename": "./tests/results/logs/test_etl.log",
+                "maxBytes": 10000000,
+                "backupCount": 10,
+                "encoding": "utf8"
+            },
+            {
+                "log_type": "stream",
+                "stream": "sys.stdout"
+            }
+        ]
+    }
+}

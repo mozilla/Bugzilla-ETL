@@ -1,0 +1,3 @@
+{
+	"a": {"$ref":"param://metadata"}
+}

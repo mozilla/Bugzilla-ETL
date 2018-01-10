@@ -2,7 +2,7 @@
 	"production_es": {
 		"description": "pointer to es with known good results",
 		"host": "http://elasticsearch7.metrics.scl3.mozilla.com",
-		"port": "9200",
+		"port": 9200,
 		"index": "bugs",
 		"type": "bug_version",
 		"debug": true
@@ -27,7 +27,7 @@
 		"description": "pointer to es with test results",
 		"filename": "./tests/results/test_results.json",
 		"host": "http://localhost",
-		"port": "9200",
+		"port": 9200,
 		"index": "test_bugs",
 		"type": "bug_version"
 	},
@@ -44,18 +44,18 @@
 		//FOR TESTING INCREMENTAL ETL (AND GENERAL INTERACTION WITH A REAL ES)
 		"bugs": {
 			"host": "http://localhost",
-			"port": "9200",
+			"port": 9200,
 			"index": "test_bugs",
 			"type": "bug_version",
-			"schema_file": "./resources/json/bug_version.json",
+			"schema": {"$ref": "../../../resources/json/bug_version.json"},
 			"debug": true
 		},
 		"comments": {
 			"host": "http://localhost",
-			"port": "9200",
+			"port": 9200,
 			"index": "test_comments",
-			"type": "bug_version",
-			"schema_file": "./resources/json/bug_comments.json",
+			"type": "bug_comment",
+			"schema": {"$ref": "../../../resources/json/bug_comments.json"},
 			"debug": true
 		}
 	},
@@ -90,7 +90,7 @@
 			643420,
 			692436,
 			726635,
-			813650,
+			813650
 			// 1165765 VERY LONG short_desc
 			// 1007019 does not have bug_status, or component, or product
 			// 372836 (REVIEW FLAGS TEST)
@@ -100,18 +100,27 @@
 			// 937428 whitespace after comma in user story, complex diff
 			// 248970 another cutoff review request
 		],
-		"alias_increment": 1000000,
-		"alias_file": {
-			"path": "./resources/json/bugzilla_aliases.json",
-			"$ref": "~/private.json#alias_file"
-		},
 		"temp_dir": "./tests/resources",
 		"errors": "./tests/results/errors",
 		"allow_private_bugs": true,
 		"last_run_time": "./tests/results/last_run_time.txt",
 		"first_run_time": "./tests/results/first_run_time.txt",
-		"look_back": 3600000
-		//1hour
+		"look_back": 3600000  //1hour
+	},
+	"alias": {
+		"increment": 1000000,
+		"file": {
+			"path": "./resources/json/bugzilla_aliases.json",
+			"$ref": "~/private.json#alias_file"
+		},
+		"elasticsearch": {
+			"host": "http://localhost",
+			"port": 9200,
+			"index": "bug_aliases",
+			"type": "alias",
+			"debug": true
+
+		}
 	},
 	"bugzilla": {
 		"filename": "./tests/resources/sql/small_bugzilla.sql",
@@ -138,7 +147,7 @@
 	},
 	"debug": {
 		"profile": false,
-		"trace": false,
+		"trace": true,
 		"log": [
 			{
 				"class": "logging.handlers.RotatingFileHandler",
@@ -154,8 +163,7 @@
 			{
 				"log_type": "elasticsearch",
 				"host": "http://localhost",
-				"index": "debug",
-				"type": "bz_etl"
+				"index": "debug"
 			}
 		]
 	}

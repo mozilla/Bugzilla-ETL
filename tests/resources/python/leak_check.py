@@ -1,4 +1,11 @@
 # encoding: utf-8
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this file,
+# You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Author: Kyle Lahnakoski (kyle@lahnakoski.com)
+#
 
 from __future__ import absolute_import
 from __future__ import division
@@ -7,32 +14,14 @@ from __future__ import unicode_literals
 import unittest
 
 from bzETL.extract_bugzilla import SCREENED_WHITEBOARD_BUG_GROUPS
-from pyLibrary import convert
-from pyLibrary.debugs import startup, constants
-from pyLibrary.debugs.logs import Log
-from pyLibrary.dot import coalesce, Dict, set_default, listwrap
-from pyLibrary.dot import wrap
+from jx_python import jx
+from mo_dots import Data, set_default, listwrap, wrap, coalesce
+from mo_logs import startup, constants, Log
+from mo_times import Date, MINUTE, Duration
 from pyLibrary.env import elasticsearch
 from pyLibrary.env.emailer import Emailer
-from pyLibrary.queries import jx
 
-# WRAP Log.error TO SHOW THE SPECIFIC ERROR IN THE LOGFILE
-from pyLibrary.times.dates import Date
-from pyLibrary.times.durations import MINUTE, Duration
-
-# if not hasattr(Log, "old_error"):
-#     Log.old_error = Log.error
-#     def new_error(cls, *args):
-#         try:
-#             Log.old_error(*args, stack_depth=1)
-#         except Exception, e:
-#             Log.warning("testing error", e, stack_depth=1)
-#             raise e
-#
-#     ##ASSIGN AS CLASS METHOD
-#     Log.error=MethodType(new_error, Log)
-
-SETTINGS = Dict()
+SETTINGS = Data()
 _NOW = Date.now()
 NOW = _NOW.milli
 A_WHILE_AGO = (_NOW - MINUTE * 10).milli
@@ -221,7 +210,7 @@ class TestLookForLeaks(unittest.TestCase):
                         {"terms":{"bug_id":leaked_bugs.bug_id}}
                     )
 
-                Log.note("{{num}} bugs with private attachments have leaked!", {"num": len(leaked_bugs)})
+                Log.note("{{num}} bugs with private attachments have leaked!", num= len(leaked_bugs))
                 for b in leaked_bugs:
                     Log.note("{{bug_id}} has private_attachment\n{{version|indent}}", {
                         "bug_id": b.bug_id,
@@ -327,16 +316,16 @@ def main():
 
         if results.errors or results.failures:
             error(results)
-    except Exception, e:
+    except Exception as e:
         Log.error("Problem", cause=e)
 
 
 def error(results):
     content = []
     for e in results.errors:
-        content.append("ERROR: "+unicode(e[0]._testMethodName))
+        content.append("ERROR: "+text_type(e[0]._testMethodName))
     for f in results.failures:
-        content.append("FAIL:  "+unicode(f[0]._testMethodName))
+        content.append("FAIL:  "+text_type(f[0]._testMethodName))
 
     Emailer(SETTINGS.email).send_email(
         text_data = "\n".join(content)
