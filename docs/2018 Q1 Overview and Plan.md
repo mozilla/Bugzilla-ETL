@@ -4,7 +4,18 @@ What follows is the general high-level architecture of all the important parts, 
 
 ## Overview 
 
-[![](Architecture.png)
+### Old Architecture
+
+This has been around for a while now. The "Toronto Server" connections no longer exist.
+
+![](Architecture_2015.png)
+
+### New Architecture
+
+This is the plan for 2018. Overall, it is correct, but the details must be refined as the details are understood.
+
+![](Architecture_2018.png)
+
 
 ### Public and Private Clusters [[wiki](https://wiki.mozilla.org/BMO/ElasticSearch)]
 
