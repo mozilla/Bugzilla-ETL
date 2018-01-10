@@ -51,9 +51,29 @@ Deploying will take time because the production code runs on servers we can not 
 
 esFrontline is a very basic proxy server for the public cluster that limits http requests to just query requests. This will be replaced by an [ActiveData](https://github.com/klahnakoski/ActiveData) instance.
 
-#### Action Required
+#### Action Required (mostly OPS)
 
-* Remove (mostly OPS)
+* Remove 
+
+
+### ActiveData [[code](https://github.com/klahnakoski/ActiveData)] [[wiki](https://wiki.mozilla.org/EngineeringProductivity/Projects/ActiveData)]
+
+ActiveData is near-stateless web service that wraps an ES cluster to make it behave as a simple data warehouse. Most importantly, it translates [JSON Query Expressions](https://github.com/klahnakoski/ActiveData/blob/dev/docs/jx.md) into ES queries.
+
+An ActiveData instance will replace the esFrontLine in front of the public cluster. Another instance will be put in front of the private cluster, behind the VPN.  
+
+#### Action Required (mostly OPS)
+
+1. Setup front ends for the private and public clusters.  
+
+### Post-ETL Server [[code](https://github.com/klahnakoski/MoDevETL)]
+
+The calculations made for review queues and bug hierarchy lookup is done with a post-etl cron job. This does not change the data in the clusters, rather it files new tables with derived review queue and hierarchical information. 
+
+Action Required
+
+1. Move server - Even though this server is already setup, it must be re-setup (moved), to work where the rest of the system will be located 
+2. Merge code with Bugzilla-ETL - Arguably, this code could be moved to the Bugzilla-ETL code, so maybe we should do that now.
 
 
 ### MoDevMetrics [[code](https://github.com/klahnakoski/MoDevMetrics)]
@@ -74,16 +94,6 @@ The MoDevMetrics has a few main parts
 3. Optional - Add testing to the internal query runner. There are currently no tests for this code, but there is a comprehensive Python test suite. There should be a simple solution here.
 4. Optional - Use the React/JSX stack. A good part of MoDevMetrics can be removed if it gets moved to a React app. plus, it will make everything faster.
 
-
-### ActiveData [[code](https://github.com/klahnakoski/ActiveData)] [[wiki](https://wiki.mozilla.org/EngineeringProductivity/Projects/ActiveData)]
-
-ActiveData is near-stateless web service that wraps an ES cluster to make it behave as a simple data warehouse. Most importantly, it translates [JSON Query Expressions](https://github.com/klahnakoski/ActiveData/blob/dev/docs/jx.md) into ES queries.
-
-An ActiveData instance will replace the esFrontLine in front of the public cluster. Another instance will be put in front of the private cluster, behind the VPN.  
-
-#### Action Required (mostly OPS)
-
-1. Setup front ends for the private and public clusters.  
 
 
 ### Metrics Graphics [[code](https://github.com/mozilla/metrics-graphics)] [[docs](https://www.metricsgraphicsjs.org/)]
