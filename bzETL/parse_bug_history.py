@@ -399,10 +399,8 @@ class BugHistoryParser(object):
         # Prime the while loop with an empty next version so our first iteration outputs the initial bug state
         nextVersion = Data(_id=self.currBugState._id, changes=[])
 
-        flagMap = {}
         # A monotonically increasing version number (useful for debugging)
         self.bug_version_num = 1
-        self.exists = True
 
         # continue if there are more bug versions, or there is one final nextVersion
         while nextVersion:
@@ -430,7 +428,7 @@ class BugHistoryParser(object):
                         "id": currVersion._id,
                         "bug_id": self.currBugState.bug_id
                     })
-                    # Decide whether to merge this bug activity into the current state (without emitting
+                # Decide whether to merge this bug activity into the current state (without emitting
                 # a separate JSON document). This addresses the case where an attachment is created
                 # at exactly the same time as the bug itself.
                 # Effectively, we combine all the changes for a given timestamp into the last one.

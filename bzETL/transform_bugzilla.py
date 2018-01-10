@@ -93,13 +93,18 @@ def normalize(bug, old_school=False):
             continue
         elif f in MULTI_FIELDS:
             try:
-                bug[f] = convert.value2intlist(v)
+                bug[f] = jx.sort(convert.value2intlist(v))
             except Exception as e:
                 Log.error("not expected", cause=e)
         elif convert.value2number(v) == 0:
             del bug[f]
         else:
             bug[f]=convert.value2number(v)
+
+    for f in MULTI_FIELDS:
+        v = bug[f]
+        if v:
+            bug[f] = jx.sort(v)
 
     # Also reformat some date fields
     for dateField in ["deadline", "cf_due_date", "cf_last_resolved"]:

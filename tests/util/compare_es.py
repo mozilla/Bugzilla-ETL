@@ -45,7 +45,8 @@ def get_all_bug_versions(es, bug_id, max_time=None):
             {"eq": {"bug_id": bug_id}},
             {"lte": {"modified_ts": convert.datetime2milli(max_time)}}
         ]},
-        "format": "list"
+        "format": "list",
+        "limit": 100000
     })
     return response.data
 

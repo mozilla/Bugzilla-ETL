@@ -95,10 +95,9 @@ def etl(db, output_queue, param, alias_config, please_stop):
             # SPLIT TASK EVENLY, HAVE EACH BUG USE SAME CONNECTION FOR ALL DATA
             size = Math.ceiling(len(param.bug_list)/len(db_cache))
             for g, bug_ids in jx.groupby(param.bug_list, size=size):
-                all.add(get_records_from_bugzilla, db_cache[g], set_default(
-                    {"bug_list": bug_ids},
-                    param
-                ))
+                param = param.copy()
+                param.bug_list = bug_ids
+                all.add(get_records_from_bugzilla, db_cache[g], param)
     db_results.add(THREAD_STOP)
 
     sorted = jx.sort(db_results, [

@@ -129,7 +129,8 @@ class Index(Features):
 
             self.encode = TypedInserter(self, id_column).typed_encode
         else:
-            Log.warning("{{index}} is not typed", index=self.settings.index)
+            if not kwargs.read_only:
+                Log.warning("{{index}} is not typed", index=self.settings.index)
             self.encode = get_encoder(id_column)
 
     @property
@@ -569,7 +570,7 @@ class Cluster(object):
         return indexes.last()
 
     @override
-    def get_index(self, index, type=None, alias=None, read_only=True, kwargs=None):
+    def get_index(self, index, type=None, alias=None, tjson=None, read_only=True, kwargs=None):
         """
         TESTS THAT THE INDEX EXISTS BEFORE RETURNING A HANDLE
         """
@@ -577,13 +578,14 @@ class Cluster(object):
             # GET EXACT MATCH, OR ALIAS
             aliases = self.get_aliases()
             if index in aliases.index:
-                return Index(kwargs)
-            if index in aliases.alias:
+                pass
+            elif index in aliases.alias:
                 match = [a for a in aliases if a.alias == index][0]
                 kwargs.alias = match.alias
                 kwargs.index = match.index
-                return Index(kwargs)
-            Log.error("Can not find index {{index_name}}", index_name=kwargs.index)
+            else:
+                Log.error("Can not find index {{index_name}}", index_name=kwargs.index)
+            return Index(kwargs)
         else:
             # GET BEST MATCH, INCLUDING PROTOTYPE
             best = self._get_best(kwargs)
@@ -596,6 +598,11 @@ class Cluster(object):
             elif kwargs.alias == None:
                 kwargs.alias = kwargs.index
                 kwargs.index = best.index
+
+            if tjson is None:
+                metadata = self.get_metadata()
+                metadata[kwargs.index]
+
             return Index(kwargs)
 
     def get_alias(self, alias):
@@ -668,12 +675,13 @@ class Cluster(object):
         if limit_replicas:
             # DO NOT ASK FOR TOO MANY REPLICAS
             health = self.get("/_cluster/health")
-            if schema.settings.index.number_of_replicas >= health.number_of_nodes and limit_replicas_warning:
-                Log.warning(
-                    "Reduced number of replicas: {{from}} requested, {{to}} realized",
-                    {"from": schema.settings.index.number_of_replicas},
-                    to=health.number_of_nodes - 1
-                )
+            if schema.settings.index.number_of_replicas >= health.number_of_nodes:
+                if limit_replicas_warning:
+                    Log.warning(
+                        "Reduced number of replicas: {{from}} requested, {{to}} realized",
+                        {"from": schema.settings.index.number_of_replicas},
+                        to=health.number_of_nodes - 1
+                    )
                 schema.settings.index.number_of_replicas = health.number_of_nodes - 1
 
         self.put(

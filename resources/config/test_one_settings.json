@@ -8,7 +8,7 @@
         },
         "temp_dir": "./tests/resources",
         "errors": "./tests/results/errors",
-        "allow_private_bugs": true,
+        "allow_private_bugs": false,
         "last_run_time": "./tests/results/last_run_time.txt",
         "first_run_time": "./tests/results/first_run_time.txt"
     },
