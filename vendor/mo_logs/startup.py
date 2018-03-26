@@ -39,19 +39,32 @@ from mo_dots import listwrap, wrap, unwrap
 # dest - The name of the attribute to be added to the object returned by parse_args().
 
 
+class _ArgParser(_argparse.ArgumentParser):
+    def error(self, message):
+        Log.error("argparse error: {{error}}", error=message)
+
+
 def argparse(defs):
-    parser = _argparse.ArgumentParser()
+    parser = _ArgParser()
     for d in listwrap(defs):
         args = d.copy()
         name = args.name
         args.name = None
         parser.add_argument(*unwrap(listwrap(name)), **args)
-    namespace = parser.parse_args()
+    namespace, unknown = parser.parse_known_args()
+    if unknown:
+        Log.warning("Ignoring arguments: {{unknown|json}}", unknown=unknown)
     output = {k: getattr(namespace, k) for k in vars(namespace)}
     return wrap(output)
 
 
-def read_settings(filename=None, defs=None):
+def read_settings(filename=None, defs=None, env_filename=None):
+    """
+    :param filename: Force load a file
+    :param defs: arguments you want to accept
+    :param env_filename: A config file from an environment variable (a fallback config file, if no other provided)
+    :return:
+    """
     # READ SETTINGS
     if filename:
         settings_file = File(filename)
@@ -66,7 +79,7 @@ def read_settings(filename=None, defs=None):
     else:
         defs = listwrap(defs)
         defs.append({
-            "name": ["--settings", "--settings-file", "--settings_file"],
+            "name": ["--config", "--settings", "--settings-file", "--settings_file"],
             "help": "path to JSON file with settings",
             "type": str,
             "dest": "filename",
@@ -74,6 +87,9 @@ def read_settings(filename=None, defs=None):
             "required": False
         })
         args = argparse(defs)
+
+        if env_filename:
+            args.filename = env_filename
         settings = mo_json_config.get("file://" + args.filename.replace(os.sep, "/"))
         settings.args = args
         return settings
@@ -123,10 +139,10 @@ class SingleInstance:
                 fcntl.lockf(self.fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except IOError:
                 Log.note(
-                    "\n"
-                    "**********************************************************************\n"
-                    "** Another instance is already running, quitting.\n"
-                    "**********************************************************************\n"
+                    "\n" +
+                    "**********************************************************************\n" +
+                    "** Another instance is already running, quitting.\n" +
+                    "******************************************************  ****************\n"
                 )
                 sys.exit(-1)
         self.initialized = True

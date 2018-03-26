@@ -18,12 +18,11 @@ import time
 from collections import Mapping
 from datetime import datetime, date, timedelta
 from decimal import Decimal
+from json.encoder import encode_basestring
 from math import floor
 
-from past.builtins import xrange
-
 from mo_dots import Data, FlatList, NullType, Null
-from mo_future import text_type, binary_type, long, utf8_json_encoder, sort_using_key
+from mo_future import text_type, binary_type, long, utf8_json_encoder, sort_using_key, xrange
 from mo_json import ESCAPE_DCT, scrub, float2json
 from mo_logs import Except
 from mo_logs.strings import utf82unicode, quote
@@ -109,9 +108,6 @@ def pypy_json_encode(value, pretty=False):
             Log.error("problem serializing object", f)
         finally:
             _dealing_with_problem = False
-
-
-almost_pattern = r"(?:\.(\d*)999)|(?:\.(\d*)000)"
 
 
 class cPythonJSONEncoder(object):
@@ -291,7 +287,7 @@ def pretty_json(value):
         elif isinstance(value, Mapping):
             try:
                 items = sort_using_key(list(value.items()), lambda r: r[0])
-                values = [quote(k) + PRETTY_COLON + indent(pretty_json(v)).strip() for k, v in items if v != None]
+                values = [encode_basestring(k) + PRETTY_COLON + indent(pretty_json(v)).strip() for k, v in items if v != None]
                 if not values:
                     return "{}"
                 elif len(values) == 1:

@@ -22,9 +22,9 @@ from jx_base.expressions import Variable, TupleOp, LeavesOp, BinaryOp, OrOp, Scr
     PrefixOp, NotLeftOp, InOp, CaseOp, AndOp, \
     ConcatOp, IsNumberOp, Expression, BasicIndexOfOp, MaxOp, MinOp, BasicEqOp, BooleanOp, IntegerOp, BasicSubstringOp, ZERO, NULL, FirstOp, FALSE, TRUE, simplified
 from mo_dots import coalesce, wrap, Null, unwraplist, set_default, literal_field
-from mo_json import quote
+
 from mo_logs import Log, suppress_exception
-from mo_logs.strings import expand_template
+from mo_logs.strings import expand_template, quote
 from mo_math import MAX, OR
 from pyLibrary.convert import string2regexp
 
@@ -139,7 +139,18 @@ def to_ruby(self, schema):
 
 @extend(CaseOp)
 def to_esfilter(self, schema):
-    return ScriptOp("script",  self.to_ruby(schema).script(schema)).to_esfilter(schema)
+    if self.type == BOOLEAN:
+        return OrOp(
+            "or",
+            [
+                AndOp("and", [w.when, w.then])
+                for w in self.whens[:-1]
+            ] +
+            self.whens[-1:]
+        ).partial_eval().to_esfilter(schema)
+    else:
+        Log.error("do not know how to handle")
+        return ScriptOp("script", self.to_ruby(schema).script(schema)).to_esfilter(schema)
 
 
 @extend(ConcatOp)

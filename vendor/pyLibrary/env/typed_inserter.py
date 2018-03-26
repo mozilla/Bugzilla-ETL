@@ -17,7 +17,8 @@ from collections import Mapping
 from datetime import datetime, date, timedelta
 from decimal import Decimal
 
-from future.utils import text_type, binary_type
+from jx_python.expressions import jx_expression_to_function
+from mo_future import text_type, binary_type
 from jx_python.meta import Column
 
 from jx_base import python_type_to_json_type, INTEGER, NUMBER, EXISTS, NESTED, STRING, BOOLEAN, STRUCT, OBJECT
@@ -30,7 +31,7 @@ from mo_logs import Log
 from mo_logs.strings import utf82unicode, quote
 from mo_times.dates import Date
 from mo_times.durations import Duration
-from pyLibrary.env.elasticsearch import parse_properties, random_id
+from pyLibrary.env.elasticsearch import parse_properties, random_id, es_type_to_json_type
 
 append = UnicodeBuilder.append
 
@@ -52,15 +53,16 @@ json_type_to_inserter_type = {
 
 
 class TypedInserter(object):
-    def __init__(self, es=None, id_column="_id"):
+    def __init__(self, es=None, id_expression="_id"):
         self.es = es
-        self.id_column = id_column
-        self.remove_id = True if id_column == "_id" else False
+        self.id_column = id_expression
+        self.get_id = jx_expression_to_function(id_expression)
+        self.remove_id = True if id_expression == "_id" else False
 
         if es:
             _schema = Data()
             for c in parse_properties(es.settings.alias, ".", es.get_properties()):
-                if c.type != OBJECT:
+                if c.type not in (OBJECT, NESTED):
                     _schema[c.names["."]] = c
             self.schema = unwrap(_schema)
         else:
@@ -85,9 +87,9 @@ class TypedInserter(object):
             net_new_properties = []
             path = []
             if isinstance(value, Mapping):
-                given_id = value.get(self.id_column)
+                given_id = self.get_id(value)
                 if self.remove_id:
-                    value[self.id_column] = None
+                    value['_id'] = None
             else:
                 given_id = None
 
@@ -125,6 +127,21 @@ class TypedInserter(object):
 
     def _typed_encode(self, value, sub_schema, path, net_new_properties, _buffer):
         try:
+            if isinstance(sub_schema, Column):
+                value_json_type = python_type_to_json_type[value.__class__]
+                column_json_type = es_type_to_json_type[sub_schema.type]
+
+                if value_json_type == column_json_type:
+                    pass  # ok
+                elif value_json_type == NESTED and all(python_type_to_json_type[v.__class__] == column_json_type for v in value if v != None):
+                    pass  # empty arrays can be anything
+                else:
+                    from mo_logs import Log
+
+                    Log.error("Can not store {{value}} in {{column|quote}}", value=value, column=sub_schema.names['.'])
+
+                sub_schema = {json_type_to_inserter_type[value_json_type]: sub_schema}
+
             if value is None:
                 append(_buffer, '{}')
                 return
@@ -181,24 +198,14 @@ class TypedInserter(object):
                     append(_buffer, ESCAPE_DCT.get(c, c))
                 append(_buffer, '"}')
             elif _type is text_type:
-                if isinstance(sub_schema, Column):
-                    # WE WILL NOT COMPLAIN IF ELASTICSEARCH HAS A PROPERTY FOR THIS ALREADY
-                    if sub_schema.type not in ["keyword", "text", "string"]:
-                        from mo_logs import Log
-                        Log.warning("this is going to fail!")
-                    append(_buffer, '"')
-                    for c in value:
-                        append(_buffer, ESCAPE_DCT.get(c, c))
-                    append(_buffer, '"')
-                else:
-                    if STRING_TYPE not in sub_schema:
-                        sub_schema[STRING_TYPE] = True
-                        net_new_properties.append(path + [STRING_TYPE])
+                if STRING_TYPE not in sub_schema:
+                    sub_schema[STRING_TYPE] = True
+                    net_new_properties.append(path + [STRING_TYPE])
 
-                    append(_buffer, '{'+QUOTED_STRING_TYPE+COLON+'"')
-                    for c in value:
-                        append(_buffer, ESCAPE_DCT.get(c, c))
-                    append(_buffer, '"}')
+                append(_buffer, '{'+QUOTED_STRING_TYPE+COLON+'"')
+                for c in value:
+                    append(_buffer, ESCAPE_DCT.get(c, c))
+                append(_buffer, '"}')
             elif _type in (int, long, Decimal):
                 if NUMBER_TYPE not in sub_schema:
                     sub_schema[NUMBER_TYPE] = True
@@ -226,17 +233,21 @@ class TypedInserter(object):
                     append(_buffer, '}')
                 else:
                     # ALLOW PRIMITIVE MULTIVALUES
+                    value = [v for v in value if v != None]
                     types = list(set(python_type_to_json_type[v.__class__] for v in value))
-                    if len(types) > 1:
+                    if len(types) == 0:  # HANDLE LISTS WITH Nones IN THEM
+                        append(_buffer, '{'+QUOTED_NESTED_TYPE+COLON+'[]}')
+                    elif len(types) > 1:
                         from mo_logs import Log
                         Log.error("Can not handle multi-typed multivalues")
-                    element_type = json_type_to_inserter_type[types[0]]
-                    if element_type not in sub_schema:
-                        sub_schema[element_type] = True
-                        net_new_properties.append(path + [element_type])
-                    append(_buffer, '{'+quote(element_type)+COLON)
-                    self._multivalue2json(value, sub_schema[element_type], path+[element_type], net_new_properties, _buffer)
-                    append(_buffer, '}')
+                    else:
+                        element_type = json_type_to_inserter_type[types[0]]
+                        if element_type not in sub_schema:
+                            sub_schema[element_type] = True
+                            net_new_properties.append(path + [element_type])
+                        append(_buffer, '{'+quote(element_type)+COLON)
+                        self._multivalue2json(value, sub_schema[element_type], path + [element_type], net_new_properties, _buffer)
+                        append(_buffer, '}')
             elif _type is date:
                 if NUMBER_TYPE not in sub_schema:
                     sub_schema[NUMBER_TYPE] = True

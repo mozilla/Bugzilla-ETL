@@ -86,11 +86,13 @@ class Redshift(object):
         keys = record.keys()
 
         try:
-            command = "INSERT INTO " + self.quote_column(table_name) + "(" + \
-                      ",".join([self.quote_column(k) for k in keys]) + \
-                      ") VALUES (" + \
-                      ",".join([self.quote_value(record[k]) for k in keys]) + \
-                      ")"
+            command = (
+                "INSERT INTO " + self.quote_column(table_name) + "(" +
+                ",".join([self.quote_column(k) for k in keys]) +
+                ") VALUES (" +
+                ",".join([self.quote_value(record[k]) for k in keys]) +
+                ")"
+            )
 
             self.execute(command)
         except Exception as e:
@@ -112,13 +114,14 @@ class Redshift(object):
                 {"ids": self.quote_column([r["_id"] for r in records])}
             )
 
-            command = \
-                "INSERT INTO " + self.quote_column(table_name) + "(" + \
-                ",".join([self.quote_column(k) for k in columns]) + \
+            command = (
+                "INSERT INTO " + self.quote_column(table_name) + "(" +
+                ",".join([self.quote_column(k) for k in columns]) +
                 ") VALUES " + ",\n".join([
-                    "(" + ",".join([self.quote_value(r.get(k, None)) for k in columns]) + ")"
-                    for r in records
-                ])
+                sql_iso(",".join([self.quote_value(r.get(k, None)) for k in columns]))
+                for r in records
+            ])
+            )
             self.execute(command)
         except Exception as e:
             Log.error("problem with insert", e)
@@ -137,11 +140,11 @@ class Redshift(object):
     def quote_column(self, name):
         if isinstance(name, text_type):
             return SQL('"' + name.replace('"', '""') + '"')
-        return SQL("(" + (", ".join(self.quote_value(v) for v in name)) + ")")
+        return SQL(sql_iso((", ".join(self.quote_value(v) for v in name))))
 
     def quote_value(self, value):
         if value ==None:
-            return SQL("NULL")
+            return SQL_NULL
         if isinstance(value, list):
             json = value2json(value)
             return self.quote_value(json)

@@ -19,6 +19,7 @@ import os
 from mo_future import text_type, binary_type
 from mo_dots import get_module, coalesce
 from mo_logs import Log, Except
+from mo_threads import Thread, Till
 
 mime = MimeTypes()
 
@@ -136,7 +137,11 @@ class File(object):
     @property
     def mime_type(self):
         if not self._mime_type:
-            if self.abspath.endswith(".json"):
+            if self.abspath.endswith(".js"):
+                self._mime_type = "application/javascript"
+            elif self.abspath.endswith(".css"):
+                self._mime_type = "text/css"
+            elif self.abspath.endswith(".json"):
                 self._mime_type = "application/json"
             else:
                 self._mime_type, _ = mime.guess_type(self.abspath)
@@ -402,7 +407,7 @@ class TempDirectory(File):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.delete()
+        Thread.run("delete "+self.name, delete_daemon, file=self)
 
 
 class TempFile(File):
@@ -418,13 +423,13 @@ class TempFile(File):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.delete()
+        Thread.run("delete "+self.name, delete_daemon, file=self)
 
 
 def _copy(from_, to_):
     if from_.is_directory():
         for c in os.listdir(from_.abspath):
-            _copy(File.new_instance(from_, c), File.new_instance(to_, c))
+            _copy(from_ / c, to_ / c)
     else:
         File.new_instance(to_).write_bytes(File.new_instance(from_).read_bytes())
 
@@ -443,18 +448,28 @@ def datetime2string(value, format="%Y-%m-%d %H:%M:%S"):
         Log.error(u"Can not format {{value}} with {{format}}", value=value, format=format, cause=e)
 
 
+
 def join_path(*path):
     def scrub(i, p):
-        if isinstance(p, File):
-            p = p.abspath
-        if p == "/":
-            return "."
         p = p.replace(os.sep, "/")
-        if p[-1] == b'/':
+        if p in ('', '/'):
+            return "."
+        if p[-1] == '/':
             p = p[:-1]
-        if i > 0 and p[0] == b'/':
+        if i > 0 and p[0] == '/':
             p = p[1:]
         return p
+
+    path = [p._filename if isinstance(p, File) else p for p in path]
+    abs_prefix = ''
+    if path and path[0]:
+        if path[0][0] == '/':
+            abs_prefix = '/'
+            path[0] = path[0][1:]
+        elif os.sep == '\\' and path[0][1:].startswith(':/'):
+            # If windows, then look for the "c:/" prefix
+            abs_prefix = path[0][0:3]
+            path[0] = path[0][3:]
 
     scrubbed = []
     for i, p in enumerate(path):
@@ -465,14 +480,34 @@ def join_path(*path):
             pass
         elif s == "..":
             if simpler:
-                simpler.pop()
+                if simpler[-1] == '..':
+                    simpler.append(s)
+                else:
+                    simpler.pop()
+            elif abs_prefix:
+                raise Exception("can not get parent of root")
             else:
                 simpler.append(s)
         else:
             simpler.append(s)
+
     if not simpler:
-        joined = "."
+        if abs_prefix:
+            joined = abs_prefix
+        else:
+            joined = "."
     else:
-        joined = '/'.join(simpler)
+        joined = abs_prefix + ('/'.join(simpler))
+
     return joined
 
+
+def delete_daemon(file, please_stop):
+    # WINDOWS WILL HANG ONTO A FILE FOR A BIT AFTER WE CLOSED IT
+    while not please_stop:
+        try:
+            file.delete()
+            return
+        except Exception as e:
+            Log.warning(u"problem deleting file {{file}}", file=file.abspath, cause=e)
+            Till(seconds=1).wait()

@@ -11,142 +11,25 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
-from copy import copy
 from datetime import date
 from datetime import datetime
 
-from mo_future import text_type, long
-from jx_base import STRUCT
-
+from jx_base import STRUCT, Column
+from jx_base.container import Container
+from jx_base.schema import Schema
 from jx_python import jx
 from mo_collections import UniqueIndex
 from mo_dots import Data, concat_field, get_attr, listwrap, unwraplist, NullType, FlatList
 from mo_dots import split_field, join_field, ROOT_PATH
 from mo_dots import wrap
+from mo_future import none_type
+from mo_future import text_type, long, PY2
 from mo_json.typed_encoder import untype_path, unnest_path
 from mo_logs import Log
 from mo_threads import Lock
-from mo_future import none_type
-
-from jx_base.container import Container
-from jx_base.schema import Schema
 from mo_times.dates import Date
-from pyLibrary.meta import DataClass
 
 singlton = None
-
-
-
-
-def metadata_columns():
-    return wrap(
-        [
-            Column(
-                names={".":c},
-                es_index="meta.columns",
-                es_column=c,
-                type="string",
-                nested_path=ROOT_PATH
-            )
-            for c in [
-                "type",
-                "nested_path",
-                "es_column",
-                "es_index"
-            ]
-        ] + [
-            Column(
-                es_index="meta.columns",
-                names={".":c},
-                es_column=c,
-                type="object",
-                nested_path=ROOT_PATH
-            )
-            for c in [
-                "names",
-                "domain",
-                "partitions"
-            ]
-        ] + [
-            Column(
-                names={".": c},
-                es_index="meta.columns",
-                es_column=c,
-                type="long",
-                nested_path=ROOT_PATH
-            )
-            for c in [
-                "count",
-                "cardinality"
-            ]
-        ] + [
-            Column(
-                names={".": "last_updated"},
-                es_index="meta.columns",
-                es_column="last_updated",
-                type="time",
-                nested_path=ROOT_PATH
-            )
-        ]
-    )
-
-
-def metadata_tables():
-    return wrap(
-        [
-            Column(
-                names={".": c},
-                es_index="meta.tables",
-                es_column=c,
-                type="string",
-                nested_path=ROOT_PATH
-            )
-            for c in [
-                "name",
-                "url",
-                "query_path"
-            ]
-        ]+[
-            Column(
-                names={".": "timestamp"},
-                es_index="meta.tables",
-                es_column="timestamp",
-                type="integer",
-                nested_path=ROOT_PATH
-            )
-        ]
-    )
-
-
-class Table(DataClass("Table", [
-    "name",
-    "url",
-    "query_path",
-    "timestamp"
-])):
-    @property
-    def columns(self):
-        return singlton.get_columns(table_name=self.name)
-
-
-Column = DataClass(
-    "Column",
-    [
-        # "table",
-        "names",  # MAP FROM TABLE NAME TO COLUMN NAME (ONE COLUMN CAN HAVE MULTIPLE NAMES)
-        "es_column",
-        "es_index",
-        # "es_type",
-        "type",
-        {"name": "useSource", "default": False},
-        {"name": "nested_path", "nulls": True},  # AN ARRAY OF PATHS (FROM DEEPEST TO SHALLOWEST) INDICATING THE JSON SUB-ARRAYS
-        {"name": "count", "nulls": True},
-        {"name": "cardinality", "nulls": True},
-        {"name": "multi", "nulls": True},
-        {"name": "partitions", "nulls": True},
-        {"name": "last_updated", "nulls": True}
-    ]
-)
 
 
 class ColumnList(Container):
@@ -262,7 +145,7 @@ def get_schema_from_list(table_name, frum):
     """
     columns = UniqueIndex(keys=("names.\\.",))
     _get_schema_from_list(frum, ".", prefix_path=[], nested_path=ROOT_PATH, columns=columns)
-    return Schema(table_name=table_name, columns=columns)
+    return Schema(table_name=table_name, columns=list(columns))
 
 
 def _get_schema_from_list(frum, table_name, prefix_path, nested_path, columns):
@@ -332,7 +215,6 @@ _type_to_name = {
     str: "string",
     text_type: "string",
     int: "integer",
-    long: "integer",
     float: "double",
     Data: "object",
     dict: "object",
@@ -343,6 +225,9 @@ _type_to_name = {
     datetime: "double",
     date: "double"
 }
+
+if PY2:
+    _type_to_name[long] = "integer"
 
 _merge_type = {
     "undefined": {

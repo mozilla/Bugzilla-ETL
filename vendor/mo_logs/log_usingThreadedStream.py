@@ -77,7 +77,7 @@ class StructuredLogger_usingThreadedStream(StructuredLogger):
 
         try:
             self.queue.close()
-        except Exception, f:
+        except Exception as f:
             if DEBUG_LOGGING:
                 raise f
 

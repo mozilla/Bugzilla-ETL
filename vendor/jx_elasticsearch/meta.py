@@ -15,27 +15,19 @@ import itertools
 from copy import copy
 from itertools import product
 
-from jx_base import STRUCT
+from jx_base import STRUCT, Table
 from jx_base.query import QueryOp
 from jx_base.schema import Schema
-from jx_python import jx
-from jx_python import meta as jx_base_meta
+from jx_python import jx, meta as jx_base_meta
 from jx_python.containers.list_usingPythonList import ListContainer
-from jx_python.meta import ColumnList, metadata_columns, metadata_tables, Column, Table
-from mo_dots import Data, relative_field, concat_field, SELF_PATH
-from mo_dots import coalesce, set_default, Null, split_field, join_field
-from mo_dots import wrap
+from jx_python.meta import ColumnList, Column
+from mo_dots import Data, relative_field, concat_field, SELF_PATH, ROOT_PATH, coalesce, set_default, Null, split_field, join_field, wrap
 from mo_json.typed_encoder import EXISTS_TYPE
 from mo_kwargs import override
 from mo_logs import Log
 from mo_logs.strings import quote
-from mo_threads import Queue
-from mo_threads import THREAD_STOP
-from mo_threads import Thread
-from mo_threads import Till
-from mo_times.dates import Date
-from mo_times.durations import HOUR, MINUTE
-from mo_times.timer import Timer
+from mo_threads import Queue, THREAD_STOP, Thread, Till
+from mo_times import HOUR, MINUTE, Timer, Date
 from pyLibrary.env import elasticsearch
 from pyLibrary.env.elasticsearch import es_type_to_json_type
 
@@ -60,7 +52,7 @@ class FromESMetadata(Schema):
             return jx_base_meta.singlton
 
     @override
-    def __init__(self, host, index, alias=None, name=None, port=9200, kwargs=None):
+    def __init__(self, host, index, sql_file='metadata.sqlite', alias=None, name=None, port=9200, kwargs=None):
         if hasattr(self, "settings"):
             return
 
@@ -75,7 +67,7 @@ class FromESMetadata(Schema):
         self.abs_columns = set()
         self.last_es_metadata = Date.now()-OLD_METADATA
 
-        self.meta=Data()
+        self.meta = Data()
         table_columns = metadata_tables()
         column_columns = metadata_columns()
         self.meta.tables = ListContainer("meta.tables", [], wrap({c.names["."]: c for c in table_columns}))
@@ -210,7 +202,7 @@ class FromESMetadata(Schema):
                 table = Table(
                     name=es_index_name,
                     url=None,
-                    query_path=None,
+                    query_path=['.'],
                     timestamp=Date.now()
                 )
                 with self.meta.tables.locker:
@@ -292,6 +284,13 @@ class FromESMetadata(Schema):
                 count = result.hits.total
                 cardinality = 1001
                 multi = 1001
+            elif column.es_column == "_id":
+                result = self.default_es.post("/" + es_index + "/_search", data={
+                    "query": {"match_all": {}},
+                    "size": 0
+                })
+                count = cardinality = result.hits.total
+                multi = 1
             else:
                 result = self.default_es.post("/" + es_index + "/_search", data={
                     "aggs": {
@@ -300,10 +299,10 @@ class FromESMetadata(Schema):
                     },
                     "size": 0
                 })
-                r = result.aggregations.count
+                agg_results = result.aggregations
                 count = result.hits.total
-                cardinality = coalesce(r.value, r._nested.value, r.doc_count)
-                multi = coalesce(r.multi.value, 1)
+                cardinality = coalesce(agg_results.count.value, agg_results.count._nested.value, agg_results.count.doc_count)
+                multi = int(coalesce(agg_results.multi.value, 1))
                 if cardinality == None:
                    Log.error("logic error")
 
@@ -512,4 +511,101 @@ def _counting_query(c):
         return {"cardinality": {
             "field": c.es_column
         }}
+
+
+def metadata_columns():
+    return wrap(
+        [
+            Column(
+                names={".":c},
+                es_index="meta.columns",
+                es_column=c,
+                type="string",
+                nested_path=ROOT_PATH
+            )
+            for c in [
+                "type",
+                "nested_path",
+                "es_column",
+                "es_index"
+            ]
+        ] + [
+            Column(
+                es_index="meta.columns",
+                names={".":c},
+                es_column=c,
+                type="object",
+                nested_path=ROOT_PATH
+            )
+            for c in [
+                "names",
+                "domain",
+                "partitions"
+            ]
+        ] + [
+            Column(
+                names={".": c},
+                es_index="meta.columns",
+                es_column=c,
+                type="long",
+                nested_path=ROOT_PATH
+            )
+            for c in [
+                "count",
+                "cardinality"
+            ]
+        ] + [
+            Column(
+                names={".": "last_updated"},
+                es_index="meta.columns",
+                es_column="last_updated",
+                type="time",
+                nested_path=ROOT_PATH
+            )
+        ]
+    )
+
+
+def metadata_tables():
+    return wrap(
+        [
+            Column(
+                names={".": c},
+                es_index="meta.tables",
+                es_column=c,
+                type="string",
+                nested_path=ROOT_PATH
+            )
+            for c in [
+                "name",
+                "url",
+                "query_path"
+            ]
+        ]+[
+            Column(
+                names={".": "timestamp"},
+                es_index="meta.tables",
+                es_column="timestamp",
+                type="integer",
+                nested_path=ROOT_PATH
+            )
+        ]
+    )
+
+
+def init_database(sql):
+
+
+
+    sql.execute("""
+        CREATE TABLE tables AS (
+            table_name VARCHAR(200), 
+            alias CHAR        
+        
+        )
+    
+    
+    """)
+
+
 

@@ -1,4 +1,0 @@
-future
-pymysql
-requests
-boto

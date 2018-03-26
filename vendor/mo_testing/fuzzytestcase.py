@@ -17,8 +17,8 @@ import mo_dots
 from mo_collections.unique_index import UniqueIndex
 from mo_dots import coalesce, literal_field, unwrap, wrap
 from mo_future import text_type
-from mo_logs import Log
-from mo_logs.exceptions import suppress_exception, Except
+from mo_future import zip_longest
+from mo_logs import Log, Except, suppress_exception
 from mo_logs.strings import expand_template
 from mo_math import Math
 
@@ -76,25 +76,6 @@ class FuzzyTestCase(unittest.TestCase):
 
         Log.error("Expecting an exception to be raised")
 
-def zipall(*args):
-    """
-    LOOP THROUGH LONGEST OF THE LISTS, None-FILL THE REMAINDER
-    """
-    iters = [iter(a) for a in args]
-
-    def _next(_iter):
-        try:
-            return False, _iter.next()
-        except:
-            return True, None
-
-    while True:
-        is_done, value = zip(*(_next(a) for a in iters))
-        if all(is_done):
-            return
-        else:
-            yield value
-
 
 def assertAlmostEqual(test, expected, digits=None, places=None, msg=None, delta=None):
     show_detail = True
@@ -145,13 +126,13 @@ def assertAlmostEqual(test, expected, digits=None, places=None, msg=None, delta=
                 return
             if expected == None:
                 expected = []  # REPRESENT NOTHING
-            for a, b in zipall(test, expected):
+            for a, b in zip_longest(test, expected):
                 assertAlmostEqual(a, b, msg=msg, digits=digits, places=places, delta=delta)
         else:
             assertAlmostEqualValue(test, expected, msg=msg, digits=digits, places=places, delta=delta)
     except Exception as e:
         Log.error(
-            "{{test|json}} does not match expected {{expected|json}}",
+            "{{test|json|limit(10000)}} does not match expected {{expected|json|limit(10000)}}",
             test=test if show_detail else "[can not show]",
             expected=expected if show_detail else "[can not show]",
             cause=e
