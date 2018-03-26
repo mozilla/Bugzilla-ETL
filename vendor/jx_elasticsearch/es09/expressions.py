@@ -496,7 +496,7 @@ def isKeyword(value):
     """
     RETURN TRUE IF THE value IS JUST A NAME OF A FIELD, A LIST OF FIELDS, (OR A VALUE)
     """
-    if not value or not isinstance(value, basestring):
+    if not value or not isinstance(value, text_type):
         Log.error("Expecting a string")
 
     if keyword_pattern.match(value):

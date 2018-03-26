@@ -14,8 +14,8 @@
 	"bugzilla":{
 		"preamble":"from https://github.com/klahnakoski/Bugzilla-ETL",
 		"host":"localhost",
-		"port":3306,
-        "$ref":"//~/private.json#bugzilla",
+		"port":3307,
+        "$ref":"//~/private.json#bugzilla-dev",
 		"schema":"test_bugzilla",
 		"debug":false
 	},

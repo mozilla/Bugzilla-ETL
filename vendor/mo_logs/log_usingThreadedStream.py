@@ -33,7 +33,7 @@ class StructuredLogger_usingThreadedStream(StructuredLogger):
 
         use_UTF8 = False
 
-        if isinstance(stream, basestring):
+        if isinstance(stream, text_type):
             if stream.startswith("sys."):
                 use_UTF8 = True  # sys.* ARE OLD AND CAN NOT HANDLE unicode
             self.stream = eval(stream)

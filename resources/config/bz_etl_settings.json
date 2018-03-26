@@ -13,11 +13,10 @@
         "allow_private_bugs": false
     },
     "bugzilla": {
+        "$ref":"//~/private.json#bugzilla-dev",
         "host": "localhost",
         "preamble": "from https://github.com/klahnakoski/Bugzilla-ETL",
-        "port": 3306,
-        "username": "username",
-        "password": "password",
+        "port": 3307,
         "schema": "bugzilla",
         "debug": false
     },

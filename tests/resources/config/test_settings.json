@@ -126,19 +126,19 @@
 		"filename": "./tests/resources/sql/small_bugzilla.sql",
 		"preamble": "from https://github.com/klahnakoski/Bugzilla-ETL",
 		"host": "localhost",
-		"port": 3306,
+		"port": 3307,
 		"schema": "test_bugzilla",
 		"expires_on": 1372867005000,
 		"debug": false,
-		"$ref": "//~/private.json#bugzilla"
+		"$ref": "//~/private.json#bugzilla-dev"
 	},
 	"bugzilla2": {
 		"host": "klahnakoski-es.corp.tor1.mozilla.com",
-		"port": 3306,
+		"port": 3307,
 		"schema": "bugzilla2",
 		"expires_on": 1372867005000,
 		"debug": true,
-		"$ref": "//~/private.json#bugzilla"
+		"$ref": "//~/private.json#bugzilla-dev"
 	},
 	"constants": {
 		"pyLibrary.env.http.default_headers": {

@@ -176,8 +176,8 @@ class BugHistoryParser(object):
                 Log.note("PROBLEM expecting a created_ts (did you install the timezone database into your MySQL instance?)", bug_id=self.currBugID)
 
             for b in self.currBugState.blocked:
-                if isinstance(b, basestring):
-                    Log.note("PROBLEM error", bug_id=self.currBugID)
+                if isinstance(b, text_type):
+                    Log.note("PROBLEM error {{bug_id}}", bug_id=self.currBugID)
             self.prev_row = row_in
 
     @staticmethod
