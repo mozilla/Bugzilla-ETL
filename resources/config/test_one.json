@@ -51,7 +51,7 @@
 	"alias":{
 		"increment": 1000000,
 		"file": {
-			"path": "./resources/json/bugzilla_aliases.json",
+			"path": "../schema/bugzilla_aliases.json",
 			"$ref": "file://~/private.json#alias_file"
 		}
 	},

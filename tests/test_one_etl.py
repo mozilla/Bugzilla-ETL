@@ -23,7 +23,7 @@ from pyLibrary import convert
 from pyLibrary.sql.mysql import all_db, MySQL
 from pyLibrary.testing import elasticsearch
 from pyLibrary.testing.elasticsearch import FakeES
-from test_etl import compare_both
+from test_etl import compare_both, MIN_TIMSTAMP
 
 
 class TestOneETL(unittest.TestCase):
@@ -60,8 +60,8 @@ class TestOneETL(unittest.TestCase):
             #SETUP RUN PARAMETERS
             param = Data()
             param.end_time = convert.datetime2milli(get_current_time(db))
-            param.start_time = 0
-            param.start_time_str = extract_bugzilla.milli2string(db, 0)
+            param.start_time = MIN_TIMSTAMP
+            param.start_time_str = extract_bugzilla.milli2string(db, MIN_TIMSTAMP)
 
             param.alias_file = self.settings.param.alias_file
             param.bug_list = self.settings.param.bugs

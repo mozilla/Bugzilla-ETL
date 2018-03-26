@@ -75,16 +75,21 @@ def get_current_time(db):
 
 def milli2string(db, value):
     """
-    CONVERT GMT MILLI TO BUGZILLA DATETIME STRING (NEED TZ TABLES)
+    CONVERT GMT MILLI TO BUGZILLA DATETIME
     """
     value = max(value, 0)
 
     output = db.query(u"""
         SELECT
-            CAST(CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific') AS CHAR) `value`
+            CAST(FROM_UNIXTIME({{start_time}}/1000) AS CHAR) `value`
         """, {
         "start_time": value
     })[0].value
+
+    if output[19]=='.':  #1970-01-01 00:00:00.0000
+        output=output[:-1]
+    else:
+        Log.error("unexpected date format")
     return output
 
 

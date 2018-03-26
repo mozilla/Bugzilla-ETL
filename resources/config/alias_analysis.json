@@ -7,7 +7,7 @@
             "index": "bug_aliases"
         },
         "file":{
-            "path":"./resources/json/bugzilla_aliases.json",
+            "path":"../schema/bugzilla_aliases.json",
             "$ref":"//~/private.json#alias_file"
         }
     },

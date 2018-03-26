@@ -1,29 +1,27 @@
 {
-	"settings":{
-        "index.number_of_shards": 3,
-        "index.number_of_replicas": 2,
+	"settings": {
+		"index.number_of_shards": 3,
+		"index.number_of_replicas": 2,
 		"analysis": {
-		    "analyzer": {
-		        "bz_text_analyzer": {
-		            "type":"standard",
-		            "filter":["lowercase", "stop"],
-		            "max_token_length":"20"
-		        }
-		    }
+			"analyzer": {
+				"bz_text_analyzer": {
+					"type": "standard",
+					"filter": [
+						"lowercase",
+						"stop"
+					],
+					"max_token_length": "20"
+				}
+			}
 		}
 	},
 	"mappings": {
 		"bug_comment": {
 			"properties": {
 				"comment": {
-					"type": "keyword",
-		            "fields":{
-		                "lowercase": {
-							"type": "text",
-							"store": false,
-							"analyzer": "bz_text_analyzer"
-		                }
-		            }
+					"type": "text",
+					"store": true,
+					"analyzer": "bz_text_analyzer"
 				}
 			}
 		}

@@ -1,82 +1,85 @@
 {
-    "settings": {
-        "index.number_of_shards": 3,
-        "index.number_of_replicas": 2,
-        "analysis": {
-            "analyzer": {
-                "bz_text_analyzer": {
-                    "type": "standard",
-                    "filter": ["lowercase", "stop"],
-                    "max_token_length": "20"
-                },
-                "whiteboard_words": {
-                    "type": "custom",
-                    "tokenizer": "whiteboard_words_pattern",
-                    "filter": [
-                        "stop"
-                    ]
-                },
-                "whiteboard_shingle_words": {
-                    "type": "custom",
-                    "tokenizer": "whiteboard_words_pattern",
-                    "filter": [
-                        "stop",
-                        "shingle"
-                    ]
-                },
-                "whiteboard_tokens": {
-                    "type": "custom",
-                    "tokenizer": "whiteboard_tokens_pattern",
-                    "filter": [
-                        "stop"
-                    ]
-                },
-                "whiteboard_shingle_tokens": {
-                    "type": "custom",
-                    "tokenizer": "whiteboard_tokens_pattern",
-                    "filter": [
-                        "stop",
-                        "shingle"
-                    ]
-                }
-            },
-            "tokenizer": {
-                "whiteboard_tokens_pattern": {
-                    "type": "pattern",
-                    "pattern": "\\s*([,;]*\\[|\\][\\s\\[]*|[;,])\\s*"
-                },
-                "whiteboard_words_pattern": {
-                    "type": "pattern",
-                    "pattern": "[\\[\\];,\\s]+"
-                }
-            }
-        }
-    },
-    "mappings": {
-        "bug_version": {
-            "properties": {
-                "status_whiteboard": {
+	"settings": {
+		"index.number_of_shards": 3,
+		"index.number_of_replicas": 2,
+		"analysis": {
+			"analyzer": {
+				"bz_text_analyzer": {
+					"type": "standard",
+					"filter": [
+						"lowercase",
+						"stop"
+					],
+					"max_token_length": "20"
+				},
+				"whiteboard_words": {
+					"type": "custom",
+					"tokenizer": "whiteboard_words_pattern",
+					"filter": [
+						"stop"
+					]
+				},
+				"whiteboard_shingle_words": {
+					"type": "custom",
+					"tokenizer": "whiteboard_words_pattern",
+					"filter": [
+						"stop",
+						"shingle"
+					]
+				},
+				"whiteboard_tokens": {
+					"type": "custom",
+					"tokenizer": "whiteboard_tokens_pattern",
+					"filter": [
+						"stop"
+					]
+				},
+				"whiteboard_shingle_tokens": {
+					"type": "custom",
+					"tokenizer": "whiteboard_tokens_pattern",
+					"filter": [
+						"stop",
+						"shingle"
+					]
+				}
+			},
+			"tokenizer": {
+				"whiteboard_tokens_pattern": {
+					"type": "pattern",
+					"pattern": "\\s*([,;]*\\[|\\][\\s\\[]*|[;,])\\s*"
+				},
+				"whiteboard_words_pattern": {
+					"type": "pattern",
+					"pattern": "[\\[\\];,\\s]+"
+				}
+			}
+		}
+	},
+	"mappings": {
+		"bug_version": {
+			"properties": {
+				"status_whiteboard": {
 					"type": "keyword",
-                    "fields": {
-                        "words": {
-                            "type": "text",
-                            "analyzer": "whiteboard_words"
-                        },
-                        "words_shingled": {
-                            "type": "text",
-                            "analyzer": "whiteboard_shingle_words"
-                        },
-                        "tokenized": {
-                            "type": "text",
-                            "analyzer": "whiteboard_tokens"
-                        },
-                        "tokenized_shingled": {
-                            "type": "text",
-                            "analyzer": "whiteboard_shingle_tokens"
-                        }
-                    }
-                }
-            }
-        }
-    }
+					"fields": {
+						"words": {
+							"type": "text",
+							"analyzer": "whiteboard_words"
+						},
+						"words_shingled": {
+							"type": "text",
+							"analyzer": "whiteboard_shingle_words"
+						},
+						"tokenized": {
+							"type": "text",
+							"analyzer": "whiteboard_tokens"
+						},
+						"tokenized_shingled": {
+							"type": "text",
+							"analyzer": "whiteboard_shingle_tokens"
+						}
+					}
+				}
+			}
+		}
+	}
 }

@@ -11,3 +11,4 @@ Error*.txt
 *.egg-info
 build
 dist
+/vendor/pyLibrary/vendor/sqlite

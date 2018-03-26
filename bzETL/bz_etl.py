@@ -11,29 +11,34 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
-from mo_future import text_type
-
 from bzETL import extract_bugzilla, alias_analysis, parse_bug_history
 from bzETL.extract_bugzilla import *
 from bzETL.parse_bug_history import BugHistoryParser
 from jx_python import jx
-from mo_dots import set_default, wrap, coalesce, listwrap
+from mo_dots import wrap, coalesce, listwrap
 from mo_files import File
+from mo_future import text_type, long
+from mo_kwargs import override
 from mo_logs import Log, startup, constants
 from mo_math import Math
-from mo_threads.lock import Lock
-from mo_threads.queues import Queue
-from mo_threads.threads import AllThread, Thread, THREAD_STOP
+from mo_threads import Lock, Queue, Thread, THREAD_STOP
+from mo_threads.threads import AllThread
 from mo_times.timer import Timer
 from pyLibrary import convert
-from pyLibrary.env import elasticsearch
 from pyLibrary.env.elasticsearch import Cluster
 from pyLibrary.sql.mysql import MySQL
+
+NUM_CONNECTIONS = 10
+MIN_TIMSTAMP = 1000  # MILLISECONDS SINCE EPOCH
+
 
 db_cache_lock = Lock()
 db_cache = []
 comment_db_cache_lock = Lock()
-comment_db_cache = []
+comment_db_cache = None
+
+
+
 
 #HERE ARE ALL THE FUNCTIONS WE WANT TO RUN, IN PARALLEL (b
 get_stuff_from_bugzilla = [
@@ -53,14 +58,15 @@ get_stuff_from_bugzilla = [
 
 def etl_comments(db, es, param, please_stop):
     # CONNECTIONS ARE EXPENSIVE, CACHE HERE
+    global comment_db_cache
     with comment_db_cache_lock:
         if not comment_db_cache:
             comment_db = MySQL(db.settings)
-            comment_db_cache.append(comment_db)
+            comment_db_cache = comment_db
 
     with comment_db_cache_lock:
         Log.note("Read comments from database")
-        comments = get_comments(comment_db_cache[0], param)
+        comments = get_comments(comment_db_cache, param)
 
     for g, c in jx.groupby(comments, size=500):
         with Timer("Write {{num}} comments to ElasticSearch", {"num": len(c)}):
@@ -72,7 +78,6 @@ def etl(db, output_queue, param, alias_config, please_stop):
     PROCESS RANGE, AS SPECIFIED IN param AND PUSH
     BUG VERSION RECORDS TO output_queue
     """
-    NUM_CONNECTIONS = 10
 
     # MAKING CONNECTIONS ARE EXPENSIVE, CACHE HERE
     with db_cache_lock:
@@ -126,55 +131,35 @@ def run_both_etl(db, output_queue, es_comments, param, alias_config):
         Log.error("etl had problems", cause=result.exception)
 
 
-def setup_es(settings, db, es, es_comments):
+def setup_es(settings, db):
     """
     SETUP ES CONNECTIONS TO REFLECT IF WE ARE RESUMING, INCREMENTAL, OR STARTING OVER
     """
     current_run_time = get_current_time(db)
+    cluster = Cluster(settings.es)
 
     if File(settings.param.first_run_time).exists and File(settings.param.last_run_time).exists:
         # INCREMENTAL UPDATE; DO NOT MAKE NEW INDEX
         last_run_time = long(File(settings.param.last_run_time).read())
-        if not es:
-            es = elasticsearch.Index(settings.es)
-            es_comments = elasticsearch.Index(settings.es_comments)
+        es = cluster.get_index(settings.es)
+        es_comments = cluster.get_index(settings.es_comments)
     elif File(settings.param.first_run_time).exists:
         # DO NOT MAKE NEW INDEX, CONTINUE INITIAL FILL
         try:
-            last_run_time = 0
+            last_run_time = MIN_TIMSTAMP
             current_run_time = long(File(settings.param.first_run_time).read())
-            if not es:
-                if not settings.es.alias:
-                    temp = Cluster(settings.es).get_proto(settings.es.index)
-                    settings.es.alias = settings.es.index
-                    settings.es.index = temp.last()
-                es = elasticsearch.Index(settings.es)
-                es.set_refresh_interval(1)  #REQUIRED SO WE CAN SEE WHAT BUGS HAVE BEEN LOADED ALREADY
-
-                if not settings.es_comments.alias:
-                    temp = Cluster(settings.es_comments).get_proto(settings.es_comments.index)
-                    settings.es_comments.alias = settings.es_comments.index
-                    settings.es_comments.index = temp.last()
-                es_comments = elasticsearch.Index(settings.es_comments)
+            es = cluster.get_index(settings.es)
+            es_comments = cluster.get_index(settings.es_comments)
+            es.set_refresh_interval(1)  #REQUIRED SO WE CAN SEE WHAT BUGS HAVE BEEN LOADED ALREADY
         except Exception as e:
             Log.warning("can not resume ETL, restarting", cause=e)
             File(settings.param.first_run_time).delete()
-            return setup_es(settings, db, es, es_comments)
+            return setup_es(settings, db)
     else:
         # START ETL FROM BEGINNING, MAKE NEW INDEX
-        last_run_time = 0
-        if not es:
-            # BUG VERSIONS
-            if not settings.es.alias:
-                settings.es.alias = settings.es.index
-                settings.es.index = Cluster.proto_name(settings.es.alias)
-            es = Cluster.create_index(kwargs=settings.es, limit_replicas=True)
-
-            # BUG COMMENTS
-            if not settings.es_comments.alias:
-                settings.es_comments.alias = settings.es_comments.index
-                settings.es_comments.index = Cluster.proto_name(settings.es_comments.alias)
-            es_comments = Cluster.create_index(kwargs=settings.es_comments, limit_replicas=True)
+        last_run_time = MIN_TIMSTAMP
+        es = cluster.create_index(kwargs=settings.es, limit_replicas=True)
+        es_comments = cluster.create_index(kwargs=settings.es_comments, limit_replicas=True)
 
         File(settings.param.first_run_time).write(text_type(convert.datetime2milli(current_run_time)))
 
@@ -220,8 +205,8 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
     if bug_list:
         refresh_param = param.copy()
         refresh_param.bug_list = bug_list
-        refresh_param.start_time = 0
-        refresh_param.start_time_str = extract_bugzilla.milli2string(db, 0)
+        refresh_param.start_time = MIN_TIMSTAMP
+        refresh_param.start_time_str = extract_bugzilla.milli2string(db, MIN_TIMSTAMP)
 
         try:
             etl(db, output_queue, refresh_param.copy(), settings.alias, please_stop=None)
@@ -288,12 +273,12 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
         })
 
 
-def full_etl(resume_from_last_run, settings, param, db, es, es_comments, output_queue):
-    with Thread.run("alias_analysis", alias_analysis.full_analysis, settings=settings):
-        end = coalesce(settings.param.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
-        start = coalesce(settings.param.start, 0)
+def full_etl(resume_from_last_run, config, param, db, es, es_comments, output_queue):
+    with Thread.run("alias_analysis", alias_analysis.full_analysis, settings=config):
+        end = coalesce(config.param.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
+        start = coalesce(config.param.start, 0)
         if resume_from_last_run:
-            start = coalesce(settings.param.start, Math.floor(get_max_bug_id(es), settings.param.increment))
+            start = coalesce(config.param.start, Math.floor(get_max_bug_id(es), config.param.increment))
 
         #############################################################
         ## MAIN ETL LOOP
@@ -301,8 +286,8 @@ def full_etl(resume_from_last_run, settings, param, db, es, es_comments, output_
 
         #TWO WORKERS IS MORE THAN ENOUGH FOR A SINGLE THREAD
         # with Multithread([run_both_etl, run_both_etl]) as workers:
-        for min, max in jx.intervals(start, end, settings.param.increment):
-            if settings.args.quick and min < end - settings.param.increment and min != 0:
+        for min, max in jx.intervals(start, end, config.param.increment):
+            if config.args.quick and min < end - config.param.increment and min != 0:
                 #--quick ONLY DOES FIRST AND LAST BLOCKS
                 continue
 
@@ -345,13 +330,13 @@ def full_etl(resume_from_last_run, settings, param, db, es, es_comments, output_
                     continue
 
                 param.bug_list = bug_list
-                run_both_etl(**{
-                    "db": db,
-                    "output_queue": output_queue,
-                    "es_comments": es_comments,
-                    "param": param.copy(),
-                    "alias_config": settings.alias
-                })
+                run_both_etl(
+                    db,
+                    output_queue,
+                    es_comments,
+                    param.copy(),
+                    config.alias
+                )
 
             except Exception as e:
                 Log.error(
@@ -361,48 +346,48 @@ def full_etl(resume_from_last_run, settings, param, db, es, es_comments, output_
                     cause=e
                 )
 
-
-def main(settings, es=None, es_comments=None):
-    if not settings.param.allow_private_bugs and es and not es_comments:
+@override
+def main(param, es, es_comments, bugzilla, kwargs):
+    if not param.allow_private_bugs and es and not es_comments:
         Log.error("Must have ES for comments")
 
-    resume_from_last_run = File(settings.param.first_run_time).exists and not File(settings.param.last_run_time).exists
+    resume_from_last_run = File(param.first_run_time).exists and not File(param.last_run_time).exists
 
     #MAKE HANDLES TO CONTAINERS
     try:
-        with MySQL(kwargs=settings.bugzilla, readonly=True) as db:
-            current_run_time, es, es_comments, last_run_time = setup_es(settings, db, es, es_comments)
+        with MySQL(kwargs=bugzilla, readonly=True) as db:
+            current_run_time, es, es_comments, last_run_time = setup_es(kwargs, db)
 
             with es.threaded_queue(max_size=500, silent=True) as output_queue:
                 #SETUP RUN PARAMETERS
-                param = Data()
+                param, old_param = Data(), param
                 param.end_time = convert.datetime2milli(get_current_time(db))
                 # MySQL WRITES ARE DELAYED, RESULTING IN UNORDERED bug_when IN bugs_activity (AS IS ASSUMED FOR bugs(delats_ts))
                 # THIS JITTER IS USUALLY NO MORE THAN ONE SECOND, BUT WE WILL GO BACK 60sec, JUST IN CASE.
                 # THERE ARE OCCASIONAL WRITES THAT ARE IN GMT, BUT SINCE THEY LOOK LIKE THE FUTURE, WE CAPTURE THEM
-                param.start_time = last_run_time - coalesce(settings.param.look_back, 5 * 60 * 1000)  # 5 MINUTE LOOK_BACK
+                param.start_time = last_run_time - coalesce(old_param.look_back, 5 * 60 * 1000)  # 5 MINUTE LOOK_BACK
                 param.start_time_str = extract_bugzilla.milli2string(db, param.start_time)
-                param.alias_file = settings.param.alias_file
-                param.allow_private_bugs = settings.param.allow_private_bugs
+                param.alias_file = param.alias_file
+                param.allow_private_bugs = param.allow_private_bugs
 
                 if last_run_time > 0:
                     with Timer("run incremental etl"):
-                        incremental_etl(settings, param, db, es, es_comments, output_queue)
+                        incremental_etl(kwargs, param, db, es, es_comments, output_queue)
                 else:
                     with Timer("run full etl"):
-                        full_etl(resume_from_last_run, settings, param, db, es, es_comments, output_queue)
+                        full_etl(resume_from_last_run, kwargs, param, db, es, es_comments, output_queue)
 
                 output_queue.add(THREAD_STOP)
 
-        if settings.es.alias:
-            es.delete_all_but(settings.es.alias, settings.es.index)
-            es.add_alias(settings.es.alias)
+        if es.alias:
+            es.delete_all_but(es.alias, es.index)
+            es.add_alias(es.alias)
 
-        if settings.es_comments.alias:
-            es.delete_all_but(settings.es_comments.alias, settings.es_comments.index)
-            es_comments.add_alias(settings.es_comments.alias)
+        if es_comments.alias:
+            es.delete_all_but(es_comments.alias, es_comments.index)
+            es_comments.add_alias(es_comments.alias)
 
-        File(settings.param.last_run_time).write(text_type(convert.datetime2milli(current_run_time)))
+        File(param.last_run_time).write(text_type(convert.datetime2milli(current_run_time)))
     except Exception as e:
         Log.error("Problem with main ETL loop", cause=e)
     finally:
@@ -425,7 +410,8 @@ def get_bug_ids(es, filter):
             "from": 0,
             "size": 200000,
             "sort": [],
-            "fields": ["bug_id"]
+            "fields": ["bug_id"],
+            "stored_fields": ["bug_id"]
         })
 
         return set(results.hits.hits.fields.bug_id)
@@ -472,8 +458,8 @@ def close_db_connections():
         db.close()
 
     comment_db_cache, temp = [], comment_db_cache
-    for db in temp:
-        db.close()
+    if temp:
+        temp.close()
 
 
 def start():

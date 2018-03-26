@@ -2,7 +2,7 @@
     "errors": "./results/data",
     "source": {
         "filename": "C:/Users/klahnakoski/git/ES Extract/data/bug_versions.txt",
-        "schema_filename": "./resources/json/bug_version.json"
+        "schema_filename": "../schema/bug_version.json"
     },
     "destination": {
         "host": "http://localhost",

@@ -47,7 +47,7 @@
 			"port": 9200,
 			"index": "test_bugs",
 			"type": "bug_version",
-			"schema": {"$ref": "../../../resources/json/bug_version.json"},
+			"schema": {"$ref": "../../../resources/schema/bug_version.json"},
 			"debug": true
 		},
 		"comments": {
@@ -55,7 +55,7 @@
 			"port": 9200,
 			"index": "test_comments",
 			"type": "bug_comment",
-			"schema": {"$ref": "../../../resources/json/bug_comments.json"},
+			"schema": {"$ref": "../../../resources/schema/bug_comments.json"},
 			"debug": true
 		}
 	},
@@ -110,7 +110,7 @@
 	"alias": {
 		"increment": 1000000,
 		"file": {
-			"path": "./resources/json/bugzilla_aliases.json",
+			"path": "../schema/bugzilla_aliases.json",
 			"$ref": "~/private.json#alias_file"
 		},
 		"elasticsearch": {
@@ -127,15 +127,15 @@
 		"preamble": "from https://github.com/klahnakoski/Bugzilla-ETL",
 		"host": "localhost",
 		"port": 3307,
-		"schema": "test_bugzilla",
+		"schema": "bugs",
 		"expires_on": 1372867005000,
 		"debug": false,
 		"$ref": "//~/private.json#bugzilla-dev"
 	},
 	"bugzilla2": {
-		"host": "klahnakoski-es.corp.tor1.mozilla.com",
+		"host": "localhost",
 		"port": 3307,
-		"schema": "bugzilla2",
+		"schema": "bugs",
 		"expires_on": 1372867005000,
 		"debug": true,
 		"$ref": "//~/private.json#bugzilla-dev"

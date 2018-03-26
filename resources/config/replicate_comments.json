@@ -1,22 +1,20 @@
 {
 		"source":{
-//            "filename":"results/all_bugs.txt",
 			"host":"https://esfrontline.bugzilla.mozilla.org",
 			"port":80,
-			"index":"public_bugs",
-			"type":"bug_version",
+			"index":"public_comments",
+			"type":"bug_comment",
             "explore_metadata":false
 		},
 		"destination":{
-//            "filename":"results/all_bugs.txt",
 			"host":"http://localhost",
 			"port": 9200,
-			"index":"bugs20140416_000000",
-			"type":"bug_version",
-			"schema": {"$ref": "../json/bug_version.json"}
+			"index":"comments20140416_000000",
+			"type":"bug_comment",
+			"schema": {"$ref": "../schema/bug_comments.json"}
 		},
 		"param":{
-			"last_replication_time":"./results/data/last_bug_replication_time.txt"
+			"last_replication_time":"./results/data/last_comment_replication_time.txt"
 		},
 		"debug":{
 			"log":[{

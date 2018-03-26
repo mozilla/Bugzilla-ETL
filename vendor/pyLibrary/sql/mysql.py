@@ -36,7 +36,7 @@ from pyLibrary.sql.sqlite import join_column
 
 DEBUG = False
 MAX_BATCH_SIZE = 100
-EXECUTE_TIMEOUT = 5 * 600 * 1000  # in milliseconds
+EXECUTE_TIMEOUT = 5 * 600 * 1000  # in milliseconds  SET TO ZERO (OR None) FOR HOST DEFAULT TIMEOUT
 
 all_db = []
 
@@ -97,7 +97,7 @@ class MySQL(object):
                 user=coalesce(self.settings.username, self.settings.user),
                 passwd=coalesce(self.settings.password, self.settings.passwd),
                 db=coalesce(self.settings.schema, self.settings.db),
-                read_timeout=coalesce(self.settings.read_timeout, (EXECUTE_TIMEOUT / 1000) - 10),
+                read_timeout=coalesce(self.settings.read_timeout, (EXECUTE_TIMEOUT / 1000) - 10 if EXECUTE_TIMEOUT else None, 5*60),
                 charset=u"utf8",
                 use_unicode=True,
                 ssl=coalesce(self.settings.ssl, None),
@@ -158,7 +158,8 @@ class MySQL(object):
             self.cursor = self.db.cursor()
         self.transaction_level += 1
         self.execute("SET TIME_ZONE='+00:00'")
-        self.execute("SET MAX_EXECUTION_TIME=" + text_type(EXECUTE_TIMEOUT))
+        if EXECUTE_TIMEOUT:
+            self.execute("SET MAX_EXECUTION_TIME=" + text_type(EXECUTE_TIMEOUT))
 
     def close(self):
         if self.transaction_level > 0:
@@ -578,7 +579,7 @@ class MySQL(object):
             else:
                 return self.db.literal(value)
         except Exception as e:
-            Log.error("problem quoting SQL", e)
+            Log.error("problem quoting SQL {{value}}", value=repr(value), cause=e)
 
     def quote_sql(self, value, param=None):
         """

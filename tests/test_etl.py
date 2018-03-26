@@ -17,7 +17,7 @@ from datetime import datetime
 from mo_future import text_type
 
 from bzETL import extract_bugzilla, bz_etl
-from bzETL.bz_etl import etl, esfilter2sqlwhere
+from bzETL.bz_etl import etl, esfilter2sqlwhere, MIN_TIMSTAMP
 from bzETL.extract_bugzilla import get_current_time, SCREENED_WHITEBOARD_BUG_GROUPS
 from jx_python import jx
 from mo_dots import Data, Null, wrap
@@ -36,7 +36,6 @@ from util.compare_es import get_all_bug_versions
 from util.database import diff
 
 BUG_GROUP_FOR_TESTING = "super secret"
-
 
 class TestETL(unittest.TestCase):
     def setUp(self):
@@ -70,8 +69,8 @@ class TestETL(unittest.TestCase):
             #SETUP RUN PARAMETERS
             param = Data()
             param.end_time = convert.datetime2milli(get_current_time(db))
-            param.start_time = 0
-            param.start_time_str = extract_bugzilla.milli2string(db, 0)
+            param.start_time = MIN_TIMSTAMP
+            param.start_time_str = extract_bugzilla.milli2string(db, MIN_TIMSTAMP)
 
             param.alias_file = self.settings.param.alias_file
             param.bug_list = self.settings.param.bugs
@@ -116,7 +115,7 @@ class TestETL(unittest.TestCase):
                 param = Data()
                 param.end_time = convert.datetime2milli(get_current_time(db))
                 param.start_time = 0
-                param.start_time_str = extract_bugzilla.milli2string(db, 0)
+                param.start_time_str = extract_bugzilla.milli2string(db, MIN_TIMSTAMP)
                 param.alias_file = self.settings.param.alias_file
 
                 try:
@@ -443,7 +442,7 @@ class TestETL(unittest.TestCase):
             param = Data()
             param.end_time = convert.datetime2milli(get_current_time(db))
             param.start_time = 0
-            param.start_time_str = extract_bugzilla.milli2string(db, 0)
+            param.start_time_str = extract_bugzilla.milli2string(db, MIN_TIMSTAMP)
 
             param.alias_file = self.settings.param.alias_file
             param.bug_list = wrap([GOOD_BUG_TO_TEST]) # bug 1046 sees lots of whiteboard, and other field, changes
@@ -477,7 +476,7 @@ class TestETL(unittest.TestCase):
             param = Data()
             param.end_time = convert.datetime2milli(get_current_time(db))
             param.start_time = 0
-            param.start_time_str = extract_bugzilla.milli2string(db, 0)
+            param.start_time_str = extract_bugzilla.milli2string(db, MIN_TIMSTAMP)
 
             param.alias_file = self.settings.param.alias_file
             param.bug_list = wrap([GOOD_BUG_TO_TEST]) # bug 1046 sees lots of whiteboard, and other field, changes
@@ -503,7 +502,7 @@ class TestETL(unittest.TestCase):
             #SETUP FIRST RUN PARAMETERS
             param = Data()
             param.end_time = start_incremental
-            param.start_time = 0
+            param.start_time = MIN_TIMSTAMP
             param.start_time_str = extract_bugzilla.milli2string(db, param.start_time)
 
             param.alias_file = self.settings.param.alias_file
