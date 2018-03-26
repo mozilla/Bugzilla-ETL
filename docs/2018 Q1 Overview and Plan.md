@@ -46,6 +46,12 @@ The ETL pipeline is scheduled to run every 10 minutes, scan the Bugzilla databas
 
 Deploying will take time because the production code runs on servers we can not access. OPS will be involved as inevitable production bugs appear.
 
+#### Why help?
+
+Bugzilla-ETL is interesting for the fact it is responsible for tracking [slowing-changing-dimensions](https://en.wikipedia.org/wiki/Slowly_changing_dimension) and it may be the only ETL code at Mozilla responsible for tracking a complex lifecycle. Understanding this code will reveal an opportunity to abstract the management of these slowing-changing-dimensions so it can be used in other ETL pipelines. This project also has a good test suite that you can use to verify your implementation is correct.
+
+This code was derived from a flow-based programming environment, and has plenty of stream context variables that are not needed in a batch processing case. By changing the architecture to run in match mode, we will be able to breakdown the ETL to finer steps, and maybe run on AWS lambda.
+
 
 ### esFrontline [[code](https://github.com/klahnakoski/esFrontLine)]
 
@@ -65,6 +71,7 @@ An ActiveData instance will replace the esFrontLine in front of the public clust
 #### Action Required (mostly OPS)
 
 1. Setup front ends for the private and public clusters.  
+2. Use Nginx so we can plugin LDAP access controls: See [https://github.com/mozilla-iam/mozilla.oidc.accessproxy](https://github.com/mozilla-iam/mozilla.oidc.accessproxy)
 
 ### Post-ETL Server [[code](https://github.com/klahnakoski/MoDevETL)]
 
@@ -74,6 +81,12 @@ Action Required
 
 1. Move server - Even though this server is already setup, it must be re-setup (moved), to work where the rest of the system will be located 
 2. Merge code with Bugzilla-ETL - Arguably, this code could be moved to the Bugzilla-ETL code, so maybe we should do that now.
+
+#### Why Help?
+
+This code inspects the bug life cycle to extract reviews. Reviews can get complicated; review flags can be simply deleted (r-); multiple reviewers can be assigned, with only one giving a review; Reviews can be handed off to other users; etc. In each case we want to know what it means to "complete a review".  Not all the work is done in this field, and it would be nice to handle the complicated cases.
+
+Not as interesting, but: The hierarchy aggregator is responsible for using the `blocked_by` field to find all ancestors and predecessors of a bug; not only for a given point in time, but for all time of the bug's life. These long lists can serve as a short-list to consider for dependency trees over time. There are MoDevMetrics charts that tracked large dependency trees over time. They were good for identifying when blockers were added that had deep dependency lists.
 
 
 ### MoDevMetrics [[code](https://github.com/klahnakoski/MoDevMetrics)]
@@ -94,15 +107,29 @@ The MoDevMetrics has a few main parts
 3. Optional - Add testing to the internal query runner. There are currently no tests for this code, but there is a comprehensive Python test suite. There should be a simple solution here.
 4. Optional - Use the React/JSX stack. A good part of MoDevMetrics can be removed if it gets moved to a React app. plus, it will make everything faster.
 
+#### Why Help?
+
+Charting and dashboarding tools have 5 major components. I listed each component, along with what MoDevMetrics uses:
+
+* charts (various chart libs)
+* dashboard layout (html/css)
+* business rules (JSON documents holding rules and business data)
+* query language and analysis tools (JSON Query Expressions)
+* datasources (Elasticsearch, local js objects)
+
+Business Intelligence (BI) tools tightly integrate these 5 components to provide a high-value service to business customers. The value is so high that the major open source BI vendors are quickly bought by established competitors to reduce competition. The complexity of the un-maintained open source product is too much for the community to support, and the product dies.
+
+I believe open source software can make the dashboarding space cheaper and better by ensuring the components communicate via *standards*. With standards, development can proceed in parallel, the smaller components are easier for the community to support, with multiple contenders for each.  
+
+MoDevMetrics is not close to this panacea, but it does implement some complex dashboards that will help you experience the complexity of this space: You can help define and clarify the standards that should separate these components.   
 
 
 ### Metrics Graphics [[code](https://github.com/mozilla/metrics-graphics)] [[docs](https://www.metricsgraphicsjs.org/)]
 
 This is one of the charting libraries used by MoDevMetrics.  A `armenzg` is interested in dashboarding and has expressed interest in upgrading it so it can be easily used in JSX/React apps.   
 
+#### Why Help?
 
-
-
-
+This library could use help. If you are interested in graphics, svg and web assembly then this project will give you that experience while giving happiness to people viewing your work.
  
 
