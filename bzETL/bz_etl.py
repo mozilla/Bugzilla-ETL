@@ -11,6 +11,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+import jx_elasticsearch
 from bzETL import extract_bugzilla, alias_analysis, parse_bug_history
 from bzETL.extract_bugzilla import *
 from bzETL.parse_bug_history import BugHistoryParser
@@ -56,7 +57,7 @@ get_stuff_from_bugzilla = [
 ]
 
 
-def etl_comments(db, es, param, please_stop):
+def etl_comments(db, esq, param, please_stop):
     # CONNECTIONS ARE EXPENSIVE, CACHE HERE
     global comment_db_cache
     with comment_db_cache_lock:
@@ -70,7 +71,7 @@ def etl_comments(db, es, param, please_stop):
 
     for g, c in jx.groupby(comments, size=500):
         with Timer("Write {{num}} comments to ElasticSearch", {"num": len(c)}):
-            es.extend({"id": cc.comment_id, "value": cc} for cc in c)
+            esq._es.extend({"id": cc.comment_id, "value": cc} for cc in c)
 
 
 def etl(db, output_queue, param, alias_config, please_stop):
@@ -118,8 +119,8 @@ def etl(db, output_queue, param, alias_config, please_stop):
     process.processRow(wrap({"bug_id": parse_bug_history.STOP_BUG, "_merge_order": 1}))
 
 
-def run_both_etl(db, output_queue, es_comments, param, alias_config):
-    comment_thread = Thread.run("etl comments", etl_comments, db, es_comments, param)
+def run_both_etl(db, output_queue, esq_comments, param, alias_config):
+    comment_thread = Thread.run("etl comments", etl_comments, db, esq_comments, param)
     process_thread = Thread.run("etl", etl, db, output_queue, param, alias_config)
 
     result = comment_thread.join()
@@ -136,21 +137,20 @@ def setup_es(settings, db):
     SETUP ES CONNECTIONS TO REFLECT IF WE ARE RESUMING, INCREMENTAL, OR STARTING OVER
     """
     current_run_time = get_current_time(db)
-    cluster = Cluster(settings.es)
 
     if File(settings.param.first_run_time).exists and File(settings.param.last_run_time).exists:
         # INCREMENTAL UPDATE; DO NOT MAKE NEW INDEX
         last_run_time = long(File(settings.param.last_run_time).read())
-        es = cluster.get_index(settings.es)
-        es_comments = cluster.get_index(settings.es_comments)
+        esq = jx_elasticsearch.new_instance(settings.es)
+        esq_comments = jx_elasticsearch.new_instance(settings.es_comments)
     elif File(settings.param.first_run_time).exists:
         # DO NOT MAKE NEW INDEX, CONTINUE INITIAL FILL
         try:
             last_run_time = MIN_TIMSTAMP
             current_run_time = long(File(settings.param.first_run_time).read())
-            es = cluster.get_index(settings.es)
-            es_comments = cluster.get_index(settings.es_comments)
-            es.set_refresh_interval(1)  #REQUIRED SO WE CAN SEE WHAT BUGS HAVE BEEN LOADED ALREADY
+            esq = jx_elasticsearch.new_instance(settings.es)
+            esq_comments = jx_elasticsearch.new_instance(settings.es_comments)
+            esq._es.set_refresh_interval(1)  #REQUIRED SO WE CAN SEE WHAT BUGS HAVE BEEN LOADED ALREADY
         except Exception as e:
             Log.warning("can not resume ETL, restarting", cause=e)
             File(settings.param.first_run_time).delete()
@@ -158,15 +158,19 @@ def setup_es(settings, db):
     else:
         # START ETL FROM BEGINNING, MAKE NEW INDEX
         last_run_time = MIN_TIMSTAMP
-        es = cluster.create_index(kwargs=settings.es, limit_replicas=True)
-        es_comments = cluster.create_index(kwargs=settings.es_comments, limit_replicas=True)
+        cluster = Cluster(settings.es)
+        cluster.create_index(kwargs=settings.es, limit_replicas=True)
+        cluster.create_index(kwargs=settings.es_comments, limit_replicas=True)
+
+        esq = jx_elasticsearch.new_instance(settings.es)
+        esq_comments = jx_elasticsearch.new_instance(settings.es_comments)
 
         File(settings.param.first_run_time).write(text_type(convert.datetime2milli(current_run_time)))
 
-    return current_run_time, es, es_comments, last_run_time
+    return current_run_time, esq, esq_comments, last_run_time
 
 
-def incremental_etl(settings, param, db, es, es_comments, output_queue):
+def incremental_etl(settings, param, db, esq, esq_comments, output_queue):
     ####################################################################
     ## ES TAKES TIME TO DELETE RECORDS, DO DELETE FIRST WITH HOPE THE
     ## INDEX GETS A REWRITE DURING ADD OF NEW RECORDS
@@ -176,11 +180,11 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
     private_bugs = get_private_bugs_for_delete(db, param)
     Log.note("Ensure the following private bugs are deleted:\n{{private_bugs|indent}}", private_bugs=sorted(private_bugs))
     for g, delete_bugs in jx.groupby(private_bugs, size=1000):
-        still_existing = get_bug_ids(es, {"terms": {"bug_id": delete_bugs}})
+        still_existing = get_bug_ids(esq, {"terms": {"bug_id": delete_bugs}})
         if still_existing:
             Log.note("Ensure the following existing private bugs are deleted:\n{{private_bugs|indent}}", private_bugs=sorted(still_existing))
-        es.delete_record({"terms": {"bug_id": delete_bugs}})
-        es_comments.delete_record({"terms": {"bug_id": delete_bugs}})
+        esq._es.delete_record({"terms": {"bug_id": delete_bugs}})
+        esq_comments._es.delete_record({"terms": {"bug_id": delete_bugs}})
 
 
     #RECENT PUBLIC BUGS
@@ -188,7 +192,7 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
     if param.allow_private_bugs:
         #PRIVATE BUGS
         #    A CHANGE IN PRIVACY INDICATOR MEANS THE WHITEBOARD IS AFFECTED, REDO
-        es.delete_record({"terms": {"bug_id": possible_public_bugs}})
+        esq._es.delete_record({"terms": {"bug_id": possible_public_bugs}})
     else:
         #PUBLIC BUGS
         #    IF ADDING GROUP THEN private_bugs ALREADY DID THIS
@@ -198,7 +202,7 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
     #REMOVE **RECENT** PRIVATE ATTACHMENTS
     private_attachments = get_recent_private_attachments(db, param)
     bugs_to_refresh = set(jx.select(private_attachments, "bug_id"))
-    es.delete_record({"terms": {"bug_id": bugs_to_refresh}})
+    esq._es.delete_record({"terms": {"bug_id": bugs_to_refresh}})
 
     #REBUILD BUGS THAT GOT REMOVED
     bug_list = (possible_public_bugs | bugs_to_refresh) - private_bugs # REMOVE PRIVATE BUGS
@@ -210,7 +214,7 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
 
         try:
             etl(db, output_queue, refresh_param.copy(), settings.alias, please_stop=None)
-            etl_comments(db, es_comments, refresh_param.copy(), please_stop=None)
+            etl_comments(db, esq_comments, refresh_param.copy(), please_stop=None)
         except Exception as e:
             Log.error(
                 "Problem with etl using parameters {{parameters}}",
@@ -222,9 +226,9 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
     #REFRESH COMMENTS WITH PRIVACY CHANGE
     private_comments = get_recent_private_comments(db, param)
     comment_list = set(jx.select(private_comments, "comment_id")) | {0}
-    es_comments.delete_record({"terms": {"comment_id": comment_list}})
+    esq_comments._es.delete_record({"terms": {"comment_id": comment_list}})
     changed_comments = get_comments_by_id(db, comment_list, param)
-    es_comments.extend({"id": c.comment_id, "value": c} for c in changed_comments)
+    esq_comments._es.extend({"id": c.comment_id, "value": c} for c in changed_comments)
 
     #GET LIST OF CHANGED BUGS
     with Timer("time to get changed bug list"):
@@ -264,13 +268,13 @@ def incremental_etl(settings, param, db, es, es_comments, output_queue):
             bug_list=bug_list
         )
         param.bug_list = bug_list
-        run_both_etl(**{
-            "db": db,
-            "output_queue": output_queue,
-            "es_comments": es_comments,
-            "param": param.copy(),
-            "alias_config": settings.alias
-        })
+        run_both_etl(
+            db=db,
+            output_queue=output_queue,
+            esq_comments=esq_comments,
+            param=param.copy(),
+            alias_config=settings.alias
+        )
 
 
 def full_etl(resume_from_last_run, config, param, db, es, es_comments, output_queue):
@@ -356,7 +360,7 @@ def main(param, es, es_comments, bugzilla, kwargs):
     #MAKE HANDLES TO CONTAINERS
     try:
         with MySQL(kwargs=bugzilla, readonly=True) as db:
-            current_run_time, es, es_comments, last_run_time = setup_es(kwargs, db)
+            current_run_time, esq, esq_comments, last_run_time = setup_es(kwargs, db)
 
             with es.threaded_queue(max_size=500, silent=True) as output_queue:
                 #SETUP RUN PARAMETERS
@@ -372,20 +376,20 @@ def main(param, es, es_comments, bugzilla, kwargs):
 
                 if last_run_time > 0:
                     with Timer("run incremental etl"):
-                        incremental_etl(kwargs, param, db, es, es_comments, output_queue)
+                        incremental_etl(kwargs, param, db, esq, esq_comments, output_queue)
                 else:
                     with Timer("run full etl"):
-                        full_etl(resume_from_last_run, kwargs, param, db, es, es_comments, output_queue)
+                        full_etl(resume_from_last_run, kwargs, param, db, esq, esq_comments, output_queue)
 
                 output_queue.add(THREAD_STOP)
 
-        if es.alias:
-            es.delete_all_but(es.alias, es.index)
-            es.add_alias(es.alias)
+        if esq._es.alias:
+            esq._es.delete_all_but(es.alias, es.index)
+            esq._es.add_alias(es.alias)
 
-        if es_comments.alias:
-            es.delete_all_but(es_comments.alias, es_comments.index)
-            es_comments.add_alias(es_comments.alias)
+        if esq_comments._es.alias:
+            esq._es.delete_all_but(esq_comments._es.alias, esq_comments._es.index)
+            esq_comments._es.add_alias(esq_comments._es.alias)
 
         File(param.last_run_time).write(text_type(convert.datetime2milli(current_run_time)))
     except Exception as e:
@@ -400,52 +404,28 @@ def main(param, es, es_comments, bugzilla, kwargs):
         except Exception as e:
             pass
 
-def get_bug_ids(es, filter):
+def get_bug_ids(esq, filter):
     try:
-        results = es.search({
-            "query": {"filtered": {
-                "query": {"match_all": {}},
-                "filter": filter
-            }},
-            "from": 0,
-            "size": 200000,
-            "sort": [],
-            "fields": ["bug_id"],
-            "stored_fields": ["bug_id"]
-        })
-
-        return set(results.hits.hits.fields.bug_id)
+        result = esq.query({"select":"bug_id", "where":filter, "limit":20000, "format":"cube"})
+        return set(result.data.bug_id)
     except Exception as e:
         Log.error(
             "Can not get_max_bug from {{host}}/{{index}}",
-            host=es.settings.host,
-            index=es.settings.index,
+            host=esq.settings.host,
+            index=esq.settings.index,
             cause=e
         )
 
 
-
-def get_max_bug_id(es):
+def get_max_bug_id(esq):
     try:
-        results = es.search({
-            "query": {"filtered": {
-                "query": {"match_all": {}},
-                "filter": {"script": {"script": "true"}}
-            }},
-            "from": 0,
-            "size": 0,
-            "sort": [],
-            "facets": {"0": {"statistical": {"field": "bug_id"}}}
-        })
-
-        if results.facets["0"].count == 0:
-            return 0
-        return results.facets["0"].max
+        result = esq.query({"select":{"value":"bug_id", "aggregate":"max"}, "format":"cube"})
+        return result.data.bug_id
     except Exception as e:
         Log.error(
             "Can not get_max_bug from {{host}}/{{index}}",
-            host=es.settings.host,
-            index=es.settings.index,
+            host=esq.settings.host,
+            index=esq.settings.index,
             cause=e
         )
 
