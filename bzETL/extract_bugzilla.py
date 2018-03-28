@@ -66,10 +66,7 @@ def get_current_time(db):
     """
     RETURN GMT TIME
     """
-    output = db.query(u"""
-        SELECT
-            UNIX_TIMESTAMP(now()) `value`
-        """)[0].value
+    output = db.query("SELECT UNIX_TIMESTAMP(now()) `value`")[0].value
     if output == None:
         Log.error("I am guessing you did not add the timezone database!  See tests/resources/mySQL/README.md")
     return convert.unix2datetime(output)
@@ -81,12 +78,10 @@ def milli2string(db, value):
     """
     value = max(value, MIN_TIMESTAMP)
 
-    output = db.query(u"""
-        SELECT
-            CAST(FROM_UNIXTIME({{start_time}}/1000) AS CHAR) `value`
-        """, {
-        "start_time": value
-    })[0].value
+    output = db.query(
+        "SELECT CAST(FROM_UNIXTIME({{start_time}}/1000) AS CHAR) `value`",
+        {"start_time": value}
+    )[0].value
 
     if output[19]=='.':  #1970-01-01 00:00:00.0000
         output=output[:-1]
@@ -96,11 +91,14 @@ def milli2string(db, value):
 
 
 def get_screened_whiteboard(db):
+    global SCREENED_BUG_GROUP_IDS
+
     if not SCREENED_BUG_GROUP_IDS:
-        groups = db.query("SELECT id FROM groups WHERE {{where}}", {
-            "where": esfilter2sqlwhere(db, {"terms": {"name": SCREENED_WHITEBOARD_BUG_GROUPS}})
-        })
-        globals()["SCREENED_BUG_GROUP_IDS"] = jx.select(groups, "id")
+        groups = db.query(
+            "SELECT id FROM groups WHERE {{where}}",
+            {"where": esfilter2sqlwhere(db, {"terms": {"name": SCREENED_WHITEBOARD_BUG_GROUPS}})}
+        )
+        SCREENED_BUG_GROUP_IDS = jx.select(groups, "id")
 
 
 def get_bugs_table_columns(db, schema_name):

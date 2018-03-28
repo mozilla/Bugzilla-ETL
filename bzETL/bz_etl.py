@@ -361,22 +361,22 @@ def main(param, es, es_comments, bugzilla, kwargs):
 
             with esq.es.threaded_queue(max_size=500, silent=True) as output_queue:
                 #SETUP RUN PARAMETERS
-                param, old_param = Data(), param
-                param.end_time = convert.datetime2milli(get_current_time(db))
+                param_new = Data()
+                param_new.end_time = convert.datetime2milli(get_current_time(db))
                 # MySQL WRITES ARE DELAYED, RESULTING IN UNORDERED bug_when IN bugs_activity (AS IS ASSUMED FOR bugs(delats_ts))
                 # THIS JITTER IS USUALLY NO MORE THAN ONE SECOND, BUT WE WILL GO BACK 60sec, JUST IN CASE.
                 # THERE ARE OCCASIONAL WRITES THAT ARE IN GMT, BUT SINCE THEY LOOK LIKE THE FUTURE, WE CAPTURE THEM
-                param.start_time = last_run_time - coalesce(old_param.look_back, 5 * 60 * 1000)  # 5 MINUTE LOOK_BACK
-                param.start_time_str = extract_bugzilla.milli2string(db, param.start_time)
-                param.alias_file = param.alias_file
-                param.allow_private_bugs = param.allow_private_bugs
+                param_new.start_time = last_run_time - coalesce(param.look_back, 5 * 60 * 1000)  # 5 MINUTE LOOK_BACK
+                param_new.start_time_str = extract_bugzilla.milli2string(db, param_new.start_time)
+                param_new.alias_file = param_new.alias_file
+                param_new.allow_private_bugs = param_new.allow_private_bugs
 
                 if last_run_time > MIN_TIMESTAMP:
                     with Timer("run incremental etl"):
-                        incremental_etl(kwargs, param, db, esq, esq_comments, output_queue)
+                        incremental_etl(kwargs, param_new, db, esq, esq_comments, output_queue)
                 else:
                     with Timer("run full etl"):
-                        full_etl(resume_from_last_run, kwargs, param, db, esq, esq_comments, output_queue)
+                        full_etl(resume_from_last_run, kwargs, param_new, db, esq, esq_comments, output_queue)
 
                 output_queue.add(THREAD_STOP)
 
