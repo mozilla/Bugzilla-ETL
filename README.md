@@ -103,7 +103,7 @@ Got it working?
 
 The initial ETL will take over two hours.  If you want something
 quicker to confirm your configuration is correct, use `--reset
---quick` arguments on the command line.   This will limit ETL
+--quick` arguments on the command line. This will limit ETL
 to the first 1000, and last 1000 bugs.
 
     cd ~/Bugzilla_ETL

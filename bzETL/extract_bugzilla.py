@@ -7,21 +7,23 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 
 from bzETL.parse_bug_history import MAX_TIME
-
-#ALL BUGS IN PRIVATE ETL HAVE SCREENED FIELDS
 from jx_python import jx
 from mo_dots.datas import Data
 from mo_logs import Log
 from mo_times.timer import Timer
 from pyLibrary import convert
 from pyLibrary.queries.jx_usingMySQL import esfilter2sqlwhere
-from pyLibrary.sql import SQL
+from pyLibrary.sql import SQL, SQL_ONE, SQL_NEG_ONE, sql_list, sql_iso
 
+# USING THE TEXT DATETIME OF EPOCH THROWS A WARNING!  USE ONE SECOND PAST EPOCH AS MINIMUM TIME.
+MIN_TIMESTAMP = 1000  # MILLISECONDS SINCE EPOCH
+
+#ALL BUGS IN PRIVATE ETL HAVE SCREENED FIELDS
 SCREENED_FIELDDEFS = [
     19, #bug_file_loc
     24, #short_desc
@@ -77,7 +79,7 @@ def milli2string(db, value):
     """
     CONVERT GMT MILLI TO BUGZILLA DATETIME
     """
-    value = max(value, 0)
+    value = max(value, MIN_TIMESTAMP)
 
     output = db.query(u"""
         SELECT
@@ -566,13 +568,13 @@ def get_new_activities(db, param):
     get_screened_whiteboard(db)
 
     if param.allow_private_bugs:
-        param.screened_fields = SQL(SCREENED_FIELDDEFS)
+        param.screened_fields = db.quote_list(SCREENED_FIELDDEFS)
     else:
-        param.screened_fields = SQL([-1])
+        param.screened_fields = db.quote_list([-1])
 
     #TODO: CF_LAST_RESOLVED IS IN PDT, FIX IT
     param.bug_filter = esfilter2sqlwhere(db, {"terms": {"a.bug_id": param.bug_list}})
-    param.mixed_case_fields = SQL(MIXED_CASE)
+    param.mixed_case_fields = db.quote_list(MIXED_CASE)
     param.screened_whiteboard = esfilter2sqlwhere(db, {"terms": {"m.group_id": SCREENED_BUG_GROUP_IDS}})
     param.whiteboard_field = STATUS_WHITEBOARD_FIELD_ID
 

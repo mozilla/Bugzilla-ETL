@@ -559,15 +559,11 @@ class MySQL(object):
             if value == None:
                 return SQL_NULL
             elif isinstance(value, SQL):
-                if not value.param:
-                    # value.template CAN BE MORE THAN A TEMPLATE STRING
-                    return self.quote_sql(value.template)
-                param = {k: self.quote_sql(v) for k, v in value.param.items()}
-                return SQL(expand_template(value.template, param))
+                return self.quote_sql(value.template, value.param)
             elif isinstance(value, text_type):
-                return SQL(self.db.literal(value))
+                return SQL("'" + value.replace("'", "''") + "'")
             elif isinstance(value, Mapping):
-                return SQL(self.db.literal(json_encode(value)))
+                return self.quote_value(json_encode(value))
             elif Math.is_number(value):
                 return SQL(text_type(value))
             elif isinstance(value, datetime):
@@ -575,11 +571,14 @@ class MySQL(object):
             elif isinstance(value, Date):
                 return SQL("str_to_date('" + value.format("%Y%m%d%H%M%S.%f") + "', '%Y%m%d%H%i%s.%f')")
             elif hasattr(value, '__iter__'):
-                return SQL(self.db.literal(json_encode(value)))
+                return self.quote_value(json_encode(value))
             else:
-                return self.db.literal(value)
+                return self.quote_value(text_type(value))
         except Exception as e:
             Log.error("problem quoting SQL {{value}}", value=repr(value), cause=e)
+
+    def quote_list(self, values):
+        return sql_iso(sql_list(map(self.quote_value, values)))
 
     def quote_sql(self, value, param=None):
         """
@@ -590,13 +589,13 @@ class MySQL(object):
                 if not param:
                     return value
                 param = {k: self.quote_sql(v) for k, v in param.items()}
-                return expand_template(value, param)
+                return SQL(expand_template(value, param))
             elif isinstance(value, text_type):
-                return value
+                return SQL(value)
             elif isinstance(value, Mapping):
-                return self.db.literal(json_encode(value))
+                return self.quote_value(json_encode(value))
             elif hasattr(value, '__iter__'):
-                return sql_iso(sql_list([self.quote_sql(vv) for vv in value]))
+                return sql_iso(sql_list(map(self.quote_value, value)))
             else:
                 return text_type(value)
         except Exception as e:

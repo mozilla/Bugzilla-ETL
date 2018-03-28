@@ -227,9 +227,8 @@ class FromESMetadata(Schema):
 
         if abs_column_name:
             Log.error("no columns matching {{table}}.{{column}}", table=table_name, column=abs_column_name)
-        else:
-            self._get_columns(table=table_name)  # TO TEST WHAT HAPPENED
-            Log.error("no columns for {{table}}?!", table=table_name)
+
+        return []
 
     def _update_cardinality(self, column):
         """

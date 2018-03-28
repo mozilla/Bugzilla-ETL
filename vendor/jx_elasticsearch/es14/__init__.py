@@ -75,12 +75,12 @@ class ES14(Container):
         self.settings = kwargs
         self.name = coalesce(name, alias, index)
         if read_only:
-            self._es = elasticsearch.Alias(alias=coalesce(alias, index), kwargs=kwargs)
+            self.es = elasticsearch.Alias(alias=coalesce(alias, index), kwargs=kwargs)
         else:
-            self._es = elasticsearch.Cluster(kwargs=kwargs).get_index(read_only=read_only, kwargs=kwargs)
+            self.es = elasticsearch.Cluster(kwargs=kwargs).get_index(read_only=read_only, kwargs=kwargs)
 
         self.meta = FromESMetadata(kwargs=kwargs)
-        self.settings.type = self._es.settings.type
+        self.settings.type = self.es.settings.type
         self.edges = Data()
         self.worker = None
 
@@ -122,7 +122,7 @@ class ES14(Container):
 
     @property
     def url(self):
-        return self._es.url
+        return self.es.url
 
     def query(self, _query):
         try:
@@ -146,17 +146,17 @@ class ES14(Container):
                 q2.frum = result
                 return jx.run(q2)
 
-            if is_deepop(self._es, query):
-                return es_deepop(self._es, query)
-            if is_aggsop(self._es, query):
-                return es_aggsop(self._es, frum, query)
-            if is_setop(self._es, query):
-                return es_setop(self._es, query)
+            if is_deepop(self.es, query):
+                return es_deepop(self.es, query)
+            if is_aggsop(self.es, query):
+                return es_aggsop(self.es, frum, query)
+            if is_setop(self.es, query):
+                return es_setop(self.es, query)
             Log.error("Can not handle")
         except Exception as e:
             e = Except.wrap(e)
             if "Data too large, data for" in e:
-                http.post(self._es.cluster.path+"/_cache/clear")
+                http.post(self.es.cluster.path+"/_cache/clear")
                 Log.error("Problem (Tried to clear Elasticsearch cache)", e)
             Log.error("problem", e)
 
@@ -193,10 +193,10 @@ class ES14(Container):
         THE where CLAUSE IS AN ES FILTER
         """
         command = wrap(command)
-        schema = self._es.get_properties()
+        schema = self.es.get_properties()
 
         # GET IDS OF DOCUMENTS
-        results = self._es.search({
+        results = self.es.search({
             "fields": listwrap(schema._routing.path),
             "query": {"filtered": {
                 "filter": jx_expression(command.where).to_esfilter(Null)
@@ -222,8 +222,8 @@ class ES14(Container):
                     updates.append({"update": {"_id": h._id, "_routing": unwraplist(h.fields[literal_field(schema._routing.path)])}})
                     updates.append(s)
             content = ("\n".join(convert.value2json(c) for c in updates) + "\n").encode('utf-8')
-            response = self._es.cluster.post(
-                self._es.path + "/_bulk",
+            response = self.es.cluster.post(
+                self.es.path + "/_bulk",
                 data=content,
                 headers={"Content-Type": "application/json"},
                 timeout=self.settings.timeout,

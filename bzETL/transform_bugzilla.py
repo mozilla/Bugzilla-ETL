@@ -14,7 +14,8 @@ from __future__ import unicode_literals
 import re
 from datetime import date
 
-from mo_future import text_type
+from mo_dots import unwraplist, listwrap
+from mo_future import text_type, long
 
 from jx_python import jx
 from mo_json import json2value, value2json
@@ -102,7 +103,7 @@ def normalize(bug, old_school=False):
             bug[f]=convert.value2number(v)
 
     for f in MULTI_FIELDS:
-        v = bug[f]
+        v = listwrap(bug[f])
         if v:
             bug[f] = jx.sort(v)
 

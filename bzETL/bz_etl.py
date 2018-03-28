@@ -13,10 +13,11 @@ from __future__ import unicode_literals
 
 import jx_elasticsearch
 from bzETL import extract_bugzilla, alias_analysis, parse_bug_history
-from bzETL.extract_bugzilla import *
+from bzETL.extract_bugzilla import get_comments, get_current_time, MIN_TIMESTAMP, get_private_bugs_for_delete, get_recent_private_bugs, get_recent_private_attachments, get_recent_private_comments, get_comments_by_id, get_bugs, \
+    get_dependencies, get_flags, get_new_activities, get_bug_see_also, get_attachments, get_tracking_flags, get_keywords, get_cc, get_bug_groups, get_duplicates
 from bzETL.parse_bug_history import BugHistoryParser
 from jx_python import jx
-from mo_dots import wrap, coalesce, listwrap
+from mo_dots import wrap, coalesce, listwrap, Data
 from mo_files import File
 from mo_future import text_type, long
 from mo_kwargs import override
@@ -30,15 +31,11 @@ from pyLibrary.env.elasticsearch import Cluster
 from pyLibrary.sql.mysql import MySQL
 
 NUM_CONNECTIONS = 10
-MIN_TIMSTAMP = 1000  # MILLISECONDS SINCE EPOCH
-
 
 db_cache_lock = Lock()
 db_cache = []
 comment_db_cache_lock = Lock()
 comment_db_cache = None
-
-
 
 
 #HERE ARE ALL THE FUNCTIONS WE WANT TO RUN, IN PARALLEL (b
@@ -69,9 +66,9 @@ def etl_comments(db, esq, param, please_stop):
         Log.note("Read comments from database")
         comments = get_comments(comment_db_cache, param)
 
-    for g, c in jx.groupby(comments, size=500):
-        with Timer("Write {{num}} comments to ElasticSearch", {"num": len(c)}):
-            esq._es.extend({"id": cc.comment_id, "value": cc} for cc in c)
+    for g, block_of_comments in jx.groupby(comments, size=500):
+        with Timer("Write {{num}} comments to ElasticSearch", {"num": len(block_of_comments)}):
+            esq.es.extend({"id": comment.comment_id, "value": comment} for comment in block_of_comments)
 
 
 def etl(db, output_queue, param, alias_config, please_stop):
@@ -83,7 +80,7 @@ def etl(db, output_queue, param, alias_config, please_stop):
     # MAKING CONNECTIONS ARE EXPENSIVE, CACHE HERE
     with db_cache_lock:
         if not db_cache:
-            with Timer("open connections to db"):
+            with Timer("open {{num}} connections to db", {"num": NUM_CONNECTIONS}):
                 for i in range(NUM_CONNECTIONS):
                     db_cache.append(MySQL(db.settings))
 
@@ -141,31 +138,32 @@ def setup_es(settings, db):
     if File(settings.param.first_run_time).exists and File(settings.param.last_run_time).exists:
         # INCREMENTAL UPDATE; DO NOT MAKE NEW INDEX
         last_run_time = long(File(settings.param.last_run_time).read())
-        esq = jx_elasticsearch.new_instance(settings.es)
-        esq_comments = jx_elasticsearch.new_instance(settings.es_comments)
+        esq = jx_elasticsearch.new_instance(read_only=False, kwargs=settings.es)
+        esq_comments = jx_elasticsearch.new_instance(read_only=False, kwargs=settings.es_comments)
     elif File(settings.param.first_run_time).exists:
         # DO NOT MAKE NEW INDEX, CONTINUE INITIAL FILL
         try:
-            last_run_time = MIN_TIMSTAMP
+            last_run_time = MIN_TIMESTAMP
             current_run_time = long(File(settings.param.first_run_time).read())
-            esq = jx_elasticsearch.new_instance(settings.es)
-            esq_comments = jx_elasticsearch.new_instance(settings.es_comments)
-            esq._es.set_refresh_interval(1)  #REQUIRED SO WE CAN SEE WHAT BUGS HAVE BEEN LOADED ALREADY
+            esq = jx_elasticsearch.new_instance(read_only=False, kwargs=settings.es)
+            esq_comments = jx_elasticsearch.new_instance(read_only=False, kwargs=settings.es_comments)
+            esq.es.set_refresh_interval(1)  #REQUIRED SO WE CAN SEE WHAT BUGS HAVE BEEN LOADED ALREADY
         except Exception as e:
             Log.warning("can not resume ETL, restarting", cause=e)
             File(settings.param.first_run_time).delete()
             return setup_es(settings, db)
     else:
         # START ETL FROM BEGINNING, MAKE NEW INDEX
-        last_run_time = MIN_TIMSTAMP
+        last_run_time = MIN_TIMESTAMP
+        File(settings.param.first_run_time).write(text_type(convert.datetime2milli(current_run_time)))
+
         cluster = Cluster(settings.es)
         cluster.create_index(kwargs=settings.es, limit_replicas=True)
         cluster.create_index(kwargs=settings.es_comments, limit_replicas=True)
 
-        esq = jx_elasticsearch.new_instance(settings.es)
-        esq_comments = jx_elasticsearch.new_instance(settings.es_comments)
+        esq = jx_elasticsearch.new_instance(read_only=False, kwargs=settings.es)
+        esq_comments = jx_elasticsearch.new_instance(read_only=False, kwargs=settings.es_comments)
 
-        File(settings.param.first_run_time).write(text_type(convert.datetime2milli(current_run_time)))
 
     return current_run_time, esq, esq_comments, last_run_time
 
@@ -183,16 +181,15 @@ def incremental_etl(settings, param, db, esq, esq_comments, output_queue):
         still_existing = get_bug_ids(esq, {"terms": {"bug_id": delete_bugs}})
         if still_existing:
             Log.note("Ensure the following existing private bugs are deleted:\n{{private_bugs|indent}}", private_bugs=sorted(still_existing))
-        esq._es.delete_record({"terms": {"bug_id": delete_bugs}})
-        esq_comments._es.delete_record({"terms": {"bug_id": delete_bugs}})
-
+        esq.es.delete_record({"terms": {"bug_id": delete_bugs}})
+        esq_comments.es.delete_record({"terms": {"bug_id": delete_bugs}})
 
     #RECENT PUBLIC BUGS
     possible_public_bugs = get_recent_private_bugs(db, param)
     if param.allow_private_bugs:
         #PRIVATE BUGS
         #    A CHANGE IN PRIVACY INDICATOR MEANS THE WHITEBOARD IS AFFECTED, REDO
-        esq._es.delete_record({"terms": {"bug_id": possible_public_bugs}})
+        esq.es.delete_record({"terms": {"bug_id": possible_public_bugs}})
     else:
         #PUBLIC BUGS
         #    IF ADDING GROUP THEN private_bugs ALREADY DID THIS
@@ -202,15 +199,15 @@ def incremental_etl(settings, param, db, esq, esq_comments, output_queue):
     #REMOVE **RECENT** PRIVATE ATTACHMENTS
     private_attachments = get_recent_private_attachments(db, param)
     bugs_to_refresh = set(jx.select(private_attachments, "bug_id"))
-    esq._es.delete_record({"terms": {"bug_id": bugs_to_refresh}})
+    esq.es.delete_record({"terms": {"bug_id": bugs_to_refresh}})
 
     #REBUILD BUGS THAT GOT REMOVED
-    bug_list = (possible_public_bugs | bugs_to_refresh) - private_bugs # REMOVE PRIVATE BUGS
+    bug_list = jx.sort((possible_public_bugs | bugs_to_refresh) - private_bugs) # REMOVE PRIVATE BUGS
     if bug_list:
         refresh_param = param.copy()
         refresh_param.bug_list = bug_list
-        refresh_param.start_time = MIN_TIMSTAMP
-        refresh_param.start_time_str = extract_bugzilla.milli2string(db, MIN_TIMSTAMP)
+        refresh_param.start_time = MIN_TIMESTAMP
+        refresh_param.start_time_str = extract_bugzilla.milli2string(db, MIN_TIMESTAMP)
 
         try:
             etl(db, output_queue, refresh_param.copy(), settings.alias, please_stop=None)
@@ -226,9 +223,9 @@ def incremental_etl(settings, param, db, esq, esq_comments, output_queue):
     #REFRESH COMMENTS WITH PRIVACY CHANGE
     private_comments = get_recent_private_comments(db, param)
     comment_list = set(jx.select(private_comments, "comment_id")) | {0}
-    esq_comments._es.delete_record({"terms": {"comment_id": comment_list}})
+    esq_comments.es.delete_record({"terms": {"comment_id": comment_list}})
     changed_comments = get_comments_by_id(db, comment_list, param)
-    esq_comments._es.extend({"id": c.comment_id, "value": c} for c in changed_comments)
+    esq_comments.es.extend({"id": c.comment_id, "value": c} for c in changed_comments)
 
     #GET LIST OF CHANGED BUGS
     with Timer("time to get changed bug list"):
@@ -362,7 +359,7 @@ def main(param, es, es_comments, bugzilla, kwargs):
         with MySQL(kwargs=bugzilla, readonly=True) as db:
             current_run_time, esq, esq_comments, last_run_time = setup_es(kwargs, db)
 
-            with es.threaded_queue(max_size=500, silent=True) as output_queue:
+            with esq.es.threaded_queue(max_size=500, silent=True) as output_queue:
                 #SETUP RUN PARAMETERS
                 param, old_param = Data(), param
                 param.end_time = convert.datetime2milli(get_current_time(db))
@@ -374,7 +371,7 @@ def main(param, es, es_comments, bugzilla, kwargs):
                 param.alias_file = param.alias_file
                 param.allow_private_bugs = param.allow_private_bugs
 
-                if last_run_time > 0:
+                if last_run_time > MIN_TIMESTAMP:
                     with Timer("run incremental etl"):
                         incremental_etl(kwargs, param, db, esq, esq_comments, output_queue)
                 else:
@@ -383,13 +380,15 @@ def main(param, es, es_comments, bugzilla, kwargs):
 
                 output_queue.add(THREAD_STOP)
 
-        if esq._es.alias:
-            esq._es.delete_all_but(es.alias, es.index)
-            esq._es.add_alias(es.alias)
+        s = esq.es.settings
+        if s.alias:
+            esq.es.cluster.delete_all_but(s.alias, s.index)
+            esq.es.add_alias(s.alias)
 
-        if esq_comments._es.alias:
-            esq._es.delete_all_but(esq_comments._es.alias, esq_comments._es.index)
-            esq_comments._es.add_alias(esq_comments._es.alias)
+        s = esq_comments.es.settings
+        if s.alias:
+            esq.es.cluster.delete_all_but(s.alias, s.index)
+            esq_comments.es.add_alias(s.alias)
 
         File(param.last_run_time).write(text_type(convert.datetime2milli(current_run_time)))
     except Exception as e:
@@ -407,7 +406,7 @@ def main(param, es, es_comments, bugzilla, kwargs):
 def get_bug_ids(esq, filter):
     try:
         result = esq.query({"select":"bug_id", "where":filter, "limit":20000, "format":"cube"})
-        return set(result.data.bug_id)
+        return set(result.data['bug_id']) - {None}
     except Exception as e:
         Log.error(
             "Can not get_max_bug from {{host}}/{{index}}",
@@ -442,7 +441,7 @@ def close_db_connections():
         temp.close()
 
 
-def start():
+def setup():
     try:
         settings = startup.read_settings(defs=[{
             "name": ["--quick", "--fast"],
@@ -474,4 +473,4 @@ def start():
 
 
 if __name__ == "__main__":
-    start()
+    setup()

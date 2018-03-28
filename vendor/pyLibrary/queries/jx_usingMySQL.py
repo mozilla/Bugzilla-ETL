@@ -14,19 +14,18 @@ from __future__ import unicode_literals
 from collections import Mapping
 
 import mo_json
-from jx_base import IS_NULL
-from mo_future import text_type
-
-from mo_logs import Log
-from mo_logs.exceptions import suppress_exception
-from mo_logs.strings import indent, expand_template
+from jx_base.expressions import jx_expression
+from mo_collections.matrix import Matrix
 from mo_dots import coalesce
 from mo_dots import wrap, listwrap, unwrap
 from mo_dots.lists import FlatList
-from pyLibrary import convert
-from mo_collections.matrix import Matrix
+from mo_future import text_type
 from mo_kwargs import override
-from pyLibrary.sql import SQL, SQL_IS_NULL, SQL_AND, SQL_IS_NOT_NULL, SQL_ORDERBY, SQL_LIMIT, SQL_COMMA, sql_iso, sql_list, SQL_TRUE, sql_alias
+from mo_logs import Log
+from mo_logs.exceptions import suppress_exception
+from mo_logs.strings import indent, expand_template
+from pyLibrary import convert
+from pyLibrary.sql import SQL, SQL_IS_NULL, SQL_AND, SQL_IS_NOT_NULL, SQL_ORDERBY, SQL_LIMIT, sql_iso, sql_list, SQL_TRUE, sql_alias, SQL_OR, SQL_WHERE, SQL_NOT
 from pyLibrary.sql.mysql import int_list_packer
 
 
@@ -327,25 +326,11 @@ class MySQL(object):
     def _where2sql(self, where):
         if where == None:
             return ""
-        return SQL("WHERE ") + _esfilter2sqlwhere(self.db, where)
-
-
-def _isolate(separator, list):
-    try:
-        if len(list) > 1:
-            return "(\n" + indent(SQL(" " + separator + "\n").join(list)) + "\n)"
-        else:
-            return list[0]
-    except Exception as e:
-        Log.error("Programming problem: separator={{separator}}, list={{list}",
-                  list=list,
-                  separator=separator,
-                  cause=e
-                  )
+        return SQL_WHERE + _esfilter2sqlwhere(self.db, where)
 
 
 def esfilter2sqlwhere(db, esfilter):
-    return SQL(_esfilter2sqlwhere(db, esfilter))
+    return _esfilter2sqlwhere(db, esfilter)
 
 
 def _esfilter2sqlwhere(db, esfilter):
@@ -358,13 +343,16 @@ def _esfilter2sqlwhere(db, esfilter):
     if esfilter is True:
         return SQL_TRUE
     elif esfilter["and"]:
-        return _isolate(SQL_AND, [esfilter2sqlwhere(db, a) for a in esfilter["and"]])
+        return sql_iso(SQL_AND.join([esfilter2sqlwhere(db, a) for a in esfilter["and"]]))
     elif esfilter["or"]:
-        return _isolate("OR", [esfilter2sqlwhere(db, a) for a in esfilter["or"]])
+        return sql_iso(SQL_OR.join([esfilter2sqlwhere(db, a) for a in esfilter["or"]]))
     elif esfilter["not"]:
-        return "NOT " + sql_iso(esfilter2sqlwhere(db, esfilter["not"]))
+        return SQL_NOT + sql_iso(esfilter2sqlwhere(db, esfilter["not"]))
     elif esfilter.term:
-        return _isolate(SQL_AND, [db.quote_column(col) + SQL("=") + db.quote_value(val) for col, val in esfilter.term.items()])
+        return sql_iso(SQL_AND.join([
+            db.quote_column(col) + SQL("=") + db.quote_value(val)
+            for col, val in esfilter.term.items()
+        ]))
     elif esfilter.terms:
         for col, v in esfilter.terms.items():
             if len(v) == 0:
@@ -412,7 +400,7 @@ def _esfilter2sqlwhere(db, esfilter):
                 )
             return sql
 
-        output = _isolate(SQL_AND, [single(col, ranges) for col, ranges in esfilter.range.items()])
+        output = sql_iso(SQL_AND.join([single(col, ranges) for col, ranges in esfilter.range.items()]))
         return output
     elif esfilter.missing:
         if isinstance(esfilter.missing, text_type):
@@ -427,7 +415,7 @@ def _esfilter2sqlwhere(db, esfilter):
     elif esfilter.match_all:
         return SQL_TRUE
     elif esfilter.instr:
-        return _isolate(SQL_AND, ["instr" + sql_iso(db.quote_column(col) + ", " + db.quote_value(val)) + ">0" for col, val in esfilter.instr.items()])
+        return sql_iso(SQL_AND.join(["instr" + sql_iso(db.quote_column(col) + ", " + db.quote_value(val)) + ">0" for col, val in esfilter.instr.items()]))
     else:
         Log.error("Can not convert esfilter to SQL: {{esfilter}}", esfilter=esfilter)
 
