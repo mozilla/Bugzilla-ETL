@@ -258,9 +258,9 @@ def get_bugs(db, param):
         bugs = db.query("""
             SELECT
                 b.bug_id,
-                UNIX_TIMESTAMP(CONVERT_TZ(b.creation_ts, 'US/Pacific','UTC'))*1000 AS modified_ts,
+                UNIX_TIMESTAMP(b.creation_ts)*1000 AS modified_ts,
                 lower(pr.login_name) AS modified_by,
-                UNIX_TIMESTAMP(CONVERT_TZ(b.creation_ts, 'US/Pacific','UTC'))*1000 AS created_ts,
+                UNIX_TIMESTAMP(b.creation_ts)*1000 AS created_ts,
                 lower(pr.login_name) AS created_by,
                 lower(pa.login_name) AS assigned_to,
                 lower(pq.login_name) AS qa_contact,
@@ -420,7 +420,8 @@ def get_all_cc_changes(db, bug_list):
     if not bug_list:
         return []
 
-    return db.query("""
+    return db.query(
+        """
             SELECT
                 bug_id,
                 CAST({{max_time}} AS signed) AS modified_ts,
@@ -435,7 +436,7 @@ def get_all_cc_changes(db, bug_list):
         UNION ALL
             SELECT
                 a.bug_id,
-                UNIX_TIMESTAMP(CONVERT_TZ(bug_when, 'US/Pacific','UTC'))*1000 AS modified_ts,
+                UNIX_TIMESTAMP(bug_when)*1000 AS modified_ts,
                 lower(CAST(trim(added) AS CHAR CHARACTER SET utf8)) AS new_value,
                 lower(CAST(trim(removed) AS CHAR CHARACTER SET utf8)) AS old_value
             FROM
@@ -443,11 +444,14 @@ def get_all_cc_changes(db, bug_list):
             WHERE
                 a.fieldid = {{cc_field_id}} AND
                 {{bug_filter}}
-    """, {
-        "max_time": MAX_TIME,
-        "cc_field_id": CC_FIELD_ID,
-        "bug_filter": esfilter2sqlwhere(db, int_list_packer("bug_id", bug_list))
-    })
+        """,
+        {
+            "max_time": MAX_TIME,
+            "cc_field_id": CC_FIELD_ID,
+            "bug_filter": esfilter2sqlwhere(db, int_list_packer("bug_id", bug_list))
+        },
+        stream=True
+    )
 
 
 def get_tracking_flags(db, param):
@@ -504,9 +508,9 @@ def get_attachments(db, param):
 
     output = db.query("""
         SELECT bug_id
-            , UNIX_TIMESTAMP(CONVERT_TZ(a.creation_ts, 'US/Pacific','UTC'))*1000 AS modified_ts
+            , UNIX_TIMESTAMP(a.creation_ts)*1000 AS modified_ts
             , lower(login_name) AS modified_by
-            , UNIX_TIMESTAMP(CONVERT_TZ(a.creation_ts, 'US/Pacific','UTC'))*1000 AS created_ts
+            , UNIX_TIMESTAMP(a.creation_ts)*1000 AS created_ts
             , login_name AS created_by
             , ispatch AS 'attachments_ispatch'
             , isobsolete AS 'attachments_isobsolete'
@@ -581,7 +585,7 @@ def get_new_activities(db, param):
     output = db.query("""
         SELECT
             a.bug_id,
-            UNIX_TIMESTAMP(CONVERT_TZ(bug_when, 'US/Pacific','UTC'))*1000 AS modified_ts,
+            UNIX_TIMESTAMP(bug_when)*1000 AS modified_ts,
             lower(login_name) AS modified_by,
             replace(field.`name`, '.', '_') AS field_name,
             CAST(
@@ -630,7 +634,7 @@ def get_flags(db, param):
 
     return db.query("""
         SELECT bug_id
-            , UNIX_TIMESTAMP(CONVERT_TZ(f.creation_date, 'US/Pacific','UTC'))*1000 AS modified_ts
+            , UNIX_TIMESTAMP(f.creation_date)*1000 AS modified_ts
             , ps.login_name AS modified_by
             , 'flagtypes_name' AS field_name
             , CONCAT(ft.`name`,status,IF(requestee_id IS NULL,'',CONCAT('(',pr.login_name,')'))) AS new_value
@@ -671,7 +675,7 @@ def get_comments(db, param):
                 c.comment_id,
                 c.bug_id,
                 p.login_name modified_by,
-                UNIX_TIMESTAMP(CONVERT_TZ(bug_when, 'US/Pacific','UTC'))*1000 AS modified_ts,
+                UNIX_TIMESTAMP(bug_when)*1000 AS modified_ts,
                 {{comment_field}},
                 c.isprivate
             FROM
@@ -708,7 +712,7 @@ def get_comments_by_id(db, comments, param):
                 c.comment_id,
                 c.bug_id,
                 p.login_name modified_by,
-                UNIX_TIMESTAMP(CONVERT_TZ(bug_when, 'US/Pacific','UTC'))*1000 AS modified_ts,
+                UNIX_TIMESTAMP(bug_when)*1000 AS modified_ts,
                 c.thetext comment,
                 c.isprivate
             FROM

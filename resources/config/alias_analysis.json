@@ -1,7 +1,7 @@
 {
 	"alias": {
 		"start": 0,
-		"increment": 10000,
+		"increment": 1000000,
 		"elasticsearch": {
 			"host": "http://localhost",
 			"index": "bug_aliases"
@@ -19,12 +19,15 @@
 		"schema": "bugs",
 		"debug": false
 	},
-	"constants":{
+	"constants": {
 		"pyLibrary.sql.mysql.EXECUTE_TIMEOUT": 0,
-		"pyLibrary.env.http.default_headers": {"Referer": "https://github.com/mozilla/Bugzilla-ETL"},
+		"pyLibrary.env.http.default_headers": {
+			"Referer": "https://github.com/mozilla/Bugzilla-ETL"
+		},
 		"pyLibrary.env.http.DEFAULTS.verify": false
 	},
 	"debug": {
+		"trace": true,
 		"log": [
 			{
 				"class": "logging.handlers.RotatingFileHandler",

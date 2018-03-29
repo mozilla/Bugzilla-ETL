@@ -55,11 +55,11 @@ def full_analysis(settings, bug_list=None, please_stop=None):
                 start=s,
                 end=e
             )
-            data = get_all_cc_changes(db, range(s, e))
             if please_stop:
                 break
+            data = get_all_cc_changes(db, range(s, e))
             analyzer.aggregator(data)
-            analyzer.analysis(e >= end, please_stop)
+            analyzer.analysis(last_run=False, please_stop=please_stop)
 
 
 class AliasAnalyzer(object):
@@ -112,7 +112,7 @@ class AliasAnalyzer(object):
             new_emails = mapper(split_email(d.new_value), self.aliases)
             old_emails = mapper(split_email(d.old_value), self.aliases)
 
-            agg = self.bugs.get(d.bug_id, Multiset(allow_negative=True))
+            agg = self.bugs.get(d.bug_id) or Multiset(allow_negative=True)
             agg = agg - new_emails
             agg = agg + old_emails
             self.bugs[d.bug_id] = agg
@@ -170,7 +170,6 @@ class AliasAnalyzer(object):
 
         self.saveAliases()
 
-
     def alias(self, email):
         canonical = self.aliases.get(email, None)
         if not canonical:
@@ -188,10 +187,9 @@ class AliasAnalyzer(object):
 
         return canonical
 
-
     def add_alias(self, lost, found):
-        old_canonical = self.alias(lost)
-        new_canonical = self.alias(found)
+        old_email = self.alias(lost)["canonical"]
+        new_email = self.alias(found)["canonical"]
 
         delete_list = []
 
@@ -205,13 +203,13 @@ class AliasAnalyzer(object):
             if not agg:
                 delete_list.append(bug_id)
 
-        #FOLD bugs ON old_canonical=new_canonical
-        if old_canonical["canonical"] != lost:
+        #FOLD bugs ON old_email == new_email
+        if old_email != lost:
             for bug_id, agg in iteritems(self.bugs):
-                v = agg.dic.get(old_canonical["canonical"], 0)
+                v = agg.dic.get(old_email, 0)
                 if v != 0:
-                    agg.add(old_canonical["canonical"], -v)
-                    agg.add(new_canonical["canonical"], v)
+                    agg.add(old_email, -v)
+                    agg.add(new_email, v)
 
                 if not agg:
                     delete_list.append(bug_id)
@@ -222,7 +220,7 @@ class AliasAnalyzer(object):
         #FOLD ALIASES
         reassign=[]
         for k, v in self.aliases.items():
-            if v["canonical"] == old_canonical["canonical"]:
+            if v["canonical"] == old_email:
                 if k == v["canonical"]:
                     Log.note("ALIAS FOUND   : {{alias}} -> {{new}}", alias=k, new=found)
                 else:
@@ -237,11 +235,12 @@ class AliasAnalyzer(object):
         records = []
         for k, v in self.aliases.items():
             if v["dirty"]:
-                records.append({"id":k, "value":{"canonical":v["canonical"], "alias":k}})
+                records.append({"id": k, "value": {"canonical": v["canonical"], "alias": k}})
 
         if records:
             Log.note("Net new aliases saved: {{num}}", num=len(records))
             self.es.extend(records)
+
 
 def mapper(emails, aliases):
     output = set()
@@ -252,6 +251,7 @@ def mapper(emails, aliases):
             aliases[e] = canonical
         output.add(canonical["canonical"])
     return output
+
 
 def split_email(value):
     if not value:
@@ -272,6 +272,7 @@ def start():
         Log.error("Can not start", e)
     finally:
         Log.stop()
+
 
 ALIAS_SCHEMA = {
     "settings": {"index": {
