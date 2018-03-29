@@ -15,9 +15,10 @@ import jx_elasticsearch
 from bzETL.extract_bugzilla import get_all_cc_changes
 from jx_python import jx
 from mo_collections.multiset import Multiset
-from mo_dots import coalesce, set_default
+from mo_dots import coalesce
+from mo_future import iteritems
 from mo_json import value2json
-from mo_logs import Log, startup
+from mo_logs import Log, startup, constants
 from pyLibrary.env import elasticsearch
 from pyLibrary.sql.mysql import MySQL
 
@@ -44,11 +45,11 @@ def full_analysis(settings, bug_list=None, please_stop=None):
         return
 
     with MySQL(kwargs=settings.bugzilla, readonly=True) as db:
-        start = coalesce(settings.param.start, 0)
-        end = coalesce(settings.param.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
+        start = coalesce(settings.alias.start, 0)
+        end = coalesce(settings.alias.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
 
         #Perform analysis on blocks of bugs, in case we crash partway through
-        for s, e in jx.intervals(start, end, settings.param.increment):
+        for s, e in jx.reverse(jx.intervals(start, end, settings.alias.increment)):
             Log.note(
                 "Load range {{start}}-{{end}}",
                 start=s,
@@ -77,13 +78,14 @@ class AliasAnalyzer(object):
 
             self.esq = jx_elasticsearch.new_instance(self.es.settings)
             result = self.esq.query({
-                "from":"bug_aliases",
-                "select":["canonical", "alias"],
+                "from": "bug_aliases",
+                "select": ["canonical", "alias"],
                 "where": {"missing": "ignore"},
-                "format": "list"
+                "format": "list",
+                "limit": 50000
             })
             for r in result.data:
-                self.aliases[r.alias] = {"canonical":r["canonical"], "dirty":False}
+                self.aliases[r.alias] = {"canonical": r.canonical, "dirty": False}
 
             Log.note("{{num}} aliases loaded", num=len(self.aliases.keys()))
 
@@ -95,7 +97,7 @@ class AliasAnalyzer(object):
                 "format": "list"
             })
             for r in result.data:
-                self.not_aliases[r.alias] = r["canonical"]
+                self.not_aliases[r.alias] = r.canonical
 
         except Exception as e:
             Log.error("Can not init aliases", cause=e)
@@ -124,15 +126,15 @@ class AliasAnalyzer(object):
         while try_again and not please_stop:
             #FIND EMAIL MOST NEEDING REPLACEMENT
             problem_agg = Multiset(allow_negative=True)
-            for bug_id, agg in self.bugs.iteritems():
+            for bug_id, agg in iteritems(self.bugs):
                 #ONLY COUNT NEGATIVE EMAILS
-                for email, count in agg.dic.iteritems():
+                for email, count in iteritems(agg.dic):
                     if count < 0:
                         problem_agg.add(self.alias(email)["canonical"], amount=count)
 
             problems = jx.sort([
                 {"email": e, "count": c}
-                for e, c in problem_agg.dic.iteritems()
+                for e, c in iteritems(problem_agg.dic)
                 if not self.not_aliases.get(e, None) and (c <= -(DIFF / 2) or last_run)
             ], ["count", "email"])
 
@@ -143,10 +145,10 @@ class AliasAnalyzer(object):
 
                 #FIND MOST LIKELY MATCH
                 solution_agg = Multiset(allow_negative=True)
-                for bug_id, agg in self.bugs.iteritems():
+                for bug_id, agg in iteritems(self.bugs):
                     if agg.dic.get(problem.email, 0) < 0:  #ONLY BUGS THAT ARE EXPERIENCING THIS problem
                         solution_agg += agg
-                solutions = jx.sort([{"email": e, "count": c} for e, c in solution_agg.dic.iteritems()], [{"field": "count", "sort": -1}, "email"])
+                solutions = jx.sort([{"email": e, "count": c} for e, c in iteritems(solution_agg.dic)], [{"field": "count", "sort": -1}, "email"])
 
                 if last_run and len(solutions) == 2 and solutions[0].count == -solutions[1].count:
                     #exact match
@@ -188,13 +190,13 @@ class AliasAnalyzer(object):
 
 
     def add_alias(self, lost, found):
-        new_canonical = self.alias(found)
         old_canonical = self.alias(lost)
+        new_canonical = self.alias(found)
 
         delete_list = []
 
         #FOLD bugs ON lost=found
-        for bug_id, agg in self.bugs.iteritems():
+        for bug_id, agg in iteritems(self.bugs):
             v = agg.dic.get(lost, 0)
             if v != 0:
                 agg.add(lost, -v)
@@ -205,7 +207,7 @@ class AliasAnalyzer(object):
 
         #FOLD bugs ON old_canonical=new_canonical
         if old_canonical["canonical"] != lost:
-            for bug_id, agg in self.bugs.iteritems():
+            for bug_id, agg in iteritems(self.bugs):
                 v = agg.dic.get(old_canonical["canonical"], 0)
                 if v != 0:
                     agg.add(old_canonical["canonical"], -v)
@@ -221,12 +223,11 @@ class AliasAnalyzer(object):
         reassign=[]
         for k, v in self.aliases.items():
             if v["canonical"] == old_canonical["canonical"]:
-                Log.note(
-                    "ALIAS REMAPPED: {{alias}}->{{old}} to {{alias}}->{{new}}",
-                    alias= k,
-                    old= old_canonical["canonical"],
-                    new= found
-                )
+                if k == v["canonical"]:
+                    Log.note("ALIAS FOUND   : {{alias}} -> {{new}}", alias=k, new=found)
+                else:
+                    Log.note("ALIAS REMAPPED: {{alias}} -> {{old}} -> {{new}}", alias=k, old=v["canonical"], new=found)
+
                 reassign.append((k, found))
 
         for k, found in reassign:
@@ -264,6 +265,7 @@ def split_email(value):
 def start():
     try:
         settings = startup.read_settings()
+        constants.set(settings.constants)
         Log.start(settings.debug)
         full_analysis(settings)
     except Exception as e:
@@ -282,10 +284,6 @@ ALIAS_SCHEMA = {
                 "enabled": False
             },
             "properties": {
-                "canonical":{
-                    "type": "keyword",
-                    "store": True
-                }
             }
         }
     }

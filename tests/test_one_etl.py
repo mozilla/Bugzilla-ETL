@@ -32,7 +32,7 @@ class TestOneETL(unittest.TestCase):
     I USE THIS TO IDENTIFY CANDIDATES TO ADD TO THE TEST SUITE
     """
     def setUp(self):
-        self.settings = startup.read_settings(filename="test_one_settings.json")
+        self.settings = startup.read_settings(filename="tests/resources/config/test_one.json")
         constants.set(self.settings.constants)
         Log.start(self.settings.debug)
 
@@ -81,7 +81,7 @@ class TestOneETL(unittest.TestCase):
         #     "port": 9200,
         #     "index": ElasticSearch.proto_name("test_public_bugs"),
         #     "type": "bug_version",
-        #     "schema_file": "./resources/json/bug_version.json"
+        #     "schema_file": "resources/json/bug_version.json"
         # })
         # es = ElasticSearch.create_index(es_settings, File(es_settings.schema_file).read())
         # es.delete_all_but("test_public_bugs", es_settings.index)

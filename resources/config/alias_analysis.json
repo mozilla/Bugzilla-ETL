@@ -1,37 +1,42 @@
 {
-    "alias":{
-        "start":0,
-        "increment":5000000,
-        "elasticsearch":{
-            "host": "http://localhost",
-            "index": "bug_aliases"
-        },
-        "file":{
-            "path":"../schema/bugzilla_aliases.json",
-            "$ref":"//~/private.json#alias_file"
-        }
-    },
-	"bugzilla":{
-		"preamble":"from https://github.com/klahnakoski/Bugzilla-ETL",
-		"host":"localhost",
-		"port":3307,
-        "$ref":"//~/private.json#bugzilla-dev",
-		"schema":"test_bugzilla",
-		"debug":false
+	"alias": {
+		"start": 0,
+		"increment": 10000,
+		"elasticsearch": {
+			"host": "http://localhost",
+			"index": "bug_aliases"
+		},
+		"file": {
+			"path": "../schema/bugzilla_aliases.json",
+			"$ref": "//~/private.json#alias_file"
+		}
 	},
-	"debug":{
-		"log":[{
-			"class": "logging.handlers.RotatingFileHandler",
-			"filename": "./results/logs/alias_analysis.log",
-			"maxBytes": 10000000,
-			"backupCount": 200,
-			"encoding": "utf8"
-		},{
-			"log_type": "stream",
-			"stream":"sys.stdout"
-		}]
-
+	"bugzilla": {
+		"preamble": "from https://github.com/klahnakoski/Bugzilla-ETL",
+		"host": "localhost",
+		"port": 3307,
+		"$ref": "//~/private.json#bugzilla-dev",
+		"schema": "bugs",
+		"debug": false
+	},
+	"constants":{
+		"pyLibrary.sql.mysql.EXECUTE_TIMEOUT": 0,
+		"pyLibrary.env.http.default_headers": {"Referer": "https://github.com/mozilla/Bugzilla-ETL"},
+		"pyLibrary.env.http.DEFAULTS.verify": false
+	},
+	"debug": {
+		"log": [
+			{
+				"class": "logging.handlers.RotatingFileHandler",
+				"filename": "results/logs/alias_analysis.log",
+				"maxBytes": 10000000,
+				"backupCount": 200,
+				"encoding": "utf8"
+			},
+			{
+				"log_type": "stream",
+				"stream": "sys.stdout"
+			}
+		]
 	}
-
-
 }

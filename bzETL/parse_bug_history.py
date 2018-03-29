@@ -777,7 +777,7 @@ class BugHistoryParser(object):
                 self.currActivity.changes.append({
                     "field_name": field_name,
                     "new_value": Null,
-                    "old_value": ", ".join(map(unicode, jx.sort(diff))),
+                    "old_value": ", ".join(map(text_type, jx.sort(diff))),
                     "attach_id": target.attach_id
                 })
 
@@ -794,7 +794,7 @@ class BugHistoryParser(object):
             if valueType == "added" and remove:
                 self.currActivity.changes.append({
                     "field_name": field_name,
-                    "new_value": u", ".join(map(unicode, jx.sort(remove))),
+                    "new_value": u", ".join(map(text_type, jx.sort(remove))),
                     "old_value": Null,
                     "attach_id": target.attach_id
                 })
@@ -897,7 +897,7 @@ class BugHistoryParser(object):
                     if final_removed:
                         self.currActivity.changes.append({
                             "field_name": field_name,
-                            "new_value": u", ".join(map(unicode, jx.sort(final_removed))),
+                            "new_value": u", ".join(map(text_type, jx.sort(final_removed))),
                             "old_value": Null,
                             "attach_id": target.attach_id
                         })
@@ -913,7 +913,7 @@ class BugHistoryParser(object):
             if valueType == "added" and removed:
                 self.currActivity.changes.append({
                     "field_name": field_name,
-                    "new_value": u", ".join(map(unicode, jx.sort(removed))),
+                    "new_value": u", ".join(map(text_type, jx.sort(removed))),
                     "old_value": Null,
                     "attach_id": target.attach_id
                 })

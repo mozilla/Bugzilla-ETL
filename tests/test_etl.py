@@ -17,7 +17,7 @@ from datetime import datetime
 from mo_future import text_type
 
 from bzETL import extract_bugzilla, bz_etl
-from bzETL.bz_etl import etl, esfilter2sqlwhere, MIN_TIMESTAMP
+from bzETL.bz_etl import etl,  MIN_TIMESTAMP
 from bzETL.extract_bugzilla import get_current_time, SCREENED_WHITEBOARD_BUG_GROUPS
 from jx_python import jx
 from mo_dots import Data, Null, wrap
@@ -29,6 +29,7 @@ from mo_math.randoms import Random
 from mo_threads import ThreadedQueue, Till
 from mo_times import Timer
 from pyLibrary import convert
+from pyLibrary.queries.jx_usingMySQL import esfilter2sqlwhere
 from pyLibrary.sql.mysql import all_db, MySQL
 from pyLibrary.testing import elasticsearch
 from util import database, compare_es
@@ -618,7 +619,7 @@ def compare_both(candidate, reference, settings, some_bugs):
                 ref_versions = \
                     jx.sort(
                         #ADDED TO FIX OLD PRODUCTION BUG VERSIONS
-                        [compare_es.old2new(x, settings.bugzilla.expires_on) for x in pre_ref_versions],
+                       [compare_es.old2new(x, settings.bugzilla.expires_on) for x in pre_ref_versions],
                         "modified_ts"
                     )
 

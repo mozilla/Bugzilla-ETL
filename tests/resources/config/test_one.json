@@ -52,34 +52,32 @@
 	"alias": {
 		"increment": 1000000,
 		"file": {
-			"path": "../schema/bugzilla_aliases.json",
+			"path": "resources/schema/bugzilla_aliases.json",
 			"$ref": "file://~/private.json#alias_file"
 		}
-	},
-	"elasticsearch": {
-		"description": "pointer to es with test results",
-		"filename": "tests/results/test_results.json",
-		"schema": {
-			"$ref": "../../../resources/schema/bug_version.json"
-		},
-		"host": "http://localhost",
-		"port": 9200,
-		"index": "test_bugs",
-		"type": "bug_version"
 	},
 	"reference": {
 		"filename": "tests/resources/reference/public_bugs.json"
 	},
 	"bugzilla": {
-		"filename": "tests/resources/sql/small_bugzilla.sql",
+		"$ref": "file://~/private.json#bugzilla-dev",
 		"preamble": "from https://github.com/klahnakoski/Bugzilla-ETL",
 		"host": "localhost",
 		"port": 3307,
-		"$ref": "file://~/private.json#bugzilla-dev",
-		"schema": "test_bugzilla",
+		"schema": "bugs",
 		"expires_on": 1372867005000,
 		"debug": true,
 		"readonly": true
+	},
+	"elasticsearch": {
+		"host": "http://localhost",
+		"port": 9200,
+		"schema": {
+			"$ref": "../../../resources/schema/bug_version.json"
+		},
+		"index": "test_bugs",
+		"type": "bug_version",
+		"filename": "tests/results/test_results.json",
 	},
 	"constants": {
 		"pyLibrary.env.http.default_headers": {

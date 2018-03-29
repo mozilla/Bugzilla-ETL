@@ -9,15 +9,15 @@
 	},
 	"public_bugs_reference": {
 		"description": "pointer to es with known good *public* results",
-		"filename": "./tests/resources/config/public_bugs_reference_es.json"
+		"filename": "tests/resources/config/public_bugs_reference_es.json"
 	},
 	"public_comments_reference": {
 		"description": "pointer to es with known good public comments",
-		"filename": "./tests/resources/config/public_comments_reference_es.json"
+		"filename": "tests/resources/config/public_comments_reference_es.json"
 	},
 	"private_bugs_reference": {
 		"description": "pointer to es with known good results",
-		"filename": "./tests/resources/config/private_bugs_reference_es.json"
+		"filename": "tests/resources/config/private_bugs_reference_es.json"
 	},
 	"private_comments_reference": {
 		"description": "pointer to es with known good private comments",
@@ -25,7 +25,7 @@
 	},
 	"candidate": {
 		"description": "pointer to es with test results",
-		"filename": "./tests/results/test_results.json",
+		"filename": "tests/results/test_results.json",
 		"host": "http://localhost",
 		"port": 9200,
 		"index": "test_bugs",
@@ -34,10 +34,10 @@
 	"fake": {
 		//FOR TESTING JSON CREATION, NO NEED FOR REAL ES
 		"bugs": {
-			"filename": "./tests/results/test_bugs.json"
+			"filename": "tests/results/test_bugs.json"
 		},
 		"comments": {
-			"filename": "./tests/results/test_comments.json"
+			"filename": "tests/results/test_comments.json"
 		}
 	},
 	"real": {
@@ -100,11 +100,11 @@
 			// 937428 whitespace after comma in user story, complex diff
 			// 248970 another cutoff review request
 		],
-		"temp_dir": "./tests/resources",
-		"errors": "./tests/results/errors",
+		"temp_dir": "tests/resources",
+		"errors": "tests/results/errors",
 		"allow_private_bugs": true,
-		"last_run_time": "./tests/results/last_run_time.txt",
-		"first_run_time": "./tests/results/first_run_time.txt",
+		"last_run_time": "tests/results/last_run_time.txt",
+		"first_run_time": "tests/results/first_run_time.txt",
 		"look_back": 3600000  //1hour
 	},
 	"alias": {
@@ -123,7 +123,7 @@
 		}
 	},
 	"bugzilla": {
-		"filename": "./tests/resources/sql/small_bugzilla.sql",
+		"filename": "tests/resources/sql/small_bugzilla.sql",
 		"preamble": "from https://github.com/klahnakoski/Bugzilla-ETL",
 		"host": "localhost",
 		"port": 3307,
@@ -151,7 +151,7 @@
 		"log": [
 			{
 				"class": "logging.handlers.RotatingFileHandler",
-				"filename": "./tests/results/logs/test_etl.log",
+				"filename": "tests/results/logs/test_etl.log",
 				"maxBytes": 10000000,
 				"backupCount": 200,
 				"encoding": "utf8"

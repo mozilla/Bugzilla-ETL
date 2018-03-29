@@ -21,6 +21,8 @@ from pyLibrary.queries.jx_usingMySQL import esfilter2sqlwhere
 from pyLibrary.sql import SQL, SQL_ONE, SQL_NEG_ONE, sql_list, sql_iso
 
 # USING THE TEXT DATETIME OF EPOCH THROWS A WARNING!  USE ONE SECOND PAST EPOCH AS MINIMUM TIME.
+from pyLibrary.sql.mysql import int_list_packer
+
 MIN_TIMESTAMP = 1000  # MILLISECONDS SINCE EPOCH
 
 #ALL BUGS IN PRIVATE ETL HAVE SCREENED FIELDS
@@ -444,7 +446,7 @@ def get_all_cc_changes(db, bug_list):
     """, {
         "max_time": MAX_TIME,
         "cc_field_id": CC_FIELD_ID,
-        "bug_filter": esfilter2sqlwhere(db, {"terms": {"bug_id": bug_list}})
+        "bug_filter": esfilter2sqlwhere(db, int_list_packer("bug_id", bug_list))
     })
 
 

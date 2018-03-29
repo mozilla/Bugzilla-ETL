@@ -60,10 +60,10 @@ class FakeES():
     @override
     def __init__(self, filename, host="fake", index="fake", kwargs=None):
         self.settings = kwargs
-        self.filename = kwargs.filename
+        self.filename = filename
         try:
             self.data = mo_json.json2value(File(self.filename).read())
-        except Exception:
+        except Exception as e:
             self.data = Data()
 
     def search(self, query):

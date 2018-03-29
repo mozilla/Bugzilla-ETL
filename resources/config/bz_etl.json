@@ -7,8 +7,8 @@
 			"comment": "key is only meant to keep the aliases out of clear text.  Aliases are public as per https://www.mozilla.org/en-US/privacy/policies/websites/",
 			"key": ""
 		},
-		"first_run_time": "./results/data/first_run_time.txt",
-		"last_run_time": "./results/data/last_run_time.txt",
+		"first_run_time": "results/data/first_run_time.txt",
+		"last_run_time": "results/data/last_run_time.txt",
 		"look_back": 3600000,
 		//hour
 		//1hour
@@ -27,9 +27,9 @@
 		}
 	},
 	"bugzilla": {
-		"$ref": "//~/private.json#bugzilla-dev",
-		"host": "localhost",
+		"$ref": "file://~/private.json#bugzilla-dev",
 		"preamble": "from https://github.com/klahnakoski/Bugzilla-ETL",
+		"host": "localhost",
 		"port": 3307,
 		"schema": "bugs",
 		"debug": true
@@ -63,9 +63,9 @@
 		"log": [
 			{
 				"class": "logging.handlers.RotatingFileHandler",
-				"filename": "./results/logs/bz_etl.log",
+				"filename": "results/logs/bz_etl.log",
 				"maxBytes": 10000000,
-				"backupCount": 200,
+				"backupCount": 10,
 				"encoding": "utf8"
 			},
 			{

@@ -30,7 +30,7 @@ from pyLibrary import convert
 from pyLibrary.env.elasticsearch import Cluster
 from pyLibrary.sql.mysql import MySQL
 
-NUM_CONNECTIONS = 10
+NUM_CONNECTIONS = 4
 
 db_cache_lock = Lock()
 db_cache = []

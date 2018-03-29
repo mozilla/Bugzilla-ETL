@@ -93,11 +93,9 @@ class Index(Features):
                 Log.error("not allowed")
             if type == None:
                 # NO type PROVIDED, MAYBE THERE IS A SUITABLE DEFAULT?
-                with self.cluster.metadata_locker:
-                    index_ = self.cluster._metadata.indices[self.settings.index]
+                index_ = self.cluster.get_metadata().indices[self.settings.index]
                 if not index_:
-                    indices = self.cluster.get_metadata().indices
-                    index_ = indices[self.settings.index]
+                    Log.error("can not find index {{index}}", index=self.settings.index)
 
                 candidate_types = list(index_.mappings.keys())
                 if len(candidate_types) != 1:

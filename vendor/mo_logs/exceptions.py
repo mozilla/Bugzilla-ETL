@@ -102,7 +102,6 @@ class Except(Exception):
                 with suppress_exception:
                     cause_strings.append(text_type(c))
 
-
             output += "caused by\n\t" + "and caused by\n\t".join(cause_strings)
 
         return output

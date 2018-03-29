@@ -48,7 +48,7 @@
         "log": [
             {
                 "class": "logging.handlers.RotatingFileHandler",
-                "filename": "./results/logs/leak_check.log",
+                "filename": "results/logs/leak_check.log",
                 "maxBytes": 10000000,
                 "backupCount": 200,
                 "encoding": "utf8"

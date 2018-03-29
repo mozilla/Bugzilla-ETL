@@ -22,7 +22,7 @@ import mo_json
 from jx_python import jx
 from mo_dots import coalesce, wrap, listwrap, unwrap
 from mo_files import File
-from mo_future import text_type, utf8_json_encoder
+from mo_future import text_type, utf8_json_encoder, binary_type
 from mo_kwargs import override
 from mo_logs import Log
 from mo_logs.exceptions import Except, suppress_exception
@@ -159,7 +159,15 @@ class MySQL(object):
         self.transaction_level += 1
         self.execute("SET TIME_ZONE='+00:00'")
         if EXECUTE_TIMEOUT:
-            self.execute("SET MAX_EXECUTION_TIME=" + text_type(EXECUTE_TIMEOUT))
+            try:
+                self.execute("SET MAX_EXECUTION_TIME=" + text_type(EXECUTE_TIMEOUT))
+                self._execute_backlog()
+            except Exception as e:
+                e = Except.wrap(e)
+                if "Unknown system variable 'MAX_EXECUTION_TIME'" in e:
+                    globals()['EXECUTE_TIMEOUT'] = 0  # THIS VERSION OF MYSQL DOES NOT HAVE SESSION LEVEL VARIABLE
+                else:
+                    raise e
 
     def close(self):
         if self.transaction_level > 0:
@@ -623,7 +631,7 @@ class MySQL(object):
 
 def utf8_to_unicode(v):
     try:
-        if isinstance(v, str):
+        if isinstance(v, binary_type):
             return v.decode("utf8")
         else:
             return v
