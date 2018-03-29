@@ -118,9 +118,9 @@ class AliasAnalyzer(object):
             self.bugs[d.bug_id] = agg
 
     def analysis(self, last_run, please_stop):
-        DIFF = 7
+        minimum_diff = 7
         if last_run:
-            DIFF = 4      #ONCE WE HAVE ALL THE DATA IN WE CAN BE LESS DISCRIMINATING
+            minimum_diff = 4      #ONCE WE HAVE ALL THE DATA IN WE CAN BE LESS DISCRIMINATING
         try_again = True
 
         while try_again and not please_stop:
@@ -135,7 +135,7 @@ class AliasAnalyzer(object):
             problems = jx.sort([
                 {"email": e, "count": c}
                 for e, c in iteritems(problem_agg.dic)
-                if not self.not_aliases.get(e, None) and (c <= -(DIFF / 2) or last_run)
+                if not self.not_aliases.get(e, None) and (c <= -(minimum_diff / 2) or last_run)
             ], ["count", "email"])
 
             try_again = False
@@ -153,7 +153,7 @@ class AliasAnalyzer(object):
                 if last_run and len(solutions) == 2 and solutions[0].count == -solutions[1].count:
                     #exact match
                     pass
-                elif len(solutions) <= 1 or (solutions[1].count + DIFF >= solutions[0].count):
+                elif len(solutions) <= 1 or (solutions[1].count + minimum_diff >= solutions[0].count):
                     #not distinctive enough
                     continue
 
@@ -168,7 +168,7 @@ class AliasAnalyzer(object):
                 try_again = True
                 self.add_alias(problem.email, best_solution.email)
 
-        self.saveAliases()
+        self.save_aliases()
 
     def alias(self, email):
         canonical = self.aliases.get(email, None)
@@ -231,7 +231,7 @@ class AliasAnalyzer(object):
         for k, found in reassign:
             self.aliases[k] = {"canonical":found, "dirty":True}
 
-    def saveAliases(self):
+    def save_aliases(self):
         records = []
         for k, v in self.aliases.items():
             if v["dirty"]:

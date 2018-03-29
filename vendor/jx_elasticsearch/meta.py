@@ -215,7 +215,7 @@ class FromESMetadata(Schema):
             with self.meta.columns.locker:
                 columns = self.meta.columns.find(es_index_name, column_name)
             if columns:
-                columns = jx.sort(columns, "names.\.")
+                columns = jx.sort(columns, "names.\\.")
                 # AT LEAST WAIT FOR THE COLUMNS TO UPDATE
                 while len(self.todo) and not all(columns.get("last_updated")):
                     if DEBUG:

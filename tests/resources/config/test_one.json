@@ -15,8 +15,8 @@
 			//			6810,
 			//			9622,
 			//			10575,
-			11040
-			//			12911,
+//			11040 //LOTS OF HISTORY
+						12911,
 			//			67742,
 			//			96421,
 			//			123203,
@@ -54,6 +54,10 @@
 		"file": {
 			"path": "resources/schema/bugzilla_aliases.json",
 			"$ref": "file://~/private.json#alias_file"
+		},
+		"elasticsearch": {
+			"host": "http://localhost",
+			"index": "bug_aliases"
 		}
 	},
 	"reference": {

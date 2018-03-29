@@ -40,7 +40,6 @@ def get_all_bug_versions(es, bug_id, max_time=None):
         raise Log.error("unknown container")
 
     response = esq.query({
-        "from": es.settings.alias,
         "where": {"and": [
             {"eq": {"bug_id": bug_id}},
             {"lte": {"modified_ts": convert.datetime2milli(max_time)}}

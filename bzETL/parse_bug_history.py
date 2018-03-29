@@ -43,6 +43,7 @@ from __future__ import unicode_literals
 import math
 import re
 
+import jx_elasticsearch
 from mo_future import text_type
 
 from bzETL.transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS, DIFF_FIELDS
@@ -90,7 +91,7 @@ class BugHistoryParser(object):
 
         self.alias_config=alias_config
         self.aliases = Null
-        self.initializeAliases()
+        self.initialize_aliases()
 
 
     def processRow(self, row_in):
@@ -1002,22 +1003,23 @@ class BugHistoryParser(object):
     def alias(self, name):
         if name == None:
             return Null
-        return coalesce(self.aliases.get(name, Null).canonical, name)
+        return coalesce(self.aliases.get(name, Null), name)
 
-
-    def initializeAliases(self):
+    def initialize_aliases(self):
         try:
-            try:
+            if self.alias_config.elasticsearch:
+                esq = jx_elasticsearch.new_instance(self.alias_config.elasticsearch)
+                result = esq.query({"select": ["alias", "canonical"], "where": {"missing": "ignore"}, "limit": 10000, "format":"list"})
+                self.aliases = {d.alias:d.canonical for d in result.data}
+            else:
                 alias_json = File(self.alias_config.file).read()
-            except Exception as e:
-                Log.warning("Could not load alias file", cause=e)
-                alias_json = "{}"
-            self.aliases = {k: wrap(v) for k, v in json2value(alias_json).items()}
-
-            Log.note("{{num}} aliases loaded", num=len(self.aliases.keys()))
-
+                self.aliases = {k: wrap(v) for k, v in json2value(alias_json).items()}
         except Exception as e:
-            Log.error("Can not init aliases", e)
+            Log.warning("Could not load alias file", cause=e)
+            self.aliases = {}
+
+        Log.note("{{num}} aliases loaded", num=len(self.aliases.keys()))
+
 
 def deformat(value):
     if value == None:

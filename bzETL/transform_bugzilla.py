@@ -72,7 +72,7 @@ def normalize(bug, old_school=False):
                 if k.startswith("attachments") and (k.endswith("isobsolete") or k.endswith("ispatch") or k.endswith("isprivate")):
                     new_v=convert.value2int(v)
                     new_k=k[12:]
-                    a[k.replace(".", "\.")]=new_v
+                    a[k.replace(".", "\\.")]=new_v
                     if not old_school:
                         a[new_k]=new_v
             a.flags = jx.sort(a.flags, ["modified_ts", "value"])

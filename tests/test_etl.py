@@ -616,12 +616,11 @@ def compare_both(candidate, reference, settings, some_bugs):
                     max_time = convert.milli2datetime(versions.last().modified_ts)
 
                 pre_ref_versions = get_all_bug_versions(reference, bug_id, max_time)
-                ref_versions = \
-                    jx.sort(
-                        #ADDED TO FIX OLD PRODUCTION BUG VERSIONS
-                       [compare_es.old2new(x, settings.bugzilla.expires_on) for x in pre_ref_versions],
-                        "modified_ts"
-                    )
+                ref_versions = jx.sort(
+                    # ADDED TO FIX OLD PRODUCTION BUG VERSIONS
+                    [compare_es.old2new(x, settings.bugzilla.expires_on) for x in pre_ref_versions],
+                    "modified_ts"
+                )
 
                 can = value2json(versions, pretty=True)
                 ref = value2json(ref_versions, pretty=True)

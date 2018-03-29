@@ -299,7 +299,7 @@ def _split_field(field):
     """
     SIMPLE SPLIT, NO CHECKS
     """
-    return [k.replace("\a", ".") for k in field.replace("\.", "\a").split(".")]
+    return [k.replace("\a", ".") for k in field.replace("\\.", "\a").split(".")]
 
 
 class _DictUsingSelf(dict):
