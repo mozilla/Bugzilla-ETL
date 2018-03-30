@@ -8,12 +8,12 @@
 #
 
 # Workflow:
-# Create the current state object
+# 1. Create the current state object
 #
-# for row containing latest state data (fields from bugs table record, fields from other tables (i.e. attachments, dependencies)
+# 2. for each row containing latest state data (fields from bugs table record, fields from other tables (i.e. attachments, dependencies)
 # Update the current state object with the latest field values
 #
-# Walk backward through activity records from bugs_activity (and other activity type tables). for set of activities:
+# 3. Walk backward through activity records from bugs_activity (and other activity type tables). for set of activities:
 # Create a new bug version object with the meta data about this activity
 # Set id based on modification time
 # *       Set valid_from field as modification time
@@ -578,8 +578,8 @@ class BugHistoryParser(object):
             Log.note("[Bug {{bug_id}}]: PROBLEM  processFlagChange called with unset 'flags'", bug_id=self.currBugState.bug_id)
             target.flags = set()
 
-        addedFlags = change.new_value
-        removedFlags = change.old_value
+        addedFlags, change.new_value = change.new_value, set(c.value for c in change.new_value)
+        removedFlags, change.old_value = change.old_value, set(c.value for c in change.old_value)
 
         # First, mark any removed flags as straight-up deletions.
         for removed_flag in removedFlags:
@@ -596,7 +596,7 @@ class BugHistoryParser(object):
                 # Add changed stuff:
                 existingFlag["previous_status"] = removed_flag["request_status"]
                 existingFlag["request_status"] = "d"
-                existingFlag["previous_value"] = flagStr
+                existingFlag["previous_value"] = removed_flag.value
                 existingFlag["value"] = Null            #SPECIAL INDICATOR
                 # request_type stays the same.
                 # requestee stays the same.
@@ -607,7 +607,7 @@ class BugHistoryParser(object):
                 self.findFlag(target.flags, removed_flag)
                 Log.note(
                     "[Bug {{bug_id}}]: PROBLEM: Did not find removed FLAG {{removed}} in {{existing}}",
-                    removed=flagStr,
+                    removed=removed_flag.value,
                     existing=target.flags,
                     bug_id=self.currBugState.bug_id
                 )
@@ -615,15 +615,19 @@ class BugHistoryParser(object):
         # See if we can align any of the added flags with previous deletions.
         # If so, try to match them up with a "dangling" removed flag
         for added_flag in addedFlags:
-            candidates = wrap([unwrap(element) for element in target.flags if
-                          element["value"] == None    #SPECIAL INDICATOR
-                          and added_flag["request_type"] == element["request_type"]
-                          and added_flag["request_status"] != element["previous_status"] # Skip "r?(dre@mozilla)" -> "r?(mark@mozilla)"
+            candidates = wrap([
+                unwrap(element)
+                for element in target.flags
+                if (
+                    element["value"] == None  # SPECIAL INDICATOR
+                    and added_flag["request_type"] == element["request_type"]
+                    and added_flag["request_status"] != element["previous_status"]  # Skip "r?(dre@mozilla)" -> "r?(mark@mozilla)"
+                )
             ])
 
             if not candidates:
                 # No matching candidate. Totally new flag.
-                target.flags.append(added_flag)
+                target.flags.add(added_flag)
                 continue
 
             chosen_one = candidates[0]
@@ -733,10 +737,7 @@ class BugHistoryParser(object):
         if field_name == "flags":
             Log.error("use processFlags")
         else:
-            try:
-                diff = add - total
-            except Exception as e:
-                pass
+            diff = add - total
             removed = total & add
 
             #WE CAN NOT REMOVE VALUES WE KNOW TO BE THERE AFTER
@@ -916,7 +917,6 @@ class BugHistoryParser(object):
                     bug_id=self.currBugID
                 )
 
-
         if added_values:
             self.currActivity.changes.append({
                 "field_name": "flags",
@@ -925,18 +925,19 @@ class BugHistoryParser(object):
                 "attach_id": target.attach_id
             })
 
-        if not old_values:
-            return total
+        if old_values:
+            removed_values = set(
+                parse_flag(v, modified_ts, modified_by)
+                for v in old_values
+            )
+            total |= removed_values
 
-        for v in old_values:
-            total.add(parse_flag(v, target.modified_ts, target.modified_by))
-
-        self.currActivity.changes.append({
-            "field_name": "flags",
-            "new_value": set(),
-            "old_value": old_values,
-            "attach_id": target.attach_id
-        })
+            self.currActivity.changes.append({
+                "field_name": "flags",
+                "new_value": set(),
+                "old_value": removed_values,
+                "attach_id": target.attach_id
+            })
 
         return total
 
@@ -962,9 +963,6 @@ class BugHistoryParser(object):
 
 
 def parse_flag(flag, modified_ts, modified_by):
-    # if flag==u'review?(bjacob@mozilla.co':
-    #     Log.debug()
-
     flagParts = Data(
         modified_ts=modified_ts,
         modified_by=modified_by,
