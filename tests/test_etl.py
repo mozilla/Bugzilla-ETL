@@ -14,16 +14,16 @@ from __future__ import unicode_literals
 import unittest
 from datetime import datetime
 
-from mo_future import text_type
-
 from bzETL import extract_bugzilla, bz_etl
-from bzETL.bz_etl import etl,  MIN_TIMESTAMP
+from bzETL.bz_etl import etl, MIN_TIMESTAMP
 from bzETL.extract_bugzilla import get_current_time, SCREENED_WHITEBOARD_BUG_GROUPS
 from jx_python import jx
-from mo_dots import Data, Null, wrap
+from mo_dots import Data, Null, wrap, coalesce
 from mo_files import File
+from mo_future import text_type
 from mo_json import json2value, value2json
 from mo_logs import startup, constants, Log
+from mo_logs.convert import milli2datetime
 from mo_math import MIN
 from mo_math.randoms import Random
 from mo_threads import ThreadedQueue, Till
@@ -601,19 +601,16 @@ def compare_both(candidate, reference, settings, some_bugs):
     try_dir = settings.param.errors + "/try/"
     ref_dir = settings.param.errors + "/ref/"
 
+    max_time = coalesce(milli2datetime(reference.settings.max_timestamp), datetime.utcnow())
+
     with Timer("Comparing to reference"):
         found_errors = False
         for bug_id in some_bugs:
             try:
                 versions = jx.sort(
-                    get_all_bug_versions(candidate, bug_id, datetime.utcnow()),
+                    get_all_bug_versions(candidate, bug_id, max_time),
                     "modified_ts"
                 )
-                # WE CAN NOT EXPECT candidate TO BE UP TO DATE BECAUSE IT IS USING AN OLD IMAGE
-                if not versions:
-                    max_time = convert.milli2datetime(settings.bugzilla.expires_on)
-                else:
-                    max_time = convert.milli2datetime(versions.last().modified_ts)
 
                 pre_ref_versions = get_all_bug_versions(reference, bug_id, max_time)
                 ref_versions = jx.sort(

@@ -2,35 +2,35 @@
 	"param": {
 		"increment": 10000,
 		"bugs": [
-			//			384,
-			//			1108,
-			//			1045,
-			//			1046,
-			//			1157,
-			//			1877,
-			//			1865,
-			//			1869,
-			//			2586,
-			//			3140,
-			//			6810,
-			//			9622,
-			//			10575,
-//			11040 //LOTS OF HISTORY
-						12911,
-			//			67742,
-			//			96421,
-			//			123203,
-			//			178960,
-			//			367518,
-			//			457765,
-			//			458397,
-			//			471427,
-			//			544327,
-			//			547727,
-			//			643420,
-			//			692436,
-			//			726635,
-			//			813650
+//			384,  //minor email diff
+//			1108,  //ok
+//			1045,  //ok
+//			1046,  //ok
+//			1157,  //ok
+//			1877,  //minor email diff
+//			1865,  //ok
+//			1869,  //minor email diff, missing recent history
+//			2586,  //missing recent history
+//			3140,  //minor email
+//			6810,  //ok
+//			9622,  //minor email diff
+//			10575, //ok
+			11040, //alias analysis problem
+//			12911, //alias analysis problem
+//			67742, //alias analysis problem
+//			96421, //minor email diff
+//			123203,//expiry only
+//			178960,//minor email
+//			367518,//ok
+//			457765,//ok
+//			458397,//minor email
+//			471427,//component rename, changes not compact
+//			544327,//extra history
+//			547727,//extra history
+//			643420,//ok
+//			692436,//minor email
+//			726635,//alias problem
+//			813650,//ERROR in blocked
 			// 1165765 VERY LONG short_desc
 			// 1007019 does not have bug_status, or component, or product
 			// 372836 (REVIEW FLAGS TEST)
@@ -61,7 +61,8 @@
 		}
 	},
 	"reference": {
-		"filename": "tests/resources/reference/public_bugs.json"
+		"filename": "tests/resources/reference/public_bugs.json",
+		"max_timestamp": 1372867005000
 	},
 	"bugzilla": {
 		"$ref": "file://~/private.json#bugzilla-dev",
@@ -69,7 +70,6 @@
 		"host": "localhost",
 		"port": 3307,
 		"schema": "bugs",
-		"expires_on": 1372867005000,
 		"debug": true,
 		"readonly": true
 	},
