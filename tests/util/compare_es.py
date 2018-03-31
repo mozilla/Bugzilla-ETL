@@ -14,6 +14,7 @@ from __future__ import unicode_literals
 
 from datetime import datetime
 
+from mo_future import long
 from mo_logs import Log
 
 import jx_elasticsearch

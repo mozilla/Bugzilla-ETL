@@ -106,12 +106,13 @@ def etl(db, output_queue, param, alias_config, please_stop):
     sorted = jx.sort(db_results, [
         "bug_id",
         "_merge_order",
-        {"field": "modified_ts", "sort": -1},
-        "modified_by"
+        {"modified_ts": "desc"},
+        "modified_by",
+        {"id": "desc"}
     ])
 
     process = BugHistoryParser(param, alias_config, output_queue)
-    for s in sorted:
+    for i, s in enumerate(sorted):
         process.processRow(s)
     process.processRow(wrap({"bug_id": parse_bug_history.STOP_BUG, "_merge_order": 1}))
 

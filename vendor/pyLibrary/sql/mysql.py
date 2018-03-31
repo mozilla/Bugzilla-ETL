@@ -279,7 +279,8 @@ class MySQL(object):
 
             return result
         except Exception as e:
-            if isinstance(e, InterfaceError) or e.message.find("InterfaceError") >= 0:
+            e = Except.wrap(e)
+            if "InterfaceError" in e:
                 Log.error("Did you close the db connection?", e)
             Log.error("Problem executing SQL:\n{{sql|indent}}", sql=sql, cause=e, stack_depth=1)
 

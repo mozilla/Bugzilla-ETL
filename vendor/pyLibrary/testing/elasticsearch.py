@@ -79,7 +79,10 @@ class FakeES():
         """
         JUST SO WE MODEL A Queue
         """
-        records = {v["id"]: v["value"] for v in records}
+        records = {
+            v["id"]: v["value"] if "value" in v else mo_json.json2value(v['json'])
+            for v in records
+        }
 
         unwrap(self.data).update(records)
 

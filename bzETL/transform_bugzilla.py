@@ -14,20 +14,23 @@ from __future__ import unicode_literals
 import re
 from datetime import date
 
-from mo_dots import unwraplist, listwrap
-from mo_future import text_type, long
-
 from jx_python import jx
+from mo_dots import listwrap
+from mo_future import text_type, long
 from mo_json import json2value, value2json
 from mo_logs import Log
 from pyLibrary import convert
 from pyLibrary.env import elasticsearch
 
-USE_ATTACHMENTS_DOT = True
+USE_ATTACHMENTS_DOT = True  # REMOVE THIS, ASSUME False
 
 DIFF_FIELDS = ["cf_user_story"]
 MULTI_FIELDS = ["cc", "blocked", "dependson", "dupe_by", "dupe_of", "flags", "keywords", "bug_group", "see_also"]
-NUMERIC_FIELDS=[      "blocked", "dependson", "dupe_by", "dupe_of",
+NUMERIC_FIELDS=[
+    "blocked",
+    "dependson",
+    "dupe_by",
+    "dupe_of",
     "votes",
     "estimated_time",
     "remaining_time",
@@ -35,6 +38,8 @@ NUMERIC_FIELDS=[      "blocked", "dependson", "dupe_by", "dupe_of",
     "uncertain"
 
 ]
+
+NULL_VALUES = ['--', '---']
 
 # Used to reformat incoming dates into the expected form.
 # Example match: "2012/01/01 00:00:00.000"
@@ -44,7 +49,8 @@ DATE_PATTERN_STRICT_SHORT = re.compile("^[0-9]{4}[\\/-][0-9]{2}[\\/-][0-9]{2} [0
 DATE_PATTERN_RELAXED = re.compile("^[0-9]{4}[\\/-][0-9]{2}[\\/-][0-9]{2}")
 
 
-#WE ARE RENAMING THE ATTACHMENTS FIELDS TO CAUSE LESS PROBLEMS IN ES QUERIES
+# WE ARE RENAMING THE ATTACHMENTS FIELDS TO CAUSE LESS PROBLEMS IN ES QUERIES
+# TODO: REMOVE THIS OLD FOMAT
 def rename_attachments(bug_version):
     if bug_version.attachments == None: return bug_version
     if not USE_ATTACHMENTS_DOT:
@@ -83,10 +89,10 @@ def normalize(bug, old_school=False):
             bug.changes=json2value(json)
         bug.changes = jx.sort(bug.changes, ["attach_id", "field_name"])
 
-    #bug IS CONVERTED TO A 'CLEAN' COPY
     bug = elasticsearch.scrub(bug)
-    # bug.attachments = coalesce(bug.attachments, [])    # ATTACHMENTS MUST EXIST
-
+    for k, v in list(bug.items()):
+        if v in NULL_VALUES:
+            bug[k] = None
 
     for f in NUMERIC_FIELDS:
         v = bug[f]

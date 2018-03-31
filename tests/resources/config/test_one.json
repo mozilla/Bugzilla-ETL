@@ -15,31 +15,33 @@
 //			6810,  //ok
 //			9622,  //minor email diff
 //			10575, //ok
-			11040, //alias analysis problem
+//			11040, //alias analysis problem
 //			12911, //alias analysis problem
+//			13534, // (REVIEW MOVES TO OTHER PERSON)
 //			67742, //alias analysis problem
 //			96421, //minor email diff
 //			123203,//expiry only
 //			178960,//minor email
+//			248970, // another cutoff review request
 //			367518,//ok
 //			457765,//ok
 //			458397,//minor email
-//			471427,//component rename, changes not compact
+//			471427,//minor email
 //			544327,//extra history
 //			547727,//extra history
 //			643420,//ok
 //			692436,//minor email
 //			726635,//alias problem
 //			813650,//ERROR in blocked
-			// 1165765 VERY LONG short_desc
-			// 1007019 does not have bug_status, or component, or product
-			// 372836 (REVIEW FLAGS TEST)
-			// 13534 (REVIEW MOVES TO OTHER PERSON)
-			// 393845  added blocking1.9+ twice
-			// 671185 *many* review requests
-			// 937428 whitespace after comma in user story, complex diff
-			// 248970 another cutoff review request
-			// 248971 another cutoff review request
+
+//			NOT VERIFIED
+//			248971, // another cutoff review request
+//			372836, // (REVIEW FLAGS TEST)
+//			393845, //  added blocking1.9+ twice
+//			671185, // *many* review requests
+			937428, // whitespace after comma in user story, complex diff
+//			1007019, // does not have bug_status, or component, or product
+//			1165765, // VERY LONG short_desc
 		],
 		"temp_dir": "tests/resources",
 		"errors": "tests/results/errors",
@@ -62,7 +64,7 @@
 	},
 	"reference": {
 		"filename": "tests/resources/reference/public_bugs.json",
-		"max_timestamp": 1372867005000
+		"max_timestamp": 1372867005000  // MAX TIME IN THE REFERENCE
 	},
 	"bugzilla": {
 		"$ref": "file://~/private.json#bugzilla-dev",

@@ -12,6 +12,7 @@ from __future__ import division
 from __future__ import unicode_literals
 
 from bzETL.parse_bug_history import MAX_TIME
+from bzETL.transform_bugzilla import NUMERIC_FIELDS
 from jx_python import jx
 from mo_dots.datas import Data
 from mo_logs import Log
@@ -104,6 +105,8 @@ def get_screened_whiteboard(db):
 
 
 def get_bugs_table_columns(db, schema_name):
+    global bugs_columns
+
     if not bugs_columns:
         columns = db.query("""
             SELECT
@@ -134,7 +137,7 @@ def get_bugs_table_columns(db, schema_name):
 
                 )
         """, {"schema": schema_name})
-        globals()["bugs_columns"] = columns
+        bugs_columns = columns
 
 
 def get_private_bugs_for_delete(db, param):
@@ -231,13 +234,13 @@ def get_bugs(db, param):
 
         #TODO: CF_LAST_RESOLVED IS IN PDT, FIX IT
         def lower(col):
-            if col.column_type.startswith("varchar"):
+            if col.column_type.startswith("varchar") or col.column_type.endswith('text'):
                 return "lower(" + db.quote_column(col.column_name) + ") " + db.quote_column(col.column_name)
             else:
                 return db.quote_column(col.column_name)
 
         param.bugs_columns = jx.select(bugs_columns, "column_name")
-        param.bugs_columns_SQL = SQL(",\n".join([lower(c) for c in bugs_columns]))
+        param.bugs_columns_SQL = SQL(",\n".join(lower(c) for c in bugs_columns))
         param.bug_filter = esfilter2sqlwhere(db, {"terms": {"b.bug_id": param.bug_list}})
         param.screened_whiteboard = esfilter2sqlwhere(db, {"and": [
             {"exists": "m.bug_id"},
@@ -584,6 +587,7 @@ def get_new_activities(db, param):
 
     output = db.query("""
         SELECT
+            a.id, 
             a.bug_id,
             UNIX_TIMESTAMP(bug_when)*1000 AS modified_ts,
             lower(login_name) AS modified_by,

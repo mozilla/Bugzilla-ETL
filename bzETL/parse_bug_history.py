@@ -44,10 +44,11 @@ import math
 import re
 
 import jx_elasticsearch
+import jx_python
 from mo_future import text_type
 
 from bzETL.transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS, DIFF_FIELDS
-from jx_python import jx
+from jx_python import jx, meta
 from mo_dots import inverse, coalesce, wrap, unwrap
 from mo_dots.datas import Data
 from mo_dots.lists import FlatList
@@ -67,8 +68,10 @@ FLAG_PATTERN = re.compile("^(.*)([?+-])(\\([^)]*\\))?$")
 
 DEBUG_CHANGES = False   # SHOW ACTIVITY RECORDS BEING PROCESSED
 DEBUG_STATUS = False    # SHOW CURRENT STATE OF PROCESSING
-DEBUG_CC_CHANGES = False  # SHOW MISMATCHED CC CHANGES
-DEBUG_FLAG_MATCHES = True
+DEBUG_CC_CHANGES = True  # SHOW MISMATCHED CC CHANGES
+DEBUG_FLAG_MATCHES = False
+
+USE_PREVIOUS_VALUE_OBJECTS = False
 
 # Fields that could have been truncated per bug 55161
 TRUNC_FIELDS = ["cc", "blocked", "dependson", "keywords"]
@@ -193,7 +196,7 @@ class BugHistoryParser(object):
         self.bugVersions = FlatList()
         self.bugVersionsMap = Data()
         self.currActivity = Data()
-        self.currBugAttachmentsMap = Data()
+        self.currBugAttachmentsMap = {}
         self.currBugState = Data(
             _id=BugHistoryParser.uid(row_in.bug_id, row_in.modified_ts),
             bug_id=row_in.bug_id,
@@ -244,9 +247,9 @@ class BugHistoryParser(object):
                 modified_ts=row_in.modified_ts,
                 modified_by=row_in.modified_by,
                 changes=[{
-                             "field_name": "attachment_added",
-                             "attach_id": row_in.attach_id
-                         }]
+                    "field_name": "attachment_added",
+                    "attach_id": row_in.attach_id
+                }]
             )
 
             if not self.currActivity.modified_ts:
@@ -254,16 +257,16 @@ class BugHistoryParser(object):
             self.bugVersions.append(self.currActivity)
             self.bugVersionsMap[currActivityID] = self.currActivity
 
-        att = self.currBugAttachmentsMap[text_type(row_in.attach_id)]
-        if att == None:
-            att = {
-                "attach_id": row_in.attach_id,
-                "modified_ts": row_in.modified_ts,
-                "created_ts": row_in.created_ts,
-                "modified_by": row_in.modified_by,
-                "flags": set()
-            }
-            self.currBugAttachmentsMap[text_type(row_in.attach_id)] = att
+        att = self.currBugAttachmentsMap.get(row_in.attach_id)
+        if att is None:
+            att = Data(
+                attach_id= row_in.attach_id,
+                modified_ts= row_in.modified_ts,
+                created_ts= row_in.created_ts,
+                modified_by= row_in.modified_by,
+                flags= set()
+            )
+            self.currBugAttachmentsMap[row_in.attach_id] = att
 
         att["created_ts"] = MIN([row_in.modified_ts, att["created_ts"]])
         if row_in.field_name == "created_ts" and row_in.new_value == None:
@@ -271,22 +274,19 @@ class BugHistoryParser(object):
         else:
             att[row_in.field_name] = row_in.new_value
 
-
     def processFlagsTableItem(self, row_in):
         flag = parse_flag(row_in.new_value, row_in.modified_ts, row_in.modified_by)
         if row_in.attach_id != None:
-            if self.currBugAttachmentsMap[text_type(row_in.attach_id)] == None:
-                Log.note("[Bug {{bug_id}}]: Unable to find attachment {{attach_id}} for bug_id {{bug_id}}",
+            if self.currBugAttachmentsMap.get(row_in.attach_id) is None:
+                Log.note(
+                    "[Bug {{bug_id}}]: Unable to find attachment {{attach_id}} for bug_id {{bug_id}}",
                     attach_id=row_in.attach_id,
                     bug_id=self.currBugID
                 )
             else:
-                if self.currBugAttachmentsMap[text_type(row_in.attach_id)].flags == None:
-                    Log.error("should never happen")
-                self.currBugAttachmentsMap[text_type(row_in.attach_id)].flags.append(flag)
+                self.currBugAttachmentsMap[row_in.attach_id].flags.add(flag)
         else:
             self.currBugState.flags.add(flag)
-
 
     def processBugsActivitiesTableItem(self, row_in):
         if self.currBugState.created_ts == None:
@@ -315,7 +315,7 @@ class BugHistoryParser(object):
             self.prevActivityID = currActivityID
 
         if row_in.attach_id != None:
-            attachment = self.currBugAttachmentsMap[text_type(row_in.attach_id)]
+            attachment = self.currBugAttachmentsMap[row_in.attach_id]
             if attachment == None:
                 #we are going backwards in time, no need to worry about these?  maybe delete this change for public bugs
                 Log.note(
@@ -367,16 +367,18 @@ class BugHistoryParser(object):
                 self.currBugState[row_in.field_name] = total
             else:
                 if row_in.field_name in DIFF_FIELDS:
-                    new_value = row_in.new_value
+                    diff = row_in.new_value
                     try:
-                        row_in.old_value = "\n".join(apply_diff(self.currBugState[row_in.field_name].split("\n"), row_in.new_value.split("\n"), reverse=True))
-                        row_in.new_value = self.currBugState[row_in.field_name]
+                        new_value = self.currBugState[row_in.field_name]
+                        row_in.new_value = new_value
+                        row_in.old_value = ApplyDiff(row_in.modified_ts, new_value, diff, reverse=True)
                     except Exception as e:
-                        Log.note(
+                        Log.warning(
                             "[Bug {{bug_id}}]: PROBLEM Unable to process {{field_name}} diff:\n{{diff|indent}}",
                             bug_id=self.currBugID,
                             field_name=row_in.field_name,
-                            diff=new_value
+                            diff=diff,
+                            cause=e
                         )
                 self.currBugState[row_in.field_name] = row_in.old_value
                 self.currActivity.changes.append({
@@ -435,10 +437,11 @@ class BugHistoryParser(object):
                 mergeBugVersion = False
                 if nextVersion != None and currVersion._id == nextVersion._id:
                     if DEBUG_STATUS:
-                        Log.note("[Bug {{bug_id}}]: Merge mode: activated {{id}}", {
-                            "id": self.currBugState._id,
-                            "bug_id": self.currBugState.bug_id
-                        })
+                        Log.note(
+                            "[Bug {{bug_id}}]: Merge mode: activated {{id}}",
+                            id=self.currBugState._id,
+                            bug_id=self.currBugState.bug_id
+                        )
                     mergeBugVersion = True
 
                 # Link this version to the next one (if there is a next one)
@@ -447,12 +450,12 @@ class BugHistoryParser(object):
                 # Copy all attributes from the current version into self.currBugState
                 for propName, propValue in currVersion.items():
                     self.currBugState[propName] = propValue
+                # self.currBugState.previous_values = self.currBugState.previous_values.copy()
 
                 # Now walk self.currBugState forward in time by applying the changes from currVersion
                 # BE SURE TO APPLY REMOVES BEFORE ADDS, JUST IN CASE BOTH HAPPENED TO ONE FIELD
                 changes = jx.sort(currVersion.changes, ["attach_id", "field_name", {"field": "old_value", "sort": -1}, "new_value"])
-                currVersion.changes = changes
-                self.currBugState.changes = changes
+                self.currBugState.changes = currVersion.changes = changes
 
                 for c, change in enumerate(changes):
                     if c + 1 < len(changes):
@@ -483,12 +486,12 @@ class BugHistoryParser(object):
                         # Handle the special change record that signals the creation of the attachment
                         if change.field_name == "attachment_added":
                             # This change only exists when the attachment has been added to the map, so no missing case needed.
-                            att = self.currBugAttachmentsMap[text_type(attach_id)]
+                            att = self.currBugAttachmentsMap[attach_id]
                             self.currBugState.attachments.append(att)
                             continue
                         else:
                             # Attachment change
-                            target = self.currBugAttachmentsMap[text_type(attach_id)]
+                            target = self.currBugAttachmentsMap[attach_id]
                             targetName = "attachment"
                             if target == None:
                                 Log.note("[Bug {{bug_id}}]: Encountered a change to missing attachment: {{change}}", {
@@ -532,15 +535,11 @@ class BugHistoryParser(object):
                     state = normalize(self.currBugState)
 
                     if DEBUG_STATUS:
-                        Log.note("[Bug {{bug_state.bug_id}}]: v{{bug_state.bug_version_num}} (id = {{bug_state.id}})", {
-                            "bug_state": state
-                        })
+                        Log.note("[Bug {{bug_state.bug_id}}]: v{{bug_state.bug_version_num}} (id = {{bug_state.id}})", bug_state=state)
                     self.output.add({"id": state.id, "value": state})  #ES EXPECTED FORMAT
                 else:
                     if DEBUG_STATUS:
-                        Log.note("[Bug {{bug_state.bug_id}}]: Merging a change with the same timestamp = {{bug_state._id}}: {{bug_state}}", {
-                            "bug_state": currVersion
-                        })
+                        Log.note("[Bug {{bug_state.bug_id}}]: Merging a change with the same timestamp = {{bug_state._id}}: {{bug_state}}", bug_state=currVersion)
             finally:
                 if self.currBugState.blocked == None:
                     Log.note("[Bug {{bug_id}}]: expecting a created_ts", bug_id= currVersion.bug_id)
@@ -634,14 +633,17 @@ class BugHistoryParser(object):
             if len(candidates) > 1:
                 # Multiple matches - use the best one.
                 if DEBUG_FLAG_MATCHES:
-                    Log.note("[Bug {{bug_id}}]: Matched added flag {{flag}} to multiple removed flags {{candidates}}.  Finding the best...", {
-                        "flag": added_flag,
-                        "candidates": candidates,
-                        "bug_id": self.currBugState.bug_id
-                    })
+                    Log.note(
+                        "[Bug {{bug_id}}]: Matched added flag {{flag}} to multiple removed flags {{candidates}}.  Finding the best...",
+                        flag=added_flag,
+                        candidates=candidates,
+                        bug_id=self.currBugState.bug_id
+                    )
 
-                matched_ts = [element for element in candidates if
-                              added_flag.modified_ts == element.modified_ts
+                matched_ts = [
+                    element
+                    for element in candidates
+                    if added_flag.modified_ts == element.modified_ts
                 ]
 
                 matched_req = [
@@ -651,25 +653,28 @@ class BugHistoryParser(object):
                 ]
 
                 if not matched_ts and not matched_req:
-                    Log.note("[Bug {{bug_id}}]: PROBLEM: Can not match {{requestee}} in {{flags}}. Skipping match.", {
-                        "bug_id": self.currBugState.bug_id,
-                        "flags": target.flags,
-                        "requestee": added_flag
-                    })
+                    Log.note(
+                        "[Bug {{bug_id}}]: PROBLEM: Can not match {{requestee}} in {{flags}}. Skipping match.",
+                        bug_id=self.currBugState.bug_id,
+                        flags=target.flags,
+                        requestee=added_flag
+                    )
                 elif len(matched_ts) == 1 or (not matched_req and matched_ts):
                     chosen_one = matched_ts[0]
                     if DEBUG_FLAG_MATCHES:
-                        Log.note("[Bug {{bug_id}}]: Matching on modified_ts:\n{{best|indent}}", {
-                            "bug_id": self.currBugState.bug_id,
-                            "best": chosen_one
-                        })
+                        Log.note(
+                            "[Bug {{bug_id}}]: Matching on modified_ts:\n{{best|indent}}",
+                            bug_id=self.currBugState.bug_id,
+                            best=chosen_one
+                        )
                 elif not matched_ts and matched_req:
                     chosen_one = matched_req[0]  #PICK ANY
                     if DEBUG_FLAG_MATCHES:
-                        Log.note("[Bug {{bug_id}}]: Matching on requestee", {
-                            "bug_id": self.currBugState.bug_id,
-                            "best": chosen_one
-                        })
+                        Log.note(
+                            "[Bug {{bug_id}}]: Matching on requestee",
+                            bug_id=self.currBugState.bug_id,
+                            best=chosen_one
+                        )
                 else:
                     matched_both = [
                         element
@@ -679,11 +684,11 @@ class BugHistoryParser(object):
 
                     if matched_both:
                         if DEBUG_FLAG_MATCHES:
-                            Log.note("[Bug {{bug_id}}]: Matching on modified_ts and requestee fixed it", bug_id= self.currBugState.bug_id)
+                            Log.note("[Bug {{bug_id}}]: Matching on modified_ts and requestee fixed it", bug_id=self.currBugState.bug_id)
                         chosen_one = matched_both[0]  #PICK ANY
                     else:
                         if DEBUG_FLAG_MATCHES:
-                            Log.note("[Bug {{bug_id}}]: Matching on modified_ts fixed it", bug_id= self.currBugState.bug_id)
+                            Log.note("[Bug {{bug_id}}]: Matching on modified_ts fixed it", bug_id=self.currBugState.bug_id)
                         chosen_one = matched_ts[0]
             else:
                 # Obvious case - matched exactly one.
@@ -702,17 +707,23 @@ class BugHistoryParser(object):
                     # We need to avoid later adding this flag twice, since we rolled an add into a delete.
 
 
-    def setPrevious(self, dest, aFieldName, aValue, aChangeAway):
+    def setPrevious(self, dest, field_name, previous_value, change_ts):
         if dest["previous_values"] == None:
             dest["previous_values"] = {}
-
         pv = dest["previous_values"]
-        vField = aFieldName + "_value"
-        caField = aFieldName + "_change_away_ts"
-        ctField = aFieldName + "_change_to_ts"
-        ddField = aFieldName + "_duration_days"
 
-        pv[vField] = aValue
+        if USE_PREVIOUS_VALUE_OBJECTS:
+            prev_field_name = field_name + ".value"
+            caField = field_name + ".end_time"
+            ctField = field_name + ".start_time"
+            ddField = Null
+        else:
+            prev_field_name = field_name + "_value"
+            caField = field_name + "_change_away_ts"
+            ctField = field_name + "_change_to_ts"
+            ddField = field_name + "_duration_days"
+
+        pv[prev_field_name] = previous_value
         # If we have a previous change for this field, then use the
         # change-away time as the new change-to time.
         if pv[caField] != None:
@@ -722,12 +733,13 @@ class BugHistoryParser(object):
             # use the creation timestamp.
             pv[ctField] = dest["created_ts"]
 
-        pv[caField] = aChangeAway
+        pv[caField] = change_ts
         try:
             duration_ms = pv[caField] - pv[ctField]
+            pv[ddField] = math.floor(duration_ms / (1000.0 * 60 * 60 * 24))
         except Exception as e:
             Log.error("", e)
-        pv[ddField] = math.floor(duration_ms / (1000.0 * 60 * 60 * 24))
+
 
 
     def addValues(self, total, add, valueType, field_name, target):
@@ -905,7 +917,7 @@ class BugHistoryParser(object):
                 if before != after+1:
                     Log.error("")
                 # total = wrap([unwrap(a) for a in total if tuple(a.items()) != tuple(found.items())])  # COMPARE DICTS
-                added_values.add(found)
+                added_values.add(flag)
             else:
                 Log.note(
                     "[Bug {{bug_id}}]: PROBLEM Unable to find {{type}} FLAG: {{object}}.{{field_name}}: (All {{missing}}" + " not in : {{existing}})",
@@ -1007,3 +1019,80 @@ def is_null(value):
     if isinstance(value, (set, list)):
         return len(value)==0
     return False
+
+
+class ApplyDiff(object):
+
+    def __init__(self, timestamp, text, diff, reverse=None):
+        """
+        THE BUGZILLA DIFF IS ACROSS MULTIPLE RECORDS, THEY MUST BE APPENDED TO MAKE THE DIFF
+        :param timestamp: DATABASE bug_activity TIMESTAMP THAT WILL BE THE SAME FOR ALL IN A HUNK
+        :param text: THE ORIGINAL TEXT (OR A PROMISE OF TEXT)
+        :param diff: THE PARTITAL DIFF
+        :param reverse: DIRECTION TO APPLY THE DIFF
+        :return: A PROMISE TO RETURN THE diff APPLIED TO THE text
+        """
+        self.timestamp = timestamp
+        self._text=text
+        self._diff=diff
+        self.reverse=reverse
+        self.parent = None
+        self.result = None
+
+        if isinstance(text, ApplyDiff):
+            if text.timestamp != timestamp:
+                # DIFFERNT DIFF
+                self._text = str(text) # ACTUALIZE THE EFFECTS OF THE OTHER DIFF
+            else:
+                # CHAIN THE DIFF
+                text.parent = self
+                text.parent.result = None  # JUST IN CASE THIS HAS BEEN ACTUALIZED
+
+    @property
+    def text(self):
+        if isinstance(self._text, ApplyDiff):
+            return self._text.text
+        else:
+            return self._text
+
+    @property
+    def diff(self):
+        # WHEN GOING BACKWARDS IN TIME, THE DIFF WILL ARRIVE IN REVERSE ORDER
+        # LUCKY THAT THE STACK OF DiffApply REVERSES THE REVERSE ORDER
+        if isinstance(self._text, ApplyDiff):
+            return self._diff + self._text.diff
+        else:
+            return self._diff
+
+    def __data__(self):
+        return self.__str__()
+
+    def __gt__(self, other):
+        return str(self)>other
+
+    def __lt__(self, other):
+        return str(self)<other
+
+    def __eq__(self, other):
+        if other == None:
+            return False  # DO NOT ACTUALIZE
+        return str(self)==other
+
+    def __str__(self):
+        if self.parent:
+            return str(self.parent)
+
+        text = self.text
+        diff = self.diff
+        if not self.result:
+            try:
+                self.result = "\n".join(apply_diff(text.split("\n"), diff.split("\n"), self.reverse))
+            except Exception as e:
+                self.result = "<ERROR>"
+                Log.warning("problem applying diff", cause=e)
+
+        return self.result
+
+
+# ENSURE WE REGISTER THIS PROMISE AS A STRING
+meta._type_to_name[ApplyDiff] = "string"
