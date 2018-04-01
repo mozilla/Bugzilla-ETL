@@ -58,6 +58,11 @@
 	"mappings": {
 		"bug_version": {
 			"properties": {
+				"cf_user_story": {
+					"type": "text",
+					"store": true,
+					"analyzer": "bz_text_analyzer"
+				},
 				"status_whiteboard": {
 					"type": "keyword",
 					"fields": {

@@ -72,6 +72,7 @@ def normalize(bug, old_school=False):
     if bug.attachments:
         if USE_ATTACHMENTS_DOT:
             bug.attachments=json2value(value2json(bug.attachments).replace("attachments_", "attachments."))
+
         bug.attachments = jx.sort(bug.attachments, "attach_id")
         for a in bug.attachments:
             for k,v in list(a.items()):

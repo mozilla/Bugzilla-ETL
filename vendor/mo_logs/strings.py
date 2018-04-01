@@ -20,13 +20,12 @@ import string
 from collections import Mapping
 from datetime import datetime as builtin_datetime
 from datetime import timedelta, date
-from itertools import zip_longest
 from json.encoder import encode_basestring
 
 import sys
 
 from mo_dots import coalesce, wrap, get_module, Data
-from mo_future import text_type, xrange, binary_type, round as _round, PY3, get_function_name
+from mo_future import text_type, xrange, binary_type, round as _round, PY3, get_function_name, zip_longest
 from mo_logs.convert import datetime2unix, datetime2string, value2json, milli2datetime, unix2datetime
 from mo_logs.url import value2url_param
 
