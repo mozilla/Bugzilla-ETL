@@ -35,8 +35,8 @@ NUMERIC_FIELDS=[
     "estimated_time",
     "remaining_time",
     "everconfirmed",
-    "uncertain"
-
+    "uncertain",
+    "remaining_time"
 ]
 
 NULL_VALUES = ['--', '---']
