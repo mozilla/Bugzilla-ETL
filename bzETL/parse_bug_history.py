@@ -388,13 +388,13 @@ class BugHistoryParser(object):
                         cause=e
                     )
             else:
-                expected_value = self.canonical(self.currBugState[row_in.field_name])
+                expected_value = self.canonical(row_in.field_name, self.currBugState[row_in.field_name])
                 new_value = self.canonical(row_in.field_name, row_in.new_value)
 
                 if text_type(new_value) != text_type(expected_value):
                     if DEBUG_CHANGES and row_in.field_name not in KNOWN_INCONSISTENT_FIELDS:
-                        if row_in.field_name=='cc':
-                            self.alias_analyzer.add_alias(expected_value, new_value)
+                        if row_in.field_name in EMAIL_FIELDS:
+                            self.alias_analyzer.add_alias(lost=new_value, found=expected_value)
                         else:
                             lookup = FIELDS_CHANGED.setdefault(row_in.field_name, {})
                             if expected_value:
@@ -989,9 +989,7 @@ class BugHistoryParser(object):
         return FIELDS_CHANGED.get(field, {}).get(value, value)
 
     def email_alias(self, name):
-        if name == None:
-            return Null
-        return self.alias_analyzer.aliases.get(name, name)
+        return self.alias_analyzer.get_canonical(name)
 
 
 def parse_flag(flag, modified_ts, modified_by):

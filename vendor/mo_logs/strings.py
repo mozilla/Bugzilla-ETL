@@ -514,26 +514,17 @@ THE REST OF THIS FILE IS TEMPLATE EXPANSION CODE USED BY mo-logs
 """
 
 
-recursive_counter = 0
 def expand_template(template, value):
     """
-    :param template: A UNICODE STRING WITH VARIABLE NAMES IN MOUSTACHES `{{}}`
+    :param template: A UNICODE STRING WITH VARIABLE NAMES IN MOUSTACHES `{{.}}`
     :param value: Data HOLDING THE PARAMTER VALUES
     :return: UNICODE STRING WITH VARIABLES EXPANDED
     """
-    global recursive_counter
-    if recursive_counter>10:
-        sys.stderr.write("problem with template expansion")
-        return
-    recursive_counter +=1
-    try:
-        value = wrap(value)
-        if isinstance(template, text_type):
-            return _simple_expand(template, (value,))
+    value = wrap(value)
+    if isinstance(template, text_type):
+        return _simple_expand(template, (value,))
 
-        return _expand(template, (value,))
-    finally:
-        recursive_counter -=1
+    return _expand(template, (value,))
 
 
 def common_prefix(*args):

@@ -260,7 +260,7 @@ def incremental_etl(settings, param, db, esq, esq_comments, output_queue):
     if not bug_list:
         return
 
-    with Thread.run("alias analysis", alias_analysis.full_analysis, settings=settings, bug_list=bug_list):
+    with Thread.run("alias analysis", alias_analysis.full_analysis, kwargs=settings, bug_list=bug_list):
         Log.note(
             "Updating {{num}} bugs:\n{{bug_list|indent}}",
             num=len(bug_list),
@@ -462,7 +462,7 @@ def setup():
             if settings.args.restart:
                 for l in listwrap(settings.debug.log):
                     if l.filename:
-                        File(l.filename).parent.delete()
+                        File(l.filename).delete()
                 File(settings.param.first_run_time).delete()
                 File(settings.param.last_run_time).delete()
 

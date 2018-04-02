@@ -596,7 +596,7 @@ def get_new_activities(db, param):
                 WHEN m.bug_id IS NOT NULL AND a.fieldid={{whiteboard_field}} AND added IS NOT NULL AND trim(added)<>'' THEN '[screened]'
                 WHEN a.fieldid IN {{mixed_case_fields}} THEN trim(added)
                 WHEN trim(added)='' THEN NULL
-                WHEN qa_contact.userid IS NOT NULL THEN qa_contact.login_name
+                WHEN new_qa_contact.userid IS NOT NULL THEN new_qa_contact.login_name
                 ELSE lower(trim(added))
                 END
             AS CHAR CHARACTER SET utf8) AS new_value,
@@ -606,6 +606,7 @@ def get_new_activities(db, param):
                 WHEN m.bug_id IS NOT NULL AND a.fieldid={{whiteboard_field}} AND removed IS NOT NULL AND trim(removed)<>'' THEN '[screened]'
                 WHEN a.fieldid IN {{mixed_case_fields}} THEN trim(removed)
                 WHEN trim(removed)='' THEN NULL
+                WHEN old_qa_contact.userid IS NOT NULL THEN old_qa_contact.login_name
                 ELSE lower(trim(removed))
                 END
             AS CHAR CHARACTER SET utf8) AS old_value,
@@ -620,7 +621,23 @@ def get_new_activities(db, param):
         LEFT JOIN
             bug_group_map m on m.bug_id=a.bug_id AND {{screened_whiteboard}}
         LEFT JOIN 
-            profiles qa_contact ON qa_contact.userid=CAST(a.added AS UNSIGNED) and a.fieldid=36 AND a.added REGEXP '^[0-9]+$' 
+            profiles new_qa_contact 
+        ON 
+            new_qa_contact.userid=
+                CASE 
+                WHEN a.fieldid <> 36 THEN -1
+                WHEN NOT a.added REGEXP '^[0-9]+$' THEN -1
+                ELSE CAST(a.added AS UNSIGNED) 
+                END
+        LEFT JOIN 
+            profiles old_qa_contact 
+        ON 
+          old_qa_contact.userid=
+              CASE 
+              WHEN a.fieldid <> 36 THEN -1
+              WHEN NOT a.removed REGEXP '^[0-9]+$' THEN -1
+              ELSE CAST(a.removed AS UNSIGNED) 
+              END
         WHERE
             {{bug_filter}}
             # NEED TO QUERY ES TO GET bug_version_num OTHERWISE WE NEED ALL HISTORY

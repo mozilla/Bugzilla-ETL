@@ -21,6 +21,7 @@ from mo_future import iteritems
 from mo_json import value2json, json2value
 from mo_kwargs import override
 from mo_logs import Log, startup, constants
+from mo_math.randoms import Random
 from mo_testing.fuzzytestcase import assertAlmostEqual
 from pyLibrary.convert import zip2bytes, bytes2zip
 from pyLibrary.env.elasticsearch import Cluster
@@ -57,7 +58,7 @@ def full_analysis(kwargs, bug_list=None, please_stop=None):
         end = coalesce(kwargs.alias.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
 
         #Perform analysis on blocks of bugs, in case we crash partway through
-        for s, e in jx.intervals(start, end, kwargs.alias.increment):
+        for s, e in Random.combination(jx.intervals(start, end, kwargs.alias.increment)):
             Log.note("Load range {{start}}-{{end}}", start=s, end=e)
             if please_stop:
                 break
@@ -117,7 +118,7 @@ class AliasAnalyzer(object):
                 #ONLY COUNT NEGATIVE EMAILS
                 for email, count in iteritems(agg.dic):
                     if count < 0:
-                        problem_agg.add(self.alias(email)["canonical"], amount=count)
+                        problem_agg.add(self.get_canonical(email), amount=count)
 
             problems = jx.sort([
                 {"email": e, "count": c}
@@ -157,15 +158,21 @@ class AliasAnalyzer(object):
 
         self.save_aliases()
 
-    def alias(self, email):
-        canonical = self.aliases.get(email)
-        if not canonical:
-            return {"canonical":email, "dirty":False}
-        return canonical
+    def get_canonical(self, email):
+        """
+        RETURN CANONICAL, OR email
+        :param email:
+        :return:
+        """
+        record = self.aliases.get(email)
+        if record:
+            return record["canonical"]
+        else:
+            return email
 
     def add_alias(self, lost, found):
-        old_email = self.alias(lost)["canonical"]
-        new_email = self.alias(found)["canonical"]
+        old_email = self.get_canonical(lost)
+        new_email = self.get_canonical(found)
 
         delete_list = []
 
@@ -193,17 +200,17 @@ class AliasAnalyzer(object):
         for d in delete_list:
             del self.bugs[d]
 
-        #FOLD ALIASES
-        reassign=[]
+        # FOLD ALIASES  email -> old_email GETS CHANGED TO email -> new_email
+        reassign = [(lost, new_email)]
         for k, v in self.aliases.items():
             if v["canonical"] == old_email:
                 if k != v["canonical"]:
                     Log.note("ALIAS REMAPPED: {{alias}} -> {{old}} -> {{new}}", alias=k, old=v["canonical"], new=found)
 
-                reassign.append((k, found))
+                reassign.append((k, new_email))
 
         for k, found in reassign:
-            self.aliases[k] = {"canonical":found, "dirty":True}
+            self.aliases[k] = {"canonical": new_email, "dirty": True}
 
     def load_aliases(self):
         try:
@@ -215,7 +222,7 @@ class AliasAnalyzer(object):
                 )
                 self.es.add_alias(self.kwargs.elasticsearch.index)
 
-                esq = jx_elasticsearch.new_instance(self.es.kwargs)
+                esq = jx_elasticsearch.new_instance(self.es.settings)
                 result = esq.query({
                     "from": "bug_aliases",
                     "select": ["canonical", "alias"],
