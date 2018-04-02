@@ -230,7 +230,7 @@ class _NegMultiset(Multiset):
         return set(self.dic.keys())
 
     def __len__(self):
-        return sum(self.dic.values())
+        return sum(abs(v) for v in self.dic.values())
 
     def __nonzero__(self):
         if self.dic:

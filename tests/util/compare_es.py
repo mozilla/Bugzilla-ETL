@@ -96,7 +96,7 @@ def old2new(bug, max_date):
     bug = json2value(value2json(bug).replace("bugzilla: other b.m.o issues ", "bugzilla: other b.m.o issues"))
 
     if bug.expires_on > max_date:
-        bug.expires_on = parse_bug_history.MAX_TIME
+        bug.expires_on = parse_bug_history.MAX_TIMESTAMP
     if bug.votes != None:
         bug.votes = int(bug.votes)
     bug.dupe_by = convert.value2intlist(bug.dupe_by)

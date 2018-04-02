@@ -16,14 +16,22 @@ from bzETL.extract_bugzilla import get_all_cc_changes
 from jx_python import jx
 from mo_collections.multiset import Multiset
 from mo_dots import coalesce
+from mo_files import File
 from mo_future import iteritems
-from mo_json import value2json
+from mo_json import value2json, json2value
+from mo_kwargs import override
 from mo_logs import Log, startup, constants
-from pyLibrary.env import elasticsearch
+from mo_testing.fuzzytestcase import assertAlmostEqual
+from pyLibrary.convert import zip2bytes, bytes2zip
+from pyLibrary.env.elasticsearch import Cluster
 from pyLibrary.sql.mysql import MySQL
 
+DEBUG = True
+MINIMUM_DIFF_ROUGH = 7
+MINIMUM_DIFF_FINE = 4
 
-def full_analysis(settings, bug_list=None, please_stop=None):
+
+def full_analysis(kwargs, bug_list=None, please_stop=None):
     """
     THE CC LISTS (AND REVIEWS) ARE EMAIL ADDRESSES THE BELONG TO PEOPLE.
     SINCE THE EMAIL ADDRESS FOR A PERSON CAN CHANGE OVER TIME.  THIS CODE
@@ -31,30 +39,26 @@ def full_analysis(settings, bug_list=None, please_stop=None):
     OVER THE LIFETIME OF THE BUGZILLA DATA.  'PERSON' IS ABSTRACT, AND SIMPLY
     ASSIGNED A CANONICAL EMAIL ADDRESS TO FACILITATE IDENTIFICATION
     """
-    if settings.args.quick:
+    if kwargs.args.quick:
         Log.note("Alias analysis skipped (--quick was used)")
         return
 
-    analyzer = AliasAnalyzer(settings.alias)
+    analyzer = AliasAnalyzer(kwargs.alias)
 
     if bug_list:
-        with MySQL(kwargs=settings.bugzilla, readonly=True) as db:
+        with MySQL(kwargs=kwargs.bugzilla, readonly=True) as db:
             data = get_all_cc_changes(db, bug_list)
             analyzer.aggregator(data)
             analyzer.analysis(True, please_stop)
         return
 
-    with MySQL(kwargs=settings.bugzilla, readonly=True) as db:
-        start = coalesce(settings.alias.start, 0)
-        end = coalesce(settings.alias.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
+    with MySQL(kwargs=kwargs.bugzilla, readonly=True) as db:
+        start = coalesce(kwargs.alias.start, 0)
+        end = coalesce(kwargs.alias.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
 
         #Perform analysis on blocks of bugs, in case we crash partway through
-        for s, e in jx.reverse(jx.intervals(start, end, settings.alias.increment)):
-            Log.note(
-                "Load range {{start}}-{{end}}",
-                start=s,
-                end=e
-            )
+        for s, e in jx.intervals(start, end, kwargs.alias.increment):
+            Log.note("Load range {{start}}-{{end}}", start=s, end=e)
             if please_stop:
                 break
             data = get_all_cc_changes(db, range(s, e))
@@ -64,43 +68,24 @@ def full_analysis(settings, bug_list=None, please_stop=None):
 
 class AliasAnalyzer(object):
 
-    def __init__(self, settings):
-        self.bugs={}
-        self.aliases={}
-        self.not_aliases={}  # EXPLICIT LIST OF NON-MATCHES (HUMAN ADDED)
-        try:
-            self.es = elasticsearch.Cluster(settings.elasticsearch).get_or_create_index(
-                kwargs=settings.elasticsearch,
-                schema=ALIAS_SCHEMA,
-                limit_replicas=True
-            )
-            self.es.add_alias(settings.elasticsearch.index)
+    @override
+    def __init__(
+        self,
+        elasticsearch=None, # ES INDEX TO STORE THE ALIASES
+        file=None,         # FILE TO STORE ALIASES (IF ES DOES NOT EXIST, OR IS EMPTY)
+        start=0,           # MINIMUM BUG NUMBER TO SCAN
+        increment=100000,  # NUMBER OF BUGS TO REVIEW IN ONE PASS
+        minimum_diff=MINIMUM_DIFF_ROUGH,  # AMOUNT OF DISPARITY BETWEEN BEST AND SECOND-BEST MATCH
+        kwargs=None
+    ):
+        self.bugs = {}
+        self.aliases = {}
+        self.not_aliases = {}  # EXPLICIT LIST OF NON-MATCHES (HUMAN ADDED)
+        self.kwargs = kwargs
+        self.es = None
 
-            self.esq = jx_elasticsearch.new_instance(self.es.settings)
-            result = self.esq.query({
-                "from": "bug_aliases",
-                "select": ["canonical", "alias"],
-                "where": {"missing": "ignore"},
-                "format": "list",
-                "limit": 50000
-            })
-            for r in result.data:
-                self.aliases[r.alias] = {"canonical": r.canonical, "dirty": False}
+        self.load_aliases()
 
-            Log.note("{{num}} aliases loaded", num=len(self.aliases.keys()))
-
-            # LOAD THE NON-MATCHES
-            result = self.esq.query({
-                "from": "bug_aliases",
-                "select": ["canonical", "alias"],
-                "where": {"exists": "ignore"},
-                "format": "list"
-            })
-            for r in result.data:
-                self.not_aliases[r.alias] = r.canonical
-
-        except Exception as e:
-            Log.error("Can not init aliases", cause=e)
 
     def aggregator(self, data):
         """
@@ -118,10 +103,12 @@ class AliasAnalyzer(object):
             self.bugs[d.bug_id] = agg
 
     def analysis(self, last_run, please_stop):
-        minimum_diff = 7
+        minimum_diff = self.kwargs.minimum_diff
         if last_run:
-            minimum_diff = 4      #ONCE WE HAVE ALL THE DATA IN WE CAN BE LESS DISCRIMINATING
+            minimum_diff = min(minimum_diff, MINIMUM_DIFF_FINE)     #ONCE WE HAVE ALL THE DATA IN WE CAN BE LESS DISCRIMINATING
         try_again = True
+
+        Log.note("running analysis with minimum_diff=={{minimum_diff}}", minimum_diff=minimum_diff)
 
         while try_again and not please_stop:
             #FIND EMAIL MOST NEEDING REPLACEMENT
@@ -171,20 +158,9 @@ class AliasAnalyzer(object):
         self.save_aliases()
 
     def alias(self, email):
-        canonical = self.aliases.get(email, None)
+        canonical = self.aliases.get(email)
         if not canonical:
-            canonical = self.esq.query({
-                "from":"bug_aliases",
-                "select":"canonical",
-                "where":{"term":{"alias":email}}
-            })
-            if not canonical:
-                canonical = {"canonical":email, "dirty":False}
-            else:
-                canonical = {"canonical":canonical[0], "dirty":False}
-
-            self.aliases[email] = canonical
-
+            return {"canonical":email, "dirty":False}
         return canonical
 
     def add_alias(self, lost, found):
@@ -221,9 +197,7 @@ class AliasAnalyzer(object):
         reassign=[]
         for k, v in self.aliases.items():
             if v["canonical"] == old_email:
-                if k == v["canonical"]:
-                    Log.note("ALIAS FOUND   : {{alias}} -> {{new}}", alias=k, new=found)
-                else:
+                if k != v["canonical"]:
                     Log.note("ALIAS REMAPPED: {{alias}} -> {{old}} -> {{new}}", alias=k, old=v["canonical"], new=found)
 
                 reassign.append((k, found))
@@ -231,15 +205,83 @@ class AliasAnalyzer(object):
         for k, found in reassign:
             self.aliases[k] = {"canonical":found, "dirty":True}
 
-    def save_aliases(self):
-        records = []
-        for k, v in self.aliases.items():
-            if v["dirty"]:
-                records.append({"id": k, "value": {"canonical": v["canonical"], "alias": k}})
+    def load_aliases(self):
+        try:
+            if self.kwargs.elasticsearch:
+                self.es = Cluster(self.kwargs.elasticsearch).get_or_create_index(
+                    kwargs=self.kwargs.elasticsearch,
+                    schema=ALIAS_SCHEMA,
+                    limit_replicas=True
+                )
+                self.es.add_alias(self.kwargs.elasticsearch.index)
 
-        if records:
-            Log.note("Net new aliases saved: {{num}}", num=len(records))
-            self.es.extend(records)
+                esq = jx_elasticsearch.new_instance(self.es.kwargs)
+                result = esq.query({
+                    "from": "bug_aliases",
+                    "select": ["canonical", "alias"],
+                    "where": {"missing": "ignore"},
+                    "format": "list",
+                    "limit": 50000
+                })
+                for r in result.data:
+                    self.aliases[r.alias] = {"canonical": r.canonical, "dirty": False}
+
+                num = len(self.aliases.keys())
+                if num<500:
+                    # LOAD FROM FILE IF THE CLUSTER IS A BIT EMPTY
+                    self._load_aliases_from_file()
+                    return
+
+                Log.note("{{num}} aliases loaded from ES", num=num)
+
+                # LOAD THE NON-MATCHES
+                result = esq.query({
+                    "from": "bug_aliases",
+                    "select": ["canonical", "alias"],
+                    "where": {"exists": "ignore"},
+                    "format": "list"
+                })
+                for r in result.data:
+                    self.not_aliases[r.alias] = r.canonical
+            else:
+                self._load_aliases_from_file()
+        except Exception as e:
+            Log.warning("Can not load aliases", cause=e)
+
+    def _load_aliases_from_file(self):
+        if self.kwargs.file:
+            data = json2value(zip2bytes(File(self.kwargs.file).read_bytes()).decode('utf8'), flexible=False, leaves=False)
+            self.aliases = {a: {"canonical": c, "dirty": True} for a, c in data.aliases.items()}
+            self.not_aliases = data.not_aliases
+            Log.note("{{num}} aliases loaded from file", num=len(self.aliases.keys()))
+
+    def save_aliases(self):
+        if self.es:
+            records = []
+            for k, v in self.aliases.items():
+                if v["dirty"]:
+                    records.append({"id": k, "value": {"canonical": v["canonical"], "alias": k}})
+
+            if records:
+                Log.note("Net new aliases saved: {{num}}", num=len(records))
+                self.es.extend(records)
+        elif self.kwargs.file:
+            def compact():
+                return {
+                    "aliases": {a: c['canonical'] for a, c in self.aliases.items() if c['canonical'] != a},
+                    "mot_aliases": self.not_aliases
+                }
+
+            data = compact()
+            File(self.kwargs.file).write_bytes(bytes2zip(value2json(data, pretty=True).encode('utf8')))
+            if DEBUG:
+                Log.note("verify alias file")
+                self.load_aliases()
+                from_file = compact()
+                assertAlmostEqual(from_file, data)
+                assertAlmostEqual(data, from_file)
+
+
 
 
 def mapper(emails, aliases):
@@ -264,10 +306,10 @@ def split_email(value):
 
 def start():
     try:
-        settings = startup.read_settings()
-        constants.set(settings.constants)
-        Log.start(settings.debug)
-        full_analysis(settings)
+        kwargs = startup.read_settings()
+        constants.set(kwargs.constants)
+        Log.start(kwargs.debug)
+        full_analysis(kwargs)
     except Exception as e:
         Log.error("Can not start", e)
     finally:
@@ -275,7 +317,7 @@ def start():
 
 
 ALIAS_SCHEMA = {
-    "settings": {"index": {
+    "kwargs": {"index": {
         "number_of_shards": 3,
         "number_of_replicas": 0
     }},

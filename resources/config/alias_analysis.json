@@ -1,13 +1,14 @@
 {
 	"alias": {
 		"start": 0,
-		"increment": 1000000,
-		"elasticsearch": {
-			"host": "http://localhost",
-			"index": "bug_aliases"
-		},
+		"increment": 100000,
+//		"elasticsearch": {
+//			"host": "http://localhost",
+//			"index": "bug_aliases"
+//		},
+		"minimum_diff": 7,
 		"file": {
-			"path": "../schema/bugzilla_aliases.json",
+			"path": "resources/schema/bugzilla_aliases.json",
 			"$ref": "//~/private.json#alias_file"
 		}
 	},
@@ -39,7 +40,15 @@
 			{
 				"log_type": "stream",
 				"stream": "sys.stdout"
+			},
+			{
+				"log_type": "email",
+				"from_address": "klahnakoski@mozilla.com",
+				"to_address": "klahnakoski@mozilla.com",
+				"subject": "[ALERT][DEV]Problem with ActiveData Server",
+				"$ref": "file://~/private.json#email"
 			}
+
 		]
 	}
 }

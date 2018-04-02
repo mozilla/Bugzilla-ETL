@@ -115,6 +115,7 @@ def etl(db, output_queue, param, alias_config, please_stop):
     for i, s in enumerate(sorted):
         process.processRow(s)
     process.processRow(wrap({"bug_id": parse_bug_history.STOP_BUG, "_merge_order": 1}))
+    process.alias_analyzer.save_aliases()
 
 
 def run_both_etl(db, output_queue, esq_comments, param, alias_config):

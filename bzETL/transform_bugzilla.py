@@ -19,6 +19,7 @@ from mo_dots import listwrap
 from mo_future import text_type, long
 from mo_json import json2value, value2json
 from mo_logs import Log
+from mo_times import Date
 from pyLibrary import convert
 from pyLibrary.env import elasticsearch
 
@@ -39,7 +40,7 @@ NUMERIC_FIELDS=[
     "remaining_time"
 ]
 
-NULL_VALUES = ['--', '---']
+NULL_VALUES = ['--', '---', '']
 
 # Used to reformat incoming dates into the expected form.
 # Example match: "2012/01/01 00:00:00.000"
@@ -145,6 +146,8 @@ def normalize(bug, old_school=False):
 
     bug.votes = None
     bug.exists = True
+
+    bug.etl.timestamp = Date.now()
 
     return elasticsearch.scrub(bug)
 

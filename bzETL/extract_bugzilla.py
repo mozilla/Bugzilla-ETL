@@ -11,20 +11,18 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
-from bzETL.parse_bug_history import MAX_TIME
-from bzETL.transform_bugzilla import NUMERIC_FIELDS
 from jx_python import jx
 from mo_dots.datas import Data
 from mo_logs import Log
 from mo_times.timer import Timer
 from pyLibrary import convert
 from pyLibrary.queries.jx_usingMySQL import esfilter2sqlwhere
-from pyLibrary.sql import SQL, SQL_ONE, SQL_NEG_ONE, sql_list, sql_iso
-
-# USING THE TEXT DATETIME OF EPOCH THROWS A WARNING!  USE ONE SECOND PAST EPOCH AS MINIMUM TIME.
+from pyLibrary.sql import SQL
 from pyLibrary.sql.mysql import int_list_packer
 
+# USING THE TEXT DATETIME OF EPOCH THROWS A WARNING!  USE ONE SECOND PAST EPOCH AS MINIMUM TIME.
 MIN_TIMESTAMP = 1000  # MILLISECONDS SINCE EPOCH
+MAX_TIMESTAMP = 9999999999000
 
 #ALL BUGS IN PRIVATE ETL HAVE SCREENED FIELDS
 SCREENED_FIELDDEFS = [
@@ -239,7 +237,7 @@ def get_bugs(db, param):
             else:
                 return db.quote_column(col.column_name)
 
-        param.bugs_columns = jx.select(bugs_columns, "column_name")
+        param.bugs_columns = bugs_columns.column_name
         param.bugs_columns_SQL = SQL(",\n".join(lower(c) for c in bugs_columns))
         param.bug_filter = esfilter2sqlwhere(db, {"terms": {"b.bug_id": param.bug_list}})
         param.screened_whiteboard = esfilter2sqlwhere(db, {"and": [
@@ -449,7 +447,7 @@ def get_all_cc_changes(db, bug_list):
                 {{bug_filter}}
         """,
         {
-            "max_time": MAX_TIME,
+            "max_time": MAX_TIMESTAMP,
             "cc_field_id": CC_FIELD_ID,
             "bug_filter": esfilter2sqlwhere(db, int_list_packer("bug_id", bug_list))
         },
@@ -590,7 +588,7 @@ def get_new_activities(db, param):
             a.id, 
             a.bug_id,
             UNIX_TIMESTAMP(bug_when)*1000 AS modified_ts,
-            lower(login_name) AS modified_by,
+            lower(p.login_name) AS modified_by,
             replace(field.`name`, '.', '_') AS field_name,
             CAST(
                 CASE
@@ -598,6 +596,7 @@ def get_new_activities(db, param):
                 WHEN m.bug_id IS NOT NULL AND a.fieldid={{whiteboard_field}} AND added IS NOT NULL AND trim(added)<>'' THEN '[screened]'
                 WHEN a.fieldid IN {{mixed_case_fields}} THEN trim(added)
                 WHEN trim(added)='' THEN NULL
+                WHEN qa_contact.userid IS NOT NULL THEN qa_contact.login_name
                 ELSE lower(trim(added))
                 END
             AS CHAR CHARACTER SET utf8) AS new_value,
@@ -620,6 +619,8 @@ def get_new_activities(db, param):
             fielddefs field ON a.fieldid = field.`id`
         LEFT JOIN
             bug_group_map m on m.bug_id=a.bug_id AND {{screened_whiteboard}}
+        LEFT JOIN 
+            profiles qa_contact ON qa_contact.userid=CAST(a.added AS UNSIGNED) and a.fieldid=36 AND a.added REGEXP '^[0-9]+$' 
         WHERE
             {{bug_filter}}
             # NEED TO QUERY ES TO GET bug_version_num OTHERWISE WE NEED ALL HISTORY

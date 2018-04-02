@@ -2,45 +2,45 @@
 	"param": {
 		"increment": 10000,
 		"bugs": [
-//			384,  //minor email diff
-//			1108,  //ok
-//			1045,  //ok
-//			1046,  //ok
-//			1157,  //ok
-//			1877,  //minor email diff
-//			1865,  //ok
-//			1869,  //minor email diff, missing recent history
-//			2586,  //missing recent history
-//			3140,  //minor email
-//			6810,  //ok
-//			9622,  //minor email diff
-//			10575, //ok
-//			11040, //alias analysis problem
-//			12911, //alias analysis problem
-//			13534, // (REVIEW MOVES TO OTHER PERSON)
-//			67742, //alias analysis problem
-//			96421, //minor email diff
-//			123203,//expiry only
-//			178960,//minor email
-//			248970, // another cutoff review request
-//			367518,//ok
-//			457765,//ok
-//			458397,//minor email
-//			471427,//minor email
-//			544327,//extra history
-//			547727,//extra history
+			384,  //minor email diff
+			1108,  //ok
+			1045,  //ok
+			1046,  //ok
+			1157,  //ok
+			1877,  //minor email diff
+			1865,  //ok
+			1869,  //minor email diff, missing recent history
+			2586,  //missing recent history
+			3140,  //minor email
+			6810,  //ok
+			9622,  //minor email diff
+			10575, //ok
+			11040, //alias analysis problem
+			12911, //alias analysis problem
+			13534, // (REVIEW MOVES TO OTHER PERSON)
+			67742, //alias analysis problem
+			96421, //minor email diff
+			123203,//expiry only
+			178960,//minor email
+			248970, // another cutoff review request
+			367518,//ok
+			457765,//ok
+			458397,//minor email
+			471427,//minor email
+			544327,//extra history
+			547727,//extra history
 			520943,//review flags bug 927494
-//			643420,//ok
-//			692436,//minor email
-//			726635,//alias problem
-//			813650,//ERROR in blocked
-//			937428, // whitespace after comma in user story, complex diff
-//			1165765, // VERY LONG short_desc
+			643420,//ok
+			692436,//minor email
+			726635,//alias problem
+			813650,//ERROR in blocked
+			937428, // whitespace after comma in user story, complex diff
+			1165765, // VERY LONG short_desc
 
 //			NOT VERIFIED
 //			248971, // another cutoff review request
 //			372836, // (REVIEW FLAGS TEST)
-//			393845, //  added blocking1.9+ twice
+			393845, //  added blocking1.9+ twice
 //			671185, // *many* review requests
 //			1007019, // does not have bug_status, or component, or product
 		],
@@ -105,6 +105,13 @@
 			{
 				"log_type": "stream",
 				"stream": "sys.stdout"
+			},
+			{
+				"log_type": "email",
+				"from_address": "klahnakoski@mozilla.com",
+				"to_address": "klahnakoski@mozilla.com",
+				"subject": "[ALERT][testing]Problem with Bugzilla-ETL",
+				"$ref": "file://~/private.json#email"
 			}
 		]
 	}

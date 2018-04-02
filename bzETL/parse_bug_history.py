@@ -44,16 +44,16 @@ import math
 import re
 
 import jx_elasticsearch
-import jx_python
-from mo_future import text_type
-
-from bzETL.transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS, DIFF_FIELDS
+from bzETL.alias_analysis import AliasAnalyzer
+from bzETL.extract_bugzilla import MAX_TIMESTAMP
+from bzETL.transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS, DIFF_FIELDS, NULL_VALUES
 from jx_python import jx, meta
 from mo_dots import inverse, coalesce, wrap, unwrap
 from mo_dots.datas import Data
 from mo_dots.lists import FlatList
 from mo_dots.nones import Null
 from mo_files import File
+from mo_future import text_type
 from mo_json import json2value, value2json
 from mo_logs import Log, strings
 from mo_logs.strings import apply_diff
@@ -66,9 +66,9 @@ from pyLibrary import convert
 
 FLAG_PATTERN = re.compile("^(.*)([?+-])(\\([^)]*\\))?$")
 
-DEBUG_CHANGES = False   # SHOW ACTIVITY RECORDS BEING PROCESSED
+DEBUG_CHANGES = True   # SHOW ACTIVITY RECORDS BEING PROCESSED
 DEBUG_STATUS = False    # SHOW CURRENT STATE OF PROCESSING
-DEBUG_CC_CHANGES = True  # SHOW MISMATCHED CC CHANGES
+DEBUG_CC_CHANGES = False  # SHOW MISMATCHED CC CHANGES
 DEBUG_FLAG_MATCHES = False
 
 USE_PREVIOUS_VALUE_OBJECTS = False
@@ -79,8 +79,15 @@ KNOWN_MISSING_KEYWORDS = {
     "dogfood", "beta1", "nsbeta1", "nsbeta2", "nsbeta3", "patch", "mozilla1.0", "correctness",
     "mozilla0.9", "mozilla0.9.9+", "nscatfood", "mozilla0.9.3", "fcc508", "nsbeta1+", "mostfreq"
 }
+KNOWN_INCONSISTENT_FIELDS = {
+    "cf_last_resolved"  # CHANGES IN DATABASE TIMEZONE
+}
+FIELDS_CHANGED = {  # SOME FIELD VALUES ARE CHANGED WITHOUT HISTORY BEING CHANGED TOO https://bugzilla.mozilla.org/show_bug.cgi?id=997228
+    "cf_blocking_b2g":{"1.5":"2.0"}
+}
+EMAIL_FIELDS = {'cc', 'assigned_to', 'modified_by', 'created_by', 'qa_contact', 'bug_mentor'}
+
 STOP_BUG = 999999999  # AN UNFORTUNATE SIDE EFFECT OF DATAFLOW PROGRAMMING (http://en.wikipedia.org/wiki/Dataflow_programming)
-MAX_TIME = 9999999999000
 
 
 
@@ -91,11 +98,7 @@ class BugHistoryParser(object):
         self.prev_row = Null
         self.settings = settings
         self.output = output_queue
-
-        self.alias_config=alias_config
-        self.aliases = Null
-        self.initialize_aliases()
-
+        self.alias_analyzer = AliasAnalyzer(alias_config)
 
     def processRow(self, row_in):
         if not row_in:
@@ -236,7 +239,6 @@ class BugHistoryParser(object):
                 cause=e
             )
 
-
     def processAttachmentsTableItem(self, row_in):
         currActivityID = BugHistoryParser.uid(self.currBugID, row_in.modified_ts)
         if currActivityID != self.prevActivityID:
@@ -365,28 +367,56 @@ class BugHistoryParser(object):
                     total = self.removeValues(total, multi_field_new_value, "added", row_in.field_name, "currBugState", self.currBugState)
                     total = self.addValues(total, multi_field_old_value, "removed bug", row_in.field_name, self.currBugState)
                 self.currBugState[row_in.field_name] = total
+            elif row_in.field_name in DIFF_FIELDS:
+                diff = row_in.new_value
+                expected_value = self.currBugState[row_in.field_name]
+                try:
+                    old_value = ApplyDiff(row_in.modified_ts, expected_value, diff, reverse=True)
+                    self.currBugState[row_in.field_name] = old_value
+                    self.currActivity.changes.append({
+                        "field_name": row_in.field_name,
+                        "new_value": expected_value,
+                        "old_value": old_value,
+                        "attach_id": row_in.attach_id
+                    })
+                except Exception as e:
+                    Log.warning(
+                        "[Bug {{bug_id}}]: PROBLEM Unable to process {{field_name}} diff:\n{{diff|indent}}",
+                        bug_id=self.currBugID,
+                        field_name=row_in.field_name,
+                        diff=diff,
+                        cause=e
+                    )
             else:
-                if row_in.field_name in DIFF_FIELDS:
-                    diff = row_in.new_value
-                    try:
-                        new_value = self.currBugState[row_in.field_name]
-                        row_in.new_value = new_value
-                        row_in.old_value = ApplyDiff(row_in.modified_ts, new_value, diff, reverse=True)
-                    except Exception as e:
-                        Log.warning(
-                            "[Bug {{bug_id}}]: PROBLEM Unable to process {{field_name}} diff:\n{{diff|indent}}",
+                expected_value = self.canonical(self.currBugState[row_in.field_name])
+                new_value = self.canonical(row_in.field_name, row_in.new_value)
+
+                if text_type(new_value) != text_type(expected_value):
+                    if DEBUG_CHANGES and row_in.field_name not in KNOWN_INCONSISTENT_FIELDS:
+                        if row_in.field_name=='cc':
+                            self.alias_analyzer.add_alias(expected_value, new_value)
+                        else:
+                            lookup = FIELDS_CHANGED.setdefault(row_in.field_name, {})
+                            if expected_value:
+                                lookup[new_value] = expected_value
+                            File("expected_values.json").write(value2json(FIELDS_CHANGED, pretty=True))
+
+                        Log.note(
+                            "[Bug {{bug_id}}]: PROBLEM inconsistent change: {{field}} was {{expecting|quote}} got {{observed|quote}}",
                             bug_id=self.currBugID,
-                            field_name=row_in.field_name,
-                            diff=diff,
-                            cause=e
+                            field=row_in.field_name,
+                            expecting=expected_value,
+                            observed=new_value
                         )
-                self.currBugState[row_in.field_name] = row_in.old_value
+
+                # WE DO NOT ATTEMPT TO CHANGE THE VALUES IN HISTORY TO BE CONSISTENT WITH THE FUTURE
                 self.currActivity.changes.append({
                     "field_name": row_in.field_name,
-                    "new_value": row_in.new_value,
+                    "new_value": self.currBugState[row_in.field_name],
                     "old_value": row_in.old_value,
                     "attach_id": row_in.attach_id
                 })
+                self.currBugState[row_in.field_name] = row_in.old_value
 
     def populateIntermediateVersionObjects(self):
         # Make sure the self.bugVersions are in descending order by modification time.
@@ -445,7 +475,7 @@ class BugHistoryParser(object):
                     mergeBugVersion = True
 
                 # Link this version to the next one (if there is a next one)
-                self.currBugState.expires_on = coalesce(nextVersion.modified_ts, MAX_TIME)
+                self.currBugState.expires_on = coalesce(nextVersion.modified_ts, MAX_TIMESTAMP)
 
                 # Copy all attributes from the current version into self.currBugState
                 for propName, propValue in currVersion.items():
@@ -477,8 +507,6 @@ class BugHistoryParser(object):
                             changes[c] = Null
                             continue
 
-                    if DEBUG_CHANGES:
-                        Log.note("Processing change: " + value2json(change))
                     target = self.currBugState
                     targetName = "currBugState"
                     attach_id = change.attach_id
@@ -552,8 +580,8 @@ class BugHistoryParser(object):
                 deformat(f.request_type) == deformat(flag.request_type) and
                 f.request_status == flag.request_status and
                 (
-                    (f.request_status!='?' and self.alias(f.modified_by) == self.alias(flag.modified_by)) or
-                    (f.request_status=='?' and self.alias(f.requestee) == self.alias(flag.requestee))
+                    (f.request_status!='?' and self.email_alias(f.modified_by) == self.email_alias(flag.modified_by)) or
+                    (f.request_status=='?' and self.email_alias(f.requestee) == self.email_alias(flag.requestee))
                 )
             ):
                 return f
@@ -649,7 +677,7 @@ class BugHistoryParser(object):
                 matched_req = [
                     element
                     for element in candidates
-                    if self.alias(added_flag["modified_by"]) == self.alias(element["requestee"])
+                    if self.email_alias(added_flag["modified_by"]) == self.email_alias(element["requestee"])
                 ]
 
                 if not matched_ts and not matched_req:
@@ -679,7 +707,7 @@ class BugHistoryParser(object):
                     matched_both = [
                         element
                         for element in candidates
-                        if added_flag.modified_ts == element.modified_ts and self.alias(added_flag["modified_by"]) == self.alias(element["requestee"])
+                        if added_flag.modified_ts == element.modified_ts and self.email_alias(added_flag["modified_by"]) == self.email_alias(element["requestee"])
                     ]
 
                     if matched_both:
@@ -778,9 +806,9 @@ class BugHistoryParser(object):
         if field_name == "flags":
             Log.error("use processFlags")
         elif field_name == "cc":
-            # MAP CANONICAL TO EXISTING (BETWEEN map_* AND self.aliases WE HAVE A BIJECTION)
-            map_total = inverse({t: self.alias(t) for t in total})
-            map_remove = inverse({r: self.alias(r) for r in remove})
+            # MAP CANONICAL TO EXISTING (BETWEEN map_* AND self.email_aliases WE HAVE A BIJECTION)
+            map_total = inverse({t: self.email_alias(t) for t in total})
+            map_remove = inverse({r: self.email_alias(r) for r in remove})
             # CANONICAL VALUES
             c_total = set(map_total.keys())
             c_remove = set(map_remove.keys())
@@ -797,7 +825,7 @@ class BugHistoryParser(object):
                         "field_name": field_name,
                         "missing": jx.sort(jx.map2set(diff, map_remove)),
                         "existing": jx.sort(total),
-                        "candidates": {d: self.aliases.get(d, None) for d in diff},
+                        "candidates": {d: self.email_aliases.get(d, None) for d in diff},
                         "bug_id": self.currBugID
                     })
 
@@ -893,7 +921,7 @@ class BugHistoryParser(object):
                     "existing": total
                 })
                 if field_name == "keywords":
-                    KNOWN_MISSING_KEYWORDS.extend(diff)
+                    KNOWN_MISSING_KEYWORDS.update(diff)
 
             return output
 
@@ -953,25 +981,17 @@ class BugHistoryParser(object):
 
         return total
 
-    def alias(self, name):
+    def canonical(self, field, value):
+        if value in NULL_VALUES:
+            return None
+        if field in EMAIL_FIELDS:
+            return self.email_alias(value)
+        return FIELDS_CHANGED.get(field, {}).get(value, value)
+
+    def email_alias(self, name):
         if name == None:
             return Null
-        return coalesce(self.aliases.get(name, Null), name)
-
-    def initialize_aliases(self):
-        try:
-            if self.alias_config.elasticsearch:
-                esq = jx_elasticsearch.new_instance(self.alias_config.elasticsearch)
-                result = esq.query({"select": ["alias", "canonical"], "where": {"missing": "ignore"}, "limit": 10000, "format":"list"})
-                self.aliases = {d.alias:d.canonical for d in result.data}
-            else:
-                alias_json = File(self.alias_config.file).read()
-                self.aliases = {k: wrap(v) for k, v in json2value(alias_json).items()}
-        except Exception as e:
-            Log.warning("Could not load alias file", cause=e)
-            self.aliases = {}
-
-        Log.note("{{num}} aliases loaded", num=len(self.aliases.keys()))
+        return self.alias_analyzer.aliases.get(name, name)
 
 
 def parse_flag(flag, modified_ts, modified_by):
