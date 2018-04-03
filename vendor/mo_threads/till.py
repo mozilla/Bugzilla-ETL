@@ -39,8 +39,8 @@ class Till(Signal):
     def __new__(cls, till=None, timeout=None, seconds=None):
         if not Till.enabled:
             return Till.done
-        elif till is None and timeout is None and seconds is None:
-            return None
+        elif till == None and timeout == None and seconds == None:
+            return Till.done
         else:
             return object.__new__(cls)
 
@@ -61,6 +61,9 @@ class Till(Signal):
                 Log.error("Duration objects for Till are no longer allowed")
 
             timeout = now + timeout
+        else:
+            from mo_logs import Log
+            Log.error("Should not happen")
 
         Signal.__init__(self, name=text_type(timeout))
 

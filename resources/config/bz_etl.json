@@ -1,9 +1,10 @@
 {
 	"param": {
+		"start": 0,
 		"increment": 1000,
 		"first_run_time": "results/data/first_run_time.txt",
 		"last_run_time": "results/data/last_run_time.txt",
-		"look_back": 3600000,
+		"look_back": 3600000,  // HOUR = 60*60*1000
 		"allow_private_bugs": false
 	},
 	"alias": {
@@ -24,7 +25,7 @@
 		"host": "localhost",
 		"port": 3307,
 		"schema": "bugs",
-		"debug": true
+		"debug": false
 	},
 	"es": {
 		"host": "http://localhost",

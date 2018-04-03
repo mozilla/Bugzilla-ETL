@@ -286,6 +286,8 @@ class TypedInserter(object):
             elif hasattr(value, '__json__'):
                 from mo_logs import Log
                 Log.error("do not know how to handle")
+            elif hasattr(value, '__data__'):
+                self._typed_encode(value.__data__(), sub_schema, path, net_new_properties, _buffer)
             elif hasattr(value, '__iter__'):
                 if NESTED_TYPE not in sub_schema:
                     sub_schema[NESTED_TYPE] = {}

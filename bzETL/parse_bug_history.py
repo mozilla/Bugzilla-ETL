@@ -43,8 +43,6 @@ from __future__ import unicode_literals
 import math
 import re
 
-import jx_elasticsearch
-from bzETL.alias_analysis import AliasAnalyzer
 from bzETL.extract_bugzilla import MAX_TIMESTAMP
 from bzETL.transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS, DIFF_FIELDS, NULL_VALUES
 from jx_python import jx, meta
@@ -54,10 +52,11 @@ from mo_dots.lists import FlatList
 from mo_dots.nones import Null
 from mo_files import File
 from mo_future import text_type
-from mo_json import json2value, value2json
+from mo_json import value2json
 from mo_logs import Log, strings
 from mo_logs.strings import apply_diff
 from mo_math import MIN
+from mo_times.dates import is_integer
 from pyLibrary import convert
 
 # Used to split a flag into (type, status [,requestee])
@@ -70,6 +69,7 @@ DEBUG_CHANGES = True   # SHOW ACTIVITY RECORDS BEING PROCESSED
 DEBUG_STATUS = False    # SHOW CURRENT STATE OF PROCESSING
 DEBUG_CC_CHANGES = False  # SHOW MISMATCHED CC CHANGES
 DEBUG_FLAG_MATCHES = False
+DEBUG_MISSING_ATTACHMENTS = False
 
 USE_PREVIOUS_VALUE_OBJECTS = False
 
@@ -80,7 +80,8 @@ KNOWN_MISSING_KEYWORDS = {
     "mozilla0.9", "mozilla0.9.9+", "nscatfood", "mozilla0.9.3", "fcc508", "nsbeta1+", "mostfreq"
 }
 KNOWN_INCONSISTENT_FIELDS = {
-    "cf_last_resolved"  # CHANGES IN DATABASE TIMEZONE
+    "cf_last_resolved",  # CHANGES IN DATABASE TIMEZONE
+    "cf_crash_signature"
 }
 FIELDS_CHANGED = {  # SOME FIELD VALUES ARE CHANGED WITHOUT HISTORY BEING CHANGED TOO https://bugzilla.mozilla.org/show_bug.cgi?id=997228
     "cf_blocking_b2g":{"1.5":"2.0"}
@@ -92,13 +93,13 @@ STOP_BUG = 999999999  # AN UNFORTUNATE SIDE EFFECT OF DATAFLOW PROGRAMMING (http
 
 
 class BugHistoryParser(object):
-    def __init__(self, settings, alias_config, output_queue):
+    def __init__(self, settings, alias_analyzer, output_queue):
         self.startNewBug(wrap({"bug_id": 0, "modified_ts": 0, "_merge_order": 1}))
         self.prevActivityID = Null
         self.prev_row = Null
         self.settings = settings
         self.output = output_queue
-        self.alias_analyzer = AliasAnalyzer(alias_config)
+        self.alias_analyzer = alias_analyzer
 
     def processRow(self, row_in):
         if not row_in:
@@ -279,12 +280,13 @@ class BugHistoryParser(object):
     def processFlagsTableItem(self, row_in):
         flag = parse_flag(row_in.new_value, row_in.modified_ts, row_in.modified_by)
         if row_in.attach_id != None:
-            if self.currBugAttachmentsMap.get(row_in.attach_id) is None:
-                Log.note(
-                    "[Bug {{bug_id}}]: Unable to find attachment {{attach_id}} for bug_id {{bug_id}}",
-                    attach_id=row_in.attach_id,
-                    bug_id=self.currBugID
-                )
+            if self.currBugAttachmentsMap.get(row_in.attach_id) == None:
+                if DEBUG_MISSING_ATTACHMENTS:
+                    Log.note(
+                        "[Bug {{bug_id}}]: Unable to find attachment {{attach_id}} for bug_id {{bug_id}}",
+                        attach_id=row_in.attach_id,
+                        bug_id=self.currBugID
+                    )
             else:
                 self.currBugAttachmentsMap[row_in.attach_id].flags.add(flag)
         else:
@@ -317,15 +319,16 @@ class BugHistoryParser(object):
             self.prevActivityID = currActivityID
 
         if row_in.attach_id != None:
-            attachment = self.currBugAttachmentsMap[row_in.attach_id]
+            attachment = self.currBugAttachmentsMap.get(row_in.attach_id)
             if attachment == None:
                 #we are going backwards in time, no need to worry about these?  maybe delete this change for public bugs
-                Log.note(
-                    "[Bug {{bug_id}}]: PROBLEM Unable to find attachment {{attach_id}} {{start_time}}: {{start_time}}",
-                    attach_id=row_in.attach_id,
-                    bug_id=self.currBugID,
-                    attachments=self.currBugAttachmentsMap
-                )
+                if DEBUG_MISSING_ATTACHMENTS:
+                    Log.note(
+                        "[Bug {{bug_id}}]: PROBLEM Unable to find attachment {{attach_id}} {{start_time}}: {{start_time}}",
+                        attach_id=row_in.attach_id,
+                        bug_id=self.currBugID,
+                        attachments=self.currBugAttachmentsMap
+                    )
                 self.currActivity.changes.append({
                     "field_name": row_in.field_name,
                     "new_value": row_in.new_value,
@@ -371,7 +374,7 @@ class BugHistoryParser(object):
                 diff = row_in.new_value
                 expected_value = self.currBugState[row_in.field_name]
                 try:
-                    old_value = ApplyDiff(row_in.modified_ts, expected_value, diff, reverse=True)
+                    old_value = ApplyDiff(self.currBugID, row_in.modified_ts, expected_value, diff, reverse=True)
                     self.currBugState[row_in.field_name] = old_value
                     self.currActivity.changes.append({
                         "field_name": row_in.field_name,
@@ -388,26 +391,31 @@ class BugHistoryParser(object):
                         cause=e
                     )
             else:
-                expected_value = self.canonical(row_in.field_name, self.currBugState[row_in.field_name])
-                new_value = self.canonical(row_in.field_name, row_in.new_value)
+                if DEBUG_CHANGES and row_in.field_name not in KNOWN_INCONSISTENT_FIELDS:
+                    expected_value = self.canonical(row_in.field_name, self.currBugState[row_in.field_name])
+                    new_value = self.canonical(row_in.field_name, row_in.new_value)
 
-                if text_type(new_value) != text_type(expected_value):
-                    if DEBUG_CHANGES and row_in.field_name not in KNOWN_INCONSISTENT_FIELDS:
+                    if text_type(new_value) != text_type(expected_value):
                         if row_in.field_name in EMAIL_FIELDS:
-                            self.alias_analyzer.add_alias(lost=new_value, found=expected_value)
+                            if is_integer(new_value) or is_integer(expected_value) and row_in.modified_ts<=927814152000:
+                                pass # BEFORE 1999-05-27 14:09:12 THE qa_contact FIELD WAS A NUMBER, NOT THE EMAIL
+                            elif not new_value or not expected_value:
+                                pass
+                            else:
+                                self.alias_analyzer.add_alias(lost=new_value, found=expected_value)
                         else:
                             lookup = FIELDS_CHANGED.setdefault(row_in.field_name, {})
                             if expected_value:
                                 lookup[new_value] = expected_value
                             File("expected_values.json").write(value2json(FIELDS_CHANGED, pretty=True))
 
-                        Log.note(
-                            "[Bug {{bug_id}}]: PROBLEM inconsistent change: {{field}} was {{expecting|quote}} got {{observed|quote}}",
-                            bug_id=self.currBugID,
-                            field=row_in.field_name,
-                            expecting=expected_value,
-                            observed=new_value
-                        )
+                            Log.note(
+                                "[Bug {{bug_id}}]: PROBLEM inconsistent change: {{field}} was {{expecting|quote}} got {{observed|quote}}",
+                                bug_id=self.currBugID,
+                                field=row_in.field_name,
+                                expecting=expected_value,
+                                observed=new_value
+                            )
 
                 # WE DO NOT ATTEMPT TO CHANGE THE VALUES IN HISTORY TO BE CONSISTENT WITH THE FUTURE
                 self.currActivity.changes.append({
@@ -519,13 +527,14 @@ class BugHistoryParser(object):
                             continue
                         else:
                             # Attachment change
-                            target = self.currBugAttachmentsMap[attach_id]
+                            target = self.currBugAttachmentsMap.get(attach_id)
                             targetName = "attachment"
                             if target == None:
-                                Log.note("[Bug {{bug_id}}]: Encountered a change to missing attachment: {{change}}", {
-                                    "bug_id": self.currBugState.bug_id,
-                                    "change": change
-                                })
+                                if DEBUG_MISSING_ATTACHMENTS:
+                                    Log.note("[Bug {{bug_id}}]: Encountered a change to missing attachment: {{change}}", {
+                                        "bug_id": self.currBugState.bug_id,
+                                        "change": change
+                                    })
 
                                 # treat it as a change to the main bug instead :(
                                 target = self.currBugState
@@ -561,6 +570,11 @@ class BugHistoryParser(object):
                     # This is not a "merge", so output a row for this bug version.
                     self.bug_version_num += 1
                     state = normalize(self.currBugState)
+
+                    try:
+                        value2json(state)
+                    except Exception as e:
+                        Log.error("problem with {{bug}}", bug=state.bug_id, cause=e)
 
                     if DEBUG_STATUS:
                         Log.note("[Bug {{bug_state.bug_id}}]: v{{bug_state.bug_version_num}} (id = {{bug_state.id}})", bug_state=state)
@@ -1041,7 +1055,7 @@ def is_null(value):
 
 class ApplyDiff(object):
 
-    def __init__(self, timestamp, text, diff, reverse=None):
+    def __init__(self, bug_id, timestamp, text, diff, reverse=None):
         """
         THE BUGZILLA DIFF IS ACROSS MULTIPLE RECORDS, THEY MUST BE APPENDED TO MAKE THE DIFF
         :param timestamp: DATABASE bug_activity TIMESTAMP THAT WILL BE THE SAME FOR ALL IN A HUNK
@@ -1050,6 +1064,7 @@ class ApplyDiff(object):
         :param reverse: DIRECTION TO APPLY THE DIFF
         :return: A PROMISE TO RETURN THE diff APPLIED TO THE text
         """
+        self.bug_id = bug_id
         self.timestamp = timestamp
         self._text=text
         self._diff=diff
@@ -1104,10 +1119,10 @@ class ApplyDiff(object):
         diff = self.diff
         if not self.result:
             try:
-                self.result = "\n".join(apply_diff(text.split("\n"), diff.split("\n"), self.reverse))
+                self.result = "\r\n".join(apply_diff(text.split("\n"), diff.split("\n"), self.reverse))
             except Exception as e:
                 self.result = "<ERROR>"
-                Log.warning("problem applying diff", cause=e)
+                # Log.warning("problem applying diff for bug {{bug}}", bug=self.bug_id, cause=e)
 
         return self.result
 

@@ -59,11 +59,12 @@ def full_analysis(kwargs, bug_list=None, please_stop=None):
 
         #Perform analysis on blocks of bugs, in case we crash partway through
         for s, e in Random.combination(jx.intervals(start, end, kwargs.alias.increment)):
-            Log.note("Load range {{start}}-{{end}}", start=s, end=e)
-            if please_stop:
-                break
-            data = get_all_cc_changes(db, range(s, e))
-            analyzer.aggregator(data)
+            with db.transaction():
+                Log.note("Load range {{start}}-{{end}}", start=s, end=e)
+                if please_stop:
+                    break
+                data = get_all_cc_changes(db, range(s, e))
+                analyzer.aggregator(data)
             analyzer.analysis(last_run=False, please_stop=please_stop)
 
 
@@ -171,6 +172,9 @@ class AliasAnalyzer(object):
             return email
 
     def add_alias(self, lost, found):
+        if not found.strip():
+            Log.error("expecting email")
+
         old_email = self.get_canonical(lost)
         new_email = self.get_canonical(found)
 
@@ -202,6 +206,7 @@ class AliasAnalyzer(object):
 
         # FOLD ALIASES  email -> old_email GETS CHANGED TO email -> new_email
         reassign = [(lost, new_email)]
+        Log.note("ALIAS MAPPED: {{alias}} -> {{new}}", alias=lost, new=new_email)
         for k, v in self.aliases.items():
             if v["canonical"] == old_email:
                 if k != v["canonical"]:

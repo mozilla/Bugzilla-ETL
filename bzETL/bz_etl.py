@@ -13,6 +13,7 @@ from __future__ import unicode_literals
 
 import jx_elasticsearch
 from bzETL import extract_bugzilla, alias_analysis, parse_bug_history
+from bzETL.alias_analysis import AliasAnalyzer
 from bzETL.extract_bugzilla import get_comments, get_current_time, MIN_TIMESTAMP, get_private_bugs_for_delete, get_recent_private_bugs, get_recent_private_attachments, get_recent_private_comments, get_comments_by_id, get_bugs, \
     get_dependencies, get_flags, get_new_activities, get_bug_see_also, get_attachments, get_tracking_flags, get_keywords, get_cc, get_bug_groups, get_duplicates
 from bzETL.parse_bug_history import BugHistoryParser
@@ -71,7 +72,7 @@ def etl_comments(db, esq, param, please_stop):
             esq.es.extend({"id": comment.comment_id, "value": comment} for comment in block_of_comments)
 
 
-def etl(db, output_queue, param, alias_config, please_stop):
+def etl(db, output_queue, param, alias_analyzer, please_stop):
     """
     PROCESS RANGE, AS SPECIFIED IN param AND PUSH
     BUG VERSION RECORDS TO output_queue
@@ -111,16 +112,16 @@ def etl(db, output_queue, param, alias_config, please_stop):
         {"id": "desc"}
     ])
 
-    process = BugHistoryParser(param, alias_config, output_queue)
+    process = BugHistoryParser(param, alias_analyzer, output_queue)
     for i, s in enumerate(sorted):
         process.processRow(s)
     process.processRow(wrap({"bug_id": parse_bug_history.STOP_BUG, "_merge_order": 1}))
     process.alias_analyzer.save_aliases()
 
 
-def run_both_etl(db, output_queue, esq_comments, param, alias_config):
+def run_both_etl(db, output_queue, esq_comments, param, alias_analyzer):
     comment_thread = Thread.run("etl comments", etl_comments, db, esq_comments, param)
-    process_thread = Thread.run("etl", etl, db, output_queue, param, alias_config)
+    process_thread = Thread.run("etl", etl, db, output_queue, param, alias_analyzer)
 
     result = comment_thread.join()
     if result.exception:
@@ -272,24 +273,21 @@ def incremental_etl(settings, param, db, esq, esq_comments, output_queue):
             output_queue=output_queue,
             esq_comments=esq_comments,
             param=param.copy(),
-            alias_config=settings.alias
+            alias_analyzer=settings.alias
         )
 
 
 def full_etl(resume_from_last_run, config, param, db, es, es_comments, output_queue):
-    with Thread.run("alias_analysis", alias_analysis.full_analysis, settings=config):
-        end = coalesce(config.param.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
-        start = coalesce(config.param.start, 0)
-        if resume_from_last_run:
-            start = coalesce(config.param.start, Math.floor(get_max_bug_id(es), config.param.increment))
+    end = coalesce(config.param.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
+    start = coalesce(config.param.start, 0)
+    if resume_from_last_run:
+        start = coalesce(config.param.start, Math.floor(get_max_bug_id(es), config.param.increment))
 
-        #############################################################
-        ## MAIN ETL LOOP
-        #############################################################
-
-        #TWO WORKERS IS MORE THAN ENOUGH FOR A SINGLE THREAD
-        # with Multithread([run_both_etl, run_both_etl]) as workers:
-        for min, max in jx.intervals(start, end, config.param.increment):
+    #############################################################
+    ## MAIN ETL LOOP
+    #############################################################
+    for min, max in jx.reverse(jx.intervals(start, end, config.param.increment)):
+        with Timer("etl block {{min}}..{{max}}", {"min":min, "max":max}):
             if config.args.quick and min < end - config.param.increment and min != 0:
                 #--quick ONLY DOES FIRST AND LAST BLOCKS
                 continue
@@ -338,7 +336,7 @@ def full_etl(resume_from_last_run, config, param, db, es, es_comments, output_qu
                     output_queue,
                     es_comments,
                     param.copy(),
-                    config.alias
+                    alias_analyzer=AliasAnalyzer(kwargs=config.alias)
                 )
 
             except Exception as e:
@@ -377,8 +375,9 @@ def main(param, es, es_comments, bugzilla, kwargs):
                     with Timer("run incremental etl"):
                         incremental_etl(kwargs, param_new, db, esq, esq_comments, output_queue)
                 else:
-                    with Timer("run full etl"):
-                        full_etl(resume_from_last_run, kwargs, param_new, db, esq, esq_comments, output_queue)
+                    # with Thread.run("alias_analysis", alias_analysis.full_analysis, kwargs=kwargs):
+                        with Timer("run full etl"):
+                            full_etl(resume_from_last_run, kwargs, param_new, db, esq, esq_comments, output_queue)
 
                 output_queue.add(THREAD_STOP)
 
@@ -420,8 +419,8 @@ def get_bug_ids(esq, filter):
 
 def get_max_bug_id(esq):
     try:
-        result = esq.query({"select":{"value":"bug_id", "aggregate":"max"}, "format":"cube"})
-        return result.data.bug_id
+        result = esq.query({"select": {"value": "bug_id", "aggregate": "max"}, "format": "cube"})
+        return result.data['bug_id']
     except Exception as e:
         Log.error(
             "Can not get_max_bug from {{host}}/{{index}}",

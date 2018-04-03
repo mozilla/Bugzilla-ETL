@@ -134,7 +134,10 @@ class Matrix(object):
 
     def __eq__(self, other):
         if other == None:
-            return False
+            if self.num:
+                return False
+            else:
+                return self.cube == other
         return self.value == other
 
     def __add__(self, other):

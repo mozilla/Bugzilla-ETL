@@ -808,6 +808,8 @@ def apply_diff(text, diff, reverse=False, verify=True):
             return new_diff
 
         diff = repair_hunk(diff)
+        diff = [d for d in diff if d != "\\ no newline at end of file"]  # ANOTHER REPAIR
+
         if reverse:
             new_output = (
                 output[:add.start - 1] +

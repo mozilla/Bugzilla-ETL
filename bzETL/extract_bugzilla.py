@@ -596,7 +596,7 @@ def get_new_activities(db, param):
                 WHEN m.bug_id IS NOT NULL AND a.fieldid={{whiteboard_field}} AND added IS NOT NULL AND trim(added)<>'' THEN '[screened]'
                 WHEN a.fieldid IN {{mixed_case_fields}} THEN trim(added)
                 WHEN trim(added)='' THEN NULL
-                WHEN new_qa_contact.userid IS NOT NULL THEN new_qa_contact.login_name
+                # WHEN new_qa_contact.userid IS NOT NULL THEN new_qa_contact.login_name
                 ELSE lower(trim(added))
                 END
             AS CHAR CHARACTER SET utf8) AS new_value,
@@ -606,7 +606,7 @@ def get_new_activities(db, param):
                 WHEN m.bug_id IS NOT NULL AND a.fieldid={{whiteboard_field}} AND removed IS NOT NULL AND trim(removed)<>'' THEN '[screened]'
                 WHEN a.fieldid IN {{mixed_case_fields}} THEN trim(removed)
                 WHEN trim(removed)='' THEN NULL
-                WHEN old_qa_contact.userid IS NOT NULL THEN old_qa_contact.login_name
+                # WHEN old_qa_contact.userid IS NOT NULL THEN old_qa_contact.login_name
                 ELSE lower(trim(removed))
                 END
             AS CHAR CHARACTER SET utf8) AS old_value,
@@ -620,24 +620,24 @@ def get_new_activities(db, param):
             fielddefs field ON a.fieldid = field.`id`
         LEFT JOIN
             bug_group_map m on m.bug_id=a.bug_id AND {{screened_whiteboard}}
-        LEFT JOIN 
-            profiles new_qa_contact 
-        ON 
-            new_qa_contact.userid=
-                CASE 
-                WHEN a.fieldid <> 36 THEN -1
-                WHEN NOT a.added REGEXP '^[0-9]+$' THEN -1
-                ELSE CAST(a.added AS UNSIGNED) 
-                END
-        LEFT JOIN 
-            profiles old_qa_contact 
-        ON 
-          old_qa_contact.userid=
-              CASE 
-              WHEN a.fieldid <> 36 THEN -1
-              WHEN NOT a.removed REGEXP '^[0-9]+$' THEN -1
-              ELSE CAST(a.removed AS UNSIGNED) 
-              END
+        # LEFT JOIN 
+        #     profiles new_qa_contact 
+        # ON 
+        #     new_qa_contact.userid=
+        #         CASE 
+        #         WHEN a.fieldid <> 36 THEN -1
+        #         WHEN NOT a.added REGEXP '^[0-9]+$' THEN -1
+        #         ELSE CAST(a.added AS UNSIGNED) 
+        #         END
+        # LEFT JOIN 
+        #     profiles old_qa_contact 
+        # ON 
+        #   old_qa_contact.userid=
+        #       CASE 
+        #       WHEN a.fieldid <> 36 THEN -1
+        #       WHEN NOT a.removed REGEXP '^[0-9]+$' THEN -1
+        #       ELSE CAST(a.removed AS UNSIGNED) 
+        #       END
         WHERE
             {{bug_filter}}
             # NEED TO QUERY ES TO GET bug_version_num OTHERWISE WE NEED ALL HISTORY
@@ -655,19 +655,30 @@ def get_flags(db, param):
     param.bug_filter = esfilter2sqlwhere(db, {"terms": {"bug_id": param.bug_list}})
 
     return db.query("""
-        SELECT bug_id
-            , UNIX_TIMESTAMP(f.creation_date)*1000 AS modified_ts
-            , ps.login_name AS modified_by
-            , 'flagtypes_name' AS field_name
-            , CONCAT(ft.`name`,status,IF(requestee_id IS NULL,'',CONCAT('(',pr.login_name,')'))) AS new_value
-            , CAST(null AS CHAR) AS old_value
-            , attach_id
-            , 8 AS _merge_order
+        SELECT 
+            bug_id,
+            UNIX_TIMESTAMP(f.creation_date)*1000 AS modified_ts,
+            lower(ps.login_name) AS modified_by,
+            'flagtypes_name' AS field_name,
+            CONCAT(
+                ft.`name`, 
+                status, 
+                CASE 
+                WHEN f.requestee_id IS NULL THEN ''
+                ELSE CONCAT('(', lower(pr.login_name), ')')
+                END
+            ) AS new_value,
+            CAST(null AS CHAR) AS old_value,
+            attach_id,
+            8 AS _merge_order
         FROM
             flags f
-        JOIN `flagtypes` ft ON f.type_id = ft.id
-        JOIN profiles ps ON f.setter_id = ps.userid
-        LEFT JOIN profiles pr ON f.requestee_id = pr.userid
+        JOIN 
+            flagtypes ft ON f.type_id = ft.id
+        JOIN 
+            profiles ps ON f.setter_id = ps.userid
+        LEFT JOIN 
+            profiles pr ON f.requestee_id = pr.userid
         WHERE
             {{bug_filter}}
         ORDER BY

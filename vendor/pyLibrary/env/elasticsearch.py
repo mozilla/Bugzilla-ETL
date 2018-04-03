@@ -436,7 +436,7 @@ class Index(Features):
         elif self.cluster.version.startswith(("1.4.", "1.5.", "1.6.", "1.7.", "5.", "6.")):
             result = self.cluster.put(
                 "/" + self.settings.index + "/_settings",
-                data=unicode2utf8('{"index":{"refresh_interval":' + value2json(interval) + '}}'),
+                data='{"index":{"refresh_interval":' + value2json(interval) + '}}',
                 **kwargs
             )
 

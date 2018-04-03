@@ -48,9 +48,9 @@ def extract_from_file(source_settings, destination):
     for g, d in jx.groupby(file, size=BATCH_SIZE):
         try:
             d2 = map(
-                lambda (x): {"id": x.id, "value": x},
+                lambda x: {"id": x.id, "value": x},
                 map(
-                    lambda(x): transform_bugzilla.normalize(json2value(x)),
+                    lambda x: transform_bugzilla.normalize(json2value(x)),
                     d
                 )
             )
@@ -184,9 +184,9 @@ def replicate(source, destination, pending, last_updated):
             })
 
             d2 = map(
-                lambda(x): {"id": x.id, "value": x},
+                lambda x: {"id": x.id, "value": x},
                 map(
-                    lambda(x): transform_bugzilla.normalize(transform_bugzilla.rename_attachments(x._source), old_school=True),
+                    lambda x: transform_bugzilla.normalize(transform_bugzilla.rename_attachments(x._source), old_school=True),
                     data.hits.hits
                 )
             )
