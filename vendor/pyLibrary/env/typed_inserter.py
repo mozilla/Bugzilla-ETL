@@ -21,7 +21,7 @@ from jx_base import python_type_to_json_type, INTEGER, NUMBER, EXISTS, NESTED, S
 from jx_python.expressions import jx_expression_to_function
 from jx_python.meta import Column
 from mo_dots import Data, FlatList, NullType, unwrap
-from mo_future import text_type, binary_type, utf8_json_encoder, long
+from mo_future import text_type, binary_type, utf8_json_encoder, long, sort_using_key
 from mo_json import ESCAPE_DCT, float2json, json2value
 from mo_json.encoder import problem_serializing, UnicodeBuilder, COMMA, COLON
 from mo_json.typed_encoder import encode_property, BOOLEAN_TYPE, NESTED_TYPE, EXISTS_TYPE, STRING_TYPE, NUMBER_TYPE
@@ -60,7 +60,7 @@ class TypedInserter(object):
         if es:
             _schema = Data()
             for c in parse_properties(es.settings.alias, ".", es.get_properties()):
-                if c.type not in (OBJECT, NESTED):
+                if c.es_type not in (OBJECT, NESTED):
                     _schema[c.names["."]] = c
             self.schema = unwrap(_schema)
         else:
@@ -127,7 +127,7 @@ class TypedInserter(object):
         try:
             if isinstance(sub_schema, Column):
                 value_json_type = python_type_to_json_type[value.__class__]
-                column_json_type = es_type_to_json_type[sub_schema.type]
+                column_json_type = es_type_to_json_type[sub_schema.es_type]
 
                 if value_json_type == column_json_type:
                     pass  # ok
@@ -283,9 +283,6 @@ class TypedInserter(object):
                 append(_buffer, '}')
             elif _type is NullType:
                 append(_buffer, 'null')
-            elif hasattr(value, '__json__'):
-                from mo_logs import Log
-                Log.error("do not know how to handle")
             elif hasattr(value, '__data__'):
                 self._typed_encode(value.__data__(), sub_schema, path, net_new_properties, _buffer)
             elif hasattr(value, '__iter__'):
@@ -338,11 +335,11 @@ class TypedInserter(object):
             sep = COMMA
             self._typed_encode(v, sub_schema, path, net_new_properties, _buffer)
             count += 1
-        append(_buffer, ']'+COMMA+QUOTED_EXISTS_TYPE+COLON+ + text_type(count))
+        append(_buffer, ']' + COMMA + QUOTED_EXISTS_TYPE + COLON + text_type(count))
 
     def _dict2json(self, value, sub_schema, path, net_new_properties, _buffer):
         prefix = '{'
-        for k, v in ((kk, value[kk]) for kk in sorted(value.keys())):
+        for k, v in sort_using_key(value.items(), lambda r: r[0]):
             if v == None or v == '':
                 continue
             append(_buffer, prefix)

@@ -408,6 +408,10 @@ class File(object):
 
 
 class TempDirectory(File):
+    """
+    A CONTEXT MANAGER FOR AN ALLOCATED, BUT UNOPENED TEMPORARY DIRECTORY
+    WILL BE DELETED WHEN EXITED
+    """
     def __new__(cls):
         return File.__new__(cls, None)
 
@@ -418,10 +422,14 @@ class TempDirectory(File):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        Thread.run("delete "+self.name, delete_daemon, file=self)
+        Thread.run("delete dir "+self.name, delete_daemon, file=self)
 
 
 class TempFile(File):
+    """
+    A CONTEXT MANAGER FOR AN ALLOCATED, BUT UNOPENED TEMPORARY FILE
+    WILL BE DELETED WHEN EXITED
+    """
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
 
@@ -434,7 +442,7 @@ class TempFile(File):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        Thread.run("delete "+self.name, delete_daemon, file=self)
+        Thread.run("delete file "+self.name, delete_daemon, file=self)
 
 
 def _copy(from_, to_):

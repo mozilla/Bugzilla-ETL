@@ -93,7 +93,9 @@ def time_delta_pusher(please_stop, appender, queue, interval):
     next_run = time() + interval
 
     while not please_stop:
+        Thread.current().cprofiler.disable()
         (Till(till=next_run) | please_stop).wait()
+        Thread.current().cprofiler.enable()
         next_run = time() + interval
         logs = queue.pop_all()
         if not logs:
@@ -116,7 +118,7 @@ def time_delta_pusher(please_stop, appender, queue, interval):
             appender(u"\n".join(lines) + u"\n")
         except Exception as e:
 
-            sys.stderr.write(b"Trouble with appender: " + str(e.__class__.__name__) + b"\n")
+            sys.stderr.write(str("Trouble with appender: ") + str(e.__class__.__name__) + str("\n"))
             # SWALLOW ERROR, MUST KEEP RUNNING
 
 

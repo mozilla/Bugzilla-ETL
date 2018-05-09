@@ -15,9 +15,10 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
-from mo_future import allocate_lock as _allocate_lock
 from time import sleep, time
+from weakref import ref
 
+from mo_future import allocate_lock as _allocate_lock
 from mo_future import text_type
 
 from mo_threads.signal import Signal
@@ -40,7 +41,7 @@ class Till(Signal):
         if not Till.enabled:
             return Till.done
         elif till == None and timeout == None and seconds == None:
-            return Till.done
+            return None
         else:
             return object.__new__(cls)
 
@@ -70,7 +71,7 @@ class Till(Signal):
         with Till.locker:
             if timeout != None:
                 Till.next_ping = min(Till.next_ping, timeout)
-            Till.new_timers.append((timeout, self))
+            Till.new_timers.append((timeout, ref(self)))
 
 
 Till.done.go()
@@ -108,13 +109,17 @@ def daemon(please_stop):
                 new_timers, Till.new_timers = Till.new_timers, []
 
             if DEBUG and new_timers:
-                Log.note("new timers: {{timers}}", timers=[t for t, s in new_timers])
+                if len(new_timers) > 5:
+                    Log.note("{{num}} new timers", num=len(new_timers))
+                else:
+                    Log.note("new timers: {{timers}}", timers=[t for t, _ in new_timers])
 
             sorted_timers.extend(new_timers)
 
             if sorted_timers:
-                sorted_timers.sort(key=lambda r: r[0])
-                for i, (t, s) in enumerate(sorted_timers):
+                sorted_timers.sort(key=actual_time)
+                for i, rec in enumerate(sorted_timers):
+                    t = actual_time(rec)
                     if now < t:
                         work, sorted_timers = sorted_timers[:i], sorted_timers[i:]
                         Till.next_ping = min(Till.next_ping, sorted_timers[0][0])
@@ -126,15 +131,17 @@ def daemon(please_stop):
                     if DEBUG:
                         Log.note(
                             "done: {{timers}}.  Remaining {{pending}}",
-                            timers=[t for t, s in work],
-                            pending=[t for t, s in sorted_timers]
+                            timers=[t for t, s in work] if len(work) <= 5 else len(work),
+                            pending=[t for t, s in sorted_timers] if len(sorted_timers) <= 5 else len(sorted_timers)
                         )
 
-                    for t, s in work:
-                        s.go()
+                    for t, r in work:
+                        s = r()
+                        if s is not None:
+                            s.go()
 
     except Exception as e:
-        Log.warning("timer shutdown", cause=e)
+        Log.warning("unexpected timer shutdown", cause=e)
     finally:
         if DEBUG:
             Log.alert("TIMER SHUTDOWN")
@@ -145,4 +152,5 @@ def daemon(please_stop):
         for t, s in new_work + sorted_timers:
             s.go()
 
-
+def actual_time(rec):
+    return 0 if rec[1]() is None else rec[0]
