@@ -55,16 +55,8 @@ return output.toString()
 
 
 
-<<<<<<< .mine
-class Painless(Expression):
-    __slots__ = ("miss", "data_type", "expr", "many")
-||||||| .r1009
-class Painless(Expression):
-    __slots__ = ("miss", "type", "expr", "many")
-=======
 class EsScript(Expression):
     __slots__ = ("miss", "data_type", "expr", "many")
->>>>>>> .r1128
 
     def __init__(self, type, expr, frum, miss=None, many=False):
         self.miss = coalesce(miss, FALSE)  # Expression that will return true/false to indicate missing result

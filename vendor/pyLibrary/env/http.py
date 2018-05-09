@@ -248,6 +248,11 @@ def patch(url, **kwargs):
     return HttpResponse(request('patch', url, **kwargs))
 
 
+def delete(url, **kwargs):
+    kwargs.setdefault('stream', False)
+    return HttpResponse(request('delete', url, **kwargs))
+
+
 class HttpResponse(Response):
     def __new__(cls, resp):
         resp.__class__ = HttpResponse
