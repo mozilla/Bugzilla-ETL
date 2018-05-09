@@ -15,13 +15,15 @@ import re
 from datetime import date
 
 from jx_python import jx
-from mo_dots import listwrap
+from mo_dots import listwrap, wrap, coalesce
 from mo_future import text_type, long
 from mo_json import json2value, value2json
-from mo_logs import Log
+from mo_logs import Log, suppress_exception
 from mo_times import Date
 from pyLibrary import convert
 from pyLibrary.env import elasticsearch
+from pyLibrary.sql import SQL_TRUE, sql_iso, sql_list, SQL_AND, SQL_OR, SQL_NOT, SQL, SQL_IS_NULL, SQL_IS_NOT_NULL
+from pyLibrary.sql.mysql import int_list_packer
 
 USE_ATTACHMENTS_DOT = True  # REMOVE THIS, ASSUME False
 
@@ -150,4 +152,96 @@ def normalize(bug, old_school=False):
     bug.etl.timestamp = Date.now()
 
     return elasticsearch.scrub(bug)
+
+
+
+def esfilter2sqlwhere(db, esfilter):
+    return _esfilter2sqlwhere(db, esfilter)
+
+
+def _esfilter2sqlwhere(db, esfilter):
+    """
+    CONVERT ElassticSearch FILTER TO SQL FILTER
+    db - REQUIRED TO PROPERLY QUOTE VALUES AND COLUMN NAMES
+    """
+    esfilter = wrap(esfilter)
+
+    if esfilter is True:
+        return SQL_TRUE
+    elif esfilter["and"]:
+        return sql_iso(SQL_AND.join([esfilter2sqlwhere(db, a) for a in esfilter["and"]]))
+    elif esfilter["or"]:
+        return sql_iso(SQL_OR.join([esfilter2sqlwhere(db, a) for a in esfilter["or"]]))
+    elif esfilter["not"]:
+        return SQL_NOT + sql_iso(esfilter2sqlwhere(db, esfilter["not"]))
+    elif esfilter.term:
+        return sql_iso(SQL_AND.join([
+            db.quote_column(col) + SQL("=") + db.quote_value(val)
+            for col, val in esfilter.term.items()
+        ]))
+    elif esfilter.terms:
+        for col, v in esfilter.terms.items():
+            if len(v) == 0:
+                return "FALSE"
+
+            with suppress_exception:
+                int_list = convert.value2intlist(v)
+                has_null = False
+                for vv in v:
+                    if vv == None:
+                        has_null = True
+                        break
+                if int_list:
+                    filter = int_list_packer(col, int_list)
+                    if has_null:
+                        return esfilter2sqlwhere(db, {"or": [{"missing": col}, filter]})
+                    else:
+                        return esfilter2sqlwhere(db, filter)
+                else:
+                    if has_null:
+                        return esfilter2sqlwhere(db, {"missing": col})
+                    else:
+                        return "false"
+            return db.quote_column(col) + " in " + sql_iso(sql_list([db.quote_value(val) for val in v]))
+    elif esfilter.script:
+        return sql_iso(esfilter.script)
+    elif esfilter.range:
+        name2sign = {
+            "gt": SQL(">"),
+            "gte": SQL(">="),
+            "lte": SQL("<="),
+            "lt": SQL("<")
+        }
+
+        def single(col, r):
+            min = coalesce(r["gte"], r[">="])
+            max = coalesce(r["lte"], r["<="])
+            if min != None and max != None:
+                # SPECIAL CASE (BETWEEN)
+                sql = db.quote_column(col) + SQL(" BETWEEN ") + db.quote_value(min) + SQL_AND + db.quote_value(max)
+            else:
+                sql = SQL_AND.join(
+                    db.quote_column(col) + name2sign[sign] + db.quote_value(value)
+                    for sign, value in r.items()
+                )
+            return sql
+
+        output = sql_iso(SQL_AND.join([single(col, ranges) for col, ranges in esfilter.range.items()]))
+        return output
+    elif esfilter.missing:
+        if isinstance(esfilter.missing, text_type):
+            return sql_iso(db.quote_column(esfilter.missing) + SQL_IS_NULL)
+        else:
+            return sql_iso(db.quote_column(esfilter.missing.field) + SQL_IS_NULL)
+    elif esfilter.exists:
+        if isinstance(esfilter.exists, text_type):
+            return sql_iso(db.quote_column(esfilter.exists) + SQL_IS_NOT_NULL)
+        else:
+            return sql_iso(db.quote_column(esfilter.exists.field) + SQL_IS_NOT_NULL)
+    elif esfilter.match_all:
+        return SQL_TRUE
+    elif esfilter.instr:
+        return sql_iso(SQL_AND.join(["instr" + sql_iso(db.quote_column(col) + ", " + db.quote_value(val)) + ">0" for col, val in esfilter.instr.items()]))
+    else:
+        Log.error("Can not convert esfilter to SQL: {{esfilter}}", esfilter=esfilter)
 

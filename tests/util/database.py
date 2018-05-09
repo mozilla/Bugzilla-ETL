@@ -16,7 +16,7 @@ from mo_dots.datas import Data
 from mo_logs import Log
 from mo_times.timer import Timer
 from pyLibrary import convert
-from pyLibrary.queries.jx_usingMySQL import esfilter2sqlwhere
+from bzETL.transform_bugzilla import esfilter2sqlwhere
 from pyLibrary.sql.mysql import MySQL
 
 

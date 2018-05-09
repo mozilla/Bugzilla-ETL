@@ -14,15 +14,14 @@ from __future__ import unicode_literals
 
 from datetime import datetime
 
-from mo_future import long
-from mo_logs import Log
-
 import jx_elasticsearch
-import jx_python
 from bzETL import transform_bugzilla, parse_bug_history
 from jx_python import jx
+from jx_python.containers.list_usingPythonList import ListContainer
 from mo_dots import coalesce, unwrap
+from mo_future import long
 from mo_json import json2value, value2json
+from mo_logs import Log
 from mo_math import Math
 from mo_times.timer import Timer
 from pyLibrary import convert
@@ -36,7 +35,7 @@ def get_all_bug_versions(es, bug_id, max_time=None):
     if isinstance(es, elasticsearch.Index):
         esq = jx_elasticsearch.new_instance(es.settings)
     elif isinstance(es, FakeES):
-        esq = jx_python.wrap_from(es.data.values())
+        esq = ListContainer(name="bugs", data=es.data.values())
     else:
         raise Log.error("unknown container")
 

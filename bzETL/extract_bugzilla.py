@@ -11,12 +11,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+from bzETL.transform_bugzilla import esfilter2sqlwhere
 from jx_python import jx
 from mo_dots.datas import Data
 from mo_logs import Log
 from mo_times.timer import Timer
 from pyLibrary import convert
-from pyLibrary.queries.jx_usingMySQL import esfilter2sqlwhere
 from pyLibrary.sql import SQL
 from pyLibrary.sql.mysql import int_list_packer
 

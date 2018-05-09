@@ -29,7 +29,7 @@ from mo_math.randoms import Random
 from mo_threads import ThreadedQueue, Till
 from mo_times import Timer
 from pyLibrary import convert
-from pyLibrary.queries.jx_usingMySQL import esfilter2sqlwhere
+from bzETL.transform_bugzilla import esfilter2sqlwhere
 from pyLibrary.sql.mysql import all_db, MySQL
 from pyLibrary.testing import elasticsearch
 from util import database, compare_es
