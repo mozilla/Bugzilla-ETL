@@ -1,0 +1,78 @@
+{
+	"mysql": "C:\\Program Files\\MySQL\\MySQL Server 5.5\\bin\\mysql.exe",
+	"mysqldump": "mysqldump",
+	"schema_file": "tests/resources/sql/bugzilla_schema.sql",
+	"mini_file": "tests/resources/sql/bugzilla_mini.sql",
+	"source": {
+		"$ref": "file://~/private.json#bugzilla-dev",
+		"preamble": "from https://github.com/klahnakoski/Bugzilla-ETL",
+		"host": "localhost",
+		"port": 3307,
+		"schema": "bugs",
+		"debug": true,
+		"readonly": true
+	},
+	"destination": {
+		"$ref": "file://~/private.json#test_database",
+		"preamble": "from https://github.com/klahnakoski/Bugzilla-ETL",
+		"schema": "temp_bugs",
+		"debug": true,
+		"readonly": false
+	},
+	"bug_list": [1390946],
+	"copy": [
+		{
+			"from": "bugs",
+			"where": {"in": {"bug_id": {"$ref": "#bug_list"}}}
+		},
+		{
+			"from": "flag_state_activity",
+			"where": {"in": {"bug_id": {"$ref": "#bug_list"}}}
+		},
+		{
+			"from": "bug_tag",
+			"where": {"in": {"bug_id": {"$ref": "#bug_list"}}}
+		},
+		{
+			"from": "bug_see_also",
+			"where": {"in": {"bug_id": {"$ref": "#bug_list"}}}
+		},
+		{
+			"from": "keywords",
+			"where": {"in": {"bug_id": {"$ref": "#bug_list"}}}
+		},
+		{
+			"from": "dependencies",
+			"where": {"or": [{"in": {"blocked": {"$ref": "#bug_list"}}}, {"in": {"dependson": {"$ref": "#bug_list"}}}]}
+		},
+		{
+			"from": "duplicates",
+			"where": {"or": [{"in": {"dupe": {"$ref": "#bug_list"}}}, {"in": {"dupe_of": {"$ref": "#bug_list"}}}]}
+		},
+		{
+			"from": "flags",
+			"where": {"in": {"bug_id": {"$ref": "#bug_list"}}}
+		},
+		{
+			"from": "cc",
+			"where": {"in": {"bug_id": {"$ref": "#bug_list"}}}
+		},
+		{
+			"from": "attachments",
+			"where": {"in": {"bug_id": {"$ref": "#bug_list"}}}
+		},
+		{
+			"from": "bugs_activity",
+			"where": {"in": {"bug_id": {"$ref": "#bug_list"}}}
+		},
+		{
+			"from": "tracking_flags_bugs",
+			"where": {"in": {"bug_id": {"$ref": "#bug_list"}}}
+		},
+		{
+			"from": "longdesc",
+			"where": {"in": {"bug_id": {"$ref": "#bug_list"}}}
+		}
+	]
+}
+

@@ -29,7 +29,7 @@ from mo_math.randoms import Random
 from mo_threads import ThreadedQueue, Till
 from mo_times import Timer
 from pyLibrary import convert
-from bzETL.transform_bugzilla import esfilter2sqlwhere
+from jx_mysql import esfilter2sqlwhere
 from pyLibrary.sql.mysql import all_db, MySQL
 from pyLibrary.testing import elasticsearch
 from util import database, compare_es
@@ -239,7 +239,7 @@ class TestETL(unittest.TestCase):
             implied_private_comments = db.query("""
                 SELECT comment_id FROM longdescs WHERE {{where}}
             """, {
-                "where": esfilter2sqlwhere(db, {"terms":{"bug_id":private_bugs}})
+                "where": esfilter2sqlwhere({"terms":{"bug_id":private_bugs}})
             }).comment_id
             private_comments = marked_private_comments + implied_private_comments
             Log.note("The private comments are {{comments}}", comments= private_comments)

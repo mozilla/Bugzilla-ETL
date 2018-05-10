@@ -16,7 +16,7 @@ from mo_dots.datas import Data
 from mo_logs import Log
 from mo_times.timer import Timer
 from pyLibrary import convert
-from bzETL.transform_bugzilla import esfilter2sqlwhere
+from jx_mysql import esfilter2sqlwhere
 from pyLibrary.sql.mysql import MySQL
 
 
@@ -128,6 +128,6 @@ def diff(db, table, old_record, new_record):
 
     db.execute("UPDATE bugs SET delta_ts={{now}} WHERE {{where}}", {
         "now":now,
-        "where":esfilter2sqlwhere(db, {"term":{"bug_id":old_record.bug_id}})
+        "where":esfilter2sqlwhere({"term":{"bug_id":old_record.bug_id}})
     })
 

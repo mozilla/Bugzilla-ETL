@@ -11,7 +11,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
-from bzETL.transform_bugzilla import esfilter2sqlwhere
+from jx_mysql import esfilter2sqlwhere
 from jx_python import jx
 from mo_dots.datas import Data
 from mo_logs import Log
@@ -97,7 +97,7 @@ def get_screened_whiteboard(db):
     if not SCREENED_BUG_GROUP_IDS:
         groups = db.query(
             "SELECT id FROM groups WHERE {{where}}",
-            {"where": esfilter2sqlwhere(db, {"terms": {"name": SCREENED_WHITEBOARD_BUG_GROUPS}})}
+            {"where": esfilter2sqlwhere({"terms": {"name": SCREENED_WHITEBOARD_BUG_GROUPS}})}
         )
         SCREENED_BUG_GROUP_IDS = jx.select(groups, "id")
 
@@ -239,8 +239,8 @@ def get_bugs(db, param):
 
         param.bugs_columns = bugs_columns.column_name
         param.bugs_columns_SQL = SQL(",\n".join(lower(c) for c in bugs_columns))
-        param.bug_filter = esfilter2sqlwhere(db, {"terms": {"b.bug_id": param.bug_list}})
-        param.screened_whiteboard = esfilter2sqlwhere(db, {"and": [
+        param.bug_filter = esfilter2sqlwhere({"terms": {"b.bug_id": param.bug_list}})
+        param.screened_whiteboard = esfilter2sqlwhere({"and": [
             {"exists": "m.bug_id"},
             {"terms": {"m.group_id": SCREENED_BUG_GROUP_IDS}}
         ]})
@@ -312,8 +312,8 @@ def flatten_bugs_record(r, output):
 
 
 def get_dependencies(db, param):
-    param.blocks_filter = esfilter2sqlwhere(db, {"terms": {"blocked": param.bug_list}})
-    param.dependson_filter = esfilter2sqlwhere(db, {"terms": {"dependson": param.bug_list}})
+    param.blocks_filter = esfilter2sqlwhere({"terms": {"blocked": param.bug_list}})
+    param.dependson_filter = esfilter2sqlwhere({"terms": {"dependson": param.bug_list}})
 
     return db.query("""
         SELECT blocked AS bug_id
@@ -344,8 +344,8 @@ def get_dependencies(db, param):
 
 
 def get_duplicates(db, param):
-    param.dupe_filter = esfilter2sqlwhere(db, {"terms": {"dupe": param.bug_list}})
-    param.dupe_of_filter = esfilter2sqlwhere(db, {"terms": {"dupe_of": param.bug_list}})
+    param.dupe_filter = esfilter2sqlwhere({"terms": {"dupe": param.bug_list}})
+    param.dupe_of_filter = esfilter2sqlwhere({"terms": {"dupe_of": param.bug_list}})
 
     return db.query("""
         SELECT dupe AS bug_id
@@ -376,7 +376,7 @@ def get_duplicates(db, param):
 
 
 def get_bug_groups(db, param):
-    param.bug_filter = esfilter2sqlwhere(db, {"terms": {"bug_id": param.bug_list}})
+    param.bug_filter = esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
 
     return db.query("""
         SELECT bug_id
@@ -395,7 +395,7 @@ def get_bug_groups(db, param):
 
 
 def get_cc(db, param):
-    param.bug_filter = esfilter2sqlwhere(db, {"terms": {"bug_id": param.bug_list}})
+    param.bug_filter = esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
 
     return db.query("""
         SELECT bug_id
@@ -449,14 +449,14 @@ def get_all_cc_changes(db, bug_list):
         {
             "max_time": MAX_TIMESTAMP,
             "cc_field_id": CC_FIELD_ID,
-            "bug_filter": esfilter2sqlwhere(db, int_list_packer("bug_id", bug_list))
+            "bug_filter": esfilter2sqlwhere(int_list_packer("bug_id", bug_list))
         },
         stream=True
     )
 
 
 def get_tracking_flags(db, param):
-    param.bug_filter = esfilter2sqlwhere(db, {"terms": {"bug_id": param.bug_list}})
+    param.bug_filter = esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
 
     return db.query("""
         SELECT
@@ -477,7 +477,7 @@ def get_tracking_flags(db, param):
 
 
 def get_keywords(db, param):
-    param.bug_filter = esfilter2sqlwhere(db, {"terms": {"bug_id": param.bug_list}})
+    param.bug_filter = esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
 
     return db.query("""
         SELECT bug_id
@@ -505,7 +505,7 @@ def get_attachments(db, param):
     else:
         param.attachments_filter = SQL("isprivate=0")
 
-    param.bug_filter = esfilter2sqlwhere(db, {"terms": {"bug_id": param.bug_list}})
+    param.bug_filter = esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
 
     output = db.query("""
         SELECT bug_id
@@ -551,7 +551,7 @@ def flatten_attachments(data):
 
 
 def get_bug_see_also(db, param):
-    param.bug_filter = esfilter2sqlwhere(db, {"terms": {"bug_id": param.bug_list}})
+    param.bug_filter = esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
 
     return db.query("""
         SELECT bug_id
@@ -578,9 +578,9 @@ def get_new_activities(db, param):
         param.screened_fields = db.quote_list([-1])
 
     #TODO: CF_LAST_RESOLVED IS IN PDT, FIX IT
-    param.bug_filter = esfilter2sqlwhere(db, {"terms": {"a.bug_id": param.bug_list}})
+    param.bug_filter = esfilter2sqlwhere({"terms": {"a.bug_id": param.bug_list}})
     param.mixed_case_fields = db.quote_list(MIXED_CASE)
-    param.screened_whiteboard = esfilter2sqlwhere(db, {"terms": {"m.group_id": SCREENED_BUG_GROUP_IDS}})
+    param.screened_whiteboard = esfilter2sqlwhere({"terms": {"m.group_id": SCREENED_BUG_GROUP_IDS}})
     param.whiteboard_field = STATUS_WHITEBOARD_FIELD_ID
 
     output = db.query("""
@@ -652,7 +652,7 @@ def get_new_activities(db, param):
 
 
 def get_flags(db, param):
-    param.bug_filter = esfilter2sqlwhere(db, {"terms": {"bug_id": param.bug_list}})
+    param.bug_filter = esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
 
     return db.query("""
         SELECT 
@@ -692,12 +692,12 @@ def get_comments(db, param):
 
     if param.allow_private_bugs:
         param.comment_field = SQL("'[screened]' comment")
-        param.bug_filter = esfilter2sqlwhere(db, {"and": [
+        param.bug_filter = esfilter2sqlwhere({"and": [
             {"terms": {"bug_id": param.bug_list}}
         ]})
     else:
         param.comment_field = SQL("c.thetext comment")
-        param.bug_filter = esfilter2sqlwhere(db, {"and": [
+        param.bug_filter = esfilter2sqlwhere({"and": [
             {"terms": {"bug_id": param.bug_list}},
             {"term": {"isprivate": 0}}
         ]})
@@ -734,7 +734,7 @@ def get_comments_by_id(db, comments, param):
     if param.allow_private_bugs:
         return []
 
-    param.comments_filter = esfilter2sqlwhere(db, {"and": [
+    param.comments_filter = esfilter2sqlwhere({"and": [
         {"term": {"isprivate": 0}},
         {"terms": {"c.comment_id": comments}}
     ]})
