@@ -1,5 +1,5 @@
 {
-	"mysql": "C:\\Program Files\\MySQL\\MySQL Server 5.5\\bin\\mysql.exe",
+	"mysql": "mysql.exe",
 	"mysqldump": "mysqldump",
 	"schema_file": "tests/resources/sql/bugzilla_schema.sql",
 	"mini_file": "tests/resources/sql/bugzilla_mini.sql",
@@ -15,11 +15,64 @@
 	"destination": {
 		"$ref": "file://~/private.json#test_database",
 		"preamble": "from https://github.com/klahnakoski/Bugzilla-ETL",
+		"host": "localhost",
+		"port": 3306,
 		"schema": "temp_bugs",
 		"debug": true,
 		"readonly": false
 	},
-	"bug_list": [1390946],
+	"bug_list": [
+		384,  //minor email diff
+		1108,  //ok
+		1045,  //ok
+		1046,  //ok
+		1157,  //ok
+		1877,  //minor email diff
+		1865,  //ok
+		1869,  //minor email diff, missing recent history
+		2586,  //missing recent history
+		3140,  //minor email
+		6810,  //ok
+		9622,  //minor email diff
+		10575, //ok
+		11040, //alias analysis problem
+		12911, //alias analysis problem
+		13534, // (REVIEW MOVES TO OTHER PERSON)
+		67742, //alias analysis problem
+		96421, //minor email diff
+		123203,//expiry only
+		178960,//minor email
+		248970, // another cutoff review request
+		367518,//ok
+		457765,//ok
+		458397,//minor email
+		471427,//minor email
+		544327,//extra history
+		547727,//extra history
+		520943,//review flags bug 927494
+		643420,//ok
+		692436,//minor email
+		726635,//alias problem
+		813650,//ERROR in blocked
+		937428, // whitespace after comma in user story, complex diff
+		1165765, // VERY LONG short_desc
+		1393332,  // "\\ no newline at end of file"
+		1390946, // mixed case email flag matching
+
+		//			NOT VERIFIED
+		248971, // another cutoff review request
+		372836, // (REVIEW FLAGS TEST)
+		393845, // added blocking1.9+ twice
+		671185, // *many* review requests
+		1007019, // does not have bug_status, or component, or product
+	],
+	"full_copy":[
+		{"from":"classifications"},
+		{"from":"rep_platform"},
+		{"from":"op_sys"},
+		{"from":"fielddefs"}
+	],
+
 	"copy": [
 		{
 			"from": "bugs",
@@ -70,7 +123,7 @@
 			"where": {"in": {"bug_id": {"$ref": "#bug_list"}}}
 		},
 		{
-			"from": "longdesc",
+			"from": "longdescs",
 			"where": {"in": {"bug_id": {"$ref": "#bug_list"}}}
 		}
 	]
