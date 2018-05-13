@@ -18,7 +18,7 @@ import jx_elasticsearch
 from bzETL import transform_bugzilla, parse_bug_history
 from jx_python import jx
 from jx_python.containers.list_usingPythonList import ListContainer
-from mo_dots import coalesce, unwrap
+from mo_dots import coalesce, unwrap, listwrap, unwraplist
 from mo_future import long
 from mo_json import json2value, value2json
 from mo_logs import Log
@@ -29,15 +29,20 @@ from pyLibrary.env import elasticsearch
 from pyLibrary.testing.elasticsearch import FakeES
 
 
-def get_all_bug_versions(es, bug_id, max_time=None):
-    max_time = coalesce(max_time, datetime.max)
-
+def get_esq(es):
     if isinstance(es, elasticsearch.Index):
-        esq = jx_elasticsearch.new_instance(es.settings)
+        return jx_elasticsearch.new_instance(es.settings)
     elif isinstance(es, FakeES):
-        esq = ListContainer(name="bugs", data=es.data.values())
+        return ListContainer(name="bugs", data=es.data.values())
     else:
         raise Log.error("unknown container")
+
+
+def get_all_bug_versions(es, bug_id, max_time=None, esq=None):
+    max_time = coalesce(max_time, datetime.max)
+
+    if esq is None:
+        esq = get_esq(es)
 
     response = esq.query({
         "where": {"and": [
@@ -48,6 +53,8 @@ def get_all_bug_versions(es, bug_id, max_time=None):
         "limit": 100000
     })
     return response.data
+
+
 
 def get_private_bugs(es):
     """
@@ -107,11 +114,7 @@ def old2new(bug, max_date):
         bug.cf_due_date = convert.datetime2milli(
             convert.string2datetime(bug.cf_due_date, "%Y-%m-%d")
         )
-    bug.changes = json2value(
-        value2json(jx.sort(bug.changes, "field_name")) \
-            .replace("\"field_value_removed\":", "\"old_value\":") \
-            .replace("\"field_value\":", "\"new_value\":")
-    )
+    bug.changes = jx.sort(listwrap(bug.changes), "field_name")
 
     if bug.everconfirmed == 0:
         del bug["everconfirmed"]
@@ -127,14 +130,14 @@ def old2new(bug, max_date):
         pass
 
     bug = transform_bugzilla.rename_attachments(bug)
-    for c in bug.changes:
+    for c in listwrap(bug.changes):
         c.field_name = c.field_name.replace("attachments.", "attachments_")
         if c.attach_id == '':
             c.attach_id = None
         else:
             c.attach_id = convert.value2int(c.attach_id)
 
-    bug.attachments = jx.sort(bug.attachments, "attach_id")
+    bug.attachments = jx.sort(listwrap(bug.attachments), "attach_id")
     for a in bug.attachments:
         a.attach_id = convert.value2int(a.attach_id)
         for k, v in list(a.items()):

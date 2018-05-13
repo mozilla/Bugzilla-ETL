@@ -14,6 +14,9 @@ from __future__ import unicode_literals
 import unittest
 from datetime import datetime
 
+import jx_elasticsearch
+from jx_python.containers.list_usingPythonList import ListContainer
+
 from bzETL import extract_bugzilla, bz_etl
 from bzETL.bz_etl import etl, MIN_TIMESTAMP
 from bzETL.extract_bugzilla import get_current_time, SCREENED_WHITEBOARD_BUG_GROUPS
@@ -32,8 +35,9 @@ from pyLibrary import convert
 from jx_mysql import esfilter2sqlwhere
 from pyLibrary.sql.mysql import all_db, MySQL
 from pyLibrary.testing import elasticsearch
+from pyLibrary.testing.elasticsearch import FakeES
 from util import database, compare_es
-from util.compare_es import get_all_bug_versions
+from util.compare_es import get_all_bug_versions, get_esq
 from util.database import diff
 
 BUG_GROUP_FOR_TESTING = "super secret"
@@ -467,13 +471,13 @@ class TestETL(unittest.TestCase):
         with MySQL(self.settings.bugzilla) as db:
             es = elasticsearch.make_test_instance("candidate", self.settings.candidate)
 
-            #MARK BUG AS ONE OF THE SCREENED GROUPS
+            # MARK BUG AS ONE OF THE SCREENED GROUPS
             database.add_bug_group(db, GOOD_BUG_TO_TEST, SCREENED_WHITEBOARD_BUG_GROUPS[0])
-            #MARK BUG AS ONE OF THE *NOT* SCREENED GROUPS
+            # MARK BUG AS ONE OF THE *NOT* SCREENED GROUPS
             database.add_bug_group(db, GOOD_BUG_TO_TEST, "not screened")
             db.flush()
 
-            #SETUP RUN PARAMETERS
+            # SETUP RUN PARAMETERS
             param = Data()
             param.end_time = convert.datetime2milli(get_current_time(db))
             param.start_time = 0
@@ -604,20 +608,28 @@ def compare_both(candidate, reference, settings, some_bugs):
     max_time = coalesce(milli2datetime(reference.settings.max_timestamp), datetime.utcnow())
 
     with Timer("Comparing to reference"):
+        candidateq = get_esq(candidate)
+        referenceq = get_esq(reference)
+
         found_errors = False
         for bug_id in some_bugs:
+            Log.note("compare {{bug}}", bug=bug_id)
             try:
                 versions = jx.sort(
-                    get_all_bug_versions(candidate, bug_id, max_time),
+                    get_all_bug_versions(None, bug_id, max_time, esq=candidateq),
                     "modified_ts"
                 )
+                for v in versions:
+                    v.etl.timestamp = None
 
-                pre_ref_versions = get_all_bug_versions(reference, bug_id, max_time)
+                pre_ref_versions = get_all_bug_versions(None, bug_id, max_time, esq=referenceq)
                 ref_versions = jx.sort(
                     # ADDED TO FIX OLD PRODUCTION BUG VERSIONS
                     [compare_es.old2new(x, settings.bugzilla.expires_on) for x in pre_ref_versions],
                     "modified_ts"
                 )
+                for v in ref_versions:
+                    v.etl.timestamp = None
 
                 can = value2json(versions, pretty=True)
                 ref = value2json(ref_versions, pretty=True)
@@ -630,9 +642,11 @@ def compare_both(candidate, reference, settings, some_bugs):
                 Log.warning("Problem ETL'ing bug {{bug_id}}", bug_id=bug_id, cause=e)
 
         if found_errors:
-            Log.error("DIFFERENCES FOUND (Differences shown in {{path}})", {
-                "path": [try_dir, ref_dir]}
+            Log.error(
+                "DIFFERENCES FOUND (Differences shown in {{path}})",
+                path=[try_dir, ref_dir]
             )
+
 
 if __name__ == "__main__":
     unittest.main()

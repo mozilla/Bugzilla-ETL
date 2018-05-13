@@ -18,7 +18,7 @@ from mo_logs import Log
 from mo_times.timer import Timer
 from pyLibrary import convert
 from pyLibrary.sql import SQL
-from pyLibrary.sql.mysql import int_list_packer
+from pyLibrary.sql.mysql import int_list_packer, quote_column, quote_list
 
 # USING THE TEXT DATETIME OF EPOCH THROWS A WARNING!  USE ONE SECOND PAST EPOCH AS MINIMUM TIME.
 MIN_TIMESTAMP = 1000  # MILLISECONDS SINCE EPOCH
@@ -233,9 +233,9 @@ def get_bugs(db, param):
         #TODO: CF_LAST_RESOLVED IS IN PDT, FIX IT
         def lower(col):
             if col.column_type.startswith("varchar") or col.column_type.endswith('text'):
-                return "lower(" + db.quote_column(col.column_name) + ") " + db.quote_column(col.column_name)
+                return "lower(" + quote_column(col.column_name) + ") " + quote_column(col.column_name)
             else:
-                return db.quote_column(col.column_name)
+                return quote_column(col.column_name)
 
         param.bugs_columns = bugs_columns.column_name
         param.bugs_columns_SQL = SQL(",\n".join(lower(c) for c in bugs_columns))
@@ -267,6 +267,7 @@ def get_bugs(db, param):
                 lower(pq.login_name) AS qa_contact,
                 lower(prod.`name`) AS product,
                 lower(comp.`name`) AS component,
+                lower(tag.name) as tag,
                 CASE WHEN {{screened_whiteboard}} AND b.status_whiteboard IS NOT NULL AND trim(b.status_whiteboard)<>'' THEN '[screened]' ELSE trim(lower(b.status_whiteboard)) END status_whiteboard,
                 {{sensitive_columns}},
                 {{bugs_columns_SQL}}
@@ -284,6 +285,10 @@ def get_bugs(db, param):
                 components comp ON comp.id = component_id
             LEFT JOIN
                 bug_group_map m ON m.bug_id = b.bug_id
+            LEFT JOIN
+                bug_tag bt on bt.bug_id = b.bug_id
+            LEFT JOIN
+                tag on tag.id = bt.tag_id
             WHERE
                 {{bug_filter}}
             """, param)
@@ -573,13 +578,13 @@ def get_new_activities(db, param):
     get_screened_whiteboard(db)
 
     if param.allow_private_bugs:
-        param.screened_fields = db.quote_list(SCREENED_FIELDDEFS)
+        param.screened_fields = quote_list(SCREENED_FIELDDEFS)
     else:
-        param.screened_fields = db.quote_list([-1])
+        param.screened_fields = quote_list([-1])
 
     #TODO: CF_LAST_RESOLVED IS IN PDT, FIX IT
     param.bug_filter = esfilter2sqlwhere({"terms": {"a.bug_id": param.bug_list}})
-    param.mixed_case_fields = db.quote_list(MIXED_CASE)
+    param.mixed_case_fields = quote_list(MIXED_CASE)
     param.screened_whiteboard = esfilter2sqlwhere({"terms": {"m.group_id": SCREENED_BUG_GROUP_IDS}})
     param.whiteboard_field = STATUS_WHITEBOARD_FIELD_ID
 

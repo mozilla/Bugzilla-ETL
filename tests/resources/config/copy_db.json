@@ -9,7 +9,7 @@
 		"host": "localhost",
 		"port": 3307,
 		"schema": "bugs",
-		"debug": true,
+		"debug": false,
 		"readonly": true
 	},
 	"destination": {
@@ -18,7 +18,7 @@
 		"host": "localhost",
 		"port": 3306,
 		"schema": "temp_bugs",
-		"debug": true,
+		"debug": false,
 		"readonly": false
 	},
 	"bug_list": [
@@ -70,7 +70,10 @@
 		{"from":"classifications"},
 		{"from":"rep_platform"},
 		{"from":"op_sys"},
-		{"from":"fielddefs"}
+		{"from":"fielddefs"},
+		{"from":"tag"},
+		{"from":"keyworddefs"},
+		{"from":"tracking_flags"}
 	],
 
 	"copy": [
@@ -120,10 +123,6 @@
 		},
 		{
 			"from": "tracking_flags_bugs",
-			"where": {"in": {"bug_id": {"$ref": "#bug_list"}}}
-		},
-		{
-			"from": "longdescs",
 			"where": {"in": {"bug_id": {"$ref": "#bug_list"}}}
 		}
 	]

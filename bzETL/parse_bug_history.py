@@ -83,7 +83,9 @@ KNOWN_INCONSISTENT_FIELDS = {
     "cf_last_resolved",  # CHANGES IN DATABASE TIMEZONE
     "cf_crash_signature"
 }
-FIELDS_CHANGED = {  # SOME FIELD VALUES ARE CHANGED WITHOUT HISTORY BEING CHANGED TOO https://bugzilla.mozilla.org/show_bug.cgi?id=997228
+FIELDS_CHANGED = {
+    # SOME FIELD VALUES ARE CHANGED WITHOUT HISTORY BEING CHANGED TOO https://bugzilla.mozilla.org/show_bug.cgi?id=997228
+    # MAP FROM PROPERTY NAME TO (MAP FROM OLD VALUE TO NEW VALUE}
     "cf_blocking_b2g":{"1.5":"2.0"}
 }
 EMAIL_FIELDS = {'cc', 'assigned_to', 'modified_by', 'created_by', 'qa_contact', 'bug_mentor'}
@@ -405,6 +407,7 @@ class BugHistoryParser(object):
                                 self.alias_analyzer.add_alias(lost=new_value, found=expected_value)
                         else:
                             lookup = FIELDS_CHANGED.setdefault(row_in.field_name, {})
+                            # RECORD INCONSISTENCIES, MAYBE WE WILL FIND PATTERNS
                             if expected_value:
                                 lookup[new_value] = expected_value
                             File("expected_values.json").write(value2json(FIELDS_CHANGED, pretty=True))
@@ -643,7 +646,7 @@ class BugHistoryParser(object):
                 # requestee stays the same.
 
                 duration_ms = existingFlag["modified_ts"] - existingFlag["previous_modified_ts"]
-                existingFlag["duration_days"] = math.floor(duration_ms / (1000.0 * 60 * 60 * 24))  # TODO: REMOVE floor
+                # existingFlag["duration_days"] = math.floor(duration_ms / (1000.0 * 60 * 60 * 24))  # TODO: REMOVE floor
             else:
                 self.findFlag(target.flags, removed_flag)
                 Log.note(

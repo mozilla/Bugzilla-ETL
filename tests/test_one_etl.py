@@ -24,6 +24,7 @@ from pyLibrary.sql.mysql import all_db, MySQL
 from pyLibrary.testing import elasticsearch
 from pyLibrary.testing.elasticsearch import FakeES
 from test_etl import compare_both, MIN_TIMESTAMP
+from util.database import make_test_instance
 
 
 class TestOneETL(unittest.TestCase):
@@ -54,7 +55,7 @@ class TestOneETL(unittest.TestCase):
         reference = FakeES(self.settings.reference)
         candidate = elasticsearch.make_test_instance("candidate", self.settings.elasticsearch)
 
-        # make_test_instance(self.settings.bugzilla)
+        make_test_instance(self.settings.bugzilla)
         with MySQL(self.settings.bugzilla) as db:
 
             #SETUP RUN PARAMETERS

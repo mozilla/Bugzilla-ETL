@@ -201,9 +201,6 @@ def main(settings):
     if settings.source.filename != None:
         settings.destination.alias = settings.destination.index
         settings.destination.index = Cluster.proto_name(settings.destination.alias)
-        # schema = json2value(File(settings.destination.schema_file).read(), paths=True, flexible=True)
-        # if transform_bugzilla.USE_ATTACHMENTS_DOT:
-        #     schema = json2value(value2json(schema).replace("attachments_", "attachments."))
 
         dest = Cluster(settings.destination).create_index(kwargs=settings.destination, limit_replicas=True)
         dest.set_refresh_interval(-1)

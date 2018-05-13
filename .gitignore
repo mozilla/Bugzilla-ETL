@@ -13,3 +13,4 @@ build
 dist
 /vendor/pyLibrary/vendor/sqlite
 /tests/resources/sql/bugzilla_schema.sql
+/expected_values.json

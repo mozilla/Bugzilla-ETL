@@ -17,7 +17,7 @@ from mo_logs import Log
 from mo_times.timer import Timer
 from pyLibrary import convert
 from jx_mysql import esfilter2sqlwhere
-from pyLibrary.sql.mysql import MySQL
+from pyLibrary.sql.mysql import MySQL, quote_column
 
 
 def make_test_instance(db_settings):
@@ -32,10 +32,10 @@ def make_test_instance(db_settings):
             no_schema=db_settings.copy()
             no_schema.schema = None
             with MySQL(no_schema) as db:
-                db.execute("DROP DATABASE IF EXISTS {{schema}}", {"schema":db.quote_column(db_settings.schema)})
-                db.execute("CREATE DATABASE {{schema}}", {"schema":db.quote_column(db_settings.schema)})
+                db.execute("DROP DATABASE IF EXISTS {{schema}}", {"schema": quote_column(db_settings.schema)})
+                db.execute("CREATE DATABASE {{schema}}", {"schema": quote_column(db_settings.schema)})
 
-            #FILL SCHEMA
+            # FILL SCHEMA
             Log.note("Fill {{schema}} schema with data", schema=db_settings.schema)
             MySQL.execute_file(filename=db_settings.filename, kwargs=db_settings)
 

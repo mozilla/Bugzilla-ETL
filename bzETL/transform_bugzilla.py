@@ -15,7 +15,7 @@ import re
 from datetime import date
 
 from jx_python import jx
-from mo_dots import listwrap, wrap, coalesce
+from mo_dots import listwrap, wrap, coalesce, unwraplist
 from mo_future import text_type, long
 from mo_json import json2value, value2json
 from mo_logs import Log, suppress_exception
@@ -70,13 +70,13 @@ def normalize(bug, old_school=False):
 
     #ENSURE STRUCTURES ARE SORTED
     # Do some processing to make sure that diffing between runs stays as similar as possible.
-    bug.flags=jx.sort(bug.flags, "value")
+    bug.flags=sort(bug.flags, "value")
 
     if bug.attachments:
         if USE_ATTACHMENTS_DOT:
             bug.attachments=json2value(value2json(bug.attachments).replace("attachments_", "attachments."))
 
-        bug.attachments = jx.sort(bug.attachments, "attach_id")
+        bug.attachments = sort(bug.attachments, "attach_id")
         for a in bug.attachments:
             for k,v in list(a.items()):
                 if k.startswith("attachments") and (k.endswith("isobsolete") or k.endswith("ispatch") or k.endswith("isprivate")):
@@ -85,13 +85,16 @@ def normalize(bug, old_school=False):
                     a[k.replace(".", "\\.")]=new_v
                     if not old_school:
                         a[new_k]=new_v
-            a.flags = jx.sort(a.flags, ["modified_ts", "value"])
+            a.flags = sort(a.flags, ["modified_ts", "requestee", "value"])
 
     if bug.changes != None:
         if USE_ATTACHMENTS_DOT:
             json = value2json(bug.changes).replace("attachments_", "attachments.")
             bug.changes=json2value(json)
-        bug.changes = jx.sort(bug.changes, ["attach_id", "field_name"])
+        for c in listwrap(bug.changes):
+            c.new_value = sort(c.new_value)
+            c.old_value = sort(c.old_value)
+        bug.changes = sort(bug.changes, ["attach_id", "field_name"])
 
     bug = elasticsearch.scrub(bug)
     for k, v in list(bug.items()):
@@ -152,3 +155,7 @@ def normalize(bug, old_school=False):
     bug.etl.timestamp = Date.now()
 
     return elasticsearch.scrub(bug)
+
+
+def sort(value, param=None):
+    return jx.sort(listwrap(value), param)

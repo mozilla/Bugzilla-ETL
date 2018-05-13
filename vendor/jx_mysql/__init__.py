@@ -22,7 +22,7 @@ from mo_logs import Log
 from mo_logs.exceptions import suppress_exception
 from mo_logs.strings import expand_template
 from pyLibrary import convert
-from pyLibrary.sql import SQL, SQL_IS_NULL, SQL_AND, SQL_IS_NOT_NULL, SQL_ORDERBY, SQL_LIMIT, sql_iso, sql_list, SQL_TRUE, sql_alias, SQL_OR, SQL_WHERE, SQL_NOT
+from pyLibrary.sql import SQL, SQL_IS_NULL, SQL_AND, SQL_IS_NOT_NULL, SQL_ORDERBY, SQL_LIMIT, sql_iso, sql_list, SQL_TRUE, sql_alias, SQL_OR, SQL_WHERE, SQL_NOT, SQL_FALSE
 from pyLibrary.sql.mysql import int_list_packer, quote_value, quote_column
 
 
@@ -353,7 +353,7 @@ def _esfilter2sqlwhere(esfilter):
     elif esfilter.terms or esfilter['in']:
         for col, v in coalesce(esfilter.terms, esfilter['in']).items():
             if len(v) == 0:
-                return "FALSE"
+                return SQL_FALSE
 
             with suppress_exception:
                 int_list = convert.value2intlist(v)

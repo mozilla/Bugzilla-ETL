@@ -16,7 +16,7 @@ from mo_dots import coalesce
 from mo_logs import startup, constants, Log
 from mo_threads import Process
 from pyLibrary.sql import SQL_WHERE, SQL_SELECT, SQL_FROM, SQL_UNION, SQL
-from pyLibrary.sql.mysql import MySQL, quote_sql
+from pyLibrary.sql.mysql import MySQL, quote_sql, quote_list
 from pyLibrary.sql.sqlite import quote_column
 
 
@@ -68,60 +68,71 @@ def bugzilla_extract(config):
     destination = MySQL(config.destination)
 
     def copy(query):
-        table_name = query['from']
-        filter = esfilter2sqlwhere(coalesce(query.where, True))
+        try:
+            table_name = query['from']
+            filter = esfilter2sqlwhere(coalesce(query.where, True))
+            Log.note("copy {{table}}", table=table_name)
 
-        records = source.query(
-            SQL_SELECT + " * " +
-            SQL_FROM + quote_column(table_name) +
-            SQL_WHERE + filter
-        )
+            records = source.query(
+                SQL_SELECT + " * " +
+                SQL_FROM + quote_column(table_name) +
+                SQL_WHERE + filter
+            )
 
-        destination.insert_list(
-            table_name,
-            records
-        )
+            destination.insert_list(
+                table_name,
+                records
+            )
+        except Exception as e:
+            Log.warning("Can not copy table {{table}}", table=table_name, cause=e)
 
     with destination.transaction():
+        destination.execute("ALTER TABLE tag DROP FOREIGN KEY fk_tag_user_id_profiles_userid")
+        destination.execute("ALTER TABLE dependencies DROP FOREIGN KEY fk_dependencies_blocked_bugs_bug_id")
+        destination.execute("ALTER TABLE dependencies DROP FOREIGN KEY fk_dependencies_dependson_bugs_bug_id")
+        destination.execute("ALTER TABLE duplicates DROP FOREIGN KEY fk_duplicates_dupe_bugs_bug_id")
+        destination.execute("ALTER TABLE duplicates DROP FOREIGN KEY fk_duplicates_dupe_of_bugs_bug_id")
 
         for query in config.full_copy:
             copy(query)
 
         products = source.query(
-            "SELECT id, name, description, classification_id FROM products WHERE id IN (SELECT product_id FROM bugs WHERE bug_id IN " + quote_sql(config.bug_list) + ")"
+            "SELECT id, name, description, classification_id FROM products WHERE id IN (SELECT product_id FROM bugs WHERE bug_id IN " + quote_list(config.bug_list) + ")"
         )
         destination.insert_list("products", products)
 
         components = source.query(
-            "SELECT * FROM components WHERE id IN (SELECT component_id FROM bugs WHERE bug_id IN " + quote_sql(config.bug_list) + ")"
+            "SELECT * FROM components WHERE id IN (SELECT component_id FROM bugs WHERE bug_id IN " + quote_list(config.bug_list) + ")"
         )
 
         profiles = source.query(
             SQL("SELECT `comment_count`, `creation_ts`, `disable_mail`, `disabledtext`, `extern_id`, `feedback_request_count`, `first_patch_bug_id`, `first_patch_reviewed_id`, `is_enabled`, `last_activity_ts`, `last_seen_date`, `last_statistics_ts`, `login_name`, `mfa`, `mfa_required_date`, `mybugslink`, `needinfo_request_count`, `password_change_reason`, `password_change_required`, `realname`, `review_request_count`, `userid`")+
             "FROM profiles WHERE userid IN (" +
-            "SELECT reporter as id FROM bugs WHERE bug_id IN " + quote_sql(config.bug_list) +
+            "SELECT reporter as id FROM bugs WHERE bug_id IN " + quote_list(config.bug_list) +
             SQL_UNION +
-            "SELECT assigned_to as id FROM bugs WHERE bug_id IN " + quote_sql(config.bug_list) +
+            "SELECT assigned_to as id FROM bugs WHERE bug_id IN " + quote_list(config.bug_list) +
             SQL_UNION +
-            "SELECT qa_contact as id FROM bugs WHERE bug_id IN " + quote_sql(config.bug_list) +
+            "SELECT qa_contact as id FROM bugs WHERE bug_id IN " + quote_list(config.bug_list) +
             SQL_UNION +
-            "SELECT who as id FROM cc WHERE bug_id IN " + quote_sql(config.bug_list) +
+            "SELECT who as id FROM cc WHERE bug_id IN " + quote_list(config.bug_list) +
             SQL_UNION +
-            "SELECT submitter_id as id FROM attachments WHERE bug_id IN " + quote_sql(config.bug_list) +
+            "SELECT submitter_id as id FROM attachments WHERE bug_id IN " + quote_list(config.bug_list) +
             SQL_UNION +
-            "SELECT who as id FROM bugs_activity WHERE bug_id IN " + quote_sql(config.bug_list) +
+            "SELECT who as id FROM bugs_activity WHERE bug_id IN " + quote_list(config.bug_list) +
             SQL_UNION +
-            "SELECT setter_id as id FROM flags WHERE bug_id IN " + quote_sql(config.bug_list) +
+            "SELECT setter_id as id FROM flags WHERE bug_id IN " + quote_list(config.bug_list) +
             SQL_UNION +
-            "SELECT requestee_id as id FROM flags WHERE bug_id IN " + quote_sql(config.bug_list) +
+            "SELECT requestee_id as id FROM flags WHERE bug_id IN " + quote_list(config.bug_list) +
             SQL_UNION +
-            "SELECT who as id FROM longdescs WHERE bug_id IN " + quote_sql(config.bug_list) +
+            "SELECT who as id FROM longdescs WHERE bug_id IN " + quote_list(config.bug_list) +
             SQL_UNION +
-            "SELECT initialowner as id FROM components WHERE id IN " + quote_sql(components.id) +
+            "SELECT initialowner as id FROM components WHERE id IN " + quote_list(components.id) +
             SQL_UNION +
-            "SELECT initialqacontact as id FROM components WHERE id IN " + quote_sql(components.id) +
+            "SELECT initialqacontact as id FROM components WHERE id IN " + quote_list(components.id) +
             SQL_UNION +
-            "SELECT watch_user as id FROM components WHERE id IN " + quote_sql(components.id) +
+            "SELECT watch_user as id FROM components WHERE id IN " + quote_list(components.id) +
+            SQL_UNION +
+            "SELECT triage_owner_id as id FROM components WHERE id IN " + quote_list(components.id) +
             ")"
         )
         destination.insert_list("profiles", profiles)
@@ -133,21 +144,24 @@ def bugzilla_extract(config):
         destination.insert_list("flagtypes", flagtypes)
 
         milestones = source.query(
-            "SELECT * FROM milestones WHERE product_id IN " + quote_sql(products.id)
+            "SELECT * FROM milestones WHERE product_id IN " + quote_list(products.id)
         )
         destination.insert_list("milestones", milestones)
 
         versions = source.query(
-            "SELECT * FROM versions WHERE product_id IN " + quote_sql(products.id)
+            "SELECT * FROM versions WHERE product_id IN " + quote_list(products.id)
         )
         destination.insert_list("versions", versions)
 
-        destination.execute(
-            "ALTER TABLE dependencies DROP FOREIGN KEY fk_dependencies_blocked_bugs_bug_id"
-        )
-
         for query in config['copy']:
             copy(query)
+
+
+        longdescs = source.query(
+            "SELECT * FROM longdescs WHERE bug_id IN " + quote_list(config.bug_list)
+        )
+        for l in longdescs:
+            destination.insert("longdescs", l)
 
     # use mysqldump, again to get full extract as file
     # "C:\Program Files\MySQL\MySQL Server 5.5\bin\mysqldump.exe" --skip-tz-utc -u root -p{{password}} -h klahnakoski-es.corp.tor1.mozilla.com bugzilla > small_bugzilla.sql

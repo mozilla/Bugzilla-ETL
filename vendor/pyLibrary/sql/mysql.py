@@ -436,7 +436,7 @@ class MySQL(object):
     def _execute_backlog(self):
         if not self.backlog: return
 
-        (backlog, self.backlog) = (self.backlog, [])
+        backlog, self.backlog = self.backlog, []
         if self.db.__module__.startswith("pymysql"):
             # BUG IN PYMYSQL: CAN NOT HANDLE MULTIPLE STATEMENTS
             # https://github.com/PyMySQL/PyMySQL/issues/157
@@ -560,6 +560,21 @@ class MySQL(object):
         return sql_list([quote_column(s.field) + (SQL_DESC if s.sort == -1 else SQL_ASC) for s in sort])
 
 
+ESCAPE_DCT = {
+    u"\\": u"\\\\",
+    # u"\0": u"\\0",
+    # u"\"": u'\\"',
+    u"\'": u"''",
+    # u"\b": u"\\b",
+    # u"\f": u"\\f",
+    # u"\n": u"\\n",
+    # u"\r": u"\\r",
+    # u"\t": u"\\t",
+    # u"%": u"\\%",
+    # u"_": u"\\_"
+}
+
+
 def quote_value(value):
     """
     convert values to mysql code for the same
@@ -571,7 +586,7 @@ def quote_value(value):
         elif isinstance(value, SQL):
             return quote_sql(value.template, value.param)
         elif isinstance(value, text_type):
-            return SQL("'" + value.replace("'", "''") + "'")
+            return SQL("'" + "".join(ESCAPE_DCT.get(c, c) for c in value) + "'")
         elif isinstance(value, Mapping):
             return quote_value(json_encode(value))
         elif Math.is_number(value):
@@ -602,6 +617,10 @@ def quote_column(column_name, table=None):
     else:
         # ASSUME {"name":name, "value":value} FORM
         return SQL(sql_alias(column_name.value, quote_column(column_name.name)))
+
+
+def quote_list(value):
+    return sql_iso(sql_list(map(quote_value, value)))
 
 
 def quote_sql(value, param=None):
