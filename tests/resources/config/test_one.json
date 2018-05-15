@@ -70,7 +70,7 @@
 //		"max_timestamp": 1372867005000  // MAX TIME IN THE REFERENCE
 	},
 	"bugzilla": {
-		"filename": "tests/resources/sql/bugzilla_mini.sql",
+		"filename": "tests/resources/sql/bugzilla_mini.sql.zip",
 		"$ref": "file://~/private.json#bugzilla",
 		"preamble": "from https://github.com/klahnakoski/Bugzilla-ETL",
 		"host": "localhost",

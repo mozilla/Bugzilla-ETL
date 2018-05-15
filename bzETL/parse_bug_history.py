@@ -43,6 +43,7 @@ from __future__ import unicode_literals
 import math
 import re
 
+from bzETL.alias_analysis import AliasAnalyzer
 from bzETL.extract_bugzilla import MAX_TIMESTAMP
 from bzETL.transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS, DIFF_FIELDS, NULL_VALUES
 from jx_python import jx, meta
@@ -102,6 +103,9 @@ class BugHistoryParser(object):
         self.settings = settings
         self.output = output_queue
         self.alias_analyzer = alias_analyzer
+
+        if not isinstance(alias_analyzer, AliasAnalyzer):
+            Log.error("expecting an AliasAnalyzer")
 
     def processRow(self, row_in):
         if not row_in:
@@ -209,7 +213,8 @@ class BugHistoryParser(object):
             modified_ts=row_in.modified_ts,
             modified_by=row_in.modified_by,
             reported_by=row_in.modified_by,
-            attachments=[]
+            attachments=[],
+            flags=[]
         )
 
         # self.cc_list_ok = True
@@ -265,11 +270,11 @@ class BugHistoryParser(object):
         att = self.currBugAttachmentsMap.get(row_in.attach_id)
         if att is None:
             att = Data(
-                attach_id= row_in.attach_id,
-                modified_ts= row_in.modified_ts,
-                created_ts= row_in.created_ts,
-                modified_by= row_in.modified_by,
-                flags= set()
+                attach_id=row_in.attach_id,
+                modified_ts=row_in.modified_ts,
+                created_ts=row_in.created_ts,
+                modified_by=row_in.modified_by,
+                flags=[]
             )
             self.currBugAttachmentsMap[row_in.attach_id] = att
 
@@ -290,9 +295,9 @@ class BugHistoryParser(object):
                         bug_id=self.currBugID
                     )
             else:
-                self.currBugAttachmentsMap[row_in.attach_id].flags.add(flag)
+                self.currBugAttachmentsMap[row_in.attach_id].flags.append(flag)
         else:
-            self.currBugState.flags.add(flag)
+            self.currBugState.flags.append(flag)
 
     def processBugsActivitiesTableItem(self, row_in):
         if self.currBugState.created_ts == None:
@@ -339,16 +344,15 @@ class BugHistoryParser(object):
                 })
             else:
 
-                if row_in.field_name in MULTI_FIELDS:
+                if row_in.field_name == "flags":
                     total = attachment[row_in.field_name]
-                    if row_in.field_name == "flags":
-                        total = self.processFlags(total, multi_field_old_value, multi_field_new_value, row_in.modified_ts, row_in.modified_by, "attachment", attachment)
-                    else:
-                        total = attachment[row_in.field_name]
-                        # Can have both added and removed values.
-                        total = self.removeValues(total, multi_field_new_value, "added", row_in.field_name, "attachment", attachment)
-                        total = self.addValues(total, multi_field_old_value, "removed attachment", row_in.field_name, attachment)
-
+                    total = self.processFlags(total, multi_field_old_value, multi_field_new_value, row_in.modified_ts, row_in.modified_by, "attachment", attachment)
+                    attachment[row_in.field_name] = total
+                elif row_in.field_name in MULTI_FIELDS:
+                    total = attachment[row_in.field_name]
+                    # Can have both added and removed values.
+                    total = self.removeValues(total, multi_field_new_value, "added", row_in.field_name, "attachment", attachment)
+                    total = self.addValues(total, multi_field_old_value, "removed attachment", row_in.field_name, attachment)
                     attachment[row_in.field_name] = total
                 else:
                     attachment[row_in.field_name] = row_in.old_value
@@ -360,17 +364,21 @@ class BugHistoryParser(object):
                     })
 
         else:
-            if row_in.field_name in MULTI_FIELDS:
+            if row_in.field_name == "flags":
                 # PROBLEM: WHEN GOING BACK IN HISTORY, AND THE ADDED VALUE IS NOT FOUND IN THE CURRENT
                 # STATE, IT IS STILL RECORDED (see above self.currActivity.changes.append...).  THIS MEANS
                 # WHEN GOING THROUGH THE CHANGES IN IN ORDER THE VALUE WILL EXIST, BUT IT SHOULD NOT
                 total = self.currBugState[row_in.field_name]
-                if row_in.field_name == "flags":
-                    total = self.processFlags(total, multi_field_old_value, multi_field_new_value, row_in.modified_ts, row_in.modified_by, "bug", self.currBugState)
-                else:
-                    # Can have both added and removed values.
-                    total = self.removeValues(total, multi_field_new_value, "added", row_in.field_name, "currBugState", self.currBugState)
-                    total = self.addValues(total, multi_field_old_value, "removed bug", row_in.field_name, self.currBugState)
+                total = self.processFlags(total, multi_field_old_value, multi_field_new_value, row_in.modified_ts, row_in.modified_by, "bug", self.currBugState)
+                self.currBugState[row_in.field_name] = total
+            elif row_in.field_name in MULTI_FIELDS:
+                # PROBLEM: WHEN GOING BACK IN HISTORY, AND THE ADDED VALUE IS NOT FOUND IN THE CURRENT
+                # STATE, IT IS STILL RECORDED (see above self.currActivity.changes.append...).  THIS MEANS
+                # WHEN GOING THROUGH THE CHANGES IN IN ORDER THE VALUE WILL EXIST, BUT IT SHOULD NOT
+                total = self.currBugState[row_in.field_name]
+                # Can have both added and removed values.
+                total = self.removeValues(total, multi_field_new_value, "added", row_in.field_name, "currBugState", self.currBugState)
+                total = self.addValues(total, multi_field_old_value, "removed bug", row_in.field_name, self.currBugState)
                 self.currBugState[row_in.field_name] = total
             elif row_in.field_name in DIFF_FIELDS:
                 diff = row_in.new_value
@@ -620,7 +628,7 @@ class BugHistoryParser(object):
     def processFlagChange(self, target, change, modified_ts, modified_by):
         if target.flags == None:
             Log.note("[Bug {{bug_id}}]: PROBLEM  processFlagChange called with unset 'flags'", bug_id=self.currBugState.bug_id)
-            target.flags = set()
+            target.flags = []
 
         addedFlags, change.new_value = change.new_value, set(c.value for c in change.new_value)
         removedFlags, change.old_value = change.old_value, set(c.value for c in change.old_value)
@@ -671,7 +679,7 @@ class BugHistoryParser(object):
 
             if not candidates:
                 # No matching candidate. Totally new flag.
-                target.flags.add(added_flag)
+                target.flags.append(added_flag)
                 continue
 
             chosen_one = candidates[0]
@@ -943,7 +951,7 @@ class BugHistoryParser(object):
             return output
 
     def processFlags(self, total, old_values, new_values, modified_ts, modified_by, target_type, target):
-        added_values = set() #FOR SOME REASON, REMOVAL BY OBJECT DOES NOT WORK, SO WE USE THIS LIST OF STRING  VALUES
+        added_values = [] #FOR SOME REASON, REMOVAL BY OBJECT DOES NOT WORK, SO WE USE THIS LIST OF STRING  VALUES
         for v in new_values:
             flag = parse_flag(v, modified_ts, modified_by)
 
@@ -962,7 +970,7 @@ class BugHistoryParser(object):
                 if before != after+1:
                     Log.error("")
                 # total = wrap([unwrap(a) for a in total if tuple(a.items()) != tuple(found.items())])  # COMPARE DICTS
-                added_values.add(flag)
+                added_values.append(flag)
             else:
                 Log.note(
                     "[Bug {{bug_id}}]: PROBLEM Unable to find {{type}} FLAG: {{object}}.{{field_name}}: (All {{missing}}" + " not in : {{existing}})",
@@ -978,20 +986,20 @@ class BugHistoryParser(object):
             self.currActivity.changes.append({
                 "field_name": "flags",
                 "new_value": added_values,
-                "old_value": set(),
+                "old_value": [],
                 "attach_id": target.attach_id
             })
 
         if old_values:
-            removed_values = set(
+            removed_values = [
                 parse_flag(v, modified_ts, modified_by)
                 for v in old_values
-            )
-            total |= removed_values
+            ]
+            total.extend(removed_values)
 
             self.currActivity.changes.append({
                 "field_name": "flags",
-                "new_value": set(),
+                "new_value": [],
                 "old_value": removed_values,
                 "attach_id": target.attach_id
             })
@@ -1027,12 +1035,15 @@ def parse_flag(flag, modified_ts, modified_by):
 
 
 def parseMultiField(name, value):
-    if value == None:
+    if name == "flags":
+        if value == None:
+            return []
+        else:
+            return list(s.strip() for s in value.split(",") if s.strip() != "")
+    elif value == None:
         return set()
     elif isinstance(value, (list, set)):
         Log.error("do not parse lists")
-    elif name == "flags":
-        return set(s.strip() for s in value.split(",") if s.strip() != "")
     elif name in MULTI_FIELDS:
         if name in NUMERIC_FIELDS:
             return set(int(s.strip()) for s in value.split(",") if s.strip() != "")

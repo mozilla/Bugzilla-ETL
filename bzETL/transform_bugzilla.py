@@ -26,7 +26,7 @@ from pyLibrary.env import elasticsearch
 USE_ATTACHMENTS_DOT = True  # REMOVE THIS, ASSUME False
 
 DIFF_FIELDS = ["cf_user_story"]
-MULTI_FIELDS = ["cc", "blocked", "dependson", "dupe_by", "dupe_of", "flags", "keywords", "bug_group", "see_also"]
+MULTI_FIELDS = ["cc", "blocked", "dependson", "dupe_by", "dupe_of", "keywords", "bug_group", "see_also"]
 NUMERIC_FIELDS=[
     "blocked",
     "dependson",

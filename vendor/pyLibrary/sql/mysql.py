@@ -15,6 +15,7 @@ from __future__ import unicode_literals
 import subprocess
 from collections import Mapping
 from datetime import datetime
+from zipfile import ZipFile
 
 from pymysql import connect, InterfaceError, cursors
 
@@ -29,6 +30,8 @@ from mo_logs.exceptions import Except, suppress_exception
 from mo_logs.strings import expand_template, indent, outdent
 from mo_math import Math
 from mo_times import Date
+from pyLibrary.convert import zip2bytes
+from pyLibrary.env.big_data import ibytes2ilines
 from pyLibrary.sql import SQL, SQL_NULL, SQL_SELECT, SQL_LIMIT, SQL_WHERE, SQL_LEFT_JOIN, SQL_FROM, SQL_AND, sql_list, sql_iso, SQL_ASC, SQL_TRUE, SQL_ONE, SQL_DESC, SQL_IS_NULL, sql_alias
 from pyLibrary.sql.sqlite import join_column
 
@@ -426,7 +429,12 @@ class MySQL(object):
     ):
         # MySQLdb provides no way to execute an entire SQL file in bulk, so we
         # have to shell out to the commandline client.
-        sql = File(filename).read()
+        file = File(filename)
+        if file.extension == 'zip':
+            sql = file.read_zipfile()
+        else:
+            sql = File(filename).read()
+
         if ignore_errors:
             with suppress_exception:
                 MySQL.execute_sql(sql=sql, param=param, kwargs=kwargs)

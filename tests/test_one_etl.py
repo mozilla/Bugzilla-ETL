@@ -14,6 +14,7 @@ from __future__ import unicode_literals
 import unittest
 
 from bzETL import bz_etl, extract_bugzilla
+from bzETL.alias_analysis import AliasAnalyzer
 from bzETL.bz_etl import etl
 from bzETL.extract_bugzilla import get_current_time
 from mo_dots import Data
@@ -37,6 +38,8 @@ class TestOneETL(unittest.TestCase):
         constants.set(self.settings.constants)
         Log.start(self.settings.debug)
 
+        self.alias_analyzer = AliasAnalyzer(self.settings.alias)
+
     def tearDown(self):
         #CLOSE THE CACHED MySQL CONNECTIONS
         bz_etl.close_db_connections()
@@ -58,7 +61,7 @@ class TestOneETL(unittest.TestCase):
         make_test_instance(self.settings.bugzilla)
         with MySQL(self.settings.bugzilla) as db:
 
-            #SETUP RUN PARAMETERS
+            # SETUP RUN PARAMETERS
             param = Data()
             param.end_time = convert.datetime2milli(get_current_time(db))
             param.start_time = MIN_TIMESTAMP
@@ -69,9 +72,9 @@ class TestOneETL(unittest.TestCase):
             param.allow_private_bugs = self.settings.param.allow_private_bugs
 
             with ThreadedQueue("etl queue", candidate, batch_size=1000) as output:
-                etl(db, output, param, self.settings.alias, please_stop=None)
+                etl(db, output, param, self.alias_analyzer, please_stop=None)
 
-        #COMPARE ALL BUGS
+        # COMPARE ALL BUGS
         Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
         compare_both(candidate, reference, self.settings, self.settings.param.bugs)
 
