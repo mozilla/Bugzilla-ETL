@@ -24,6 +24,7 @@
 			178960,//minor email
 			248970, // another cutoff review request
 			367518,//ok
+			372836, // (REVIEW FLAGS TEST)
 			457765,//ok
 			458397,//minor email
 			471427,//minor email
@@ -41,7 +42,6 @@
 
 //			NOT VERIFIED
 			248971, // another cutoff review request
-			372836, // (REVIEW FLAGS TEST)
 			393845, // added blocking1.9+ twice
 			671185, // *many* review requests
 			1007019, // does not have bug_status, or component, or product
@@ -66,7 +66,7 @@
 		}
 	},
 	"reference": {
-		"filename": "tests/resources/reference/test_one_etl.json",
+		"filename": "tests/resources/reference/test_examples.json",
 //		"max_timestamp": 1372867005000  // MAX TIME IN THE REFERENCE
 	},
 	"bugzilla": {

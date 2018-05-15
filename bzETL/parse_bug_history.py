@@ -217,8 +217,6 @@ class BugHistoryParser(object):
             flags=[]
         )
 
-        # self.cc_list_ok = True
-
         #WE FORCE ADD ALL SETS, AND WE WILL scrub() THEM OUT LATER IF NOT USED
         for f in MULTI_FIELDS:
             self.currBugState[f] = set()

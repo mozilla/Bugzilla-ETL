@@ -34,7 +34,7 @@ class TestOneETL(unittest.TestCase):
     I USE THIS TO IDENTIFY CANDIDATES TO ADD TO THE TEST SUITE
     """
     def setUp(self):
-        self.settings = startup.read_settings(filename="tests/resources/config/test_one.json")
+        self.settings = startup.read_settings(filename="tests/resources/config/test_examples.json")
         constants.set(self.settings.constants)
         Log.start(self.settings.debug)
 
