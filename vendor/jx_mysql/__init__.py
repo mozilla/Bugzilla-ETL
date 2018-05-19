@@ -323,28 +323,23 @@ class MySQL(object):
     def _where2sql(self, where):
         if where == None:
             return ""
-        return SQL_WHERE + _esfilter2sqlwhere(self.db, where)
+        return SQL_WHERE + esfilter2sqlwhere(where, use_packing=use_packing)
 
 
-def esfilter2sqlwhere(esfilter):
-    return _esfilter2sqlwhere(esfilter)
-
-
-def _esfilter2sqlwhere(esfilter):
+def esfilter2sqlwhere(esfilter, use_packing=True):
     """
     CONVERT ElassticSearch FILTER TO SQL FILTER
-    db - REQUIRED TO PROPERLY QUOTE VALUES AND COLUMN NAMES
     """
     esfilter = wrap(esfilter)
 
     if esfilter is True:
         return SQL_TRUE
     elif esfilter["and"]:
-        return sql_iso(SQL_AND.join([esfilter2sqlwhere(a) for a in esfilter["and"]]))
+        return sql_iso(SQL_AND.join([esfilter2sqlwhere(a, use_packing=use_packing) for a in esfilter["and"]]))
     elif esfilter["or"]:
-        return sql_iso(SQL_OR.join([esfilter2sqlwhere(a) for a in esfilter["or"]]))
+        return sql_iso(SQL_OR.join([esfilter2sqlwhere(a, use_packing=use_packing) for a in esfilter["or"]]))
     elif esfilter["not"]:
-        return SQL_NOT + sql_iso(esfilter2sqlwhere(esfilter["not"]))
+        return SQL_NOT + sql_iso(esfilter2sqlwhere(esfilter["not"], use_packing=use_packing))
     elif esfilter.term:
         return sql_iso(SQL_AND.join([
             quote_column(col) + SQL("=") + quote_value(val)
@@ -354,25 +349,23 @@ def _esfilter2sqlwhere(esfilter):
         for col, v in coalesce(esfilter.terms, esfilter['in']).items():
             if len(v) == 0:
                 return SQL_FALSE
+            if not use_packing:
+                return quote_column(col) + " in " + sql_iso(sql_list([quote_value(val) for val in v]))
 
             with suppress_exception:
                 int_list = convert.value2intlist(v)
-                has_null = False
-                for vv in v:
-                    if vv == None:
-                        has_null = True
-                        break
+                has_null = any(vv == None for vv in v)
                 if int_list:
                     filter = int_list_packer(col, int_list)
                     if has_null:
-                        return esfilter2sqlwhere({"or": [{"missing": col}, filter]})
+                        return esfilter2sqlwhere({"or": [{"missing": col}, filter]}, use_packing=False)
                     else:
-                        return esfilter2sqlwhere(filter)
+                        return esfilter2sqlwhere(filter, use_packing=False)
                 else:
                     if has_null:
-                        return esfilter2sqlwhere({"missing": col})
+                        return esfilter2sqlwhere({"missing": col}, use_packing=False)
                     else:
-                        return "false"
+                        return SQL_FALSE
             return quote_column(col) + " in " + sql_iso(sql_list([quote_value(val) for val in v]))
     elif esfilter.script:
         return sql_iso(esfilter.script)

@@ -39,15 +39,13 @@ def get_esq(es):
 
 
 def get_all_bug_versions(es, bug_id, max_time=None, esq=None):
-    max_time = coalesce(max_time, datetime.max)
-
     if esq is None:
         esq = get_esq(es)
 
     response = esq.query({
+        "from": esq.name,
         "where": {"and": [
-            {"eq": {"bug_id": bug_id}},
-            {"lte": {"modified_ts": convert.datetime2milli(max_time)}}
+            {"eq": {"bug_id": bug_id}}
         ]},
         "format": "list",
         "limit": 100000

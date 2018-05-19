@@ -473,7 +473,7 @@ class MySQL(object):
 
     ## Insert dictionary of values into table
     def insert(self, table_name, record):
-        keys = record.keys()
+        keys = list(record.keys())
 
         try:
             command = (
@@ -615,9 +615,13 @@ def quote_column(column_name, table=None):
     if column_name == None:
         Log.error("missing column_name")
     elif isinstance(column_name, text_type):
+            if table:
+                column_name = join_column(table, column_name)
+            return SQL("`" + column_name.replace(".", "`.`") + "`")  # MY SQL QUOTE OF COLUMN NAMES
+    elif isinstance(column_name, binary_type):
         if table:
             column_name = join_column(table, column_name)
-        return SQL("`" + column_name.replace(".", "`.`") + "`")  # MY SQL QUOTE OF COLUMN NAMES
+        return SQL("`" + column_name.decode('utf8').replace(".", "`.`") + "`")
     elif isinstance(column_name, list):
         if table:
             return sql_list(join_column(table, c) for c in column_name)
@@ -750,7 +754,7 @@ def int_list_packer(term, values):
         else:
             return r
     else:
-        raise Except("no packing possible")
+        return {"terms": {term: values}}
 
 
 class Transaction(object):

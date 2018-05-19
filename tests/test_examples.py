@@ -24,11 +24,11 @@ from pyLibrary import convert
 from pyLibrary.sql.mysql import all_db, MySQL
 from pyLibrary.testing import elasticsearch
 from pyLibrary.testing.elasticsearch import FakeES
-from test_etl import compare_both, MIN_TIMESTAMP
+from test_etl import compare_both, MIN_TIMESTAMP, refresh_metadata
 from util.database import make_test_instance
 
 
-class TestOneETL(unittest.TestCase):
+class TestExamples(unittest.TestCase):
     """
     USE THIS TO TEST A SPECIFIC SET OF BUGS FROM A LARGE BUGZILLA DATABASE
     I USE THIS TO IDENTIFY CANDIDATES TO ADD TO THE TEST SUITE
@@ -53,7 +53,8 @@ class TestOneETL(unittest.TestCase):
     def test_specific_bugs(self):
         """
         USE A MYSQL DATABASE TO FILL AN ES INSTANCE (USE Fake_ES() INSTANCES TO KEEP
-        THIS TEST LOCAL) WITH VERSIONS OF BUGS FROM settings.param.bugs.
+        THIS TEST LOCAL) WITH VERSIONS OF BUGS FROM settings.param.bugs.  COMPARE
+        THOSE VERSIONS TO A REFERENCE ES (ALSO CHECKED INTO REPOSITORY)
         """
         reference = FakeES(self.settings.reference)
         candidate = elasticsearch.make_test_instance("candidate", self.settings.elasticsearch)
@@ -75,7 +76,7 @@ class TestOneETL(unittest.TestCase):
                 etl(db, output, param, self.alias_analyzer, please_stop=None)
 
         # COMPARE ALL BUGS
-        Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
+        refresh_metadata(candidate)
         compare_both(candidate, reference, self.settings, self.settings.param.bugs)
 
 

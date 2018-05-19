@@ -15,7 +15,7 @@ import jx_elasticsearch
 from bzETL import extract_bugzilla, alias_analysis, parse_bug_history
 from bzETL.alias_analysis import AliasAnalyzer
 from bzETL.extract_bugzilla import get_comments, get_current_time, MIN_TIMESTAMP, get_private_bugs_for_delete, get_recent_private_bugs, get_recent_private_attachments, get_recent_private_comments, get_comments_by_id, get_bugs, \
-    get_dependencies, get_flags, get_new_activities, get_bug_see_also, get_attachments, get_tracking_flags, get_keywords, get_cc, get_bug_groups, get_duplicates
+    get_dependencies, get_flags, get_new_activities, get_bug_see_also, get_attachments, get_tracking_flags, get_keywords, get_tags, get_cc, get_bug_groups, get_duplicates
 from bzETL.parse_bug_history import BugHistoryParser
 from jx_python import jx
 from mo_dots import wrap, coalesce, listwrap, Data
@@ -49,6 +49,7 @@ get_stuff_from_bugzilla = [
     get_attachments,
     get_tracking_flags,
     get_keywords,
+    get_tags,
     get_cc,
     get_bug_groups,
     get_duplicates
@@ -170,8 +171,8 @@ def setup_es(settings, db):
 
     return current_run_time, esq, esq_comments, last_run_time
 
-
-def incremental_etl(settings, param, db, esq, esq_comments, output_queue):
+@override
+def incremental_etl(param, db, esq, esq_comments, output_queue, kwargs):
     ####################################################################
     ## ES TAKES TIME TO DELETE RECORDS, DO DELETE FIRST WITH HOPE THE
     ## INDEX GETS A REWRITE DURING ADD OF NEW RECORDS
@@ -213,7 +214,7 @@ def incremental_etl(settings, param, db, esq, esq_comments, output_queue):
         refresh_param.start_time_str = extract_bugzilla.milli2string(db, MIN_TIMESTAMP)
 
         try:
-            etl(db, output_queue, refresh_param.copy(), settings.alias, please_stop=None)
+            etl(db, output_queue, refresh_param.copy(), kwargs.alias, please_stop=None)
             etl_comments(db, esq_comments, refresh_param.copy(), please_stop=None)
         except Exception as e:
             Log.error(
@@ -261,7 +262,7 @@ def incremental_etl(settings, param, db, esq, esq_comments, output_queue):
     if not bug_list:
         return
 
-    with Thread.run("alias analysis", alias_analysis.full_analysis, kwargs=settings, bug_list=bug_list):
+    with Thread.run("alias analysis", alias_analysis.full_analysis, kwargs=kwargs, bug_list=bug_list):
         Log.note(
             "Updating {{num}} bugs:\n{{bug_list|indent}}",
             num=len(bug_list),
@@ -273,22 +274,22 @@ def incremental_etl(settings, param, db, esq, esq_comments, output_queue):
             output_queue=output_queue,
             esq_comments=esq_comments,
             param=param.copy(),
-            alias_analyzer=settings.alias
+            alias_analyzer=AliasAnalyzer(kwargs.alias)
         )
 
-
-def full_etl(resume_from_last_run, config, param, db, es, es_comments, output_queue):
-    end = coalesce(config.param.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
-    start = coalesce(config.param.start, 0)
+@override
+def full_etl(resume_from_last_run, param, db, esq, esq_comments, output_queue, kwargs):
+    end = coalesce(param.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
+    start = coalesce(param.start, 0)
     if resume_from_last_run:
-        start = coalesce(config.param.start, Math.floor(get_max_bug_id(es), config.param.increment))
+        start = coalesce(param.start, Math.floor(get_max_bug_id(esq), param.increment))
 
     #############################################################
     ## MAIN ETL LOOP
     #############################################################
-    for min, max in jx.reverse(jx.intervals(start, end, config.param.increment)):
+    for min, max in jx.reverse(jx.intervals(start, end, param.increment)):
         with Timer("etl block {{min}}..{{max}}", {"min":min, "max":max}):
-            if config.args.quick and min < end - config.param.increment and min != 0:
+            if kwargs.args.quick and min < end - param.increment and min != 0:
                 #--quick ONLY DOES FIRST AND LAST BLOCKS
                 continue
 
@@ -334,9 +335,9 @@ def full_etl(resume_from_last_run, config, param, db, es, es_comments, output_qu
                 run_both_etl(
                     db,
                     output_queue,
-                    es_comments,
+                    esq_comments,
                     param.copy(),
-                    alias_analyzer=AliasAnalyzer(kwargs=config.alias)
+                    alias_analyzer=AliasAnalyzer(kwargs=kwargs.alias)
                 )
 
             except Exception as e:
@@ -354,12 +355,23 @@ def main(param, es, es_comments, bugzilla, kwargs):
 
     resume_from_last_run = File(param.first_run_time).exists and not File(param.last_run_time).exists
 
-    #MAKE HANDLES TO CONTAINERS
+    # MAKE HANDLES TO CONTAINERS
     try:
         with MySQL(kwargs=bugzilla, readonly=True) as db:
             current_run_time, esq, esq_comments, last_run_time = setup_es(kwargs, db)
 
-            with esq.es.threaded_queue(max_size=500, silent=True) as output_queue:
+
+
+            with esq.es.threaded_queue(max_size=500, silent=True) as _output_queue:
+
+                def _add(value):
+                    if not isinstance(value, text_type):
+                        value = wrap(value)
+                        if value.value.bug_id==1877:
+                            Log.note("{{group}}", group= value.value.bug_group)
+                    _output_queue.add(value)
+                output_queue = Data(add=_add)
+
                 #SETUP RUN PARAMETERS
                 param_new = Data()
                 param_new.end_time = convert.datetime2milli(get_current_time(db))
@@ -368,16 +380,31 @@ def main(param, es, es_comments, bugzilla, kwargs):
                 # THERE ARE OCCASIONAL WRITES THAT ARE IN GMT, BUT SINCE THEY LOOK LIKE THE FUTURE, WE CAPTURE THEM
                 param_new.start_time = last_run_time - coalesce(param.look_back, 5 * 60 * 1000)  # 5 MINUTE LOOK_BACK
                 param_new.start_time_str = extract_bugzilla.milli2string(db, param_new.start_time)
-                param_new.alias_file = param_new.alias_file
-                param_new.allow_private_bugs = param_new.allow_private_bugs
+                param_new.alias = param.alias
+                param_new.allow_private_bugs = param.allow_private_bugs
+                param_new.increment = param.increment
 
                 if last_run_time > MIN_TIMESTAMP:
                     with Timer("run incremental etl"):
-                        incremental_etl(kwargs, param_new, db, esq, esq_comments, output_queue)
+                        incremental_etl(
+                            param=param_new,
+                            db=db,
+                            esq=esq,
+                            esq_comments=esq_comments,
+                            output_queue=output_queue,
+                            kwargs=kwargs
+                        )
                 else:
-                    # with Thread.run("alias_analysis", alias_analysis.full_analysis, kwargs=kwargs):
-                        with Timer("run full etl"):
-                            full_etl(resume_from_last_run, kwargs, param_new, db, esq, esq_comments, output_queue)
+                    with Timer("run full etl"):
+                        full_etl(
+                            resume_from_last_run=resume_from_last_run,
+                            param=param_new,
+                            db=db,
+                            esq=esq,
+                            esq_comments=esq_comments,
+                            output_queue=output_queue,
+                            kwargs=kwargs
+                        )
 
                 output_queue.add(THREAD_STOP)
 
@@ -406,7 +433,7 @@ def main(param, es, es_comments, bugzilla, kwargs):
 
 def get_bug_ids(esq, filter):
     try:
-        result = esq.query({"select":"bug_id", "where":filter, "limit":20000, "format":"cube"})
+        result = esq.query({"from":esq.name, "select":"bug_id", "where":filter, "limit":20000, "format":"cube"})
         return set(result.data['bug_id']) - {None}
     except Exception as e:
         Log.error(
@@ -419,7 +446,7 @@ def get_bug_ids(esq, filter):
 
 def get_max_bug_id(esq):
     try:
-        result = esq.query({"select": {"value": "bug_id", "aggregate": "max"}, "format": "cube"})
+        result = esq.query({"from":esq.name, "select": {"value": "bug_id", "aggregate": "max"}, "format": "cube"})
         return result.data['bug_id']
     except Exception as e:
         Log.error(

@@ -22,7 +22,7 @@ from datetime import datetime
 from time import time
 
 from mo_dots import coalesce, Null
-from mo_logs import Log
+from mo_logs import Log, Except
 from mo_threads.lock import Lock
 from mo_threads.signal import Signal
 from mo_threads.threads import THREAD_STOP, THREAD_TIMEOUT, Thread
@@ -156,8 +156,6 @@ class Queue(object):
 
         while not self.please_stop and len(self.queue) >= self.max:
             if now > time_to_stop_waiting:
-                if not Log:
-                    _late_import()
                 Log.error(THREAD_TIMEOUT)
 
             if self.silent:
@@ -267,12 +265,7 @@ class ThreadedQueue(Queue):
                            # BE CAREFUL!  THE THREAD MAKING THE CALL WILL NOT BE YOUR OWN!
                            # DEFAULT BEHAVIOUR: THIS WILL KEEP RETRYING WITH WARNINGS
     ):
-        if not Log:
-            _late_import()
-
         if period !=None and not isinstance(period, (int, float, long)):
-            if not Log:
-                _late_import()
             Log.error("Expecting a float for the period")
 
         batch_size = coalesce(batch_size, int(max_size / 2) if max_size else None, 900)
@@ -322,7 +315,7 @@ class ThreadedQueue(Queue):
                         _buffer.append(item)
 
                 except Exception as e:
-                    e = _Except.wrap(e)
+                    e = Except.wrap(e)
                     if error_target:
                         try:
                             error_target(e, _buffer)
@@ -347,7 +340,7 @@ class ThreadedQueue(Queue):
                         next_push = Till(till=now + period)
 
                 except Exception as e:
-                    e = _Except.wrap(e)
+                    e = Except.wrap(e)
                     if error_target:
                         try:
                             error_target(e, _buffer)

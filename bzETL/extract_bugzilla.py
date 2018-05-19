@@ -18,7 +18,7 @@ from mo_logs import Log
 from mo_times.timer import Timer
 from pyLibrary import convert
 from pyLibrary.sql import SQL
-from pyLibrary.sql.mysql import int_list_packer, quote_column, quote_list
+from pyLibrary.sql.mysql import quote_column, quote_list
 
 # USING THE TEXT DATETIME OF EPOCH THROWS A WARNING!  USE ONE SECOND PAST EPOCH AS MINIMUM TIME.
 MIN_TIMESTAMP = 1000  # MILLISECONDS SINCE EPOCH
@@ -36,7 +36,7 @@ SCREENED_FIELDDEFS = [
     83, #attach_data.thedata
 ]
 
-#CERTAIN GROUPS IN PRIVATE ETL HAVE HAVE WHITEBOARD SCREENED
+# CERTAIN GROUPS IN PRIVATE ETL HAVE HAVE WHITEBOARD SCREENED
 SCREENED_WHITEBOARD_BUG_GROUPS = [
     "legal",
     "consulting",
@@ -240,10 +240,7 @@ def get_bugs(db, param):
         param.bugs_columns = bugs_columns.column_name
         param.bugs_columns_SQL = SQL(",\n".join(lower(c) for c in bugs_columns))
         param.bug_filter = esfilter2sqlwhere({"terms": {"b.bug_id": param.bug_list}})
-        param.screened_whiteboard = esfilter2sqlwhere({"and": [
-            {"exists": "m.bug_id"},
-            {"terms": {"m.group_id": SCREENED_BUG_GROUP_IDS}}
-        ]})
+        param.screened_whiteboard_bug_groups = quote_list(SCREENED_BUG_GROUP_IDS+[0])
 
         if param.allow_private_bugs:
             param.sensitive_columns = SQL("""
@@ -256,7 +253,8 @@ def get_bugs(db, param):
                 bug_file_loc
             """)
 
-        bugs = db.query("""
+        bugs = db.query(
+            """
             SELECT
                 b.bug_id,
                 UNIX_TIMESTAMP(b.creation_ts)*1000 AS modified_ts,
@@ -267,8 +265,7 @@ def get_bugs(db, param):
                 lower(pq.login_name) AS qa_contact,
                 lower(prod.`name`) AS product,
                 lower(comp.`name`) AS component,
-                lower(tag.name) as tag,
-                CASE WHEN {{screened_whiteboard}} AND b.status_whiteboard IS NOT NULL AND trim(b.status_whiteboard)<>'' THEN '[screened]' ELSE trim(lower(b.status_whiteboard)) END status_whiteboard,
+                CASE WHEN bgm.group_id IS NOT NULL THEN '[screened]' ELSE trim(lower(b.status_whiteboard)) END status_whiteboard,
                 {{sensitive_columns}},
                 {{bugs_columns_SQL}}
             FROM
@@ -284,15 +281,15 @@ def get_bugs(db, param):
             LEFT JOIN
                 components comp ON comp.id = component_id
             LEFT JOIN
-                bug_group_map m ON m.bug_id = b.bug_id
-            LEFT JOIN
-                bug_tag bt on bt.bug_id = b.bug_id
-            LEFT JOIN
-                tag on tag.id = bt.tag_id
+                bug_group_map bgm ON bgm.bug_id = b.bug_id AND bgm.group_id IN {{screened_whiteboard_bug_groups}}            
             WHERE
                 {{bug_filter}}
-            """, param)
+            """,
+            param
+        )
 
+        if len(bugs) > len(param.bug_list):
+            Log.error("expecting {{num}} bugs; likely a logic error", num=len(param.bug_list))
         #bugs IS LIST OF BUGS WHICH MUST BE CONVERTED TO THE DELTA RECORDS FOR ALL FIELDS
         output = []
         for r in bugs:
@@ -454,7 +451,7 @@ def get_all_cc_changes(db, bug_list):
         {
             "max_time": MAX_TIMESTAMP,
             "cc_field_id": CC_FIELD_ID,
-            "bug_filter": esfilter2sqlwhere(int_list_packer("bug_id", bug_list))
+            "bug_filter": esfilter2sqlwhere({"terms": {"bug_id": bug_list}})
         },
         stream=True
     )
@@ -499,6 +496,33 @@ def get_keywords(db, param):
             {{bug_filter}}
         ORDER BY bug_id
     """, param)
+
+
+def get_tags(db, param):
+    param.bug_filter = esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
+
+    return db.query(
+        """
+        SELECT 
+            bug_id,
+            NULL AS modified_ts,
+            NULL AS modified_by,
+            'tags' AS field_name,
+            lower(tag.name) as new_value,
+            NULL AS old_value,
+            NULL AS attach_id,
+            2 AS _merge_order
+        FROM 
+            bug_tag b
+        LEFT JOIN 
+            tag on tag.id = b.tag_id
+        WHERE
+            {{bug_filter}}
+        ORDER BY 
+            bug_id
+        """,
+        param
+    )
 
 
 def get_attachments(db, param):
@@ -582,7 +606,6 @@ def get_new_activities(db, param):
     else:
         param.screened_fields = quote_list([-1])
 
-    #TODO: CF_LAST_RESOLVED IS IN PDT, FIX IT
     param.bug_filter = esfilter2sqlwhere({"terms": {"a.bug_id": param.bug_list}})
     param.mixed_case_fields = quote_list(MIXED_CASE)
     param.screened_whiteboard = esfilter2sqlwhere({"terms": {"m.group_id": SCREENED_BUG_GROUP_IDS}})

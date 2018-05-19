@@ -69,9 +69,7 @@ class ElasticsearchMetadata(Namespace):
 
         self.index_to_alias = Relation_usingList()
 
-
         self.es_metadata = Null
-        # self.abs_columns = set()
         self.last_es_metadata = Date.now()-OLD_METADATA
 
         self.meta = Data()

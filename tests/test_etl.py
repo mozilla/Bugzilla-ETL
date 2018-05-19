@@ -15,11 +15,11 @@ import unittest
 from datetime import datetime
 
 import jx_elasticsearch
-from jx_python.containers.list_usingPythonList import ListContainer
-
 from bzETL import extract_bugzilla, bz_etl
+from bzETL.alias_analysis import AliasAnalyzer
 from bzETL.bz_etl import etl, MIN_TIMESTAMP
 from bzETL.extract_bugzilla import get_current_time, SCREENED_WHITEBOARD_BUG_GROUPS
+from jx_mysql import esfilter2sqlwhere
 from jx_python import jx
 from mo_dots import Data, Null, wrap, coalesce
 from mo_files import File
@@ -30,12 +30,10 @@ from mo_logs.convert import milli2datetime
 from mo_math import MIN
 from mo_math.randoms import Random
 from mo_threads import ThreadedQueue, Till
-from mo_times import Timer
+from mo_times import Timer, Date
 from pyLibrary import convert
-from jx_mysql import esfilter2sqlwhere
 from pyLibrary.sql.mysql import all_db, MySQL
 from pyLibrary.testing import elasticsearch
-from pyLibrary.testing.elasticsearch import FakeES
 from util import database, compare_es
 from util.compare_es import get_all_bug_versions, get_esq
 from util.database import diff
@@ -44,9 +42,11 @@ BUG_GROUP_FOR_TESTING = "super secret"
 
 class TestETL(unittest.TestCase):
     def setUp(self):
-        self.settings = startup.read_settings(filename="./tests/resources/config/test_settings.json")
+        self.settings = startup.read_settings(filename="./tests/resources/config/test_etl.json")
         constants.set(self.settings.constants)
         Log.start(self.settings.debug)
+
+        self.alias_analyzer = AliasAnalyzer(self.settings.alias)
 
     def tearDown(self):
         #CLOSE THE CACHED MySQL CONNECTIONS
@@ -68,7 +68,7 @@ class TestETL(unittest.TestCase):
         database.make_test_instance(self.settings.bugzilla)
 
         with MySQL(self.settings.bugzilla) as db:
-            candidate = elasticsearch.make_test_instance("candidate", self.settings.candidate)
+            es = elasticsearch.make_test_instance("candidate", self.settings.public.bugs)
             reference = elasticsearch.open_test_instance("reference", self.settings.private_bugs_reference)
 
             #SETUP RUN PARAMETERS
@@ -81,12 +81,13 @@ class TestETL(unittest.TestCase):
             param.bug_list = self.settings.param.bugs
             param.allow_private_bugs = self.settings.param.allow_private_bugs
 
-            with ThreadedQueue("etl_queue", candidate, batch_size=1000) as output:
-                etl(db, output, param, self.settings.alias, please_stop=None)
+            with ThreadedQueue("etl_queue", es, batch_size=1000) as output:
+                etl(db, output, param, self.alias_analyzer, please_stop=None)
+
+            refresh_metadata(es)
 
             #COMPARE ALL BUGS
-            Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
-            compare_both(candidate, reference, self.settings, self.settings.param.bugs)
+            compare_both(es, reference, self.settings, self.settings.param.bugs)
 
 
 
@@ -99,7 +100,7 @@ class TestETL(unittest.TestCase):
         MAX_BUG_ID = 900000
 
         with MySQL(self.settings.bugzilla) as db:
-            candidate = elasticsearch.make_test_instance("candidate", self.settings.candidate)
+            candidate = elasticsearch.make_test_instance("candidate", self.settings.public.bugs)
             reference = elasticsearch.Index(self.settings.private_bugs_reference)
 
             #GO FASTER BY STORING LOCAL FILE
@@ -125,10 +126,11 @@ class TestETL(unittest.TestCase):
 
                 try:
                     with ThreadedQueue("etl queue", candidate, batch_size=100) as output:
-                        etl(db, output, param, self.settings.alias, please_stop=None)
+                        etl(db, output, param, self.alias_analyzer, please_stop=None)
+
+                    refresh_metadata(candidate)
 
                     #COMPARE ALL BUGS
-                    Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
                     found_errors = compare_both(candidate, reference, self.settings, some_bugs)
                     if found_errors:
                         Log.note("Errors found")
@@ -148,8 +150,8 @@ class TestETL(unittest.TestCase):
 
         database.make_test_instance(self.settings.bugzilla)
         es = elasticsearch.make_test_instance("candidate", self.settings.fake.bugs)
-        es_comments = elasticsearch.make_test_instance("candidate_comments", self.settings.fake.comments)
-        bz_etl.main(self.settings, es, es_comments)
+        es_c = elasticsearch.make_test_instance("candidate_comments", self.settings.fake.comments)
+        bz_etl.main(es=es, es_comments=es_c, kwargs=self.settings)
 
         ref = elasticsearch.open_test_instance("reference", self.settings.private_bugs_reference)
         compare_both(es, ref, self.settings, self.settings.param.bugs)
@@ -163,7 +165,7 @@ class TestETL(unittest.TestCase):
                 if can[i] != ref[i]:
                     found = i
                     break
-            Log.error("Comments do not match reference\n{{sample}}", {"sample": can[MIN([0, found - 100]):found + 100]})
+            Log.error("Comments do not match reference\n{{sample}}", sample=can[MIN([0, found - 100]):found + 100])
 
     def test_public_etl(self):
         """
@@ -175,8 +177,8 @@ class TestETL(unittest.TestCase):
 
         database.make_test_instance(self.settings.bugzilla)
         es = elasticsearch.make_test_instance("candidate", self.settings.fake.bugs)
-        es_comments = elasticsearch.make_test_instance("candidate_comments", self.settings.fake.comments)
-        bz_etl.main(self.settings, es, es_comments)
+        es_c = elasticsearch.make_test_instance("candidate_comments", self.settings.fake.comments)
+        bz_etl.main(es=es, es_comments=es_c, kwargs=self.settings)
 
         ref = elasticsearch.open_test_instance("reference", self.settings.public_bugs_reference)
         compare_both(es, ref, self.settings, self.settings.param.bugs)
@@ -190,7 +192,7 @@ class TestETL(unittest.TestCase):
                 if can[i] != ref[i]:
                     found = i
                     break
-            Log.error("Comments do not match reference\n{{sample}}", {"sample": can[MIN(0, found - 100):found + 100:]})
+            Log.error("Comments do not match reference\n{{sample}}", sample=can[MIN(0, found - 100):found + 100:])
 
     def test_private_bugs_do_not_show(self):
         self.settings.param.allow_private_bugs = False
@@ -207,11 +209,11 @@ class TestETL(unittest.TestCase):
             for b in private_bugs:
                 database.add_bug_group(db, b, BUG_GROUP_FOR_TESTING)
 
-        es = elasticsearch.make_test_instance("candidate", self.settings.real.bugs)
-        es_c = elasticsearch.make_test_instance("candidate_comments", self.settings.real.comments)
-        bz_etl.main(self.settings, es, es_c)
+        es = elasticsearch.make_test_instance("candidate", self.settings.public.bugs)
+        es_c = elasticsearch.make_test_instance("candidate_comments", self.settings.public.comments)
+        bz_etl.main(es=es, es_comments=es_c, kwargs=self.settings)
 
-        Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
+        refresh_metadata(es)
         verify_no_private_bugs(es, private_bugs)
 
     def test_recent_private_stuff_does_not_show(self):
@@ -221,9 +223,9 @@ class TestETL(unittest.TestCase):
 
         database.make_test_instance(self.settings.bugzilla)
 
-        es = elasticsearch.make_test_instance("candidate", self.settings.real.bugs)
-        es_c = elasticsearch.make_test_instance("candidate_comments", self.settings.real.comments)
-        bz_etl.main(self.settings, es, es_c)
+        es = elasticsearch.make_test_instance("candidate", self.settings.public.bugs)
+        es_c = elasticsearch.make_test_instance("candidate_comments", self.settings.public.comments)
+        bz_etl.main(es=es, es_comments=es_c, kwargs=self.settings)
 
         #MARK SOME STUFF PRIVATE
         with MySQL(self.settings.bugzilla) as db:
@@ -257,9 +259,9 @@ class TestETL(unittest.TestCase):
 
         if not File(self.settings.param.last_run_time).exists:
             Log.error("last_run_time should exist")
-        bz_etl.main(self.settings, es, es_c)
+        bz_etl.main(es=es, es_comments=es_c, kwargs=self.settings)
 
-        Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
+        refresh_metadata(es)
         verify_no_private_bugs(es, private_bugs)
         verify_no_private_attachments(es, private_attachments)
         verify_no_private_comments(es_c, private_comments)
@@ -270,10 +272,10 @@ class TestETL(unittest.TestCase):
             for b in private_bugs:
                 database.remove_bug_group(db, b, BUG_GROUP_FOR_TESTING)
 
-        bz_etl.main(self.settings, es, es_c)
+        bz_etl.main(es=es, es_comments=es_c, kwargs=self.settings)
 
         #VERIFY BUG IS PUBLIC, BUT PRIVATE ATTACHMENTS AND COMMENTS STILL NOT
-        Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
+        refresh_metadata(es)
         verify_public_bugs(es, private_bugs)
         verify_no_private_attachments(es, private_attachments)
         verify_no_private_comments(es_c, marked_private_comments)
@@ -300,11 +302,11 @@ class TestETL(unittest.TestCase):
             for a in private_attachments:
                 database.mark_attachment_private(db, a.attach_id, isprivate=1)
 
-        es = elasticsearch.make_test_instance("candidate", self.settings.real.bugs)
-        es_c = elasticsearch.make_test_instance("candidate_comments", self.settings.real.comments)
-        bz_etl.main(self.settings, es, es_c)
+        es = elasticsearch.make_test_instance("candidate", self.settings.public.bugs)
+        es_c = elasticsearch.make_test_instance("candidate_comments", self.settings.public.comments)
+        bz_etl.main(es=es, es_comments=es_c, kwargs=self.settings)
 
-        Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
+        refresh_metadata(es)
         verify_no_private_attachments(es, private_attachments)
 
     def test_private_comments_do_not_show(self):
@@ -329,11 +331,11 @@ class TestETL(unittest.TestCase):
             for c in private_comments:
                 database.mark_comment_private(db, c.comment_id, 1)
 
-        es = elasticsearch.make_test_instance("candidate", self.settings.real.bugs)
-        es_c = elasticsearch.make_test_instance("candidate_comments", self.settings.real.comments)
-        bz_etl.main(self.settings, es, es_c)
+        es = elasticsearch.make_test_instance("candidate", self.settings.public.bugs)
+        es_c = elasticsearch.make_test_instance("candidate_comments", self.settings.public.comments)
+        bz_etl.main(es=es, es_comments=es_c, kwargs=self.settings)
 
-        Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
+        refresh_metadata(es)
         verify_no_private_comments(es, private_comments)
 
     def test_changes_to_private_bugs_still_have_bug_group(self):
@@ -341,7 +343,7 @@ class TestETL(unittest.TestCase):
         File(self.settings.param.first_run_time).delete()
         File(self.settings.param.last_run_time).delete()
 
-        private_bugs = set(Random.sample(self.settings.param.bugs, 3))
+        private_bugs = self.settings.param.bugs[5:6] #set(Random.sample(self.settings.param.bugs, 3))
 
         Log.note("The private bugs for this test are {{bugs}}", bugs= private_bugs)
 
@@ -352,60 +354,78 @@ class TestETL(unittest.TestCase):
             for b in private_bugs:
                 database.add_bug_group(db, b, BUG_GROUP_FOR_TESTING)
 
-        es = elasticsearch.make_test_instance("candidate", self.settings.real.bugs)
-        es_c = elasticsearch.make_test_instance("candidate_comments", self.settings.real.comments)
-        bz_etl.main(self.settings, es, es_c)
+        # elasticsearch.make_test_instance("candidate", self.settings.private.bugs)
+        # elasticsearch.make_test_instance("candidate_comments", self.settings.private.comments)
+        bz_etl.main(
+            es=self.settings.private.bugs,
+            es_comments=self.settings.private.comments,
+            kwargs=self.settings
+        )
+
+        #VERIFY BUG GROUP STILL EXISTS
+        esq = jx_elasticsearch.new_instance(self.settings.private.bugs)
+        refresh_metadata(esq.es)
+        results = esq.query({
+            "from": esq.name,
+            "where": {"and": [
+                {"in": {"bug_id": private_bugs}},
+                {"gte": {"expires_on": Date.now().milli}}
+            ]},
+            "limit": 200000,
+            "format": "list"
+        })
+        if set(results.data.bug_id) != set(private_bugs):
+            Log.error("Expecting private bugs to exist")
 
         # MAKE A CHANGE TO THE PRIVATE BUGS
         with MySQL(self.settings.bugzilla) as db:
             for b in private_bugs:
-                with db:
-                    old_bug = db.query("SELECT * FROM bugs WHERE bug_id={{bug_id}}", {"bug_id": b})[0]
-                    new_bug = old_bug.copy()
+                old_bug = db.query("SELECT * FROM bugs WHERE bug_id={{bug_id}}", {"bug_id": b})[0]
+                new_bug = old_bug.copy()
 
                 new_bug.bug_status = "NEW STATUS"
                 diff(db, "bugs", old_bug, new_bug)
 
 
         #RUN INCREMENTAL
-        bz_etl.main(self.settings, es, es_c)
+        bz_etl.main(
+            es=self.settings.private.bugs,
+            es_comments=self.settings.public.comments,
+            kwargs=self.settings
+        )
 
         #VERIFY BUG GROUP STILL EXISTS
-        Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
-        now = datetime.utcnow()
-        results = es.search({
-            "query": {"filtered": {
-                "query": {"match_all": {}},
-                "filter": {"and": [
-                    {"terms": {"bug_id": private_bugs}},
-                    {"range": {"expires_on": {"gte": convert.datetime2milli(now)}}}
-                ]}
-            }},
-            "from": 0,
-            "size": 200000,
-            "sort": []
+        refresh_metadata(esq.es)
+        results = esq.query({
+            "from": esq.name,
+            "where": {"and": [
+                {"in": {"bug_id": private_bugs}},
+                {"gte": {"expires_on": Date.now().milli}}
+            ]},
+            "limit": 200000,
+            "format": "list"
         })
-        latest_bugs = jx.select(results.hits.hits, "_source")
-        latest_bugs_index = jx.unique_index(latest_bugs, "bug_id")  # IF NOT UNIQUE, THEN ETL IS WRONG
+        latest_bugs_index = jx.unique_index(results.data, "bug_id")  # IF NOT UNIQUE, THEN ETL IS WRONG
 
         for bug_id in private_bugs:
             if latest_bugs_index[bug_id] == None:
-                Log.error("Expecting to find the private bug {{bug_id}}", {"bug_id": bug_id})
+                Log.error("Expecting to find the private bug {{bug_id}}", bug_id=bug_id)
 
             bug_group = latest_bugs_index[bug_id].bug_group
             if not bug_group:
-                Log.error("Expecting private bug ({{bug_id}}) to have a bug group", {"bug_id": bug_id})
+                Log.error("Expecting private bug ({{bug_id}}) to have a bug group", bug_id=bug_id)
             if BUG_GROUP_FOR_TESTING not in bug_group:
-                Log.error("Expecting private bug ({{bug_id}}) to have a \"{{bug_group}}\" bug group", {
-                    "bug_id": bug_id,
-                    "bug_group": BUG_GROUP_FOR_TESTING
-                })
+                Log.error(
+                    "Expecting private bug ({{bug_id}}) to have a \"{{bug_group}}\" bug group",
+                    bug_id=bug_id,
+                    bug_group=BUG_GROUP_FOR_TESTING
+                )
 
     def test_incremental_etl_catches_tracking_flags(self):
         database.make_test_instance(self.settings.bugzilla)
 
         with MySQL(self.settings.bugzilla) as db:
-            es = elasticsearch.make_test_instance("candidate", self.settings.candidate)
+            es = elasticsearch.make_test_instance("candidate", self.settings.public.bugs)
 
             #SETUP RUN PARAMETERS
             param = Data()
@@ -419,9 +439,9 @@ class TestETL(unittest.TestCase):
             param.allow_private_bugs = self.settings.param.allow_private_bugs
 
             with es.threaded_queue(batch_size=1000) as output:
-                etl(db, output, param, self.settings.alias, please_stop=None)
+                etl(db, output, param, self.alias_analyzer, please_stop=None)
 
-            Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
+            refresh_metadata(es)
             versions = get_all_bug_versions(es, 813650)
 
             flags = ["cf_status_firefox18", "cf_status_firefox19", "cf_status_firefox_esr17", "cf_status_b2g18"]
@@ -429,7 +449,7 @@ class TestETL(unittest.TestCase):
                 if v.modified_ts>param.start_time:
                     for f in flags:
                         if v[f] != "fixed":
-                            Log.error("813650 should have {{flag}}=='fixed'", {"flag": f})
+                            Log.error("813650 should have {{flag}}=='fixed'", flag=f)
 
     def test_whiteboard_screened(self):
         GOOD_BUG_TO_TEST=1046
@@ -437,7 +457,7 @@ class TestETL(unittest.TestCase):
         database.make_test_instance(self.settings.bugzilla)
 
         with MySQL(self.settings.bugzilla) as db:
-            es = elasticsearch.make_test_instance("candidate", self.settings.candidate)
+            es = elasticsearch.make_test_instance("candidate", self.settings.public.bugs)
 
             #MARK BUG AS ONE OF THE SCREENED GROUPS
             database.add_bug_group(db, GOOD_BUG_TO_TEST, SCREENED_WHITEBOARD_BUG_GROUPS[0])
@@ -454,9 +474,9 @@ class TestETL(unittest.TestCase):
             param.allow_private_bugs = True
 
             with ThreadedQueue("etl queue", es, batch_size=1000) as output:
-                etl(db, output, param, self.settings.alias, please_stop=None)
+                etl(db, output, param, self.alias_analyzer, please_stop=None)
 
-            Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
+                refresh_metadata(es)
             versions = get_all_bug_versions(es, GOOD_BUG_TO_TEST)
 
             for v in versions:
@@ -469,7 +489,7 @@ class TestETL(unittest.TestCase):
         database.make_test_instance(self.settings.bugzilla)
 
         with MySQL(self.settings.bugzilla) as db:
-            es = elasticsearch.make_test_instance("candidate", self.settings.candidate)
+            es = elasticsearch.make_test_instance("candidate", self.settings.public.bugs)
 
             # MARK BUG AS ONE OF THE SCREENED GROUPS
             database.add_bug_group(db, GOOD_BUG_TO_TEST, SCREENED_WHITEBOARD_BUG_GROUPS[0])
@@ -488,9 +508,9 @@ class TestETL(unittest.TestCase):
             param.allow_private_bugs = True
 
             with ThreadedQueue("etl", es, batch_size=1000) as output:
-                etl(db, output, param, self.settings.alias, please_stop=None)
+                etl(db, output, param, self.alias_analyzer, please_stop=None)
 
-            Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
+            refresh_metadata(es)
             versions = get_all_bug_versions(es, GOOD_BUG_TO_TEST)
 
             for v in versions:
@@ -502,7 +522,7 @@ class TestETL(unittest.TestCase):
         bugs = wrap([813650, 726635])
         start_incremental=convert.datetime2milli(convert.string2datetime("2013-01-01", "%Y-%m-%d"))
 
-        es = elasticsearch.make_test_instance("candidate", self.settings.candidate)
+        es = elasticsearch.make_test_instance("candidate", self.settings.public.bugs)
         with MySQL(self.settings.bugzilla) as db:
             #SETUP FIRST RUN PARAMETERS
             param = Data()
@@ -515,7 +535,7 @@ class TestETL(unittest.TestCase):
             param.allow_private_bugs = False
 
             with ThreadedQueue("etl queue", es, batch_size=1000) as output:
-                etl(db, output, param, self.settings.alias, please_stop=None)
+                etl(db, output, param, self.alias_analyzer, please_stop=None)
 
             #SETUP INCREMENTAL RUN PARAMETERS
             param = Data()
@@ -528,7 +548,7 @@ class TestETL(unittest.TestCase):
             param.allow_private_bugs = False
 
             with ThreadedQueue("etl queue", es, batch_size=1000) as output:
-                etl(db, output, param, self.settings.alias, please_stop=None)
+                etl(db, output, param, self.alias_analyzer, please_stop=None)
 
         for b in bugs:
             results = es.search({
@@ -536,7 +556,7 @@ class TestETL(unittest.TestCase):
                     "query": {"match_all": {}},
                     "filter": {"and":[
                         {"term":{"bug_id":b}},
-                        {"range":{"expires_on":{"gte":convert.datetime2milli(datetime.utcnow())}}}
+                        {"range":{"expires_on":{"gte":Date.now().milli}}}
                     ]}
                 }},
                 "from": 0,
@@ -555,9 +575,7 @@ def verify_no_private_bugs(es, private_bugs):
         versions = compare_es.get_all_bug_versions(es, b)
 
         if versions:
-            Log.error("Expecting no version for private bug {{bug_id}}", {
-                "bug_id": b
-            })
+            Log.error("Expecting no version for private bug {{bug_id}}", bug_id)
 
 
 def verify_public_bugs(es, private_bugs):
@@ -565,9 +583,7 @@ def verify_public_bugs(es, private_bugs):
     for b in private_bugs:
         versions = compare_es.get_all_bug_versions(es, b)
         if not versions:
-            Log.error("Expecting versions for public bug {{bug_id}}", {
-                "bug_id": b
-            })
+            Log.error("Expecting versions for public bug {{bug_id}}", bug_id=b)
 
 
 def verify_no_private_attachments(es, private_attachments):
@@ -583,7 +599,7 @@ def verify_no_private_attachments(es, private_attachments):
 
 
 def verify_no_private_comments(es, private_comments):
-    data = es.search({
+    data = es.query({
         "query": {"filtered": {
             "query": {"match_all": {}},
             "filter": {"and": [
@@ -650,3 +666,8 @@ def compare_both(candidate, reference, settings, some_bugs):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def refresh_metadata(es):
+    Till(seconds=2).wait()  # MUST SLEEP WHILE ES DOES ITS INDEXING
+    es.cluster.get_metadata(force=True)  # MUST RELOAD THE COLUMNS
