@@ -51,8 +51,7 @@
 		"allow_private_bugs": false,
 		"first_run_time": "tests/results/first_run_time.txt",
 		"last_run_time": "tests/results/last_run_time.txt",
-		"look_back": 3600000
-		//1hour
+		"look_back": 3600000 //1hour
 	},
 	"alias": {
 		"increment": 1000000,

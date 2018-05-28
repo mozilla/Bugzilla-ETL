@@ -22,6 +22,7 @@ from mo_dots import Null
 from mo_future import unichr, text_type, long
 from mo_logs import Except
 from mo_logs.strings import deformat
+from mo_math import Math
 
 from mo_times.durations import Duration, MILLI_VALUES
 from mo_times.vendor.dateutil.parser import parse as parse_date
@@ -224,7 +225,7 @@ def parse(*args):
                     output = _unix2Date(a0 / 1000)
                 else:
                     output = _unix2Date(a0)
-            elif isinstance(a0, text_type) and len(a0) in [9, 10, 12, 13] and is_integer(a0):
+            elif isinstance(a0, text_type) and len(a0) in [9, 10, 12, 13] and Math.is_integer(a0):
                 a0 = float(a0)
                 if a0 > 9999999999:    # WAY TOO BIG IF IT WAS A UNIX TIMESTAMP
                     output = _unix2Date(a0 / 1000)
@@ -462,18 +463,6 @@ def deformat(value):
 
 Date.MIN = Date(datetime(1, 1, 1))
 Date.MAX = Date(datetime(2286, 11, 20, 17, 46, 39))
-
-
-def is_integer(s):
-    if s is True or s is False:
-        return False
-
-    try:
-        if float(s) == round(float(s), 0):
-            return True
-        return False
-    except Exception:
-        return False
 
 
 def _mod(value, mod=1):

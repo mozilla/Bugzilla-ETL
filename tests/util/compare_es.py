@@ -12,13 +12,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
-from datetime import datetime
-
 import jx_elasticsearch
-from bzETL import transform_bugzilla, parse_bug_history
+from bzETL import transform_bugzilla
+from bzETL.extract_bugzilla import MAX_TIMESTAMP
 from jx_python import jx
 from jx_python.containers.list_usingPythonList import ListContainer
-from mo_dots import coalesce, unwrap, listwrap, unwraplist
+from mo_dots import coalesce, unwrap, listwrap
 from mo_future import long
 from mo_json import json2value, value2json
 from mo_logs import Log
@@ -100,7 +99,7 @@ def old2new(bug, max_date):
     bug = json2value(value2json(bug).replace("bugzilla: other b.m.o issues ", "bugzilla: other b.m.o issues"))
 
     if bug.expires_on > max_date:
-        bug.expires_on = parse_bug_history.MAX_TIMESTAMP
+        bug.expires_on = MAX_TIMESTAMP
     if bug.votes != None:
         bug.votes = int(bug.votes)
     bug.dupe_by = convert.value2intlist(bug.dupe_by)

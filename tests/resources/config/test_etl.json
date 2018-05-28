@@ -32,10 +32,12 @@
 			726635,
 			813650
 		],
-		"first_run_time": "./results/data/first_run_time.txt",
-		"last_run_time": "./results/data/last_run_time.txt",
-		"look_back": 3600000, //1hour
-		"allow_private_bugs": false
+		"temp_dir": "tests/resources",
+		"errors": "tests/results/errors",
+		"allow_private_bugs": false,
+		"first_run_time": "tests/results/first_run_time.txt",
+		"last_run_time": "tests/results/last_run_time.txt",
+		"look_back": 3600000 //1hour
 	},
 	"alias": {
 		"increment": 1000000,
@@ -56,6 +58,16 @@
 		"port": 3306,
 		"schema": "bugs",
 		"debug": true
+	},
+	"reference":{
+		"public":{
+			"bugs":{"filename":"tests/resources/reference/public_bugs.json"},
+			"comments":{"filename":"tests/resources/reference/public_comments.json"}
+		},
+		"private":{
+			"bugs":{"filename":"tests/resources/reference/private_bugs.json"},
+			"comments":{"filename":"tests/resources/reference/private_comments.json"}
+		}
 	},
 	"public": {
 		"bugs": {

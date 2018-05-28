@@ -45,7 +45,7 @@ import re
 
 from bzETL.alias_analysis import AliasAnalyzer
 from bzETL.extract_bugzilla import MAX_TIMESTAMP
-from bzETL.transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS, DIFF_FIELDS, NULL_VALUES
+from bzETL.transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS, DIFF_FIELDS, NULL_VALUES, TIME_FIELDS
 from jx_python import jx, meta
 from mo_dots import inverse, coalesce, wrap, unwrap
 from mo_dots.datas import Data
@@ -56,8 +56,8 @@ from mo_future import text_type
 from mo_json import value2json
 from mo_logs import Log, strings
 from mo_logs.strings import apply_diff
-from mo_math import MIN
-from mo_times.dates import is_integer
+from mo_math import MIN, Math
+from mo_times import Date
 from pyLibrary import convert
 
 # Used to split a flag into (type, status [,requestee])
@@ -403,9 +403,11 @@ class BugHistoryParser(object):
                     expected_value = self.canonical(row_in.field_name, self.currBugState[row_in.field_name])
                     new_value = self.canonical(row_in.field_name, row_in.new_value)
 
-                    if text_type(new_value) != text_type(expected_value):
+                    if row_in.field_name in TIME_FIELDS and Date(new_value) == Date(expected_value):
+                        pass
+                    elif text_type(new_value) != text_type(expected_value):
                         if row_in.field_name in EMAIL_FIELDS:
-                            if is_integer(new_value) or is_integer(expected_value) and row_in.modified_ts<=927814152000:
+                            if Math.is_integer(new_value) or Math.is_integer(expected_value) and row_in.modified_ts<=927814152000:
                                 pass # BEFORE 1999-05-27 14:09:12 THE qa_contact FIELD WAS A NUMBER, NOT THE EMAIL
                             elif not new_value or not expected_value:
                                 pass

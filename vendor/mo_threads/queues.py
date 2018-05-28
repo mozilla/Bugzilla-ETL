@@ -35,6 +35,7 @@ DEFAULT_WAIT_TIME = 10 * 60  # SECONDS
 
 datetime.strptime('2012-01-01', '%Y-%m-%d')  # http://bugs.python.org/issue7980
 
+
 class Queue(object):
     """
      SIMPLE MESSAGE QUEUE, multiprocessing.Queue REQUIRES SERIALIZATION, WHICH
@@ -149,7 +150,7 @@ class Queue(object):
         if timeout != None:
             time_to_stop_waiting = now + timeout
         else:
-            time_to_stop_waiting = None
+            time_to_stop_waiting = now + DEFAULT_WAIT_TIME
 
         if self.next_warning < now:
             self.next_warning = now + wait_time

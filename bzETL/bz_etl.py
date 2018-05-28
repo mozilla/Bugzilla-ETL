@@ -360,17 +360,15 @@ def main(param, es, es_comments, bugzilla, kwargs):
         with MySQL(kwargs=bugzilla, readonly=True) as db:
             current_run_time, esq, esq_comments, last_run_time = setup_es(kwargs, db)
 
+            with esq.es.threaded_queue(max_size=500, silent=True) as output_queue:
 
-
-            with esq.es.threaded_queue(max_size=500, silent=True) as _output_queue:
-
-                def _add(value):
-                    if not isinstance(value, text_type):
-                        value = wrap(value)
-                        if value.value.bug_id==1877:
-                            Log.note("{{group}}", group= value.value.bug_group)
-                    _output_queue.add(value)
-                output_queue = Data(add=_add)
+                # def _add(value):
+                #     if not isinstance(value, text_type):
+                #         value = wrap(value)
+                #         if value.value.bug_id==1877:
+                #             Log.note("{{group}}", group= value.value.bug_group)
+                #     _output_queue.add(value)
+                # output_queue = Data(add=_add)
 
                 #SETUP RUN PARAMETERS
                 param_new = Data()
