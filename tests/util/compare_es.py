@@ -41,6 +41,8 @@ def get_all_bug_versions(es, bug_id, max_time=None, esq=None):
     if esq is None:
         esq = get_esq(es)
 
+    result = esq.snowflake.get_schema(".").leaves("bug_id")
+
     response = esq.query({
         "from": esq.name,
         "where": {"and": [

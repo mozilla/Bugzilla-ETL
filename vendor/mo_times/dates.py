@@ -42,6 +42,7 @@ class Date(object):
 
     MIN = None
     MAX = None
+    EPOCH = None
 
     def __new__(cls, *args, **kwargs):
         if not args or (len(args) == 1 and args[0] == None):
@@ -463,7 +464,7 @@ def deformat(value):
 
 Date.MIN = Date(datetime(1, 1, 1))
 Date.MAX = Date(datetime(2286, 11, 20, 17, 46, 39))
-
+Date.EPOCH = _unix2Date(0)
 
 def _mod(value, mod=1):
     """

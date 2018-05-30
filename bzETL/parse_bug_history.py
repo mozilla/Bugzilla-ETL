@@ -326,20 +326,21 @@ class BugHistoryParser(object):
         if row_in.attach_id != None:
             attachment = self.currBugAttachmentsMap.get(row_in.attach_id)
             if attachment == None:
-                #we are going backwards in time, no need to worry about these?  maybe delete this change for public bugs
-                if DEBUG_MISSING_ATTACHMENTS:
-                    Log.note(
-                        "[Bug {{bug_id}}]: PROBLEM Unable to find attachment {{attach_id}} {{start_time}}: {{start_time}}",
-                        attach_id=row_in.attach_id,
-                        bug_id=self.currBugID,
-                        attachments=self.currBugAttachmentsMap
-                    )
-                self.currActivity.changes.append({
-                    "field_name": row_in.field_name,
-                    "new_value": row_in.new_value,
-                    "old_value": row_in.old_value,
-                    "attach_id": row_in.attach_id
-                })
+                # THIS HAPPENS WHEN ATTACHMENT IS PRIVATE
+                pass
+                # if DEBUG_MISSING_ATTACHMENTS:
+                #     Log.note(
+                #         "[Bug {{bug_id}}]: PROBLEM Unable to find attachment {{attach_id}} {{start_time}}: {{start_time}}",
+                #         attach_id=row_in.attach_id,
+                #         bug_id=self.currBugID,
+                #         attachments=self.currBugAttachmentsMap
+                #     )
+                # self.currActivity.changes.append({
+                #     "field_name": row_in.field_name,
+                #     "new_value": row_in.new_value,
+                #     "old_value": row_in.old_value,
+                #     "attach_id": row_in.attach_id
+                # })
             else:
 
                 if row_in.field_name == "flags":
@@ -853,7 +854,6 @@ class BugHistoryParser(object):
                         "candidates": {d: self.email_aliases.get(d, None) for d in diff},
                         "bug_id": self.currBugID
                     })
-
             else:
                 # PATTERN MATCH EMAIL ADDRESSES
                 # self.cc_list_ok = False
