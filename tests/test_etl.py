@@ -21,7 +21,7 @@ from bzETL.bz_etl import etl, MIN_TIMESTAMP
 from bzETL.extract_bugzilla import get_current_time, SCREENED_WHITEBOARD_BUG_GROUPS
 from jx_mysql import esfilter2sqlwhere
 from jx_python import jx
-from mo_dots import Data, Null, wrap, coalesce
+from mo_dots import Data, Null, wrap, coalesce, listwrap
 from mo_files import File
 from mo_future import text_type
 from mo_json import json2value, value2json
@@ -34,9 +34,11 @@ from mo_times import Timer, Date
 from pyLibrary import convert
 from pyLibrary.env import elasticsearch as real_elasticsearch
 from pyLibrary.sql.mysql import all_db, MySQL
+from pyLibrary.testing import elasticsearch as fake_elasticsearch
 from util import database, compare_es
 from util.compare_es import get_all_bug_versions, get_esq
 from util.database import diff
+
 
 BUG_GROUP_FOR_TESTING = "super secret"
 
@@ -640,7 +642,7 @@ def verify_no_private_attachments(es, private_attachments):
         if not versions:
             Log.error("expecting bug snapshots")
         for v in versions:
-            for a in v.attachments:
+            for a in listwrap(v.attachments):
                 if a.attach_id in attaches:
                     Log.error("Private attachment should not exist")
 

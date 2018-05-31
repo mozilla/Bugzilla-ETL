@@ -1217,6 +1217,9 @@ class Alias(Features):
                 cause=e
             )
 
+    def refresh(self):
+        self.cluster.post("/" + self.settings.alias + "/_refresh")
+
 
 def parse_properties(parent_index_name, parent_name, esProperties):
     """
