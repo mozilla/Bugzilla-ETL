@@ -220,14 +220,13 @@ class TestETL(unittest.TestCase):
             for b in private_bugs:
                 database.add_bug_group(db, b, BUG_GROUP_FOR_TESTING)
 
-        es = fake_elasticsearch.make_test_instance("candidate", self.settings.private.bugs)
-        es_c = fake_elasticsearch.make_test_instance("candidate_comments", self.settings.private.comments)
         bz_etl.main(
             es=self.settings.private.bugs,
             es_comments=self.settings.private.comments,
             kwargs=self.settings
         )
 
+        es = real_elasticsearch.Index(self.settings.public.bugs)
         refresh_metadata(es)
         verify_no_private_bugs(es, private_bugs)
 

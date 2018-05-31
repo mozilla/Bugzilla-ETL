@@ -250,7 +250,7 @@ class Sqlite(DB):
                             if result is None:
                                 Log.error("Problem with\n{{command|indent}}", command=command, cause=e)
                             else:
-                                result.exception = Except(ERROR, "Problem with\n{{command|indent}}", command=command, cause=e)
+                                result.exception = Except(type=ERROR, template="Problem with\n{{command|indent}}", command=command, cause=e)
                         finally:
                             if isinstance(signal, Signal):
                                 signal.go()
