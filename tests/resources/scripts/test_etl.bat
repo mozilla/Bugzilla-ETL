@@ -1,2 +1,2 @@
-SET PYTHONPATH=.
-pypy .\tests\test_etl.py
+SET PYTHONPATH=.;vendor
+python -m unittest .\tests\test_etl.py

@@ -1,24 +1,20 @@
 
-Bugzilla-ETL
-============
+# Bugzilla-ETL
 
-Python version of Metric's Bugzilla ETL (https://github.com/mozilla-metrics/bugzilla_etl)
+Extract Bugzilla change history; Transform into bug snapshots; and Load into Elasticsearch  
 
-Motivation and Details
-----------------------
+
+## Motivation and Details
 
 [https://wiki.mozilla.org/BMO/ElasticSearch](https://wiki.mozilla.org/BMO/ElasticSearch)
 
-Requirements
-------------
+## Requirements
 
-  * PyPy >= 2.1.0 using Python 2.7  (PyPy version must have fix https://bugs.pypy.org/issue1392 (applied June2013))
-  * A MySQL/Maria database with Mozilla's Bugzilla schema ([old public version can be found here](http://people.mozilla.com/~mhoye/bugzilla/))
-  * A timezone database ([instructions](./tests/resources/mySQL/README.md))
-  * An ElasticSearch (v 0.90) cluster to hold the bug version documents
+  * PyPy >= 5.9+ to run ETL fast
+  * MySQL/Maria database with Mozilla's Bugzilla schema 
+  * ElasticSearch >= 6.1 cluster to hold the bug snapshot documents
 
-Installation
-------------
+## Installation
 
 Python and SetupTools are required.  It is best you install on Linux, but if 
 you do install on Windows please [follow instructions to get these installed]
@@ -36,8 +32,7 @@ then install requirements:
 to get Pip to install resource files consistently across platforms and Python 
 versions.
 
-Installation with PyPy
-----------------------
+## Installation with PyPy
 
 PyPy will execute 4 to 5 times faster then CPython.  PyPy maintains its own 
 environment, and its own version of the module binaries.  This means running 
@@ -74,7 +69,7 @@ in the ``settings.json` file.
     successfully.  Deleting this file should have no net effect, other than 
     making the program work harder then it should.
 
-### Alias Analysis ###
+### Alias Analysis
 
 You will require an alias file that matches the various email addresses that 
 users have over time.  This analysis is necessary for proper CC list history 
@@ -120,13 +115,16 @@ subsequent instances will do no work and shutdown cleanly.
 Running Tests
 -------------
 
-The Git clone will include test code.  You can run those tests, but you must...
+The Git clone will include test code. You can run those tests, but you must...
 
   * Have MySQL installed (no Bugzilla schema required)
-  * Have timezone database installed ([instructions](./tests/resources/mySQL/README.md))
-  * Have an ElasticSearch (v 0.90) cluster to hold the test results
+  * Have an ElasticSearch (v 6.x+) cluster to hold the test results
   * A complete `test_settings.json` file to point to the resources ([example](./resources/settings/test_settings.json))
-  * Use pypy for 4x the speed: `pypy .\tests\test_etl.py --settings=test_settings.json`
+  * Use pypy (v5.9+) for 4x the speed: `pypy .\tests\test_etl.py --settings=test_settings.json`
+
+```python
+python -m unittest discover -v -s tests
+```
 
 Upgrades
 --------
