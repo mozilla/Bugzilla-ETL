@@ -14,6 +14,8 @@ from __future__ import unicode_literals
 import unittest
 from datetime import datetime
 
+import os
+
 import jx_elasticsearch
 from bzETL import extract_bugzilla, bz_etl
 from bzETL.alias_analysis import AliasAnalyzer
@@ -44,7 +46,11 @@ BUG_GROUP_FOR_TESTING = "super secret"
 
 class TestETL(unittest.TestCase):
     def setUp(self):
-        self.settings = startup.read_settings(filename="./tests/resources/config/test_etl.json")
+        filename = coalesce(
+            os.environ.get("TEST_CONFIG"),
+            "./tests/resources/config/test_etl.json"
+        )
+        self.settings = startup.read_settings(filename)
         constants.set(self.settings.constants)
         Log.start(self.settings.debug)
 

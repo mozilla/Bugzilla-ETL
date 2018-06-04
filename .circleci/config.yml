@@ -14,7 +14,6 @@ jobs:
       # CircleCI maintains a library of pre-built images
       # documented at https://circleci.com/docs/2.0/circleci-images/
       # - image: circleci/postgres:9.4
-
     working_directory: ~/repo
 
     steps:
@@ -40,14 +39,11 @@ jobs:
           key: v1-dependencies-{{ checksum "requirements.txt" }}
 
       # run tests!
-      # this example uses Django's built-in test-runner
-      # other common Python testing frameworks include pytest and nose
-      # https://pytest.org
-      # https://nose.readthedocs.io
       - run:
           name: run tests
           environment:
             PYTHONPATH: .:vendor
+            TEST_CONFIG: tests/resources/config/circleci.json
           command: |
             . venv/bin/activate
             python -m unittest discover -v -s tests
