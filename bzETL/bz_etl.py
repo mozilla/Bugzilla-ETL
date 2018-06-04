@@ -214,7 +214,8 @@ def incremental_etl(param, db, esq, esq_comments, output_queue, kwargs):
         refresh_param.start_time_str = extract_bugzilla.milli2string(db, MIN_TIMESTAMP)
 
         try:
-            etl(db, output_queue, refresh_param.copy(), kwargs.alias, please_stop=None)
+            analyzer = AliasAnalyzer(kwargs.alias)
+            etl(db, output_queue, refresh_param.copy(), analyzer, please_stop=None)
             etl_comments(db, esq_comments, refresh_param.copy(), please_stop=None)
         except Exception as e:
             Log.error(

@@ -237,8 +237,6 @@ class TestETL(unittest.TestCase):
 
         database.make_test_instance(self.settings.bugzilla)
 
-        es = fake_elasticsearch.make_test_instance("candidate", self.settings.public.bugs)
-        es_c = fake_elasticsearch.make_test_instance("candidate_comments", self.settings.public.comments)
         bz_etl.main(
             es=self.settings.public.bugs,
             es_comments=self.settings.public.comments,
@@ -284,7 +282,8 @@ class TestETL(unittest.TestCase):
             kwargs=self.settings
         )
 
-
+        es = real_elasticsearch.Index(self.settings.private.bugs)
+        es_c = real_elasticsearch.Index(self.settings.private.comments)
         refresh_metadata(es)
         verify_no_private_bugs(es, private_bugs)
         verify_no_private_attachments(es, private_attachments)
@@ -618,7 +617,7 @@ def verify_no_private_bugs(es, private_bugs):
         versions = compare_es.get_all_bug_versions(es, b)
 
         if versions:
-            Log.error("Expecting no version for private bug {{bug_id}}", bug_id)
+            Log.error("Expecting no version for private bug {{bug_id}}", b)
 
 
 def verify_public_bugs(es, private_bugs):
