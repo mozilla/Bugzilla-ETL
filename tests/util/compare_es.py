@@ -41,7 +41,7 @@ def get_all_bug_versions(es, bug_id, max_time=None, esq=None):
     if esq is None:
         esq = get_esq(es)
 
-    result = esq.namespace.get_schema(es.settings.alias).leaves("bug_id")
+    # result = esq.namespace.get_schema(es.settings.alias).leaves("bug_id")
 
     response = esq.query({
         "from": esq.name,

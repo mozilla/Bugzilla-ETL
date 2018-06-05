@@ -376,9 +376,8 @@ class TestETL(unittest.TestCase):
             kwargs=self.settings
         )
 
-
-        refresh_metadata(es)
-        verify_no_private_comments(es, private_comments)
+        refresh_metadata(es_c)
+        verify_no_private_comments(es_c, private_comments)
 
     def test_changes_to_private_bugs_still_have_bug_group(self):
         self.settings.param.allow_private_bugs = True
@@ -652,19 +651,14 @@ def verify_no_private_attachments(es, private_attachments):
 
 
 def verify_no_private_comments(es, private_comments):
-    data = es.query({
-        "query": {"filtered": {
-            "query": {"match_all": {}},
-            "filter": {"and": [
-                {"terms": {"comment_id": private_comments}}
-            ]}
-        }},
-        "from": 0,
-        "size": 200000,
-        "sort": []
+    esq = get_esq(es)
+    result = esq.query({
+        "from": es.settings.alias,
+        "where": {"in": {"comment_id": private_comments}},
+        "format":"list"
     })
 
-    if jx.select(data.hits.hits, "_source"):
+    if result.data:
         Log.error("Expecting no comments")
 
 
