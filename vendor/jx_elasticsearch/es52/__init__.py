@@ -27,10 +27,9 @@ from jx_elasticsearch.meta import ElasticsearchMetadata, Table
 from jx_python import jx
 from mo_dots import Data, Null, unwrap, coalesce, split_field, literal_field, unwraplist, join_field, wrap, listwrap, FlatList
 from mo_json import scrub, value2json
-from mo_json.typed_encoder import EXISTS_TYPE
+from mo_json.typed_encoder import TYPE_PREFIX, EXISTS_TYPE
 from mo_kwargs import override
 from mo_logs import Log, Except
-from mo_logs.exceptions import extract_stack
 from pyLibrary.env import elasticsearch, http
 
 
@@ -74,9 +73,6 @@ class ES52(Container):
             self.es = elasticsearch.Alias(alias=coalesce(alias, index), kwargs=kwargs)
         else:
             self.es = elasticsearch.Cluster(kwargs=kwargs).get_index(read_only=read_only, kwargs=kwargs)
-
-        if any("verify_no_private_attachments" in t['method'] for t in extract_stack()):
-            pass
 
         self._namespace = ElasticsearchMetadata(kwargs=kwargs)
         self.settings.type = self.es.settings.type

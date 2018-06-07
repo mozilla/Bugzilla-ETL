@@ -21,7 +21,7 @@ from jx_python.meta import Column
 from mo_dots import wrap, FlatList, coalesce, Null, Data, set_default, listwrap, literal_field, ROOT_PATH, concat_field, split_field
 from mo_future import text_type, binary_type
 from mo_json import value2json, json2value
-from mo_json.typed_encoder import EXISTS_TYPE, BOOLEAN_TYPE, STRING_TYPE, NUMBER_TYPE, NESTED_TYPE, TYPE_PREFIX
+from mo_json.typed_encoder import EXISTS_TYPE, BOOLEAN_TYPE, STRING_TYPE, NUMBER_TYPE, NESTED_TYPE, TYPE_PREFIX, json_type_to_inserter_type
 from mo_kwargs import override
 from mo_logs import Log, strings
 from mo_logs.exceptions import Except
@@ -33,7 +33,7 @@ from mo_times import Date, Timer, MINUTE
 from pyLibrary import convert
 from pyLibrary.env import http
 
-DEBUG_METADATA_UPDATE = True
+DEBUG_METADATA_UPDATE = False
 
 ES_STRUCT = ["object", "nested"]
 ES_NUMERIC_TYPES = ["long", "integer", "double", "float"]
@@ -369,7 +369,7 @@ class Index(Features):
                             id=items[i].index._id
                         )
                     Log.error("Problems with insert", cause=cause)
-
+            pass
         except Exception as e:
             e = Except.wrap(e)
             if e.message.startswith("sequence item "):
@@ -481,7 +481,7 @@ class Index(Features):
                 elif "503 UnavailableShardsException" in e:
                     Log.note("waiting for ES to initialize shards ({{num}} pending)", num=len(_buffer))
                 else:
-                    Log.warning("Problem with sending to ES ({{num}} pending)", num=len(_buffer), cause=still_have_hope)
+                    Log.warning("Problem with sending to ES, trying again ({{num}} pending)", num=len(_buffer), cause=still_have_hope)
             elif not_possible:
                 # THERE IS NOTHING WE CAN DO
                 Log.warning("Not inserted, will not try again", cause=not_possible[0:10:])
@@ -828,22 +828,19 @@ class Cluster(object):
             for new_index_name, new_meta in self._metadata.indices.items():
                 old_index = old_indices[new_index_name]
                 if not old_index:
-                    if DEBUG_METADATA_UPDATE:
-                        Log.note("New index found {{index}} at {{time}}", index=new_index_name, time=now)
+                    DEBUG_METADATA_UPDATE and Log.note("New index found {{index}} at {{time}}", index=new_index_name, time=now)
                     self.index_last_updated[new_index_name] = now
                 else:
                     for type_name, new_about in new_meta.mappings.items():
                         old_about = old_index.mappings[type_name]
                         diff = diff_schema(new_about.properties, old_about.properties)
                         if diff:
-                            if DEBUG_METADATA_UPDATE:
-                                Log.note("More columns found in {{index}} at {{time}}", index=new_index_name, time=now)
+                            DEBUG_METADATA_UPDATE and Log.note("More columns found in {{index}} at {{time}}", index=new_index_name, time=now)
                             self.index_last_updated[new_index_name] = now
             for old_index_name, old_meta in old_indices.items():
                 new_index = self._metadata.indices[old_index_name]
                 if not new_index:
-                    if DEBUG_METADATA_UPDATE:
-                        Log.note("Old index lost: {{index}} at {{time}}", index=new_index_name, time=now)
+                    DEBUG_METADATA_UPDATE and Log.note("Old index lost: {{index}} at {{time}}", index=new_index_name, time=now)
                     self.index_last_updated[old_index_name] = now
         self.info = wrap(self.get("/", stream=False))
         self._version = self.info.version.number
@@ -894,6 +891,7 @@ class Cluster(object):
                 )
             return details
         except Exception as e:
+            e = Except.wrap(e)
             if url[0:4] != "http":
                 suggestion = " (did you forget \"http://\" prefix on the host name?)"
             else:
@@ -1442,8 +1440,6 @@ def retro_properties(properties):
 
 
 def add_typed_annotations(meta):
-    from pyLibrary.env.typed_inserter import json_type_to_inserter_type
-
     if meta.type in ["text", "keyword", "string", "float", "double", "integer", "nested", "boolean"]:
         return {
             "type": "object",

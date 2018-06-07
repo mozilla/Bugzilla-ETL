@@ -143,8 +143,7 @@ class Queue(object):
         """
         wait_time = 5
 
-        if DEBUG and len(self.queue) > 1 * 1000 * 1000:
-            Log.warning("Queue {{name}} has over a million items")
+        (DEBUG and len(self.queue) > 1 * 1000 * 1000) and Log.warning("Queue {{name}} has over a million items")
 
         now = time()
         if timeout != None:
@@ -205,8 +204,7 @@ class Queue(object):
                     if self.please_stop:
                         break
                     return None
-        if DEBUG or not self.silent:
-            Log.note(self.name + " queue stopped")
+        (DEBUG or not self.silent) and Log.note(self.name + " queue stopped")
         return THREAD_STOP
 
     def pop_all(self):
@@ -290,8 +288,8 @@ class ThreadedQueue(Queue):
             def push_to_queue():
                 queue.extend(_buffer)
                 del _buffer[:]
-                for f in _post_push_functions:
-                    f()
+                for ppf in _post_push_functions:
+                    ppf()
                 del _post_push_functions[:]
 
             while not please_stop:

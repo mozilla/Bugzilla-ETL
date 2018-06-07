@@ -332,8 +332,7 @@ class ElasticsearchMetadata(Namespace):
                 })
                 return
             elif cardinality > 1000 or (count >= 30 and cardinality == count) or (count >= 1000 and cardinality / count > 0.99):
-                if DEBUG:
-                    Log.note("{{table}}.{{field}} has {{num}} parts", table=column.es_index, field=column.es_column, num=cardinality)
+                DEBUG and Log.note("{{table}}.{{field}} has {{num}} parts", table=column.es_index, field=column.es_column, num=cardinality)
                 self.meta.columns.update({
                     "set": {
                         "count": count,
@@ -346,8 +345,7 @@ class ElasticsearchMetadata(Namespace):
                 })
                 return
             elif column.es_type in elasticsearch.ES_NUMERIC_TYPES and cardinality > 30:
-                if DEBUG:
-                    Log.note("{{field}} has {{num}} parts", field=column.es_index, num=cardinality)
+                DEBUG and Log.note("{{field}} has {{num}} parts", field=column.es_index, num=cardinality)
                 self.meta.columns.update({
                     "set": {
                         "count": count,
@@ -426,8 +424,7 @@ class ElasticsearchMetadata(Namespace):
                         if (c.last_updated == None or c.last_updated < Date.now()-TOO_OLD) and c.jx_type not in STRUCT
                     ]
                     if old_columns:
-                        if DEBUG:
-                            Log.note(
+                        DEBUG and Log.note(
                                 "Old columns {{names|json}} last updated {{dates|json}}",
                                 names=wrap(old_columns).es_column,
                                 dates=[Date(t).format() for t in wrap(old_columns).last_updated]
@@ -438,16 +435,14 @@ class ElasticsearchMetadata(Namespace):
                             if c.es_column == d.es_column and c.es_index == d.es_index and c != d:
                                 Log.error("")
                     else:
-                        if DEBUG:
-                            Log.note("no more metatdata to update")
+                        DEBUG and Log.note("no more metatdata to update")
 
                 column = self.todo.pop(Till(seconds=(10*MINUTE).seconds))
                 if column:
                     if column is THREAD_STOP:
                         continue
 
-                    if DEBUG:
-                        Log.note("update {{table}}.{{column}}", table=column.es_index, column=column.es_column)
+                    DEBUG and Log.note("update {{table}}.{{column}}", table=column.es_index, column=column.es_column)
                     if column.es_index in self.index_does_not_exist:
                         self.meta.columns.update({
                             "clear": ".",
@@ -461,8 +456,7 @@ class ElasticsearchMetadata(Namespace):
                         continue
                     try:
                         self._update_cardinality(column)
-                        if DEBUG and not column.es_index.startswith(TEST_TABLE_PREFIX):
-                            Log.note("updated {{column.name}}", column=column)
+                        (DEBUG and not column.es_index.startswith(TEST_TABLE_PREFIX)) and Log.note("updated {{column.name}}", column=column)
                     except Exception as e:
                         Log.warning("problem getting cardinality for {{column.name}}", column=column, cause=e)
             except Exception as e:
@@ -491,8 +485,7 @@ class ElasticsearchMetadata(Namespace):
                 ],
                 "where": {"eq": {"es_index": c.es_index, "es_column": c.es_column}}
             })
-            if DEBUG:
-                Log.note("Did not get {{col.es_index}}.{{col.es_column}} info", col=c)
+            DEBUG and Log.note("Did not get {{col.es_index}}.{{col.es_column}} info", col=c)
 
     def get_table(self, alias_name):
         with self.meta.tables.locker:
@@ -505,7 +498,8 @@ class ElasticsearchMetadata(Namespace):
         if name == "meta.columns":
             return self.meta.columns.schema
         query_path = split_field(name)
-        return self.get_snowflake(query_path[0]).get_schema(join_field(query_path[1:]))
+        root, rest = query_path[0], join_field(query_path[1:])
+        return self.get_snowflake(root).get_schema(rest)
 
 
 class Snowflake(object):
@@ -526,7 +520,10 @@ class Snowflake(object):
         """
         RETURN A LIST OF ALL NESTED COLUMNS
         """
-        return self.namespace.alias_to_query_paths[self.alias]
+        output = self.namespace.alias_to_query_paths.get(self.alias)
+        if output:
+            return output
+        Log.error("Can not find index {{index|quote}}", index=self.alias)
 
     @property
     def columns(self):
