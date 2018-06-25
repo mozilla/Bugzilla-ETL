@@ -51,8 +51,8 @@
 	},
 	"bugzilla": {
 		"filename": "./tests/resources/sql/bugzilla_mini.sql",
-		"username": "root",
-		"password": "password",
+		"username": {"$ref": "env://MYSQL_USERNAME"},
+		"password": {"$ref": "env://MYSQL_PASSWORD"},
 		"host": "localhost",
 		"preamble": "from https://github.com/klahnakoski/Bugzilla-ETL",
 		"port": 3306,
