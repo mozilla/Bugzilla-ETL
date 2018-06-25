@@ -8,6 +8,10 @@ jobs:
     docker:
       - image: circleci/python:3.6.1
 
+      # MYSQL
+      # https://hub.docker.com/r/circleci/mysql/
+      - image: circleci/mysql:5.7-ram
+
 
     working_directory: ~/repo
 
