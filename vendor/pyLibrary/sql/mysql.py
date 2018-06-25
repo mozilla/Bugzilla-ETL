@@ -180,7 +180,8 @@ class MySQL(object):
         try:
             self.db.close()
         except Exception as e:
-            if e.message.find("Already closed") >= 0:
+            e = Except.wrap(e)
+            if "Already closed" in e:
                 return
 
             Log.warning("can not close()", e)

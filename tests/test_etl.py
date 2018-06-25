@@ -249,11 +249,10 @@ class TestETL(unittest.TestCase):
             kwargs=self.settings
         )
 
-
         #MARK SOME STUFF PRIVATE
         with MySQL(self.settings.bugzilla) as db:
             #BUGS
-            private_bugs = set(Random.sample(self.settings.param.bugs, 3))
+            private_bugs = {1157} # set(Random.sample(self.settings.param.bugs, 3))
             Log.note("The private bugs are {{bugs}}", bugs= private_bugs)
             for b in private_bugs:
                 database.add_bug_group(db, b, BUG_GROUP_FOR_TESTING)
@@ -283,13 +282,13 @@ class TestETL(unittest.TestCase):
         if not File(self.settings.param.last_run_time).exists:
             Log.error("last_run_time should exist")
         bz_etl.main(
-            es=self.settings.private.bugs,
-            es_comments=self.settings.private.comments,
+            es=self.settings.public.bugs,
+            es_comments=self.settings.public.comments,
             kwargs=self.settings
         )
 
-        es = real_elasticsearch.Index(self.settings.private.bugs)
-        es_c = real_elasticsearch.Index(self.settings.private.comments)
+        es = real_elasticsearch.Index(self.settings.public.bugs)
+        es_c = real_elasticsearch.Index(self.settings.public.comments)
         refresh_metadata(es)
         verify_no_private_bugs(es, private_bugs)
         verify_no_private_attachments(es, private_attachments)
@@ -301,8 +300,8 @@ class TestETL(unittest.TestCase):
                 database.remove_bug_group(db, b, BUG_GROUP_FOR_TESTING)
 
         bz_etl.main(
-            es=self.settings.private.bugs,
-            es_comments=self.settings.private.comments,
+            es=self.settings.public.bugs,
+            es_comments=self.settings.public.comments,
             kwargs=self.settings
         )
 

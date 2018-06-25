@@ -34,6 +34,7 @@ SCREENED_FIELDDEFS = [
     64, #attachments.filename
     74, #content
     83, #attach_data.thedata
+    496, #cf_user_story
 ]
 
 # CERTAIN GROUPS IN PRIVATE ETL HAVE HAVE WHITEBOARD SCREENED
@@ -239,15 +240,22 @@ def get_bugs(db, param):
 
         param.bugs_columns = bugs_columns.column_name
         param.bugs_columns_SQL = SQL(",\n".join(lower(c) for c in bugs_columns))
-        param.bug_filter = esfilter2sqlwhere({"terms": {"b.bug_id": param.bug_list}})
-        param.screened_whiteboard_bug_groups = quote_list(SCREENED_BUG_GROUP_IDS+[0])
+        param.screened_whiteboard = esfilter2sqlwhere({"and": [
+            {"exists": "bgm.bug_id"},
+            {"terms": {"bgm.group_id": SCREENED_BUG_GROUP_IDS}}
+        ]})
 
         if param.allow_private_bugs:
+            param.bug_filter = esfilter2sqlwhere({"terms": {"b.bug_id": param.bug_list}})
             param.sensitive_columns = SQL("""
                 '[screened]' short_desc,
                 '[screened]' bug_file_loc
             """)
         else:
+            param.bug_filter = esfilter2sqlwhere({"and": [
+                {"terms": {"b.bug_id": param.bug_list}},
+                {"missing": "bgm.bug_id"}
+            ]})
             param.sensitive_columns = SQL("""
                 short_desc,
                 bug_file_loc
@@ -265,7 +273,11 @@ def get_bugs(db, param):
                 lower(pq.login_name) AS qa_contact,
                 lower(prod.`name`) AS product,
                 lower(comp.`name`) AS component,
-                CASE WHEN bgm.group_id IS NOT NULL THEN '[screened]' ELSE trim(lower(b.status_whiteboard)) END status_whiteboard,
+                CASE 
+                WHEN {{screened_whiteboard}} AND b.status_whiteboard IS NOT NULL AND trim(b.status_whiteboard)<>'' 
+                THEN '[screened]' 
+                ELSE trim(lower(b.status_whiteboard)) 
+                END status_whiteboard,
                 {{sensitive_columns}},
                 {{bugs_columns_SQL}}
             FROM
@@ -281,7 +293,7 @@ def get_bugs(db, param):
             LEFT JOIN
                 components comp ON comp.id = component_id
             LEFT JOIN
-                bug_group_map bgm ON bgm.bug_id = b.bug_id AND bgm.group_id IN {{screened_whiteboard_bug_groups}}            
+                bug_group_map bgm ON bgm.bug_id = b.bug_id
             WHERE
                 {{bug_filter}}
             """,

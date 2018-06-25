@@ -178,7 +178,7 @@ def incremental_etl(param, db, esq, esq_comments, output_queue, kwargs):
     ## INDEX GETS A REWRITE DURING ADD OF NEW RECORDS
     ####################################################################
 
-    #REMOVE PRIVATE BUGS
+    # REMOVE PRIVATE BUGS
     private_bugs = get_private_bugs_for_delete(db, param)
     Log.note("Ensure the following private bugs are deleted:\n{{private_bugs|indent}}", private_bugs=sorted(private_bugs))
     for g, delete_bugs in jx.groupby(private_bugs, size=1000):
@@ -188,7 +188,7 @@ def incremental_etl(param, db, esq, esq_comments, output_queue, kwargs):
         esq.es.delete_record({"terms": {"bug_id": delete_bugs}})
         esq_comments.es.delete_record({"terms": {"bug_id": delete_bugs}})
 
-    #RECENT PUBLIC BUGS
+    # RECENT PUBLIC BUGS
     possible_public_bugs = get_recent_private_bugs(db, param)
     if param.allow_private_bugs:
         #PRIVATE BUGS
@@ -200,12 +200,12 @@ def incremental_etl(param, db, esq, esq_comments, output_queue, kwargs):
         #    IF REMOVING GROUP THEN NO RECORDS TO DELETE
         pass
 
-    #REMOVE **RECENT** PRIVATE ATTACHMENTS
+    # REMOVE **RECENT** PRIVATE ATTACHMENTS
     private_attachments = get_recent_private_attachments(db, param)
     bugs_to_refresh = set(jx.select(private_attachments, "bug_id"))
     esq.es.delete_record({"terms": {"bug_id": bugs_to_refresh}})
 
-    #REBUILD BUGS THAT GOT REMOVED
+    # REBUILD BUGS THAT GOT REMOVED
     bug_list = jx.sort((possible_public_bugs | bugs_to_refresh) - private_bugs) # REMOVE PRIVATE BUGS
     if bug_list:
         refresh_param = param.copy()
@@ -225,14 +225,14 @@ def incremental_etl(param, db, esq, esq_comments, output_queue, kwargs):
             )
 
 
-    #REFRESH COMMENTS WITH PRIVACY CHANGE
+    # REFRESH COMMENTS WITH PRIVACY CHANGE
     private_comments = get_recent_private_comments(db, param)
     comment_list = set(jx.select(private_comments, "comment_id")) | {0}
     esq_comments.es.delete_record({"terms": {"comment_id": comment_list}})
     changed_comments = get_comments_by_id(db, comment_list, param)
     esq_comments.es.extend({"id": c.comment_id, "value": c} for c in changed_comments)
 
-    #GET LIST OF CHANGED BUGS
+    # GET LIST OF CHANGED BUGS
     with Timer("time to get changed bug list"):
         if param.allow_private_bugs:
             bug_list = jx.select(db.query("""

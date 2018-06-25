@@ -270,6 +270,8 @@ class Index(Features):
         elif self.cluster.info.version.number.startswith(("5.", "6.")):
             query = {"query": filter}
 
+            Log.error("filter is not typed")
+
             wait_for_active_shards = coalesce(  # EARLIER VERSIONS USED "consistency" AS A PARAMETER
                 self.settings.wait_for_active_shards,
                 {"one": 1, None: None}[self.settings.consistency]
