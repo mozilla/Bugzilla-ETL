@@ -50,7 +50,7 @@
 		}
 	},
 	"bugzilla": {
-		"filename": "./tests/resources/sql/bugzilla_mini.sql",
+		"filename": "./tests/resources/sql/bugzilla_mini.sql.zip",
 		"username": {"$ref": "env://MYSQL_USERNAME"},
 		"password": {"$ref": "env://MYSQL_PASSWORD"},
 		"host": "localhost",

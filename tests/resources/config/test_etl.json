@@ -51,7 +51,7 @@
 		}
 	},
 	"bugzilla": {
-		"filename": "./tests/resources/sql/bugzilla_mini.sql",
+		"filename": "./tests/resources/sql/bugzilla_mini.sql.zip",
 		"$ref": "file://~/private.json#bugzilla",
 		"host": "localhost",
 		"preamble": "from https://github.com/klahnakoski/Bugzilla-ETL",
