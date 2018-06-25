@@ -21,7 +21,7 @@ from pymysql import connect, InterfaceError, cursors
 
 import mo_json
 from jx_python import jx
-from mo_dots import coalesce, wrap, listwrap, unwrap
+from mo_dots import coalesce, wrap, listwrap, unwrap, split_field
 from mo_files import File
 from mo_future import text_type, utf8_json_encoder, binary_type
 from mo_kwargs import override
@@ -616,13 +616,12 @@ def quote_column(column_name, table=None):
     if column_name == None:
         Log.error("missing column_name")
     elif isinstance(column_name, text_type):
-            if table:
-                column_name = join_column(table, column_name)
-            return SQL("`" + column_name.replace(".", "`.`") + "`")  # MY SQL QUOTE OF COLUMN NAMES
-    elif isinstance(column_name, binary_type):
         if table:
-            column_name = join_column(table, column_name)
-        return SQL("`" + column_name.decode('utf8').replace(".", "`.`") + "`")
+            return join_column(table, column_name)
+        else:
+            return SQL("`" + '`.`'.join(split_field(column_name)) + "`")  # MY SQL QUOTE OF COLUMN NAMES
+    elif isinstance(column_name, binary_type):
+        Log.error("not expected")
     elif isinstance(column_name, list):
         if table:
             return sql_list(join_column(table, c) for c in column_name)

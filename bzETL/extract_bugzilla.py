@@ -11,14 +11,16 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+from jx_base.expressions import jx_expression
+
 from jx_mysql import esfilter2sqlwhere
 from jx_python import jx
-from mo_dots.datas import Data
+from mo_dots import Data
 from mo_logs import Log
 from mo_times.timer import Timer
 from pyLibrary import convert
-from pyLibrary.sql import SQL
-from pyLibrary.sql.mysql import quote_column, quote_list
+from pyLibrary.sql import SQL, sql_list, sql_alias, sql_iso, SQL_NEG_ONE
+from pyLibrary.sql.mysql import quote_column, quote_value
 
 # USING THE TEXT DATETIME OF EPOCH THROWS A WARNING!  USE ONE SECOND PAST EPOCH AS MINIMUM TIME.
 MIN_TIMESTAMP = 1000  # MILLISECONDS SINCE EPOCH
@@ -36,6 +38,15 @@ SCREENED_FIELDDEFS = [
     83, #attach_data.thedata
     496, #cf_user_story
 ]
+
+SCREENED_BUG_FIELDS = [
+    "bug_file_loc",
+    "short_desc",
+    "alias",
+    "cf_user_story"
+]
+
+
 
 # CERTAIN GROUPS IN PRIVATE ETL HAVE HAVE WHITEBOARD SCREENED
 SCREENED_WHITEBOARD_BUG_GROUPS = [
@@ -60,7 +71,7 @@ PRIVATE_COMMENTS_FIELD_ID = 82
 PRIVATE_BUG_GROUP_FIELD_ID = 66
 STATUS_WHITEBOARD_FIELD_ID = 22
 
-bugs_columns = None
+BUGS_COLUMNS = None
 SCREENED_BUG_GROUP_IDS = None
 
 
@@ -104,39 +115,37 @@ def get_screened_whiteboard(db):
 
 
 def get_bugs_table_columns(db, schema_name):
-    global bugs_columns
+    global BUGS_COLUMNS
 
-    if not bugs_columns:
-        columns = db.query("""
-            SELECT
-                column_name,
-                column_type
-            FROM
-                information_schema.columns
-            WHERE
-                table_schema={{schema}} AND
-                table_name='bugs' AND
-                column_name NOT IN (
-                    'bug_id',               #EXPLICIT
-                    'creation_ts',          #EXPLICIT
-                    'reporter',             #EXPLICIT
-                    'assigned_to',          #EXPLICIT
-                    'qa_contact',           #EXPLICIT
-                    'product_id',           #EXPLICIT
-                    'component_id',         #EXPLICIT
-                    'short_desc',           #EXPLICIT
-                    'bug_file_loc',         #EXPLICIT
-                    'status_whiteboard',    #EXPLICIT
-                    'deadline',             #NOT NEEDED
-                    'estimated_time',       #NOT NEEDED
-                    'delta_ts',             #NOT NEEDED
-                    'lastdiffed',           #NOT NEEDED
-                    'cclist_accessible',    #NOT NEEDED
-                    'reporter_accessible'   #NOT NEEDED
+    if not BUGS_COLUMNS:
+        known_columns = set(SCREENED_BUG_FIELDS) | {
+            'bug_id',               #EXPLICIT
+            'creation_ts',          #EXPLICIT
+            'reporter',             #EXPLICIT
+            'assigned_to',          #EXPLICIT
+            'qa_contact',           #EXPLICIT
+            'product_id',           #EXPLICIT
+            'component_id',         #EXPLICIT
+            'short_desc',           #EXPLICIT
+            'bug_file_loc',         #EXPLICIT
+            'status_whiteboard',    #EXPLICIT
+            'deadline',             #NOT NEEDED
+            'estimated_time',       #NOT NEEDED
+            'delta_ts',             #NOT NEEDED
+            'lastdiffed',           #NOT NEEDED
+            'cclist_accessible',    #NOT NEEDED
+            'reporter_accessible'   #NOT NEEDED
+        }
 
-                )
-        """, {"schema": schema_name})
-        bugs_columns = columns
+        BUGS_COLUMNS = db.query(
+            "SELECT column_name, column_type FROM information_schema.columns WHERE " +
+            esfilter2sqlwhere({"and": [
+                {"eq": {"table_schema": schema_name}},
+                {"eq": {"table_name": "bugs"}},
+                {"in": {"column_name": known_columns}}
+            ]})
+        )
+
 
 
 def get_private_bugs_for_delete(db, param):
@@ -234,32 +243,35 @@ def get_bugs(db, param):
         #TODO: CF_LAST_RESOLVED IS IN PDT, FIX IT
         def lower(col):
             if col.column_type.startswith("varchar") or col.column_type.endswith('text'):
-                return "lower(" + quote_column(col.column_name) + ") " + quote_column(col.column_name)
+                return "lower(" + quote_column(col.column_name, "b") + ") " + quote_column(col.column_name)
             else:
-                return quote_column(col.column_name)
+                return quote_column(col.column_name, "b")
 
-        param.bugs_columns = bugs_columns.column_name
-        param.bugs_columns_SQL = SQL(",\n".join(lower(c) for c in bugs_columns))
+        param.bugs_columns = BUGS_COLUMNS.column_name
+        param.bugs_columns_SQL = sql_list(lower(c) for c in BUGS_COLUMNS)
         param.screened_whiteboard = esfilter2sqlwhere({"and": [
             {"exists": "bgm.bug_id"},
             {"terms": {"bgm.group_id": SCREENED_BUG_GROUP_IDS}}
         ]})
+        param.allowed_bugs = {"terms": {"b.bug_id": param.bug_list}}
 
         if param.allow_private_bugs:
-            param.bug_filter = esfilter2sqlwhere({"terms": {"b.bug_id": param.bug_list}})
-            param.sensitive_columns = SQL("""
-                '[screened]' short_desc,
-                '[screened]' bug_file_loc
-            """)
+            param.bug_filter = esfilter2sqlwhere({"and": [
+                {"terms": {"b.bug_id": param.bug_list}}
+            ]})
+            param.sensitive_columns = sql_list(
+                sql_alias(quote_value('[screened]'), quote_column(c))
+                for c in SCREENED_BUG_FIELDS
+            )
         else:
             param.bug_filter = esfilter2sqlwhere({"and": [
                 {"terms": {"b.bug_id": param.bug_list}},
                 {"missing": "bgm.bug_id"}
             ]})
-            param.sensitive_columns = SQL("""
-                short_desc,
-                bug_file_loc
-            """)
+            param.sensitive_columns = sql_list(
+                lower(c)
+                for c in SCREENED_BUG_FIELDS
+            )
 
         bugs = db.query(
             """
@@ -273,10 +285,10 @@ def get_bugs(db, param):
                 lower(pq.login_name) AS qa_contact,
                 lower(prod.`name`) AS product,
                 lower(comp.`name`) AS component,
-                CASE 
-                WHEN {{screened_whiteboard}} AND b.status_whiteboard IS NOT NULL AND trim(b.status_whiteboard)<>'' 
-                THEN '[screened]' 
-                ELSE trim(lower(b.status_whiteboard)) 
+                CASE
+                WHEN bgm.screened AND b.status_whiteboard IS NOT NULL AND trim(b.status_whiteboard)<>''
+                THEN '[screened]'
+                ELSE trim(lower(b.status_whiteboard))
                 END status_whiteboard,
                 {{sensitive_columns}},
                 {{bugs_columns_SQL}}
@@ -293,7 +305,17 @@ def get_bugs(db, param):
             LEFT JOIN
                 components comp ON comp.id = component_id
             LEFT JOIN
-                bug_group_map bgm ON bgm.bug_id = b.bug_id
+                (  # ALLOW ONLY ONE GROUP
+                    SELECT 
+                        bug_id, 
+                        MAX(CASE WHEN {{screened_whiteboard}} THEN 1 ELSE 0 END) screened
+                    FROM 
+                        bug_group_map bgm 
+                    WHERE 
+                        {{allowed_bugs}} 
+                    GROUP BY 
+                        bug_id
+                ) bgm ON bgm.bug_id = b.bug_id
             WHERE
                 {{bug_filter}}
             """,
@@ -309,7 +331,7 @@ def get_bugs(db, param):
 
         return output
     except Exception as e:
-        Log.error("can not get basic bug data", e)
+        Log.error("can not get basic bug data", cause=e)
 
 
 def flatten_bugs_record(r, output):
@@ -515,7 +537,7 @@ def get_tags(db, param):
 
     return db.query(
         """
-        SELECT 
+        SELECT
             bug_id,
             NULL AS modified_ts,
             NULL AS modified_by,
@@ -524,13 +546,13 @@ def get_tags(db, param):
             NULL AS old_value,
             NULL AS attach_id,
             2 AS _merge_order
-        FROM 
+        FROM
             bug_tag b
-        LEFT JOIN 
+        LEFT JOIN
             tag on tag.id = b.tag_id
         WHERE
             {{bug_filter}}
-        ORDER BY 
+        ORDER BY
             bug_id
         """,
         param
@@ -614,18 +636,18 @@ def get_new_activities(db, param):
     get_screened_whiteboard(db)
 
     if param.allow_private_bugs:
-        param.screened_fields = quote_list(SCREENED_FIELDDEFS)
+        param.screened_fields = sql_iso(sql_list(map(quote_value, SCREENED_FIELDDEFS)))
     else:
-        param.screened_fields = quote_list([-1])
+        param.screened_fields = sql_iso(SQL_NEG_ONE)
 
     param.bug_filter = esfilter2sqlwhere({"terms": {"a.bug_id": param.bug_list}})
-    param.mixed_case_fields = quote_list(MIXED_CASE)
+    param.mixed_case_fields = sql_iso(sql_list(map(quote_value, MIXED_CASE)))
     param.screened_whiteboard = esfilter2sqlwhere({"terms": {"m.group_id": SCREENED_BUG_GROUP_IDS}})
     param.whiteboard_field = STATUS_WHITEBOARD_FIELD_ID
 
     output = db.query("""
         SELECT
-            a.id, 
+            a.id,
             a.bug_id,
             UNIX_TIMESTAMP(bug_when)*1000 AS modified_ts,
             lower(p.login_name) AS modified_by,
@@ -660,23 +682,23 @@ def get_new_activities(db, param):
             fielddefs field ON a.fieldid = field.`id`
         LEFT JOIN
             bug_group_map m on m.bug_id=a.bug_id AND {{screened_whiteboard}}
-        # LEFT JOIN 
-        #     profiles new_qa_contact 
-        # ON 
+        # LEFT JOIN
+        #     profiles new_qa_contact
+        # ON
         #     new_qa_contact.userid=
-        #         CASE 
+        #         CASE
         #         WHEN a.fieldid <> 36 THEN -1
         #         WHEN NOT a.added REGEXP '^[0-9]+$' THEN -1
-        #         ELSE CAST(a.added AS UNSIGNED) 
+        #         ELSE CAST(a.added AS UNSIGNED)
         #         END
-        # LEFT JOIN 
-        #     profiles old_qa_contact 
-        # ON 
+        # LEFT JOIN
+        #     profiles old_qa_contact
+        # ON
         #   old_qa_contact.userid=
-        #       CASE 
+        #       CASE
         #       WHEN a.fieldid <> 36 THEN -1
         #       WHEN NOT a.removed REGEXP '^[0-9]+$' THEN -1
-        #       ELSE CAST(a.removed AS UNSIGNED) 
+        #       ELSE CAST(a.removed AS UNSIGNED)
         #       END
         WHERE
             {{bug_filter}}
@@ -695,15 +717,15 @@ def get_flags(db, param):
     param.bug_filter = esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
 
     return db.query("""
-        SELECT 
+        SELECT
             bug_id,
             UNIX_TIMESTAMP(f.creation_date)*1000 AS modified_ts,
             lower(ps.login_name) AS modified_by,
             'flagtypes_name' AS field_name,
             CONCAT(
-                ft.`name`, 
-                status, 
-                CASE 
+                ft.`name`,
+                status,
+                CASE
                 WHEN f.requestee_id IS NULL THEN ''
                 ELSE CONCAT('(', lower(pr.login_name), ')')
                 END
@@ -713,11 +735,11 @@ def get_flags(db, param):
             8 AS _merge_order
         FROM
             flags f
-        JOIN 
+        JOIN
             flagtypes ft ON f.type_id = ft.id
-        JOIN 
+        JOIN
             profiles ps ON f.setter_id = ps.userid
-        LEFT JOIN 
+        LEFT JOIN
             profiles pr ON f.requestee_id = pr.userid
         WHERE
             {{bug_filter}}

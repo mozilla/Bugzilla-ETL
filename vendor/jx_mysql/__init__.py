@@ -345,6 +345,11 @@ def esfilter2sqlwhere(esfilter, use_packing=True):
             quote_column(col) + SQL("=") + quote_value(val)
             for col, val in esfilter.term.items()
         ]))
+    elif esfilter.eq:
+        return sql_iso(SQL_AND.join([
+            quote_column(col) + SQL("=") + quote_value(val)
+            for col, val in esfilter.eq.items()
+        ]))
     elif esfilter.terms or esfilter['in']:
         for col, v in coalesce(esfilter.terms, esfilter['in']).items():
             if len(v) == 0:

@@ -42,7 +42,8 @@
 	"alias": {
 		"increment": 1000000,
 		"file": {
-			"path": "resources/schema/bugzilla_aliases.json"
+			"path": "resources/schema/bugzilla_aliases.json",
+			"key": {"$ref": "env://ALIAS_FILE_KEY"}
 		},
 		"elasticsearch": {
 			"host": "http://localhost",
@@ -50,11 +51,11 @@
 		}
 	},
 	"bugzilla": {
-		"filename": "./tests/resources/sql/bugzilla_mini.sql.zip",
+		"filename": "tests/resources/sql/bugzilla_mini.sql.zip",
 		"username": {"$ref": "env://MYSQL_USERNAME"},
 		"password": {"$ref": "env://MYSQL_PASSWORD"},
-		"host": "localhost",
 		"preamble": "from https://github.com/klahnakoski/Bugzilla-ETL",
+		"host": "localhost",
 		"port": 3306,
 		"schema": "bugs",
 		"debug": true

@@ -67,7 +67,7 @@ jobs:
             TEST_CONFIG: tests/resources/config/circleci.json
           command: |
             . venv/bin/activate
-            python -m unittest discover -v -s tests
+            python -m unittest discover -v -s tests -p test_etl.py
 
       - store_artifacts:
           path: test-reports
