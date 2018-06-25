@@ -15,7 +15,6 @@ jobs:
           MYSQL_ALLOW_EMPTY_PASSWORD: false
           MYSQL_DATABASE: bugs
           MYSQL_HOST: 127.0.0.1
-          MYSQL_ROOT_HOST: %
           MYSQL_USER: root
           MYSQL_PASS: password
 
