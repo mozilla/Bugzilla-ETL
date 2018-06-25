@@ -10,13 +10,12 @@ jobs:
 
       # MYSQL
       # https://hub.docker.com/r/circleci/mysql/
+      # https://hub.docker.com/_/mysql/
       - image: circleci/mysql:5.7-ram
         environment:
-          MYSQL_ALLOW_EMPTY_PASSWORD: false
           MYSQL_DATABASE: bugs
           MYSQL_HOST: 127.0.0.1
-          MYSQL_USER: root
-          MYSQL_PASS: password
+          MYSQL_ROOT_PASSWORD: password
 
       # ELASTICSEARCH
       # https://www.elastic.co/guide/en/elasticsearch/reference/6.3/docker.html
