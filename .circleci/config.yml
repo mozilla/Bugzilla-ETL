@@ -6,15 +6,36 @@ version: 2
 jobs:
   build:
     docker:
-      # specify the version you desire here
-      # use `-browsers` prefix for selenium tests, e.g. `3.6.1-browsers`
       - image: circleci/python:3.6.1
 
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      # - image: circleci/postgres:9.4
+      # MYSQL
+      # https://hub.docker.com/r/circleci/mysql/
+      # https://hub.docker.com/_/mysql/
+      - image: circleci/mysql:5.7-ram
+        environment:
+          MYSQL_DATABASE: bugs
+          MYSQL_HOST: 127.0.0.1
+          MYSQL_ROOT_PASSWORD: password
+
+      # ELASTICSEARCH
+      # https://www.elastic.co/guide/en/elasticsearch/reference/6.3/docker.html
+      - image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.3.0
+        environment:
+          cluster.name: bugzilla-etl
+          bootstrap.memory_lock: true
+          ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+          bootstrap.system_call_filter: false
+          transport.host: localhost
+          discovery.type: single-node
+
+
     working_directory: ~/repo
+
+    environment:
+      PYTHON_PATH: .:vendor
+      MYSQL_USERNAME: root
+      MYSQL_PASSWORD: password
+
 
     steps:
       - checkout
