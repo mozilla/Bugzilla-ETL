@@ -142,7 +142,7 @@ def get_bugs_table_columns(db, schema_name):
             esfilter2sqlwhere({"and": [
                 {"eq": {"table_schema": schema_name}},
                 {"eq": {"table_name": "bugs"}},
-                {"in": {"column_name": known_columns}}
+                {"not": {"in": {"column_name": known_columns}}}
             ]})
         )
 
