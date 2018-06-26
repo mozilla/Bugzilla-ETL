@@ -141,6 +141,12 @@ class ElasticsearchMetadata(Namespace):
 
     def _parse_properties(self, alias, mapping, meta):
         abs_columns = elasticsearch.parse_properties(alias, None, mapping.properties)
+        if any(c.cardinality == 0 for c in abs_columns):
+            Log.warning(
+                "Some columns are not stored {{names}}",
+                names=[c.names['.'] for c in abs_columns if c.cardinality == 0]
+            )
+
         with Timer("upserting {{num}} columns", {"num": len(abs_columns)}, debug=DEBUG):
             # LIST OF EVERY NESTED PATH
             query_paths = [[c.es_column] for c in abs_columns if c.es_type == "nested"]

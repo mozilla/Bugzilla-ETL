@@ -45,18 +45,24 @@ from util.database import diff
 BUG_GROUP_FOR_TESTING = "super secret"
 
 class TestETL(unittest.TestCase):
-    def setUp(self):
+
+    settings = None
+    alias_analyzer = None
+
+    @classmethod
+    def setUpClass(cls):
         filename = coalesce(
             os.environ.get("TEST_CONFIG"),
             "./tests/resources/config/test_etl.json"
         )
-        self.settings = startup.read_settings(filename)
-        constants.set(self.settings.constants)
-        Log.start(self.settings.debug)
+        cls.settings = startup.read_settings(filename)
+        constants.set(cls.settings.constants)
+        Log.start(cls.settings.debug)
 
-        self.alias_analyzer = AliasAnalyzer(self.settings.alias)
+        cls.alias_analyzer = AliasAnalyzer(cls.settings.alias)
 
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(cls):
         #CLOSE THE CACHED MySQL CONNECTIONS
         bz_etl.close_db_connections()
 

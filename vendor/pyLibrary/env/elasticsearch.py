@@ -1281,6 +1281,7 @@ def parse_properties(parent_index_name, parent_name, esProperties):
                 es_column=column_name,
                 names={".": jx_name},
                 nested_path=ROOT_PATH,
+                cardinality=0 if not property.store else None,
                 es_type=property.type
             ))
             if property.index_name and name != property.index_name:
@@ -1289,6 +1290,7 @@ def parse_properties(parent_index_name, parent_name, esProperties):
                     es_column=column_name,
                     names={".": jx_name},
                     nested_path=ROOT_PATH,
+                    cardinality=0 if property.store else None,
                     es_type=property.type
                 ))
         elif property.enabled == None or property.enabled == False:
@@ -1297,6 +1299,7 @@ def parse_properties(parent_index_name, parent_name, esProperties):
                 es_column=column_name,
                 names={".": jx_name},
                 nested_path=ROOT_PATH,
+                cardinality=0 if property.store else None,
                 es_type="source" if property.enabled == False else "object"
             ))
         else:
