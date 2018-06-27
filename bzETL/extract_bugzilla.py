@@ -240,7 +240,7 @@ def get_bugs(db, param):
         get_bugs_table_columns(db, db.settings.schema)
         get_screened_whiteboard(db)
 
-        #TODO: CF_LAST_RESOLVED IS IN PDT, FIX IT
+
         def lower(col):
             if col.column_type.startswith("varchar") or col.column_type.endswith('text'):
                 return "lower(" + quote_column(col.column_name, "b") + ") " + quote_column(col.column_name)
@@ -253,7 +253,7 @@ def get_bugs(db, param):
             {"exists": "bgm.bug_id"},
             {"terms": {"bgm.group_id": SCREENED_BUG_GROUP_IDS}}
         ]})
-        param.allowed_bugs = {"terms": {"b.bug_id": param.bug_list}}
+        param.allowed_bugs = esfilter2sqlwhere({"terms": {"bgm.bug_id": param.bug_list}})
 
         if param.allow_private_bugs:
             param.bug_filter = esfilter2sqlwhere({"and": [

@@ -541,7 +541,7 @@ class TestETL(unittest.TestCase):
         database.make_test_instance(self.settings.bugzilla)
 
         with MySQL(self.settings.bugzilla) as db:
-            es = fake_elasticsearch.make_test_instance("candidate", self.settings.public.bugs)
+            es = fake_elasticsearch.make_test_instance("candidate", self.settings.private.bugs)
 
             # MARK BUG AS ONE OF THE SCREENED GROUPS
             database.add_bug_group(db, GOOD_BUG_TO_TEST, SCREENED_WHITEBOARD_BUG_GROUPS[0])
@@ -565,6 +565,8 @@ class TestETL(unittest.TestCase):
             refresh_metadata(es)
             versions = get_all_bug_versions(es, GOOD_BUG_TO_TEST)
 
+            if len(versions)==0:
+                Log.error("expecting records")
             for v in versions:
                 if v.status_whiteboard not in (None, "", "[screened]"):
                     Log.error("Expecting whiteboard to be screened")

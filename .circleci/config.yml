@@ -59,6 +59,10 @@ jobs:
             - ./venv
           key: v1-dependencies-{{ checksum "requirements.txt" }}
 
+      - run:
+          name: install mysql
+          command: sudo apt-get install mysql
+
       # run tests!
       - run:
           name: run tests

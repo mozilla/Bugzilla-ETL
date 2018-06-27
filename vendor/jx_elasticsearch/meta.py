@@ -144,7 +144,7 @@ class ElasticsearchMetadata(Namespace):
         if any(c.cardinality == 0 for c in abs_columns):
             Log.warning(
                 "Some columns are not stored {{names}}",
-                names=[c.names['.'] for c in abs_columns if c.cardinality == 0]
+                names=[(c.es_index, c.names['.']) for c in abs_columns if c.cardinality == 0]
             )
 
         with Timer("upserting {{num}} columns", {"num": len(abs_columns)}, debug=DEBUG):
@@ -169,7 +169,7 @@ class ElasticsearchMetadata(Namespace):
             # ADD RELATIVE NAMES
             for abs_column in abs_columns:
                 abs_column.last_updated = None
-                abs_column.jx_type = es_type_to_json_type[abs_column.es_type]
+                abs_column.jx_type = jx_type(abs_column)
                 for query_path in query_paths:
                     abs_column.names[query_path[0]] = relative_field(abs_column.names["."], query_path[0])
                 self.todo.add(self.meta.columns.add(abs_column))
@@ -693,6 +693,15 @@ def metadata_tables():
             ]
         ]
     )
+
+
+def jx_type(column):
+    """
+    return the jx_type for given column
+    """
+    if column.es_column.endswith(EXISTS_TYPE):
+        return jx_base.EXISTS
+    return es_type_to_json_type[column.es_type]
 
 
 OBJECTS = (jx_base.OBJECT, jx_base.EXISTS)

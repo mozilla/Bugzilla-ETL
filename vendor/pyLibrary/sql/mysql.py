@@ -619,9 +619,9 @@ def quote_column(column_name, table=None):
         if table:
             return join_column(table, column_name)
         else:
-            return SQL("`" + '`.`'.join(split_field(column_name)) + "`")  # MY SQL QUOTE OF COLUMN NAMES
+            return SQL("`" + '`.`'.join(split_field(column_name)) + "`")  # MYSQL QUOTE OF COLUMN NAMES
     elif isinstance(column_name, binary_type):
-        Log.error("not expected")
+        return quote_column(column_name.decode('utf8'), table)
     elif isinstance(column_name, list):
         if table:
             return sql_list(join_column(table, c) for c in column_name)
