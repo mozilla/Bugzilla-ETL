@@ -61,7 +61,7 @@ jobs:
 
       - run:
           name: install mysql
-          command: sudo apt-get install mysql
+          command: sudo apt-get install mysql-client
 
       # run tests!
       - run:
