@@ -386,7 +386,7 @@ class TestETL(unittest.TestCase):
         )
 
         refresh_metadata(es_c)
-        verify_no_private_comments(es_c, private_comments)
+        verify_no_private_comments(es_c, jx.select(private_comments, "comment_id"))
 
     def test_changes_to_private_bugs_still_have_bug_group(self):
         self.settings.param.allow_private_bugs = True
@@ -662,11 +662,10 @@ def verify_no_private_attachments(es, private_attachments):
 
 
 def verify_no_private_comments(es, private_comments):
-    comments = jx.select(private_comments, "bug_id")
     esq = get_esq(es)
     result = esq.query({
         "from": es.settings.alias,
-        "where": {"in": {"comment_id": comments}},
+        "where": {"in": {"comment_id": private_comments}},
         "format":"list"
     })
 
