@@ -21,7 +21,7 @@ from pymysql import connect, InterfaceError, cursors
 
 import mo_json
 from jx_python import jx
-from mo_dots import coalesce, wrap, listwrap, unwrap, split_field
+from mo_dots import coalesce, wrap, listwrap, unwrap, split_field, Null
 from mo_files import File
 from mo_future import text_type, utf8_json_encoder, binary_type
 from mo_kwargs import override
@@ -363,85 +363,6 @@ class MySQL(object):
         if self.debug or len(self.backlog) >= MAX_BATCH_SIZE:
             self._execute_backlog()
 
-    @staticmethod
-    @override
-    def execute_sql(
-        host,
-        username,
-        password,
-        sql,
-        schema=None,
-        param=None,
-        kwargs=None
-    ):
-        """EXECUTE MANY LINES OF SQL (FROM SQLDUMP FILE, MAYBE?"""
-        kwargs.schema = coalesce(kwargs.schema, kwargs.database)
-
-        if param:
-            with MySQL(kwargs) as temp:
-                sql = expand_template(sql, quote_param(param))
-
-        # We have no way to execute an entire SQL file in bulk, so we
-        # have to shell out to the commandline client.
-        args = [
-            "mysql",
-            "-h{0}".format(host),
-            "-u{0}".format(username),
-            "-p{0}".format(password)
-        ]
-        if schema:
-            args.append("{0}".format(schema))
-
-        try:
-            proc = subprocess.Popen(
-                args,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                bufsize=-1
-            )
-            if isinstance(sql, text_type):
-                sql = sql.encode("utf8")
-            (output, _) = proc.communicate(sql)
-        except Exception as e:
-            raise Log.error("Can not call \"mysql\"", e)
-
-        if proc.returncode:
-            if len(sql) > 10000:
-                sql = "<" + text_type(len(sql)) + " bytes of sql>"
-            Log.error(
-                "Unable to execute sql: return code {{return_code}}, {{output}}:\n {{sql}}\n",
-                sql=indent(sql),
-                return_code=proc.returncode,
-                output=output
-            )
-
-    @staticmethod
-    @override
-    def execute_file(
-        filename,
-        host,
-        username,
-        password,
-        schema=None,
-        param=None,
-        ignore_errors=False,
-        kwargs=None
-    ):
-        # MySQLdb provides no way to execute an entire SQL file in bulk, so we
-        # have to shell out to the commandline client.
-        file = File(filename)
-        if file.extension == 'zip':
-            sql = file.read_zipfile()
-        else:
-            sql = File(filename).read()
-
-        if ignore_errors:
-            with suppress_exception:
-                MySQL.execute_sql(sql=sql, param=param, kwargs=kwargs)
-        else:
-            MySQL.execute_sql(sql=sql, param=param, kwargs=kwargs)
-
     def _execute_backlog(self):
         if not self.backlog: return
 
@@ -568,6 +489,82 @@ class MySQL(object):
         sort = jx.normalize_sort_parameters(sort)
         return sql_list([quote_column(s.field) + (SQL_DESC if s.sort == -1 else SQL_ASC) for s in sort])
 
+@override
+def execute_sql(
+    host,
+    username,
+    password,
+    sql,
+    schema=None,
+    param=None,
+    kwargs=None
+):
+    """EXECUTE MANY LINES OF SQL (FROM SQLDUMP FILE, MAYBE?"""
+    kwargs.schema = coalesce(kwargs.schema, kwargs.database)
+
+    if param:
+        with MySQL(kwargs) as temp:
+            sql = expand_template(sql, quote_param(param))
+
+    # We have no way to execute an entire SQL file in bulk, so we
+    # have to shell out to the commandline client.
+    args = [
+        "mysql",
+        "-h{0}".format(host),
+        "-u{0}".format(username),
+        "-p{0}".format(password)
+    ]
+    if schema:
+        args.append("{0}".format(schema))
+
+    try:
+        proc = subprocess.Popen(
+            args,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            bufsize=-1
+        )
+        if isinstance(sql, text_type):
+            sql = sql.encode("utf8")
+        (output, _) = proc.communicate(sql)
+    except Exception as e:
+        raise Log.error("Can not call \"mysql\"", e)
+
+    if proc.returncode:
+        if len(sql) > 10000:
+            sql = "<" + text_type(len(sql)) + " bytes of sql>"
+        Log.error(
+            "Unable to execute sql: return code {{return_code}}, {{output}}:\n {{sql}}\n",
+            sql=indent(sql),
+            return_code=proc.returncode,
+            output=output
+        )
+
+@override
+def execute_file(
+    filename,
+    host,
+    username,
+    password,
+    schema=None,
+    param=None,
+    ignore_errors=False,
+    kwargs=None
+):
+    # MySQLdb provides no way to execute an entire SQL file in bulk, so we
+    # have to shell out to the commandline client.
+    file = File(filename)
+    if file.extension == 'zip':
+        sql = file.read_zipfile()
+    else:
+        sql = File(filename).read()
+
+    if ignore_errors:
+        with suppress_exception:
+            execute_sql(sql=sql, kwargs=kwargs)
+    else:
+        execute_sql(sql=sql, kwargs=kwargs)
 
 ESCAPE_DCT = {
     u"\\": u"\\\\",

@@ -65,6 +65,7 @@
 				},
 				"status_whiteboard": {
 					"type": "keyword",
+					"store": true,
 					"fields": {
 						"words": {
 							"type": "text",

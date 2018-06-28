@@ -15,7 +15,7 @@ from jx_base.expressions import jx_expression
 
 from jx_mysql import esfilter2sqlwhere
 from jx_python import jx
-from mo_dots import Data
+from mo_dots import Data, wrap
 from mo_logs import Log
 from mo_times.timer import Timer
 from pyLibrary import convert
@@ -39,15 +39,6 @@ SCREENED_FIELDDEFS = [
     496, #cf_user_story
 ]
 
-SCREENED_BUG_FIELDS = [
-    "bug_file_loc",
-    "short_desc",
-    "alias",
-    "cf_user_story"
-]
-
-
-
 # CERTAIN GROUPS IN PRIVATE ETL HAVE HAVE WHITEBOARD SCREENED
 SCREENED_WHITEBOARD_BUG_GROUPS = [
     "legal",
@@ -70,6 +61,13 @@ PRIVATE_ATTACHMENT_FIELD_ID = 65
 PRIVATE_COMMENTS_FIELD_ID = 82
 PRIVATE_BUG_GROUP_FIELD_ID = 66
 STATUS_WHITEBOARD_FIELD_ID = 22
+
+SCREENED_BUG_COLUMNS = [
+    "bug_file_loc",
+    "short_desc",
+    "alias",
+    "cf_user_story"
+]
 
 BUGS_COLUMNS = None
 SCREENED_BUG_GROUP_IDS = None
@@ -115,10 +113,10 @@ def get_screened_whiteboard(db):
 
 
 def get_bugs_table_columns(db, schema_name):
-    global BUGS_COLUMNS
+    global BUGS_COLUMNS, SCREENED_BUG_COLUMNS
 
     if not BUGS_COLUMNS:
-        known_columns = set(SCREENED_BUG_FIELDS) | {
+        explicitly_used_columns = {
             'bug_id',               #EXPLICIT
             'creation_ts',          #EXPLICIT
             'reporter',             #EXPLICIT
@@ -135,18 +133,19 @@ def get_bugs_table_columns(db, schema_name):
             'lastdiffed',           #NOT NEEDED
             'cclist_accessible',    #NOT NEEDED
             'reporter_accessible'   #NOT NEEDED
-        }
+        } - set(SCREENED_BUG_COLUMNS)
 
-        BUGS_COLUMNS = db.query(
+        all_columns = db.query(
             "SELECT column_name, column_type FROM information_schema.columns WHERE " +
             esfilter2sqlwhere({"and": [
                 {"eq": {"table_schema": schema_name}},
                 {"eq": {"table_name": "bugs"}},
-                {"not": {"in": {"column_name": known_columns}}}
+                {"not": {"in": {"column_name": explicitly_used_columns}}}
             ]})
         )
 
-
+        BUGS_COLUMNS = wrap([c for c in all_columns if c.column_name not in SCREENED_BUG_COLUMNS])
+        SCREENED_BUG_COLUMNS = wrap([c for c in all_columns if c.column_name in SCREENED_BUG_COLUMNS])
 
 def get_private_bugs_for_delete(db, param):
     if param.allow_private_bugs:
@@ -261,7 +260,7 @@ def get_bugs(db, param):
             ]})
             param.sensitive_columns = sql_list(
                 sql_alias(quote_value('[screened]'), quote_column(c))
-                for c in SCREENED_BUG_FIELDS
+                for c in SCREENED_BUG_COLUMNS
             )
         else:
             param.bug_filter = esfilter2sqlwhere({"and": [
@@ -270,7 +269,7 @@ def get_bugs(db, param):
             ]})
             param.sensitive_columns = sql_list(
                 lower(c)
-                for c in SCREENED_BUG_FIELDS
+                for c in SCREENED_BUG_COLUMNS
             )
 
         bugs = db.query(

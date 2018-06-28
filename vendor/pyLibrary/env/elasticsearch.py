@@ -1271,8 +1271,15 @@ def parse_properties(parent_index_name, parent_name, esProperties):
             continue
         if not property.type:
             continue
+
+
+        cardinality = 0 if not property.store and name != '_id' else None
+
         if property.fields:
             child_columns = parse_properties(index_name, column_name, property.fields)
+            if cardinality is None:
+                for cc in child_columns:
+                    cc.cardinality = None
             columns.extend(child_columns)
 
         if property.type in es_type_to_json_type.keys():
@@ -1281,7 +1288,7 @@ def parse_properties(parent_index_name, parent_name, esProperties):
                 es_column=column_name,
                 names={".": jx_name},
                 nested_path=ROOT_PATH,
-                cardinality=0 if not property.store else None,
+                cardinality=cardinality,
                 es_type=property.type
             ))
             if property.index_name and name != property.index_name:
@@ -1303,7 +1310,7 @@ def parse_properties(parent_index_name, parent_name, esProperties):
                 es_type="source" if property.enabled == False else "object"
             ))
         else:
-            Log.warning("unknown type {{type}} for property {{path}}", type=property.type, path=query_path)
+            Log.warning("unknown type {{type}} for property {{path}}", type=property.type, path=parent_name)
 
     return columns
 
