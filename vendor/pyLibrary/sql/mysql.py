@@ -308,7 +308,7 @@ class MySQL(object):
             self.cursor.execute(sql)
             grid = [[utf8_to_unicode(c) for c in row] for row in self.cursor]
             # columns = [utf8_to_unicode(d[0]) for d in coalesce(self.cursor.description, [])]
-            result = zip(*grid)
+            result = transpose(*grid)
 
             if not old_cursor:  # CLEANUP AFTER NON-TRANSACTIONAL READS
                 self.cursor.close()

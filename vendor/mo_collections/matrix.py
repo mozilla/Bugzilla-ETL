@@ -335,18 +335,18 @@ def _getitem(c, i):
             return (len(c), ), c
         elif isinstance(select, slice):
             sub = c[select]
-            dims, cube = zip(*[_getitem(cc, i[1::]) for cc in sub])
+            dims, cube = transpose(*[_getitem(cc, i[1::]) for cc in sub])
             return (len(cube),) + dims[0], cube
         else:
             return (), c[select]
     else:
         select = i[0]
         if select == None:
-            dims, cube = zip(*[_getitem(cc, i[1::]) for cc in c])
+            dims, cube = transpose(*[_getitem(cc, i[1::]) for cc in c])
             return (len(cube),)+dims[0], cube
         elif isinstance(select, slice):
             sub = c[select]
-            dims, cube = zip(*[_getitem(cc, i[1::]) for cc in sub])
+            dims, cube = transpose(*[_getitem(cc, i[1::]) for cc in sub])
             return (len(cube),)+dims[0], cube
         else:
             with suppress_exception:

@@ -187,7 +187,7 @@ def tab(value):
     :return:
     """
     if isinstance(value, Mapping):
-        h, d = zip(*wrap(value).leaves())
+        h, d = transpose(*wrap(value).leaves())
         return (
             "\t".join(map(value2json, h)) +
             "\n" +
