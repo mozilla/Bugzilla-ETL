@@ -259,7 +259,7 @@ def get_bugs(db, param):
                 {"terms": {"b.bug_id": param.bug_list}}
             ]})
             param.sensitive_columns = sql_list(
-                sql_alias(quote_value('[screened]'), quote_column(c))
+                sql_alias(quote_value('[screened]'), quote_column(c.column_name))
                 for c in SCREENED_BUG_COLUMNS
             )
         else:
