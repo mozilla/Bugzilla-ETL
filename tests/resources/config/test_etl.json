@@ -116,7 +116,8 @@
 	"constants": {
 		"pyLibrary.env.http.default_headers": {
 			"Referer": "https://wiki.mozilla.org/BMO/ElasticSearch"
-		}
+		},
+		"jx_elasticsearch.meta.ENABLE_META_SCAN": false
 	},
 	"debug": {
 		"trace": true,
