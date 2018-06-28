@@ -11,6 +11,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+from mo_times.dates import unix2datetime
+
 import jx_elasticsearch
 from bzETL import extract_bugzilla, alias_analysis, parse_bug_history
 from bzETL.alias_analysis import AliasAnalyzer
@@ -148,7 +150,7 @@ def setup_es(settings, db):
         # DO NOT MAKE NEW INDEX, CONTINUE INITIAL FILL
         try:
             last_run_time = MIN_TIMESTAMP
-            current_run_time = long(File(settings.param.first_run_time).read())
+            current_run_time = unix2datetime(long(File(settings.param.first_run_time).read())/1000)
             esq = jx_elasticsearch.new_instance(read_only=False, kwargs=settings.es)
             esq_comments = jx_elasticsearch.new_instance(read_only=False, kwargs=settings.es_comments)
             esq.es.set_refresh_interval(1)  #REQUIRED SO WE CAN SEE WHAT BUGS HAVE BEEN LOADED ALREADY
@@ -185,15 +187,15 @@ def incremental_etl(param, db, esq, esq_comments, output_queue, kwargs):
         still_existing = get_bug_ids(esq, {"terms": {"bug_id": delete_bugs}})
         if still_existing:
             Log.note("Ensure the following existing private bugs are deleted:\n{{private_bugs|indent}}", private_bugs=sorted(still_existing))
-        esq.es.delete_record({"terms": {"bug_id": delete_bugs}})
-        esq_comments.es.delete_record({"terms": {"bug_id": delete_bugs}})
+        esq.es.delete_record({"terms": {"bug_id.~n~": delete_bugs}})
+        esq_comments.es.delete_record({"terms": {"bug_id.~n~": delete_bugs}})
 
     # RECENT PUBLIC BUGS
     possible_public_bugs = get_recent_private_bugs(db, param)
     if param.allow_private_bugs:
         #PRIVATE BUGS
         #    A CHANGE IN PRIVACY INDICATOR MEANS THE WHITEBOARD IS AFFECTED, REDO
-        esq.es.delete_record({"terms": {"bug_id": possible_public_bugs}})
+        esq.es.delete_record({"terms": {"bug_id.~n~": possible_public_bugs}})
     else:
         #PUBLIC BUGS
         #    IF ADDING GROUP THEN private_bugs ALREADY DID THIS
@@ -203,7 +205,7 @@ def incremental_etl(param, db, esq, esq_comments, output_queue, kwargs):
     # REMOVE **RECENT** PRIVATE ATTACHMENTS
     private_attachments = get_recent_private_attachments(db, param)
     bugs_to_refresh = set(jx.select(private_attachments, "bug_id"))
-    esq.es.delete_record({"terms": {"bug_id": bugs_to_refresh}})
+    esq.es.delete_record({"terms": {"bug_id.~n~": bugs_to_refresh}})
 
     # REBUILD BUGS THAT GOT REMOVED
     bug_list = jx.sort((possible_public_bugs | bugs_to_refresh) - private_bugs) # REMOVE PRIVATE BUGS
@@ -228,7 +230,7 @@ def incremental_etl(param, db, esq, esq_comments, output_queue, kwargs):
     # REFRESH COMMENTS WITH PRIVACY CHANGE
     private_comments = get_recent_private_comments(db, param)
     comment_list = set(jx.select(private_comments, "comment_id")) | {0}
-    esq_comments.es.delete_record({"terms": {"comment_id": comment_list}})
+    esq_comments.es.delete_record({"terms": {"comment_id.~n~": comment_list}})
     changed_comments = get_comments_by_id(db, comment_list, param)
     esq_comments.es.extend({"id": c.comment_id, "value": c} for c in changed_comments)
 
@@ -283,7 +285,7 @@ def full_etl(resume_from_last_run, param, db, esq, esq_comments, output_queue, k
     end = coalesce(param.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
     start = coalesce(param.start, 0)
     if resume_from_last_run:
-        start = coalesce(param.start, Math.floor(get_max_bug_id(esq), param.increment))
+        start = coalesce(param.start, Math.floor(get_max_bug_id(esq), param.increment), 0)
 
     #############################################################
     ## MAIN ETL LOOP

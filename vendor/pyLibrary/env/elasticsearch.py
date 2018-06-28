@@ -270,7 +270,7 @@ class Index(Features):
         elif self.cluster.info.version.number.startswith(("5.", "6.")):
             query = {"query": filter}
 
-            Log.error("filter is not typed")
+            Log.warning("filter is not typed")
 
             wait_for_active_shards = coalesce(  # EARLIER VERSIONS USED "consistency" AS A PARAMETER
                 self.settings.wait_for_active_shards,
@@ -1273,7 +1273,7 @@ def parse_properties(parent_index_name, parent_name, esProperties):
             continue
 
 
-        cardinality = 0 if not property.store and name != '_id' else None
+        cardinality = 0 if not property.store and not name != '_id' else None
 
         if property.fields:
             child_columns = parse_properties(index_name, column_name, property.fields)

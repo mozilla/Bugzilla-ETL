@@ -661,7 +661,7 @@ def verify_no_private_comments(es, private_comments):
     esq = get_esq(es)
     result = esq.query({
         "from": es.settings.alias,
-        "where": {"in": {"comment_id": private_comments}},
+        "where": {"in": {"comment_id": private_comments.comment_id}},
         "format":"list"
     })
 
