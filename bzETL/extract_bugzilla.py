@@ -11,12 +11,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
-from jx_base.expressions import jx_expression
-
 from jx_mysql import esfilter2sqlwhere
 from jx_python import jx
 from mo_dots import Data, wrap
 from mo_logs import Log
+from mo_threads import Lock
 from mo_times.timer import Timer
 from pyLibrary import convert
 from pyLibrary.sql import SQL, sql_list, sql_alias, sql_iso, SQL_NEG_ONE
@@ -25,6 +24,7 @@ from pyLibrary.sql.mysql import quote_column, quote_value
 # USING THE TEXT DATETIME OF EPOCH THROWS A WARNING!  USE ONE SECOND PAST EPOCH AS MINIMUM TIME.
 MIN_TIMESTAMP = 1000  # MILLISECONDS SINCE EPOCH
 MAX_TIMESTAMP = (10 * 1000 * 1000 * 1000 - 1) * 1000.0
+GLOBAL_LOCK = Lock()
 
 #ALL BUGS IN PRIVATE ETL HAVE SCREENED FIELDS
 SCREENED_FIELDDEFS = [
@@ -115,37 +115,38 @@ def get_screened_whiteboard(db):
 def get_bugs_table_columns(db, schema_name):
     global BUGS_COLUMNS, SCREENED_BUG_COLUMNS
 
-    if not BUGS_COLUMNS:
-        explicitly_used_columns = {
-            'bug_id',               #EXPLICIT
-            'creation_ts',          #EXPLICIT
-            'reporter',             #EXPLICIT
-            'assigned_to',          #EXPLICIT
-            'qa_contact',           #EXPLICIT
-            'product_id',           #EXPLICIT
-            'component_id',         #EXPLICIT
-            'short_desc',           #EXPLICIT
-            'bug_file_loc',         #EXPLICIT
-            'status_whiteboard',    #EXPLICIT
-            'deadline',             #NOT NEEDED
-            'estimated_time',       #NOT NEEDED
-            'delta_ts',             #NOT NEEDED
-            'lastdiffed',           #NOT NEEDED
-            'cclist_accessible',    #NOT NEEDED
-            'reporter_accessible'   #NOT NEEDED
-        } - set(SCREENED_BUG_COLUMNS)
+    with GLOBAL_LOCK:
+        if not BUGS_COLUMNS:
+            explicitly_used_columns = {
+                'bug_id',               #EXPLICIT
+                'creation_ts',          #EXPLICIT
+                'reporter',             #EXPLICIT
+                'assigned_to',          #EXPLICIT
+                'qa_contact',           #EXPLICIT
+                'product_id',           #EXPLICIT
+                'component_id',         #EXPLICIT
+                'short_desc',           #EXPLICIT
+                'bug_file_loc',         #EXPLICIT
+                'status_whiteboard',    #EXPLICIT
+                'deadline',             #NOT NEEDED
+                'estimated_time',       #NOT NEEDED
+                'delta_ts',             #NOT NEEDED
+                'lastdiffed',           #NOT NEEDED
+                'cclist_accessible',    #NOT NEEDED
+                'reporter_accessible'   #NOT NEEDED
+            } - set(SCREENED_BUG_COLUMNS)
 
-        all_columns = db.query(
-            "SELECT column_name, column_type FROM information_schema.columns WHERE " +
-            esfilter2sqlwhere({"and": [
-                {"eq": {"table_schema": schema_name}},
-                {"eq": {"table_name": "bugs"}},
-                {"not": {"in": {"column_name": explicitly_used_columns}}}
-            ]})
-        )
+            all_columns = db.query(
+                "SELECT column_name, column_type FROM information_schema.columns WHERE " +
+                esfilter2sqlwhere({"and": [
+                    {"eq": {"table_schema": schema_name}},
+                    {"eq": {"table_name": "bugs"}},
+                    {"not": {"in": {"column_name": explicitly_used_columns}}}
+                ]})
+            )
 
-        BUGS_COLUMNS = wrap([c for c in all_columns if c.column_name not in SCREENED_BUG_COLUMNS])
-        SCREENED_BUG_COLUMNS = wrap([c for c in all_columns if c.column_name in SCREENED_BUG_COLUMNS])
+            BUGS_COLUMNS = wrap([c for c in all_columns if c.column_name not in SCREENED_BUG_COLUMNS])
+            SCREENED_BUG_COLUMNS = wrap([c for c in all_columns if c.column_name in SCREENED_BUG_COLUMNS])
 
 def get_private_bugs_for_delete(db, param):
     if param.allow_private_bugs:
