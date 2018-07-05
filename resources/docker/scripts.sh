@@ -37,7 +37,7 @@ https://www.ekito.fr/people/run-a-cron-job-with-docker/
 
 
 cd ~/Bugzilla-ETL  # ENSURE YOU ARE IN THE ROOT OF THE Bugzilla-ETL REPO
-docker build --file resources\docker\etl.dockerfile --tag test-etl .
+docker build --file resources\docker\etl.dockerfile --no-cache --tag test-etl .
 
 
 

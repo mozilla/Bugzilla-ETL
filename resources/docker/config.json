@@ -5,7 +5,7 @@
 		"first_run_time": "logs/first_run_time.txt",
 		"last_run_time": "logs/last_run_time.txt",
 		"look_back": 3600000,  // HOUR = 60*60*1000
-		"allow_private_bugs": false
+		"allow_private_bugs": {"$ref":"env://ETL_PRIVATE_BUGS"}
 	},
 	"alias": {
 		"start": 0,
@@ -25,7 +25,7 @@
 		"preamble": "from https://github.com/klahnakoski/Bugzilla-ETL",
 		"host": {"$ref":"env://MYSQL_HOST"},
 		"port": {"$ref":"env://MYSQL_PORT"},
-		"schema": "bugs",
+		"schema": {"$ref":"env://MYSQL_SCHEMA"},
 		"debug": false
 	},
 	"es": {
@@ -55,6 +55,7 @@
 	"debug": {
 		"trace": true,
 		"log": [
+			{""}
 			{
 				"log_type": "mozlog",
 				"appname": {"$ref":"env://ETL_APPNAME"}
@@ -65,6 +66,10 @@
 				"maxBytes": 10000000,
 				"backupCount": 20,
 				"encoding": "utf8"
+			},
+			{
+				"log_type": "stream",
+				"stream": "sys.stdout"
 			}
 		]
 	}
