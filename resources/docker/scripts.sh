@@ -7,15 +7,9 @@
 docker run --interactive --tty ubuntu bash
 
 # deliver env vars to image
-docker run -it --user app --env-file ./resources/docker/public_etl.env test-etl bash
+docker run -it --user app --env-file ./resources/docker/public_etl.env --mount source=public_etl_state,destination=/app/logs test-etl bash
 
 
-
-docker run -it --user app --env-file ./resources/docker/public_etl.env 8d54606a9634 bash
-
-
-
-docker run -it --user app --env-file ./resources/docker/public_etl.env 552c4aeb4d41 bash
 
 
 # COPY FILES INTO IMAGE
