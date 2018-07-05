@@ -58,6 +58,13 @@
 			{
 				"log_type": "mozlog",
 				"appname": {"$ref":"env://ETL_APPNAME"}
+			},
+			{
+				"class": "logging.handlers.RotatingFileHandler",
+				"filename": "./logs/bz_etl.log",
+				"maxBytes": 10000000,
+				"backupCount": 20,
+				"encoding": "utf8"
 			}
 		]
 	}

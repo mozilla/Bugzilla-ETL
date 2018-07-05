@@ -1,7 +1,7 @@
 # FROM ubuntu
 FROM python:3.6.4
-ENV TAG v0.1
-ENV HOME app
+ENV TAG v0.2
+ENV HOME /app
 ENV USER app
 
 WORKDIR /app
@@ -19,9 +19,12 @@ RUN mkdir -p /etc/dpkg/dpkg.cfg.d \
         vim-tiny \
         nano \
         sudo \
-    && rm -rf /var/lib/apt/lists/* /usr/share/doc/* /usr/share/man/* /usr/share/locale/*
-    && git clone https://github.com/mozilla/Bugzilla-ETL.git app
-    && git checkout tags/$TAG
+    && rm -rf /var/lib/apt/lists/* /usr/share/doc/* /usr/share/man/* /usr/share/locale/* \
+    && git clone https://github.com/mozilla/Bugzilla-ETL.git /app \
+    && git checkout tags/$TAG \
+    && chmod a+x resources/docker/crontab \
+    && chmod a+x resources/docker/etl.sh \
+    && cp resources/docker/crontab /etc/cron.daily/app \
 
 RUN addgroup --gid 10001 app
 RUN adduser \
@@ -36,5 +39,9 @@ RUN adduser \
 
 RUN chown -R app:app /app
 USER app
-RUN python -m pip --no-cache-dir install --user -r requirements.txt
+
+
+RUN python -m pip --no-cache-dir install --user -r requirements.txt \
+    && git config --global user.email "klahnakoski@mozilla.com" \
+    && git config --global user.name "Kyle Lahnakoski"
 
