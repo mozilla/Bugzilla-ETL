@@ -1,0 +1,1 @@
+10 * * * * app /app/resources/docker/etl.shecho "Hello world" >> /var/log/cron.log 2>&1

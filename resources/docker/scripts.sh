@@ -4,10 +4,18 @@
 
 # login and record commands
 
-docker run --interactive --tty python:3.6.1 bash
+docker run --interactive --tty ubuntu bash
 
 # deliver env vars to image
 docker run -it --user app --env-file ./resources/docker/public_etl.env test-etl bash
+
+
+
+docker run -it --user app --env-file ./resources/docker/public_etl.env 8d54606a9634 bash
+
+
+
+docker run -it --user app --env-file ./resources/docker/public_etl.env 552c4aeb4d41 bash
 
 
 # COPY FILES INTO IMAGE
@@ -31,3 +39,14 @@ https://stackoverflow.com/questions/19585028/i-lose-my-data-when-the-container-e
 https://www.ekito.fr/people/run-a-cron-job-with-docker/
 
 # ADD VOLUME TO STORE STATE
+
+
+
+cd ~/Bugzilla-ETL  # ENSURE YOU ARE IN THE ROOT OF THE Bugzilla-ETL REPO
+docker build --file resources\docker\etl.dockerfile --tag test-etl .
+
+
+
+# CLEANUP
+
+https://www.calazan.com/docker-cleanup-commands/

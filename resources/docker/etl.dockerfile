@@ -1,5 +1,8 @@
-FROM python:3.6.1
-ENV TAG v2.1
+# FROM ubuntu
+FROM python:3.6.4
+ENV TAG v0.1
+ENV HOME app
+ENV USER app
 
 WORKDIR /app
 RUN mkdir -p /etc/dpkg/dpkg.cfg.d \
@@ -15,7 +18,11 @@ RUN mkdir -p /etc/dpkg/dpkg.cfg.d \
         git \
         vim-tiny \
         nano \
+        sudo \
     && rm -rf /var/lib/apt/lists/* /usr/share/doc/* /usr/share/man/* /usr/share/locale/*
+    && git clone https://github.com/mozilla/Bugzilla-ETL.git app
+    && git checkout tags/$TAG
+
 RUN addgroup --gid 10001 app
 RUN adduser \
       --gid 10001 \
@@ -27,12 +34,7 @@ RUN adduser \
       --gecos we,dont,care,yeah \
       app
 
-
-ADD . /app
 RUN chown -R app:app /app
-
-
 USER app
 RUN python -m pip --no-cache-dir install --user -r requirements.txt
-ENTRYPOINT ["/app/entrypoint.sh"]
-CMD ["start"]
+
