@@ -1,5 +1,5 @@
-# FROM ubuntu
 FROM python:3.6.4
+ENV BRANCH dev
 ENV TAG v0.2
 ENV HOME /app
 ENV USER app
@@ -19,12 +19,16 @@ RUN mkdir -p /etc/dpkg/dpkg.cfg.d \
         vim-tiny \
         nano \
         sudo \
-    && rm -rf /var/lib/apt/lists/* /usr/share/doc/* /usr/share/man/* /usr/share/locale/* \
-    && git clone https://github.com/mozilla/Bugzilla-ETL.git /app \
-    && git checkout tags/$TAG \
+    && rm -rf /var/lib/apt/lists/* /usr/share/doc/* /usr/share/man/* /usr/share/locale/*
+
+# CHECKOUT ETL
+RUN && git clone https://github.com/mozilla/Bugzilla-ETL.git /app \
+    && git checkout $BRANCH \
+    && git config --global user.email "klahnakoski@mozilla.com" \
+    && git config --global user.name "Kyle Lahnakoski" \
     && chmod a+x resources/docker/crontab \
     && chmod a+x resources/docker/etl.sh \
-    && cp resources/docker/crontab /etc/cron.daily/app \
+    && cp resources/docker/crontab /etc/cron.daily/app
 
 RUN addgroup --gid 10001 app
 RUN adduser \
