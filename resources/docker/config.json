@@ -55,7 +55,6 @@
 	"debug": {
 		"trace": true,
 		"log": [
-			{""}
 			{
 				"log_type": "mozlog",
 				"appname": {"$ref":"env://ETL_APPNAME"}

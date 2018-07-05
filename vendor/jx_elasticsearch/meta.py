@@ -26,7 +26,7 @@ from mo_dots import Data, relative_field, SELF_PATH, ROOT_PATH, coalesce, set_de
 from mo_json.typed_encoder import EXISTS_TYPE, untype_path, unnest_path
 from mo_kwargs import override
 from mo_logs import Log
-from mo_logs.exceptions import extract_stack
+from mo_logs.exceptions import extract_stack, Except
 from mo_logs.strings import quote
 from mo_math import MAX
 from mo_threads import Queue, THREAD_STOP, Thread, Till
@@ -399,6 +399,7 @@ class ElasticsearchMetadata(Namespace):
         except Exception as e:
             # CAN NOT IMPORT: THE TEST MODULES SETS UP LOGGING
             # from tests.test_jx import TEST_TABLE
+            e = Except.wrap(e)
             TEST_TABLE = "testdata"
             is_missing_index = any(w in e for w in ["IndexMissingException", "index_not_found_exception"])
             is_test_table = any(column.es_index.startswith(t) for t in [TEST_TABLE_PREFIX, TEST_TABLE])
