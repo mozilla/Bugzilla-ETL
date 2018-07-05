@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+
+# RUN FROM ROOT Bugzilla-ETL DIRECTORY
 docker run \
        --interactive \
        --tty \

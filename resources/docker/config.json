@@ -16,7 +16,7 @@
 		},
 		"file": {
 			"path": "resources/schema/bugzilla_aliases.json",
-			"$ref": "env://ETL_ALIAS_KEY"
+			"key": {"$ref": "env://ETL_ALIAS_KEY"}
 		}
 	},
 	"bugzilla": {
