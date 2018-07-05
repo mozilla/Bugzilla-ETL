@@ -237,8 +237,8 @@ class TestETL(unittest.TestCase):
                 database.add_bug_group(db, b, BUG_GROUP_FOR_TESTING)
 
         bz_etl.main(
-            es=self.settings.private.bugs,
-            es_comments=self.settings.private.comments,
+            es=self.settings.public.bugs,
+            es_comments=self.settings.public.comments,
             kwargs=self.settings
         )
 
