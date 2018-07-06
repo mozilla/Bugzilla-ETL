@@ -11,7 +11,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
-from mo_future import text_type
+from mo_future import text_type, xrange
 from mo_dots import Null, Data, coalesce, get_module
 from mo_kwargs import override
 from mo_logs import Log
