@@ -164,11 +164,11 @@ def setup_es(settings, db):
         File(settings.param.first_run_time).write(text_type(convert.datetime2milli(current_run_time)))
 
         cluster = Cluster(settings.es)
-        cluster.create_index(kwargs=settings.es, limit_replicas=True)
-        cluster.create_index(kwargs=settings.es_comments, limit_replicas=True)
+        es = cluster.create_index(kwargs=settings.es, limit_replicas=True)
+        es_comments = cluster.create_index(kwargs=settings.es_comments, limit_replicas=True)
 
-        esq = jx_elasticsearch.new_instance(read_only=False, kwargs=settings.es)
-        esq_comments = jx_elasticsearch.new_instance(read_only=False, kwargs=settings.es_comments)
+        esq = jx_elasticsearch.new_instance(read_only=False, index=es.settings.index, kwargs=settings.es)
+        esq_comments = jx_elasticsearch.new_instance(read_only=False, index=es_comments.settings.index, kwargs=settings.es_comments)
 
 
     return current_run_time, esq, esq_comments, last_run_time
@@ -409,12 +409,12 @@ def main(param, es, es_comments, bugzilla, kwargs):
 
                 output_queue.add(THREAD_STOP)
 
-        s = esq.es.settings
+        s = Data(alias=es.index, index=esq.es.settings.index)
         if s.alias:
             esq.es.cluster.delete_all_but(s.alias, s.index)
             esq.es.add_alias(s.alias)
 
-        s = esq_comments.es.settings
+        s = Data(alias=es_comments.index, index=esq_comments.es.settings.index)
         if s.alias:
             esq.es.cluster.delete_all_but(s.alias, s.index)
             esq_comments.es.add_alias(s.alias)

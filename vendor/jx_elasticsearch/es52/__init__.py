@@ -52,7 +52,6 @@ class ES52(Container):
         host,
         index,
         type=None,
-        alias=None,
         name=None,
         port=9200,
         read_only=True,
@@ -68,9 +67,9 @@ class ES52(Container):
                 "settings": unwrap(kwargs)
             }
         self.settings = kwargs
-        self.name = name = coalesce(name, alias, index)
+        self.name = name = coalesce(name, index)
         if read_only:
-            self.es = elasticsearch.Alias(alias=coalesce(alias, index), kwargs=kwargs)
+            self.es = elasticsearch.Alias(alias=index, kwargs=kwargs)
         else:
             self.es = elasticsearch.Cluster(kwargs=kwargs).get_index(read_only=read_only, kwargs=kwargs)
 
@@ -79,7 +78,7 @@ class ES52(Container):
         self.edges = Data()
         self.worker = None
 
-        columns = self._namespace.get_snowflake(self.es.settings.alias).columns  # ABSOLUTE COLUMNS
+        columns = self.snowflake.columns  # ABSOLUTE COLUMNS
         is_typed = any(c.es_column == EXISTS_TYPE for c in columns)
 
         if typed == None:

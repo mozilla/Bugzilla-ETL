@@ -30,7 +30,6 @@ def new_instance(
     host,
     index,
     type=None,
-    alias=None,
     name=None,
     port=9200,
     read_only=True,

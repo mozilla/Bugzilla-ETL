@@ -30,7 +30,7 @@ from pyLibrary.testing.elasticsearch import FakeES
 
 def get_esq(es):
     if isinstance(es, elasticsearch.Index):
-        return jx_elasticsearch.new_instance(es.settings)
+        return jx_elasticsearch.new_instance(index=es.settings.alias, alias=None, kwargs=es.settings)
     elif isinstance(es, FakeES):
         return ListContainer(name="bugs", data=es.data.values())
     else:
