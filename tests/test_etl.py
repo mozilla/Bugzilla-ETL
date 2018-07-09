@@ -440,7 +440,7 @@ class TestETL(unittest.TestCase):
         #RUN INCREMENTAL
         bz_etl.main(
             es=self.settings.private.bugs,
-            es_comments=self.settings.public.comments,
+            es_comments=self.settings.private.comments,
             kwargs=self.settings
         )
 
