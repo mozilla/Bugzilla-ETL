@@ -7,21 +7,26 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import unicode_literals
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
 
-from bzETL.parse_bug_history import MAX_TIME
-
-#ALL BUGS IN PRIVATE ETL HAVE SCREENED FIELDS
+from jx_mysql import esfilter2sqlwhere
 from jx_python import jx
-from mo_dots.datas import Data
+from mo_dots import Data, wrap
 from mo_logs import Log
+from mo_threads import Lock
 from mo_times.timer import Timer
 from pyLibrary import convert
-from pyLibrary.queries.jx_usingMySQL import esfilter2sqlwhere
-from pyLibrary.sql import SQL
+from pyLibrary.sql import SQL, sql_list, sql_alias, sql_iso, SQL_NEG_ONE
+from pyLibrary.sql.mysql import quote_column, quote_value
 
+# USING THE TEXT DATETIME OF EPOCH THROWS A WARNING!  USE ONE SECOND PAST EPOCH AS MINIMUM TIME.
+MIN_TIMESTAMP = 1000  # MILLISECONDS SINCE EPOCH
+MAX_TIMESTAMP = (10 * 1000 * 1000 * 1000 - 1) * 1000.0
+GLOBAL_LOCK = Lock()
+
+#ALL BUGS IN PRIVATE ETL HAVE SCREENED FIELDS
 SCREENED_FIELDDEFS = [
     19, #bug_file_loc
     24, #short_desc
@@ -31,9 +36,10 @@ SCREENED_FIELDDEFS = [
     64, #attachments.filename
     74, #content
     83, #attach_data.thedata
+    496, #cf_user_story
 ]
 
-#CERTAIN GROUPS IN PRIVATE ETL HAVE HAVE WHITEBOARD SCREENED
+# CERTAIN GROUPS IN PRIVATE ETL HAVE HAVE WHITEBOARD SCREENED
 SCREENED_WHITEBOARD_BUG_GROUPS = [
     "legal",
     "consulting",
@@ -56,7 +62,14 @@ PRIVATE_COMMENTS_FIELD_ID = 82
 PRIVATE_BUG_GROUP_FIELD_ID = 66
 STATUS_WHITEBOARD_FIELD_ID = 22
 
-bugs_columns = None
+SCREENED_BUG_COLUMNS = [
+    "bug_file_loc",
+    "short_desc",
+    "alias",
+    "cf_user_story"
+]
+
+BUGS_COLUMNS = None
 SCREENED_BUG_GROUP_IDS = None
 
 
@@ -64,10 +77,7 @@ def get_current_time(db):
     """
     RETURN GMT TIME
     """
-    output = db.query(u"""
-        SELECT
-            UNIX_TIMESTAMP(now()) `value`
-        """)[0].value
+    output = db.query("SELECT UNIX_TIMESTAMP(now()) `value`")[0].value
     if output == None:
         Log.error("I am guessing you did not add the timezone database!  See tests/resources/mySQL/README.md")
     return convert.unix2datetime(output)
@@ -75,60 +85,68 @@ def get_current_time(db):
 
 def milli2string(db, value):
     """
-    CONVERT GMT MILLI TO BUGZILLA DATETIME STRING (NEED TZ TABLES)
+    CONVERT GMT MILLI TO BUGZILLA DATETIME
     """
-    value = max(value, 0)
+    value = max(value, MIN_TIMESTAMP)
 
-    output = db.query(u"""
-        SELECT
-            CAST(CONVERT_TZ(FROM_UNIXTIME({{start_time}}/1000), 'UTC', 'US/Pacific') AS CHAR) `value`
-        """, {
-        "start_time": value
-    })[0].value
+    output = db.query(
+        "SELECT CAST(FROM_UNIXTIME({{start_time}}/1000) AS CHAR) `value`",
+        {"start_time": value}
+    )[0].value
+
+    if output[19]=='.':  #1970-01-01 00:00:00.0000
+        output=output[:-1]
+    else:
+        Log.error("unexpected date format")
     return output
 
 
 def get_screened_whiteboard(db):
+    global SCREENED_BUG_GROUP_IDS
+
     if not SCREENED_BUG_GROUP_IDS:
-        groups = db.query("SELECT id FROM groups WHERE {{where}}", {
-            "where": esfilter2sqlwhere(db, {"terms": {"name": SCREENED_WHITEBOARD_BUG_GROUPS}})
-        })
-        globals()["SCREENED_BUG_GROUP_IDS"] = jx.select(groups, "id")
+        groups = db.query(
+            "SELECT id FROM groups WHERE {{where}}",
+            {"where": esfilter2sqlwhere({"terms": {"name": SCREENED_WHITEBOARD_BUG_GROUPS}})}
+        )
+        SCREENED_BUG_GROUP_IDS = jx.select(groups, "id")
 
 
 def get_bugs_table_columns(db, schema_name):
-    if not bugs_columns:
-        columns = db.query("""
-            SELECT
-                column_name,
-                column_type
-            FROM
-                information_schema.columns
-            WHERE
-                table_schema={{schema}} AND
-                table_name='bugs' AND
-                column_name NOT IN (
-                    'bug_id',               #EXPLICIT
-                    'creation_ts',          #EXPLICIT
-                    'reporter',             #EXPLICIT
-                    'assigned_to',          #EXPLICIT
-                    'qa_contact',           #EXPLICIT
-                    'product_id',           #EXPLICIT
-                    'component_id',         #EXPLICIT
-                    'short_desc',           #EXPLICIT
-                    'bug_file_loc',         #EXPLICIT
-                    'status_whiteboard',    #EXPLICIT
-                    'deadline',             #NOT NEEDED
-                    'estimated_time',       #NOT NEEDED
-                    'delta_ts',             #NOT NEEDED
-                    'lastdiffed',           #NOT NEEDED
-                    'cclist_accessible',    #NOT NEEDED
-                    'reporter_accessible'   #NOT NEEDED
+    global BUGS_COLUMNS, SCREENED_BUG_COLUMNS
 
-                )
-        """, {"schema": schema_name})
-        globals()["bugs_columns"] = columns
+    with GLOBAL_LOCK:
+        if not BUGS_COLUMNS:
+            explicitly_used_columns = {
+                'bug_id',               #EXPLICIT
+                'creation_ts',          #EXPLICIT
+                'reporter',             #EXPLICIT
+                'assigned_to',          #EXPLICIT
+                'qa_contact',           #EXPLICIT
+                'product_id',           #EXPLICIT
+                'component_id',         #EXPLICIT
+                'short_desc',           #EXPLICIT
+                'bug_file_loc',         #EXPLICIT
+                'status_whiteboard',    #EXPLICIT
+                'deadline',             #NOT NEEDED
+                'estimated_time',       #NOT NEEDED
+                'delta_ts',             #NOT NEEDED
+                'lastdiffed',           #NOT NEEDED
+                'cclist_accessible',    #NOT NEEDED
+                'reporter_accessible'   #NOT NEEDED
+            } - set(SCREENED_BUG_COLUMNS)
 
+            all_columns = db.query(
+                "SELECT column_name, column_type FROM information_schema.columns WHERE " +
+                esfilter2sqlwhere({"and": [
+                    {"eq": {"table_schema": schema_name}},
+                    {"eq": {"table_name": "bugs"}},
+                    {"not": {"in": {"column_name": explicitly_used_columns}}}
+                ]})
+            )
+
+            BUGS_COLUMNS = wrap([c for c in all_columns if c.column_name not in SCREENED_BUG_COLUMNS])
+            SCREENED_BUG_COLUMNS = wrap([c for c in all_columns if c.column_name in SCREENED_BUG_COLUMNS])
 
 def get_private_bugs_for_delete(db, param):
     if param.allow_private_bugs:
@@ -222,44 +240,56 @@ def get_bugs(db, param):
         get_bugs_table_columns(db, db.settings.schema)
         get_screened_whiteboard(db)
 
-        #TODO: CF_LAST_RESOLVED IS IN PDT, FIX IT
-        def lower(col):
-            if col.column_type.startswith("varchar"):
-                return "lower(" + db.quote_column(col.column_name) + ") " + db.quote_column(col.column_name)
-            else:
-                return db.quote_column(col.column_name)
 
-        param.bugs_columns = jx.select(bugs_columns, "column_name")
-        param.bugs_columns_SQL = SQL(",\n".join([lower(c) for c in bugs_columns]))
-        param.bug_filter = esfilter2sqlwhere(db, {"terms": {"b.bug_id": param.bug_list}})
-        param.screened_whiteboard = esfilter2sqlwhere(db, {"and": [
-            {"exists": "m.bug_id"},
-            {"terms": {"m.group_id": SCREENED_BUG_GROUP_IDS}}
+        def lower(col):
+            if col.column_type.startswith("varchar") or col.column_type.endswith('text'):
+                return "lower(" + quote_column(col.column_name, "b") + ") " + quote_column(col.column_name)
+            else:
+                return quote_column(col.column_name, "b")
+
+        param.bugs_columns = BUGS_COLUMNS.column_name
+        param.bugs_columns_SQL = sql_list(lower(c) for c in BUGS_COLUMNS)
+        param.screened_whiteboard = esfilter2sqlwhere({"and": [
+            {"exists": "bgm.bug_id"},
+            {"terms": {"bgm.group_id": SCREENED_BUG_GROUP_IDS}}
         ]})
+        param.allowed_bugs = esfilter2sqlwhere({"terms": {"bgm.bug_id": param.bug_list}})
 
         if param.allow_private_bugs:
-            param.sensitive_columns = SQL("""
-                '[screened]' short_desc,
-                '[screened]' bug_file_loc
-            """)
+            param.bug_filter = esfilter2sqlwhere({"and": [
+                {"terms": {"b.bug_id": param.bug_list}}
+            ]})
+            param.sensitive_columns = sql_list(
+                sql_alias(quote_value('[screened]'), quote_column(c.column_name))
+                for c in SCREENED_BUG_COLUMNS
+            )
         else:
-            param.sensitive_columns = SQL("""
-                short_desc,
-                bug_file_loc
-            """)
+            param.bug_filter = esfilter2sqlwhere({"and": [
+                {"terms": {"b.bug_id": param.bug_list}},
+                {"missing": "bgm.bug_id"}
+            ]})
+            param.sensitive_columns = sql_list(
+                lower(c)
+                for c in SCREENED_BUG_COLUMNS
+            )
 
-        bugs = db.query("""
+        bugs = db.query(
+            """
             SELECT
                 b.bug_id,
-                UNIX_TIMESTAMP(CONVERT_TZ(b.creation_ts, 'US/Pacific','UTC'))*1000 AS modified_ts,
+                UNIX_TIMESTAMP(b.creation_ts)*1000 AS modified_ts,
                 lower(pr.login_name) AS modified_by,
-                UNIX_TIMESTAMP(CONVERT_TZ(b.creation_ts, 'US/Pacific','UTC'))*1000 AS created_ts,
+                UNIX_TIMESTAMP(b.creation_ts)*1000 AS created_ts,
                 lower(pr.login_name) AS created_by,
                 lower(pa.login_name) AS assigned_to,
                 lower(pq.login_name) AS qa_contact,
                 lower(prod.`name`) AS product,
                 lower(comp.`name`) AS component,
-                CASE WHEN {{screened_whiteboard}} AND b.status_whiteboard IS NOT NULL AND trim(b.status_whiteboard)<>'' THEN '[screened]' ELSE trim(lower(b.status_whiteboard)) END status_whiteboard,
+                CASE
+                WHEN bgm.screened AND b.status_whiteboard IS NOT NULL AND trim(b.status_whiteboard)<>''
+                THEN '[screened]'
+                ELSE trim(lower(b.status_whiteboard))
+                END status_whiteboard,
                 {{sensitive_columns}},
                 {{bugs_columns_SQL}}
             FROM
@@ -275,11 +305,25 @@ def get_bugs(db, param):
             LEFT JOIN
                 components comp ON comp.id = component_id
             LEFT JOIN
-                bug_group_map m ON m.bug_id = b.bug_id
+                (  # ALLOW ONLY ONE GROUP
+                    SELECT 
+                        bug_id, 
+                        MAX(CASE WHEN {{screened_whiteboard}} THEN 1 ELSE 0 END) screened
+                    FROM 
+                        bug_group_map bgm 
+                    WHERE 
+                        {{allowed_bugs}} 
+                    GROUP BY 
+                        bug_id
+                ) bgm ON bgm.bug_id = b.bug_id
             WHERE
                 {{bug_filter}}
-            """, param)
+            """,
+            param
+        )
 
+        if len(bugs) > len(param.bug_list):
+            Log.error("expecting {{num}} bugs; likely a logic error", num=len(param.bug_list))
         #bugs IS LIST OF BUGS WHICH MUST BE CONVERTED TO THE DELTA RECORDS FOR ALL FIELDS
         output = []
         for r in bugs:
@@ -287,7 +331,7 @@ def get_bugs(db, param):
 
         return output
     except Exception as e:
-        Log.error("can not get basic bug data", e)
+        Log.error("can not get basic bug data", cause=e)
 
 
 def flatten_bugs_record(r, output):
@@ -304,8 +348,8 @@ def flatten_bugs_record(r, output):
 
 
 def get_dependencies(db, param):
-    param.blocks_filter = esfilter2sqlwhere(db, {"terms": {"blocked": param.bug_list}})
-    param.dependson_filter = esfilter2sqlwhere(db, {"terms": {"dependson": param.bug_list}})
+    param.blocks_filter = esfilter2sqlwhere({"terms": {"blocked": param.bug_list}})
+    param.dependson_filter = esfilter2sqlwhere({"terms": {"dependson": param.bug_list}})
 
     return db.query("""
         SELECT blocked AS bug_id
@@ -336,8 +380,8 @@ def get_dependencies(db, param):
 
 
 def get_duplicates(db, param):
-    param.dupe_filter = esfilter2sqlwhere(db, {"terms": {"dupe": param.bug_list}})
-    param.dupe_of_filter = esfilter2sqlwhere(db, {"terms": {"dupe_of": param.bug_list}})
+    param.dupe_filter = esfilter2sqlwhere({"terms": {"dupe": param.bug_list}})
+    param.dupe_of_filter = esfilter2sqlwhere({"terms": {"dupe_of": param.bug_list}})
 
     return db.query("""
         SELECT dupe AS bug_id
@@ -368,7 +412,7 @@ def get_duplicates(db, param):
 
 
 def get_bug_groups(db, param):
-    param.bug_filter = esfilter2sqlwhere(db, {"terms": {"bug_id": param.bug_list}})
+    param.bug_filter = esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
 
     return db.query("""
         SELECT bug_id
@@ -387,7 +431,7 @@ def get_bug_groups(db, param):
 
 
 def get_cc(db, param):
-    param.bug_filter = esfilter2sqlwhere(db, {"terms": {"bug_id": param.bug_list}})
+    param.bug_filter = esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
 
     return db.query("""
         SELECT bug_id
@@ -413,7 +457,8 @@ def get_all_cc_changes(db, bug_list):
     if not bug_list:
         return []
 
-    return db.query("""
+    return db.query(
+        """
             SELECT
                 bug_id,
                 CAST({{max_time}} AS signed) AS modified_ts,
@@ -428,7 +473,7 @@ def get_all_cc_changes(db, bug_list):
         UNION ALL
             SELECT
                 a.bug_id,
-                UNIX_TIMESTAMP(CONVERT_TZ(bug_when, 'US/Pacific','UTC'))*1000 AS modified_ts,
+                UNIX_TIMESTAMP(bug_when)*1000 AS modified_ts,
                 lower(CAST(trim(added) AS CHAR CHARACTER SET utf8)) AS new_value,
                 lower(CAST(trim(removed) AS CHAR CHARACTER SET utf8)) AS old_value
             FROM
@@ -436,15 +481,18 @@ def get_all_cc_changes(db, bug_list):
             WHERE
                 a.fieldid = {{cc_field_id}} AND
                 {{bug_filter}}
-    """, {
-        "max_time": MAX_TIME,
-        "cc_field_id": CC_FIELD_ID,
-        "bug_filter": esfilter2sqlwhere(db, {"terms": {"bug_id": bug_list}})
-    })
+        """,
+        {
+            "max_time": MAX_TIMESTAMP,
+            "cc_field_id": CC_FIELD_ID,
+            "bug_filter": esfilter2sqlwhere({"terms": {"bug_id": bug_list}})
+        },
+        stream=True
+    )
 
 
 def get_tracking_flags(db, param):
-    param.bug_filter = esfilter2sqlwhere(db, {"terms": {"bug_id": param.bug_list}})
+    param.bug_filter = esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
 
     return db.query("""
         SELECT
@@ -465,7 +513,7 @@ def get_tracking_flags(db, param):
 
 
 def get_keywords(db, param):
-    param.bug_filter = esfilter2sqlwhere(db, {"terms": {"bug_id": param.bug_list}})
+    param.bug_filter = esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
 
     return db.query("""
         SELECT bug_id
@@ -484,6 +532,33 @@ def get_keywords(db, param):
     """, param)
 
 
+def get_tags(db, param):
+    param.bug_filter = esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
+
+    return db.query(
+        """
+        SELECT
+            bug_id,
+            NULL AS modified_ts,
+            NULL AS modified_by,
+            'tags' AS field_name,
+            lower(tag.name) as new_value,
+            NULL AS old_value,
+            NULL AS attach_id,
+            2 AS _merge_order
+        FROM
+            bug_tag b
+        LEFT JOIN
+            tag on tag.id = b.tag_id
+        WHERE
+            {{bug_filter}}
+        ORDER BY
+            bug_id
+        """,
+        param
+    )
+
+
 def get_attachments(db, param):
     """
     GET ALL CURRENT ATTACHMENTS
@@ -493,13 +568,13 @@ def get_attachments(db, param):
     else:
         param.attachments_filter = SQL("isprivate=0")
 
-    param.bug_filter = esfilter2sqlwhere(db, {"terms": {"bug_id": param.bug_list}})
+    param.bug_filter = esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
 
     output = db.query("""
         SELECT bug_id
-            , UNIX_TIMESTAMP(CONVERT_TZ(a.creation_ts, 'US/Pacific','UTC'))*1000 AS modified_ts
+            , UNIX_TIMESTAMP(a.creation_ts)*1000 AS modified_ts
             , lower(login_name) AS modified_by
-            , UNIX_TIMESTAMP(CONVERT_TZ(a.creation_ts, 'US/Pacific','UTC'))*1000 AS created_ts
+            , UNIX_TIMESTAMP(a.creation_ts)*1000 AS created_ts
             , login_name AS created_by
             , ispatch AS 'attachments_ispatch'
             , isobsolete AS 'attachments_isobsolete'
@@ -539,7 +614,7 @@ def flatten_attachments(data):
 
 
 def get_bug_see_also(db, param):
-    param.bug_filter = esfilter2sqlwhere(db, {"terms": {"bug_id": param.bug_list}})
+    param.bug_filter = esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
 
     return db.query("""
         SELECT bug_id
@@ -561,21 +636,21 @@ def get_new_activities(db, param):
     get_screened_whiteboard(db)
 
     if param.allow_private_bugs:
-        param.screened_fields = SQL(SCREENED_FIELDDEFS)
+        param.screened_fields = sql_iso(sql_list(map(quote_value, SCREENED_FIELDDEFS)))
     else:
-        param.screened_fields = SQL([-1])
+        param.screened_fields = sql_iso(SQL_NEG_ONE)
 
-    #TODO: CF_LAST_RESOLVED IS IN PDT, FIX IT
-    param.bug_filter = esfilter2sqlwhere(db, {"terms": {"a.bug_id": param.bug_list}})
-    param.mixed_case_fields = SQL(MIXED_CASE)
-    param.screened_whiteboard = esfilter2sqlwhere(db, {"terms": {"m.group_id": SCREENED_BUG_GROUP_IDS}})
+    param.bug_filter = esfilter2sqlwhere({"terms": {"a.bug_id": param.bug_list}})
+    param.mixed_case_fields = sql_iso(sql_list(map(quote_value, MIXED_CASE)))
+    param.screened_whiteboard = esfilter2sqlwhere({"terms": {"m.group_id": SCREENED_BUG_GROUP_IDS}})
     param.whiteboard_field = STATUS_WHITEBOARD_FIELD_ID
 
     output = db.query("""
         SELECT
+            a.id,
             a.bug_id,
-            UNIX_TIMESTAMP(CONVERT_TZ(bug_when, 'US/Pacific','UTC'))*1000 AS modified_ts,
-            lower(login_name) AS modified_by,
+            UNIX_TIMESTAMP(bug_when)*1000 AS modified_ts,
+            lower(p.login_name) AS modified_by,
             replace(field.`name`, '.', '_') AS field_name,
             CAST(
                 CASE
@@ -583,6 +658,7 @@ def get_new_activities(db, param):
                 WHEN m.bug_id IS NOT NULL AND a.fieldid={{whiteboard_field}} AND added IS NOT NULL AND trim(added)<>'' THEN '[screened]'
                 WHEN a.fieldid IN {{mixed_case_fields}} THEN trim(added)
                 WHEN trim(added)='' THEN NULL
+                # WHEN new_qa_contact.userid IS NOT NULL THEN new_qa_contact.login_name
                 ELSE lower(trim(added))
                 END
             AS CHAR CHARACTER SET utf8) AS new_value,
@@ -592,6 +668,7 @@ def get_new_activities(db, param):
                 WHEN m.bug_id IS NOT NULL AND a.fieldid={{whiteboard_field}} AND removed IS NOT NULL AND trim(removed)<>'' THEN '[screened]'
                 WHEN a.fieldid IN {{mixed_case_fields}} THEN trim(removed)
                 WHEN trim(removed)='' THEN NULL
+                # WHEN old_qa_contact.userid IS NOT NULL THEN old_qa_contact.login_name
                 ELSE lower(trim(removed))
                 END
             AS CHAR CHARACTER SET utf8) AS old_value,
@@ -605,6 +682,24 @@ def get_new_activities(db, param):
             fielddefs field ON a.fieldid = field.`id`
         LEFT JOIN
             bug_group_map m on m.bug_id=a.bug_id AND {{screened_whiteboard}}
+        # LEFT JOIN
+        #     profiles new_qa_contact
+        # ON
+        #     new_qa_contact.userid=
+        #         CASE
+        #         WHEN a.fieldid <> 36 THEN -1
+        #         WHEN NOT a.added REGEXP '^[0-9]+$' THEN -1
+        #         ELSE CAST(a.added AS UNSIGNED)
+        #         END
+        # LEFT JOIN
+        #     profiles old_qa_contact
+        # ON
+        #   old_qa_contact.userid=
+        #       CASE
+        #       WHEN a.fieldid <> 36 THEN -1
+        #       WHEN NOT a.removed REGEXP '^[0-9]+$' THEN -1
+        #       ELSE CAST(a.removed AS UNSIGNED)
+        #       END
         WHERE
             {{bug_filter}}
             # NEED TO QUERY ES TO GET bug_version_num OTHERWISE WE NEED ALL HISTORY
@@ -619,22 +714,33 @@ def get_new_activities(db, param):
 
 
 def get_flags(db, param):
-    param.bug_filter = esfilter2sqlwhere(db, {"terms": {"bug_id": param.bug_list}})
+    param.bug_filter = esfilter2sqlwhere({"terms": {"bug_id": param.bug_list}})
 
     return db.query("""
-        SELECT bug_id
-            , UNIX_TIMESTAMP(CONVERT_TZ(f.creation_date, 'US/Pacific','UTC'))*1000 AS modified_ts
-            , ps.login_name AS modified_by
-            , 'flagtypes_name' AS field_name
-            , CONCAT(ft.`name`,status,IF(requestee_id IS NULL,'',CONCAT('(',pr.login_name,')'))) AS new_value
-            , CAST(null AS CHAR) AS old_value
-            , attach_id
-            , 8 AS _merge_order
+        SELECT
+            bug_id,
+            UNIX_TIMESTAMP(f.creation_date)*1000 AS modified_ts,
+            lower(ps.login_name) AS modified_by,
+            'flagtypes_name' AS field_name,
+            CONCAT(
+                ft.`name`,
+                status,
+                CASE
+                WHEN f.requestee_id IS NULL THEN ''
+                ELSE CONCAT('(', lower(pr.login_name), ')')
+                END
+            ) AS new_value,
+            CAST(null AS CHAR) AS old_value,
+            attach_id,
+            8 AS _merge_order
         FROM
             flags f
-        JOIN `flagtypes` ft ON f.type_id = ft.id
-        JOIN profiles ps ON f.setter_id = ps.userid
-        LEFT JOIN profiles pr ON f.requestee_id = pr.userid
+        JOIN
+            flagtypes ft ON f.type_id = ft.id
+        JOIN
+            profiles ps ON f.setter_id = ps.userid
+        LEFT JOIN
+            profiles pr ON f.requestee_id = pr.userid
         WHERE
             {{bug_filter}}
         ORDER BY
@@ -648,12 +754,12 @@ def get_comments(db, param):
 
     if param.allow_private_bugs:
         param.comment_field = SQL("'[screened]' comment")
-        param.bug_filter = esfilter2sqlwhere(db, {"and": [
+        param.bug_filter = esfilter2sqlwhere({"and": [
             {"terms": {"bug_id": param.bug_list}}
         ]})
     else:
         param.comment_field = SQL("c.thetext comment")
-        param.bug_filter = esfilter2sqlwhere(db, {"and": [
+        param.bug_filter = esfilter2sqlwhere({"and": [
             {"terms": {"bug_id": param.bug_list}},
             {"term": {"isprivate": 0}}
         ]})
@@ -664,7 +770,7 @@ def get_comments(db, param):
                 c.comment_id,
                 c.bug_id,
                 p.login_name modified_by,
-                UNIX_TIMESTAMP(CONVERT_TZ(bug_when, 'US/Pacific','UTC'))*1000 AS modified_ts,
+                UNIX_TIMESTAMP(bug_when)*1000 AS modified_ts,
                 {{comment_field}},
                 c.isprivate
             FROM
@@ -690,7 +796,7 @@ def get_comments_by_id(db, comments, param):
     if param.allow_private_bugs:
         return []
 
-    param.comments_filter = esfilter2sqlwhere(db, {"and": [
+    param.comments_filter = esfilter2sqlwhere({"and": [
         {"term": {"isprivate": 0}},
         {"terms": {"c.comment_id": comments}}
     ]})
@@ -701,7 +807,7 @@ def get_comments_by_id(db, comments, param):
                 c.comment_id,
                 c.bug_id,
                 p.login_name modified_by,
-                UNIX_TIMESTAMP(CONVERT_TZ(bug_when, 'US/Pacific','UTC'))*1000 AS modified_ts,
+                UNIX_TIMESTAMP(bug_when)*1000 AS modified_ts,
                 c.thetext comment,
                 c.isprivate
             FROM

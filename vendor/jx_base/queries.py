@@ -11,9 +11,11 @@ from __future__ import unicode_literals
 
 import re
 
+from mo_future import text_type
+
 from mo_logs import Log
 
-keyword_pattern = re.compile(r"(\w|[\\.,$])+(?:\.(\w|[\\.,$])+)*")
+keyword_pattern = re.compile(r"(\w|[\\.,$-])+(?:\.(\w|[\\.,$-])+)*")
 
 
 def is_variable_name(value):
@@ -21,7 +23,7 @@ def is_variable_name(value):
         Log.warning("not expected")
         return True
 
-    if not value or not isinstance(value, basestring):
+    if not value or not isinstance(value, text_type):
         return False  # _a._b
     value = value.lstrip(".")
     if not value:

@@ -1,0 +1,54 @@
+{
+	"alias": {
+		"start": 0,
+		"increment": 100000,
+//		"elasticsearch": {
+//			"host": "http://localhost",
+//			"index": "bug_aliases"
+//		},
+		"minimum_diff": 7,
+		"file": {
+			"path": "resources/schema/bugzilla_aliases.json",
+			"$ref": "//~/private.json#alias_file"
+		}
+	},
+	"bugzilla": {
+		"preamble": "from https://github.com/klahnakoski/Bugzilla-ETL",
+		"host": "localhost",
+		"port": 3307,
+		"$ref": "//~/private.json#bugzilla-dev",
+		"schema": "bugs",
+		"debug": false
+	},
+	"constants": {
+		"pyLibrary.sql.mysql.EXECUTE_TIMEOUT": 0,
+		"pyLibrary.env.http.default_headers": {
+			"Referer": "https://github.com/mozilla/Bugzilla-ETL"
+		},
+		"pyLibrary.env.http.DEFAULTS.verify": false
+	},
+	"debug": {
+		"trace": true,
+		"log": [
+			{
+				"class": "logging.handlers.RotatingFileHandler",
+				"filename": "results/logs/alias_analysis.log",
+				"maxBytes": 10000000,
+				"backupCount": 200,
+				"encoding": "utf8"
+			},
+			{
+				"log_type": "stream",
+				"stream": "sys.stdout"
+			},
+			{
+				"log_type": "email",
+				"from_address": "klahnakoski@mozilla.com",
+				"to_address": "klahnakoski@mozilla.com",
+				"subject": "[ALERT][DEV]Problem with ActiveData Server",
+				"$ref": "file://~/private.json#email"
+			}
+
+		]
+	}
+}

@@ -20,7 +20,7 @@ import tempfile
 import mo_json_config
 from mo_files import File
 from mo_logs import Log
-from mo_dots import listwrap, wrap, unwrap
+from mo_dots import listwrap, wrap, unwrap, coalesce
 
 
 # PARAMETERS MATCH argparse.ArgumentParser.add_argument()
@@ -39,44 +39,53 @@ from mo_dots import listwrap, wrap, unwrap
 # dest - The name of the attribute to be added to the object returned by parse_args().
 
 
+class _ArgParser(_argparse.ArgumentParser):
+    def error(self, message):
+        Log.error("argparse error: {{error}}", error=message)
+
+
 def argparse(defs):
-    parser = _argparse.ArgumentParser()
+    parser = _ArgParser()
     for d in listwrap(defs):
         args = d.copy()
         name = args.name
         args.name = None
         parser.add_argument(*unwrap(listwrap(name)), **args)
-    namespace = parser.parse_args()
+    namespace, unknown = parser.parse_known_args()
+    if unknown:
+        Log.warning("Ignoring arguments: {{unknown|json}}", unknown=unknown)
     output = {k: getattr(namespace, k) for k in vars(namespace)}
     return wrap(output)
 
 
 def read_settings(filename=None, defs=None):
+    """
+    :param filename: Force load a file
+    :param defs: arguments you want to accept
+    :param default_filename: A config file from an environment variable (a fallback config file, if no other provided)
+    :return:
+    """
     # READ SETTINGS
-    if filename:
-        settings_file = File(filename)
-        if not settings_file.exists:
-            Log.error("Can not file settings file {{filename}}", {
-                "filename": settings_file.abspath
-            })
-        settings = mo_json_config.get("file:///" + settings_file.abspath)
-        if defs:
-            settings.args = argparse(defs)
-        return settings
-    else:
-        defs = listwrap(defs)
-        defs.append({
-            "name": ["--settings", "--settings-file", "--settings_file"],
-            "help": "path to JSON file with settings",
-            "type": str,
-            "dest": "filename",
-            "default": "./config.json",
-            "required": False
+    defs = listwrap(defs)
+    defs.append({
+        "name": ["--config", "--settings", "--settings-file", "--settings_file"],
+        "help": "path to JSON file with settings",
+        "type": str,
+        "dest": "filename",
+        "default": None,
+        "required": False
+    })
+    args = argparse(defs)
+
+    args.filename = coalesce(filename, args.filename, "./config.json")
+    settings_file = File(args.filename)
+    if not settings_file.exists:
+        Log.error("Can not read configuration file {{filename}}", {
+            "filename": settings_file.abspath
         })
-        args = argparse(defs)
-        settings = mo_json_config.get("file://" + args.filename.replace(os.sep, "/"))
-        settings.args = args
-        return settings
+    settings = mo_json_config.get("file:///" + settings_file.abspath)
+    settings.args = args
+    return settings
 
 
 # snagged from https://github.com/pycontribs/tendo/blob/master/tendo/singleton.py (under licence PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2)
@@ -122,12 +131,7 @@ class SingleInstance:
             try:
                 fcntl.lockf(self.fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except IOError:
-                Log.note(
-                    "\n"
-                    "**********************************************************************\n"
-                    "** Another instance is already running, quitting.\n"
-                    "**********************************************************************\n"
-                )
+                Log.alarm("Another instance is already running, quitting.")
                 sys.exit(-1)
         self.initialized = True
 

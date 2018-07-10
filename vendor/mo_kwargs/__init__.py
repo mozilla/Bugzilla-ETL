@@ -22,12 +22,12 @@ from mo_logs import Except
 def override(func):
     """
     THIS DECORATOR WILL PUT ALL PARAMETERS INTO THE `kwargs` PARAMETER AND
-    PUT ALL `kwargs` PARAMETERS INTO THE FUNCTION PARAMETERS.  THIS HAS BOTH
-    THE BENEFIT OF HAVING ALL PARAMETERS IN ONE PLACE (kwargs) AND ALL
+    THEN PUT ALL `kwargs` PARAMETERS INTO THE FUNCTION PARAMETERS. THIS HAS
+    THE BENEFIT OF HAVING ALL PARAMETERS IN ONE PLACE (kwargs), PLUS ALL
     PARAMETERS ARE EXPLICIT FOR CLARITY.
 
     OF COURSE, THIS MEANS PARAMETER ASSIGNMENT MAY NOT BE UNIQUE: VALUES CAN
-    COME FROM EXPLICIT CALL PARAMETERS, OR FROM THE kwargs PARAMETER.  IN
+    COME FROM EXPLICIT CALL PARAMETERS, OR FROM THE kwargs PARAMETER. IN
     THESE CASES, PARAMETER VALUES ARE CHOSEN IN THE FOLLOWING ORDER:
     1) EXPLICT CALL PARAMETERS
     2) PARAMETERS FOUND IN kwargs
@@ -97,9 +97,10 @@ def override(func):
             if e.message.startswith(func_name) and "takes at least" in e:
                 missing = [p for p in params if str(p) not in packed]
                 get_logger().error(
-                    "Problem calling {{func_name}}:  Expecting parameter {{missing}}",
+                    "Problem calling {{func_name}}:  Expecting parameter {{missing}}, given {{given}}",
                     func_name=func_name,
                     missing=missing,
+                    given=packed.keys(),
                     stack_depth=1
                 )
             get_logger().error("Error dispatching call", e)

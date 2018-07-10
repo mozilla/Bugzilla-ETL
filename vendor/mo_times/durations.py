@@ -14,9 +14,8 @@ from __future__ import unicode_literals
 import datetime
 import re
 
-from mo_future import text_type
-
 from mo_dots import get_module, wrap
+from mo_future import text_type
 from mo_math import MIN, Math
 from mo_times.vendor.dateutil.relativedelta import relativedelta
 

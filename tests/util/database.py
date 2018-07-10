@@ -13,11 +13,12 @@ from __future__ import unicode_literals
 
 from bzETL.extract_bugzilla import milli2string, get_current_time
 from mo_dots.datas import Data
+from mo_files import File
 from mo_logs import Log
 from mo_times.timer import Timer
 from pyLibrary import convert
-from pyLibrary.queries.jx_usingMySQL import esfilter2sqlwhere
-from pyLibrary.sql.mysql import MySQL
+from jx_mysql import esfilter2sqlwhere
+from pyLibrary.sql.mysql import MySQL, quote_column, execute_file
 
 
 def make_test_instance(db_settings):
@@ -31,13 +32,19 @@ def make_test_instance(db_settings):
             Log.note("Make empty {{schema}} schema", schema=db_settings.schema)
             no_schema=db_settings.copy()
             no_schema.schema = None
-            with MySQL(no_schema) as db:
-                db.execute("DROP DATABASE IF EXISTS {{schema}}", {"schema":db.quote_column(db_settings.schema)})
-                db.execute("CREATE DATABASE {{schema}}", {"schema":db.quote_column(db_settings.schema)})
+            with MySQL(debug=False, kwargs=no_schema) as db:
+                db.execute("DROP DATABASE IF EXISTS {{schema}}", {"schema": quote_column(db_settings.schema)})
+                db.execute("CREATE DATABASE {{schema}}", {"schema": quote_column(db_settings.schema)})
 
-            #FILL SCHEMA
-            Log.note("Fill {{schema}} schema with data", schema=db_settings.schema)
-            MySQL.execute_file(filename=db_settings.filename, kwargs=db_settings)
+                db.execute("USE {{schema}}", {"schema": quote_column(db_settings.schema)})
+                file = File(db_settings.filename)
+                if file.extension == 'zip':
+                    sql = file.read_zipfile()
+                else:
+                    sql = File(db_settings.filename).read()
+
+                for c in sql.split(";\r\n"):
+                    db.execute(c)
 
         except Exception as e:
             Log.error("Can not setup test database", e)
@@ -128,6 +135,6 @@ def diff(db, table, old_record, new_record):
 
     db.execute("UPDATE bugs SET delta_ts={{now}} WHERE {{where}}", {
         "now":now,
-        "where":esfilter2sqlwhere(db, {"term":{"bug_id":old_record.bug_id}})
+        "where":esfilter2sqlwhere({"term":{"bug_id":old_record.bug_id}})
     })
 

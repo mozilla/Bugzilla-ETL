@@ -16,9 +16,12 @@ from mimetypes import MimeTypes
 from tempfile import mkdtemp, NamedTemporaryFile
 
 import os
+
 from mo_future import text_type, binary_type
-from mo_dots import get_module, coalesce
+from mo_dots import get_module, coalesce, Null
 from mo_logs import Log, Except
+from mo_logs.exceptions import extract_stack
+from mo_threads import Thread, Till
 
 mime = MimeTypes()
 
@@ -28,7 +31,9 @@ class File(object):
     """
 
     def __new__(cls, filename, buffering=2 ** 14, suffix=None):
-        if isinstance(filename, File):
+        if filename == None:
+            return Null
+        elif isinstance(filename, File):
             return filename
         else:
             return object.__new__(cls)
@@ -136,7 +141,11 @@ class File(object):
     @property
     def mime_type(self):
         if not self._mime_type:
-            if self.abspath.endswith(".json"):
+            if self.abspath.endswith(".js"):
+                self._mime_type = "application/javascript"
+            elif self.abspath.endswith(".css"):
+                self._mime_type = "text/css"
+            elif self.abspath.endswith(".json"):
                 self._mime_type = "application/json"
             else:
                 self._mime_type, _ = mime.guess_type(self.abspath)
@@ -194,12 +203,28 @@ class File(object):
         return File.add_suffix(self._filename, suffix)
 
     def read(self, encoding="utf8"):
+        """
+        :param encoding:
+        :return:
+        """
         with open(self._filename, "rb") as f:
-            content = f.read().decode(encoding)
             if self.key:
-                return get_module(u"mo_math.crypto").decrypt(content, self.key)
+                return get_module("mo_math.crypto").decrypt(f.read(), self.key)
             else:
+                content = f.read().decode(encoding)
                 return content
+
+    def read_zipfile(self, encoding='utf8'):
+        """
+        READ FIRST FILE IN ZIP FILE
+        :param encoding:
+        :return: STRING
+        """
+        from zipfile import ZipFile
+        with ZipFile(self.abspath) as zipped:
+            for num, zip_name in enumerate(zipped.namelist()):
+                return zipped.open(zip_name).read().decode(encoding)
+
 
     def read_lines(self, encoding="utf8"):
         with open(self._filename, "rb") as f:
@@ -222,7 +247,10 @@ class File(object):
             if not self.parent.exists:
                 self.parent.create()
             with open(self._filename, "rb") as f:
-                return f.read()
+                if self.key:
+                    return get_module("mo_math.crypto").decrypt(f.read(), self.key)
+                else:
+                    return f.read()
         except Exception as e:
             Log.error(u"Problem reading file {{filename}}", filename=self.abspath, cause=e)
 
@@ -230,7 +258,10 @@ class File(object):
         if not self.parent.exists:
             self.parent.create()
         with open(self._filename, "wb") as f:
-            f.write(content)
+            if self.key:
+                f.write(get_module("mo_math.crypto").encrypt(content, self.key))
+            else:
+                f.write(content)
 
     def write(self, data):
         if not self.parent.exists:
@@ -250,7 +281,8 @@ class File(object):
                 if not isinstance(d, text_type):
                     Log.error(u"Expecting unicode data only")
                 if self.key:
-                    f.write(get_module(u"crypto").encrypt(d, self.key).encode("utf8"))
+                    from mo_math.crypto import encrypt
+                    f.write(encrypt(d, self.key).encode("utf8"))
                 else:
                     f.write(d.encode("utf8"))
 
@@ -273,16 +305,16 @@ class File(object):
 
         return output()
 
-    def append(self, content):
+    def append(self, content, encoding='utf8'):
         """
         add a line to file
         """
         if not self.parent.exists:
             self.parent.create()
         with open(self._filename, "ab") as output_file:
-            if isinstance(content, str):
+            if not isinstance(content, text_type):
                 Log.error(u"expecting to write unicode only")
-            output_file.write(content.encode("utf8"))
+            output_file.write(content.encode(encoding))
             output_file.write(b"\n")
 
     def __len__(self):
@@ -392,6 +424,10 @@ class File(object):
 
 
 class TempDirectory(File):
+    """
+    A CONTEXT MANAGER FOR AN ALLOCATED, BUT UNOPENED TEMPORARY DIRECTORY
+    WILL BE DELETED WHEN EXITED
+    """
     def __new__(cls):
         return File.__new__(cls, None)
 
@@ -402,10 +438,14 @@ class TempDirectory(File):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.delete()
+        Thread.run("delete dir " + self.name, delete_daemon, file=self, caller_stack=extract_stack(1))
 
 
 class TempFile(File):
+    """
+    A CONTEXT MANAGER FOR AN ALLOCATED, BUT UNOPENED TEMPORARY FILE
+    WILL BE DELETED WHEN EXITED
+    """
     def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
 
@@ -418,13 +458,13 @@ class TempFile(File):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.delete()
+        Thread.run("delete file " + self.name, delete_daemon, file=self, caller_stack=extract_stack(1))
 
 
 def _copy(from_, to_):
     if from_.is_directory():
         for c in os.listdir(from_.abspath):
-            _copy(File.new_instance(from_, c), File.new_instance(to_, c))
+            _copy(from_ / c, to_ / c)
     else:
         File.new_instance(to_).write_bytes(File.new_instance(from_).read_bytes())
 
@@ -443,18 +483,28 @@ def datetime2string(value, format="%Y-%m-%d %H:%M:%S"):
         Log.error(u"Can not format {{value}} with {{format}}", value=value, format=format, cause=e)
 
 
+
 def join_path(*path):
     def scrub(i, p):
-        if isinstance(p, File):
-            p = p.abspath
-        if p == "/":
-            return "."
         p = p.replace(os.sep, "/")
-        if p[-1] == b'/':
+        if p in ('', '/'):
+            return "."
+        if p[-1] == '/':
             p = p[:-1]
-        if i > 0 and p[0] == b'/':
+        if i > 0 and p[0] == '/':
             p = p[1:]
         return p
+
+    path = [p._filename if isinstance(p, File) else p for p in path]
+    abs_prefix = ''
+    if path and path[0]:
+        if path[0][0] == '/':
+            abs_prefix = '/'
+            path[0] = path[0][1:]
+        elif os.sep == '\\' and path[0][1:].startswith(':/'):
+            # If windows, then look for the "c:/" prefix
+            abs_prefix = path[0][0:3]
+            path[0] = path[0][3:]
 
     scrubbed = []
     for i, p in enumerate(path):
@@ -465,14 +515,37 @@ def join_path(*path):
             pass
         elif s == "..":
             if simpler:
-                simpler.pop()
+                if simpler[-1] == '..':
+                    simpler.append(s)
+                else:
+                    simpler.pop()
+            elif abs_prefix:
+                raise Exception("can not get parent of root")
             else:
                 simpler.append(s)
         else:
             simpler.append(s)
+
     if not simpler:
-        joined = "."
+        if abs_prefix:
+            joined = abs_prefix
+        else:
+            joined = "."
     else:
-        joined = '/'.join(simpler)
+        joined = abs_prefix + ('/'.join(simpler))
+
     return joined
 
+
+def delete_daemon(file, caller_stack, please_stop):
+    # WINDOWS WILL HANG ONTO A FILE FOR A BIT AFTER WE CLOSED IT
+    while not please_stop:
+        try:
+            file.delete()
+            return
+        except Exception as e:
+            e = Except.wrap(e)
+            e.trace = e.trace[0:2]+caller_stack
+
+            Log.warning(u"problem deleting file {{file}}", file=file.abspath, cause=e)
+            (Till(seconds=10)|please_stop).wait()

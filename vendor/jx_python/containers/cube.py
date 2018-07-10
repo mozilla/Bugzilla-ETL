@@ -92,7 +92,8 @@ class Cube(Container):
         if not self.edges:
             return 1
 
-        return len(self.data.values()[0])
+        for d in self.data.values():
+            return len(d)
 
     def __iter__(self):
         if self.is_value:
@@ -231,7 +232,7 @@ class Cube(Container):
                     data={k: Matrix(values=c.__getitem__(coordinates)) for k, c in self.data.items()}
                 )
                 return output
-        elif isinstance(item, basestring):
+        elif isinstance(item, text_type):
             # RETURN A VALUE CUBE
             if self.is_value:
                 if item != self.select.name:
@@ -321,16 +322,16 @@ class Cube(Container):
 
         if isinstance(self.select, list):
             selects = listwrap(self.select)
-            index, v = zip(*self.data[selects[0].name].groupby(selector))
+            index, v = transpose(*self.data[selects[0].name].groupby(selector))
 
             coord = wrap([coord2term(c) for c in index])
 
             values = [v]
             for s in selects[1::]:
-                i, v = zip(*self.data[s.name].group_by(selector))
+                i, v = transpose(*self.data[s.name].group_by(selector))
                 values.append(v)
 
-            output = zip(coord, [Cube(self.select, remainder, {s.name: v[i] for i, s in enumerate(selects)}) for v in zip(*values)])
+            output = transpose(coord, [Cube(self.select, remainder, {s.name: v[i] for i, s in enumerate(selects)}) for v in zip(*values)])
         elif not remainder:
             # v IS A VALUE, NO NEED TO WRAP IT IN A Cube
             output = (
@@ -376,7 +377,7 @@ class Cube(Container):
 
         if isinstance(self.select, list):
             selects = listwrap(self.select)
-            index, v = zip(*self.data[selects[0].name].groupby(selector))
+            index, v = transpose(*self.data[selects[0].name].groupby(selector))
 
             coord = wrap([coord2term(c) for c in index])
 
@@ -385,7 +386,7 @@ class Cube(Container):
                 i, v = zip(*self.data[s.name].group_by(selector))
                 values.append(v)
 
-            output = zip(coord, [Cube(self.select, remainder, {s.name: v[i] for i, s in enumerate(selects)}) for v in zip(*values)])
+            output = transpose(coord, [Cube(self.select, remainder, {s.name: v[i] for i, s in enumerate(selects)}) for v in zip(*values)])
         elif not remainder:
             # v IS A VALUE, NO NEED TO WRAP IT IN A Cube
             output = (

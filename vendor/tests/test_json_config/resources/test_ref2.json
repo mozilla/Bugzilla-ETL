@@ -1,5 +1,0 @@
-{
-	"a":"some_value",
-	"$ref":"//simple.json",
-	"b":{"$ref":"//simple.json"}
-}

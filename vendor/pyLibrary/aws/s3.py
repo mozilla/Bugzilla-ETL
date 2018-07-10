@@ -11,19 +11,19 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
-import StringIO
 import gzip
 import zipfile
 from tempfile import TemporaryFile
 
 import boto
-from BeautifulSoup import BeautifulSoup
 from boto.s3.connection import Location
-from mo_future import text_type
+from bs4 import BeautifulSoup
 
 from mo_dots import wrap, Null, coalesce, unwrap, Data
+from mo_future import text_type, StringIO
 from mo_kwargs import override
 from mo_logs import Log, Except
+from mo_logs.strings import utf82unicode, unicode2utf8
 from mo_logs.url import value2url_param
 from mo_times.dates import Date
 from mo_times.timer import Timer
@@ -264,7 +264,7 @@ class Bucket(object):
         elif source.key.endswith(".gz"):
             json = convert.zip2bytes(json)
 
-        return convert.utf82unicode(json)
+        return utf82unicode(json)
 
     def read_bytes(self, key):
         source = self.get_meta(key)
@@ -278,7 +278,7 @@ class Bucket(object):
             if source.key.endswith(".gz"):
                 return LazyLines(ibytes2ilines(scompressed2ibytes(source)))
             else:
-                return convert.utf82unicode(source.read()).split("\n")
+                return utf82unicode(source.read()).split("\n")
 
         if source.key.endswith(".gz"):
             return LazyLines(ibytes2ilines(scompressed2ibytes(source)))
@@ -314,7 +314,7 @@ class Bucket(object):
                     value = convert.bytes2zip(value)
                     key += ".json.gz"
                 else:
-                    value = convert.bytes2zip(convert.unicode2utf8(value))
+                    value = convert.bytes2zip(unicode2utf8(value))
                     key += ".json.gz"
 
             else:
@@ -446,7 +446,7 @@ class PublicBucket(object):
 
         def more():
             xml = http.get(self.url + "?" + value2url_param(state)).content
-            data = BeautifulSoup(xml)
+            data = BeautifulSoup(xml, 'xml')
 
             state.get_more = data.find("istruncated").contents[0] == "true"
             contents = data.findAll("contents")
@@ -471,7 +471,7 @@ def strip_extension(key):
 
 
 def _unzip(compressed):
-    buff = StringIO.StringIO(compressed)
+    buff = StringIO(compressed)
     archive = zipfile.ZipFile(buff, mode='r')
     return archive.read(archive.namelist()[0])
 

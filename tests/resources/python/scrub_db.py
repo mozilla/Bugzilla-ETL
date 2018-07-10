@@ -32,7 +32,7 @@ def main():
         Log.note("Scrubbing db of those pesky records.")
         Log.note("This is going to take hours ...")
 
-        MySQL.execute_file(settings.bugzilla, "./tests/resources/sql/scrub_db.sql", {
+        execute_file(settings.bugzilla, "./tests/resources/sql/scrub_db.sql", {
             "schema":settings.bugzilla.schema,
             "bug_list":SQL(settings.param.bugs)
         })

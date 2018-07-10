@@ -11,12 +11,15 @@ from __future__ import division
 from __future__ import absolute_import
 
 import gzip
+import struct
 from io import BytesIO
 from tempfile import TemporaryFile
 import zipfile
 import zlib
 
-from mo_future import text_type, PY3
+import time
+
+from mo_future import text_type, PY3, long
 
 from mo_logs.exceptions import suppress_exception
 from mo_logs import Log
@@ -318,6 +321,25 @@ def ibytes2ilines(generator, encoding="utf8", flexible=False, closer=None):
         e = _buffer.find(b"\n", s)
 
 
+def ibytes2icompressed(source):
+    yield (
+        b'\037\213\010\000' +  # Gzip file, deflate, no filename
+        struct.pack('<L', long(time.time())) +  # compression start time
+        b'\002\377'  # maximum compression, no OS specified
+    )
+
+    crc = zlib.crc32(b"")
+    length = 0
+    compressor = zlib.compressobj(9, zlib.DEFLATED, -zlib.MAX_WBITS, zlib.DEF_MEM_LEVEL, 0)
+    for d in source:
+        crc = zlib.crc32(d, crc) & 0xffffffff
+        length += len(d)
+        chunk = compressor.compress(d)
+        if chunk:
+            yield chunk
+    yield compressor.flush()
+    yield struct.pack("<2L", crc, length & 0xffffffff)
+
 
 class GzipLines(CompressedLines):
     """
@@ -366,8 +388,7 @@ def icompressed2ibytes(source):
         bytes_count += len(data)
         if Math.floor(last_bytes_count, 1000000) != Math.floor(bytes_count, 1000000):
             last_bytes_count = bytes_count
-            if DEBUG:
-                Log.note("bytes={{bytes}}", bytes=bytes_count)
+            DEBUG and Log.note("bytes={{bytes}}", bytes=bytes_count)
         yield data
 
 

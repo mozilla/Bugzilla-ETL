@@ -261,17 +261,17 @@ class TestLookForLeaks(unittest.TestCase):
 
     def test_etl_still_working(self):
         query = {
-        	"query":{"filtered":{
-        		"query":{"match_all":{}},
-        		"filter":{"and":[
-        			{"match_all":{}},
-        			{"range":{"modified_ts":{"gte":1475280000000}}}
-        		]}
-        	}},
-        	"from":0,
-        	"size":0,
-        	"sort":[],
-        	"facets":{"0":{"statistical":{"field":"modified_ts"}}}
+            "query": {"filtered": {
+                "query": {"match_all": {}},
+                "filter": {"and": [
+                    {"match_all": {}},
+                    {"range": {"modified_ts": {"gte": 1475280000000}}}
+                ]}
+            }},
+            "from": 0,
+            "size": 0,
+            "sort": [],
+            "facets": {"0": {"statistical": {"field": "modified_ts"}}}
         }
 
         result = self.public.search(query)

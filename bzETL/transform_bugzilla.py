@@ -14,26 +14,34 @@ from __future__ import unicode_literals
 import re
 from datetime import date
 
-from mo_future import text_type
-
 from jx_python import jx
+from mo_dots import listwrap
+from mo_future import text_type, long
 from mo_json import json2value, value2json
 from mo_logs import Log
+from mo_times import Date
 from pyLibrary import convert
 from pyLibrary.env import elasticsearch
 
-USE_ATTACHMENTS_DOT = True
+USE_ATTACHMENTS_DOT = True  # REMOVE THIS, ASSUME False
 
 DIFF_FIELDS = ["cf_user_story"]
-MULTI_FIELDS = ["cc", "blocked", "dependson", "dupe_by", "dupe_of", "flags", "keywords", "bug_group", "see_also"]
-NUMERIC_FIELDS=[      "blocked", "dependson", "dupe_by", "dupe_of",
+MULTI_FIELDS = ["cc", "blocked", "dependson", "dupe_by", "dupe_of", "keywords", "bug_group", "see_also"]
+TIME_FIELDS = ["cf_due_date"]
+NUMERIC_FIELDS=[
+    "blocked",
+    "dependson",
+    "dupe_by",
+    "dupe_of",
     "votes",
     "estimated_time",
     "remaining_time",
     "everconfirmed",
-    "uncertain"
-
+    "uncertain",
+    "remaining_time"
 ]
+
+NULL_VALUES = ['--', '---', '']
 
 # Used to reformat incoming dates into the expected form.
 # Example match: "2012/01/01 00:00:00.000"
@@ -43,7 +51,8 @@ DATE_PATTERN_STRICT_SHORT = re.compile("^[0-9]{4}[\\/-][0-9]{2}[\\/-][0-9]{2} [0
 DATE_PATTERN_RELAXED = re.compile("^[0-9]{4}[\\/-][0-9]{2}[\\/-][0-9]{2}")
 
 
-#WE ARE RENAMING THE ATTACHMENTS FIELDS TO CAUSE LESS PROBLEMS IN ES QUERIES
+# WE ARE RENAMING THE ATTACHMENTS FIELDS TO CAUSE LESS PROBLEMS IN ES QUERIES
+# TODO: REMOVE THIS OLD FOMAT
 def rename_attachments(bug_version):
     if bug_version.attachments == None: return bug_version
     if not USE_ATTACHMENTS_DOT:
@@ -60,32 +69,36 @@ def normalize(bug, old_school=False):
 
     #ENSURE STRUCTURES ARE SORTED
     # Do some processing to make sure that diffing between runs stays as similar as possible.
-    bug.flags=jx.sort(bug.flags, "value")
+    bug.flags=sort(bug.flags, "value")
 
     if bug.attachments:
         if USE_ATTACHMENTS_DOT:
             bug.attachments=json2value(value2json(bug.attachments).replace("attachments_", "attachments."))
-        bug.attachments = jx.sort(bug.attachments, "attach_id")
+
+        bug.attachments = sort(bug.attachments, "attach_id")
         for a in bug.attachments:
             for k,v in list(a.items()):
                 if k.startswith("attachments") and (k.endswith("isobsolete") or k.endswith("ispatch") or k.endswith("isprivate")):
                     new_v=convert.value2int(v)
                     new_k=k[12:]
-                    a[k.replace(".", "\.")]=new_v
+                    a[k.replace(".", "\\.")]=new_v
                     if not old_school:
                         a[new_k]=new_v
-            a.flags = jx.sort(a.flags, ["modified_ts", "value"])
+            a.flags = sort(a.flags, ["modified_ts", "requestee", "value"])
 
     if bug.changes != None:
         if USE_ATTACHMENTS_DOT:
             json = value2json(bug.changes).replace("attachments_", "attachments.")
             bug.changes=json2value(json)
-        bug.changes = jx.sort(bug.changes, ["attach_id", "field_name"])
+        for c in listwrap(bug.changes):
+            c.new_value = sort(c.new_value)
+            c.old_value = sort(c.old_value)
+        bug.changes = sort(bug.changes, ["attach_id", "field_name"])
 
-    #bug IS CONVERTED TO A 'CLEAN' COPY
     bug = elasticsearch.scrub(bug)
-    # bug.attachments = coalesce(bug.attachments, [])    # ATTACHMENTS MUST EXIST
-
+    for k, v in list(bug.items()):
+        if v in NULL_VALUES:
+            bug[k] = None
 
     for f in NUMERIC_FIELDS:
         v = bug[f]
@@ -102,7 +115,7 @@ def normalize(bug, old_school=False):
             bug[f]=convert.value2number(v)
 
     for f in MULTI_FIELDS:
-        v = bug[f]
+        v = listwrap(bug[f])
         if v:
             bug[f] = jx.sort(v)
 
@@ -138,5 +151,10 @@ def normalize(bug, old_school=False):
     bug.votes = None
     bug.exists = True
 
+    bug.etl.timestamp = Date.now()
+
     return elasticsearch.scrub(bug)
 
+
+def sort(value, param=None):
+    return jx.sort(listwrap(value), param)

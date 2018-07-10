@@ -18,12 +18,11 @@ import time
 from collections import Mapping
 from datetime import datetime, date, timedelta
 from decimal import Decimal
+from json.encoder import encode_basestring
 from math import floor
 
-from past.builtins import xrange
-
 from mo_dots import Data, FlatList, NullType, Null
-from mo_future import text_type, binary_type, long, utf8_json_encoder, sort_using_key
+from mo_future import text_type, binary_type, long, utf8_json_encoder, sort_using_key, xrange
 from mo_json import ESCAPE_DCT, scrub, float2json
 from mo_logs import Except
 from mo_logs.strings import utf82unicode, quote
@@ -111,9 +110,6 @@ def pypy_json_encode(value, pretty=False):
             _dealing_with_problem = False
 
 
-almost_pattern = r"(?:\.(\d*)999)|(?:\.(\d*)000)"
-
-
 class cPythonJSONEncoder(object):
     def __init__(self, sort_keys=True):
         object.__init__(self)
@@ -192,7 +188,7 @@ def _value2json(value, _buffer):
             _value2json(d, _buffer)
             return
         elif type in (int, long, Decimal):
-            append(_buffer, float2json(value))
+            append(_buffer, text_type(value))
         elif type is float:
             if math.isnan(value) or math.isinf(value):
                 append(_buffer, u'null')
@@ -276,6 +272,7 @@ def _dict2json(value, _buffer):
 
         Log.error(text_type(repr(value)) + " is not JSON serializable", cause=e)
 
+
 ARRAY_ROW_LENGTH = 80
 ARRAY_ITEM_MAX_LENGTH = 30
 ARRAY_MAX_COLUMNS = 10
@@ -291,7 +288,7 @@ def pretty_json(value):
         elif isinstance(value, Mapping):
             try:
                 items = sort_using_key(list(value.items()), lambda r: r[0])
-                values = [quote(k) + PRETTY_COLON + indent(pretty_json(v)).strip() for k, v in items if v != None]
+                values = [encode_basestring(k) + PRETTY_COLON + indent(pretty_json(v)).strip() for k, v in items if v != None]
                 if not values:
                     return "{}"
                 elif len(values) == 1:

@@ -23,7 +23,7 @@ from jx_python import expressions as _expressions
 from jx_python import flat_list, group_by
 from mo_dots import listwrap, wrap, unwrap, FlatList, NullType
 from mo_dots import set_default, Null, Data, split_field, coalesce, join_field
-from mo_future import text_type, boolean_type, none_type, long, generator_types, sort_using_cmp
+from mo_future import text_type, boolean_type, none_type, long, generator_types, sort_using_cmp, PY2
 from mo_logs import Log
 from mo_math import Math
 from mo_math import UNION, MIN
@@ -60,70 +60,64 @@ def get(expr):
     return jx_expression_to_function(expr)
 
 
-def run(query, frum=Null):
+def run(query, container=Null):
     """
     THIS FUNCTION IS SIMPLY SWITCHING BASED ON THE query["from"] CONTAINER,
     BUT IT IS ALSO PROCESSING A list CONTAINER; SEPARATE TO A ListContainer
     """
-    if frum == None:
-        query_op = QueryOp.wrap(query)
-        frum = query_op.frum
+    if container == None:
+        container = wrap(query)['from']
+        query_op = QueryOp.wrap(query, container=container, namespace=container.schema)
     else:
-        query_op = QueryOp.wrap(query, frum.schema)
+        query_op = QueryOp.wrap(query, container, container.namespace)
 
-    if frum == None:
+    if container == None:
         from jx_python.containers.list_usingPythonList import DUAL
         return DUAL.query(query_op)
-    elif isinstance(frum, Container):
-        return frum.query(query_op)
-    elif isinstance(frum, (list, set) + generator_types):
-        frum = wrap(list(frum))
-    elif isinstance(frum, Cube):
+    elif isinstance(container, Container):
+        return container.query(query_op)
+    elif isinstance(container, (list, set) + generator_types):
+        container = wrap(list(container))
+    elif isinstance(container, Cube):
         if is_aggs(query_op):
-            return cube_aggs(frum, query_op)
-    elif isinstance(frum, QueryOp):
-        frum = run(frum)
+            return cube_aggs(container, query_op)
+    elif isinstance(container, QueryOp):
+        container = run(container)
     else:
-        Log.error("Do not know how to handle {{type}}", type=frum.__class__.__name__)
+        Log.error("Do not know how to handle {{type}}", type=container.__class__.__name__)
 
     if is_aggs(query_op):
-        frum = list_aggs(frum, query_op)
+        container = list_aggs(container, query_op)
     else:  # SETOP
-        # try:
-        #     if query.filter != None or query.esfilter != None:
-        #         Log.error("use 'where' clause")
-        # except AttributeError:
-        #     pass
-
         if query_op.where is not TRUE:
-            frum = filter(frum, query_op.where)
+            container = filter(container, query_op.where)
 
         if query_op.sort:
-            frum = sort(frum, query_op.sort, already_normalized=True)
+            container = sort(container, query_op.sort, already_normalized=True)
 
         if query_op.select:
-            frum = select(frum, query_op.select)
+            container = select(container, query_op.select)
 
     if query_op.window:
-        if isinstance(frum, Cube):
-            frum = list(frum.values())
+        if isinstance(container, Cube):
+            container = list(container.values())
 
         for param in query_op.window:
-            window(frum, param)
+            window(container, param)
 
     # AT THIS POINT frum IS IN LIST FORMAT, NOW PACKAGE RESULT
     if query_op.format == "cube":
-        frum = convert.list2cube(frum)
+        container = convert.list2cube(container)
     elif query_op.format == "table":
-        frum = convert.list2table(frum)
-        frum.meta.format = "table"
+        container = convert.list2table(container)
+        container.meta.format = "table"
     else:
-        frum = wrap({
+        container = wrap({
             "meta": {"format": "list"},
-            "data": frum
+            "data": container
         })
 
-    return frum
+    return container
 
 
 groupby = group_by.groupby
@@ -565,60 +559,70 @@ def count(values):
     return sum((1 if v!=None else 0) for v in values)
 
 
-def value_compare(l, r, ordering=1):
+def value_compare(left, right, ordering=1):
     """
     SORT VALUES, NULL IS THE LEAST VALUE
-    :param l: LHS
-    :param r: RHS
+    :param left: LHS
+    :param right: RHS
     :param ordering: (-1, 0, 0) TO AFFECT SORT ORDER
     :return: The return value is negative if x < y, zero if x == y and strictly positive if x > y.
     """
 
     try:
-        if isinstance(l, list) or isinstance(r, list):
-            for a, b in zip(listwrap(l), listwrap(r)):
+        if isinstance(left, list) or isinstance(right, list):
+            if left == None:
+                return ordering
+            elif right == None:
+                return - ordering
+
+            left = listwrap(left)
+            right = listwrap(right)
+            for a, b in zip(left, right):
                 c = value_compare(a, b) * ordering
                 if c != 0:
                     return c
 
-            if len(l) < len(r):
+            if len(left) < len(right):
                 return - ordering
-            elif len(l) > len(r):
+            elif len(left) > len(right):
                 return ordering
             else:
                 return 0
 
-        ltype = type(l)
-        rtype = type(r)
-        type_diff = TYPE_ORDER.get(ltype, 10) - TYPE_ORDER.get(rtype, 10)
+        ltype = type(left)
+        rtype = type(right)
+        ltype_num = TYPE_ORDER.get(ltype, 10)
+        rtype_num = TYPE_ORDER.get(rtype, 10)
+        type_diff = ltype_num - rtype_num
         if type_diff != 0:
             return ordering if type_diff > 0 else -ordering
 
-        if ltype is builtin_tuple:
-            for a, b in zip(l, r):
+        if ltype_num == 9:
+            return 0
+        elif ltype is builtin_tuple:
+            for a, b in zip(left, right):
                 c = value_compare(a, b)
                 if c != 0:
                     return c * ordering
             return 0
         elif ltype in (dict, Data):
-            for k in sorted(set(l.keys()) | set(r.keys())):
-                c = value_compare(l.get(k), r.get(k)) * ordering
+            for k in sorted(set(left.keys()) | set(right.keys())):
+                c = value_compare(left.get(k), right.get(k)) * ordering
                 if c != 0:
                     return c
             return 0
-        elif l > r:
+        elif left > right:
             return ordering
-        elif l < r:
+        elif left < right:
             return -ordering
         else:
             return 0
     except Exception as e:
-        Log.error("Can not compare values {{left}} to {{right}}", left=l, right=r, cause=e)
+        Log.error("Can not compare values {{left}} to {{right}}", left=left, right=right, cause=e)
 
 TYPE_ORDER = {
     boolean_type: 0,
     int: 1,
-    long: 1,
     float: 1,
     Date: 1,
     text_type: 2,
@@ -631,9 +635,8 @@ TYPE_ORDER = {
     NullOp: 9
 }
 
-
-
-
+if PY2:
+    TYPE_ORDER[long] = 1
 
 
 def pairwise(values):
@@ -1085,6 +1088,8 @@ def accumulate(vals):
 
 def reverse(vals):
     # TODO: Test how to do this fastest
+    if not hasattr(vals, "len"):
+        vals = list(vals)
     l = len(vals)
     output = [None] * l
 

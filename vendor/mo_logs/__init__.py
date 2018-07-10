@@ -13,16 +13,16 @@ from __future__ import unicode_literals
 
 import os
 import platform
-import sys
 from collections import Mapping
 from datetime import datetime
 
+import sys
+
 from mo_dots import coalesce, listwrap, wrap, unwrap, unwraplist, set_default, FlatList
-from mo_future import text_type
+from mo_future import text_type, PY3, iteritems
+from mo_logs import constants
 from mo_logs.exceptions import Except, suppress_exception
 from mo_logs.strings import indent
-from mo_logs import constants
-
 
 _Thread = None
 
@@ -98,12 +98,18 @@ class Log(object):
             for log in listwrap(settings.log):
                 Log.add_log(Log.new_instance(log))
 
-        if settings.cprofile.enabled==True:
+        if settings.cprofile.enabled == True:
             Log.alert("cprofiling is enabled, writing to {{filename}}", filename=os.path.abspath(settings.cprofile.filename))
 
     @classmethod
     def stop(cls):
-        from mo_logs import profiles
+        """
+        DECONSTRUCTS ANY LOGGING, AND RETURNS TO DIRECT-TO-stdout LOGGING
+        EXECUTING MULUTIPLE TIMES IN A ROW IS SAFE, IT HAS NO NET EFFECT, IT STILL LOGS TO stdout
+        :return: NOTHING
+        """
+
+        from mo_threads import profiles
 
         if cls.cprofiler and hasattr(cls, "settings"):
             if cls.cprofiler == None:
@@ -143,6 +149,9 @@ class Log(object):
         if settings.log_type == "console":
             from mo_logs.log_usingThreadedStream import StructuredLogger_usingThreadedStream
             return StructuredLogger_usingThreadedStream(sys.stdout)
+        if settings.log_type == "mozlog":
+            from mo_logs.log_usingMozLog import StructuredLogger_usingMozLog
+            return StructuredLogger_usingMozLog(sys.stdout, coalesce(settings.app_name, settings.appname))
         if settings.log_type == "stream" or settings.stream:
             from mo_logs.log_usingThreadedStream import StructuredLogger_usingThreadedStream
             return StructuredLogger_usingThreadedStream(settings.stream)
@@ -244,7 +253,7 @@ class Log(object):
             cause = Except(exceptions.UNEXPECTED, text_type(cause), trace=exceptions._extract_traceback(0))
 
         trace = exceptions.extract_stack(1)
-        e = Except(exceptions.UNEXPECTED, template, params, cause, trace)
+        e = Except(type=exceptions.UNEXPECTED, template=template, params=params, cause=cause, trace=trace)
         Log.note(
             "{{error}}",
             error=e,
@@ -325,7 +334,7 @@ class Log(object):
         :return:
         """
         if not isinstance(template, text_type):
-            Log.error("Log.note was expecting a unicode template")
+            Log.error("Log.warning was expecting a unicode template")
 
         if isinstance(default_params, BaseException):
             cause = default_params
@@ -337,7 +346,7 @@ class Log(object):
         cause = unwraplist([Except.wrap(c) for c in listwrap(cause)])
         trace = exceptions.extract_stack(stack_depth + 1)
 
-        e = Except(exceptions.WARNING, template, params, cause, trace)
+        e = Except(type=exceptions.WARNING, template=template, params=params, cause=cause, trace=trace)
         Log.note(
             "{{error|unicode}}",
             error=e,
@@ -378,24 +387,25 @@ class Log(object):
 
         add_to_trace = False
         if cause == None:
-            pass
+            causes = None
         elif isinstance(cause, list):
-            cause = []
+            causes = []
             for c in listwrap(cause):  # CAN NOT USE LIST-COMPREHENSION IN PYTHON3 (EXTRA STACK DEPTH FROM THE IN-LINED GENERATOR)
-                cause.append(Except.wrap(c, stack_depth=1))
-            cause = FlatList(cause)
+                causes.append(Except.wrap(c, stack_depth=1))
+            causes = FlatList(causes)
         elif isinstance(cause, BaseException):
-            cause = Except.wrap(cause, stack_depth=1)
+            causes = Except.wrap(cause, stack_depth=1)
         else:
-            Log.error("can only accept Exception , or list of exceptions")
+            causes = None
+            Log.error("can only accept Exception, or list of exceptions")
 
         trace = exceptions.extract_stack(stack_depth + 1)
 
         if add_to_trace:
             cause[0].trace.extend(trace[1:])
 
-        e = Except(exceptions.ERROR, template, params, cause, trace)
-        raise e
+        e = Except(type=exceptions.ERROR, template=template, params=params, cause=cause, trace=trace)
+        raise_from_none(e)
 
     @classmethod
     def fatal(
@@ -427,8 +437,7 @@ class Log(object):
         cause = unwraplist([Except.wrap(c) for c in listwrap(cause)])
         trace = exceptions.extract_stack(stack_depth + 1)
 
-        e = Except(exceptions.ERROR, template, params, cause, trace)
-        str_e = text_type(e)
+        e = Except(type=exceptions.ERROR, template=template, params=params, cause=cause, trace=trace)
 
         error_mode = cls.error_mode
         with suppress_exception:
@@ -442,7 +451,7 @@ class Log(object):
                 )
         cls.error_mode = error_mode
 
-        sys.stderr.write(str_e.encode('utf8'))
+        sys.stderr.write(str(e))
 
 
     def write(self):
@@ -453,6 +462,7 @@ def write_profile(profile_settings, stats):
     from pyLibrary import convert
     from mo_files import File
 
+    Log.note("aggregating {{num}} profile stats", num=len(stats))
     acc = stats[0]
     for s in stats[1:]:
         acc.add(s)
@@ -467,10 +477,14 @@ def write_profile(profile_settings, stats):
         "line": f[1],
         "method": f[2].lstrip("<").rstrip(">")
     }
-        for f, d, in acc.stats.iteritems()
+        for f, d, in iteritems(acc.stats)
     ]
     stats_file = File(profile_settings.filename, suffix=convert.datetime2string(datetime.now(), "_%Y%m%d_%H%M%S"))
     stats_file.write(convert.list2tab(stats))
+
+
+def _same_frame(frameA, frameB):
+    return (frameA.line, frameA.file) == (frameB.line, frameB.file)
 
 
 # GET THE MACHINE METADATA
@@ -480,6 +494,13 @@ machine_metadata = wrap({
     "os": text_type(platform.system() + platform.release()).strip(),
     "name": text_type(platform.node())
 })
+
+
+def raise_from_none(e):
+    raise e
+
+if PY3:
+    exec("def raise_from_none(e):\n    raise e from None\n", globals(), locals())
 
 
 from mo_logs.log_usingFile import StructuredLogger_usingFile

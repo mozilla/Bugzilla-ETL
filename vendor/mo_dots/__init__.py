@@ -68,7 +68,7 @@ def literal_field(field):
     RETURN SAME WITH DOTS (`.`) ESCAPED
     """
     try:
-        return field.replace(".", "\.")
+        return field.replace(".", "\\.")
     except Exception as e:
         get_logger().error("bad literal", e)
 
@@ -85,7 +85,7 @@ def unliteral_field(field):
     """
     if len(split_field(field)) > 1:
         get_logger().error("Bad call! Dude!")
-    return field.replace("\.", ".")
+    return field.replace("\\.", ".")
 
 
 def split_field(field):
@@ -112,7 +112,7 @@ def join_field(field):
     potent = [f for f in field if f != "."]
     if not potent:
         return "."
-    return ".".join([f.replace(".", "\.") for f in potent])
+    return ".".join([f.replace(".", "\\.") for f in potent])
 
 
 def concat_field(prefix, suffix):
@@ -326,19 +326,19 @@ def _get_attr(obj, path):
         # TRY FILESYSTEM
         File = get_module("mo_files").File
         possible_error = None
-        python_file = File.new_instance(File(obj.__file__).parent, attr_name).set_extension("py")
-        python_module = File.new_instance(File(obj.__file__).parent, attr_name, "__init__.py")
+        python_file = (File(obj.__file__).parent / attr_name).set_extension("py")
+        python_module = (File(obj.__file__).parent / attr_name / "__init__.py")
         if python_file.exists or python_module.exists:
             try:
                 # THIS CASE IS WHEN THE __init__.py DOES NOT IMPORT THE SUBDIR FILE
                 # WE CAN STILL PUT THE PATH TO THE FILE IN THE from CLAUSE
                 if len(path) == 1:
                     # GET MODULE OBJECT
-                    output = __import__(obj.__name__ + b"." + attr_name.decode('utf8'), globals(), locals(), [attr_name.decode('utf8')], 0)
+                    output = __import__(obj.__name__ + str(".") + str(attr_name), globals(), locals(), [str(attr_name)], 0)
                     return output
                 else:
                     # GET VARIABLE IN MODULE
-                    output = __import__(obj.__name__ + b"." + attr_name.decode('utf8'), globals(), locals(), [path[1].decode('utf8')], 0)
+                    output = __import__(obj.__name__ + str(".") + str(attr_name), globals(), locals(), [str(path[1])], 0)
                     return _get_attr(output, path[1:])
             except Exception as e:
                 Except = get_module("mo_logs.exceptions.Except")
@@ -411,6 +411,12 @@ def lower_match(value, candidates):
 
 
 def wrap(v):
+    """
+    WRAP AS Data OBJECT FOR DATA PROCESSING: https://github.com/klahnakoski/mo-dots/tree/dev/docs
+    :param v:  THE VALUE TO WRAP
+    :return:  Data INSTANCE
+    """
+
     type_ = _get(v, "__class__")
 
     if type_ is dict:
@@ -422,7 +428,7 @@ def wrap(v):
     elif type_ is list:
         return FlatList(v)
     elif type_ in generator_types:
-        return FlatList(list(v))
+        return FlatList(list(unwrap(vv) for vv in v))
     else:
         return v
 

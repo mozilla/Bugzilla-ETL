@@ -49,7 +49,7 @@ def _late_import():
 
 class Lock(object):
     """
-    A NON-RE-ENTRANT LOCK WITH wait() AND
+    A NON-RE-ENTRANT LOCK WITH wait()
     """
     __slots__ = ["name", "lock", "waiting"]
 
@@ -77,7 +77,7 @@ class Lock(object):
         """
         THE ASSUMPTION IS wait() WILL ALWAYS RETURN WITH THE LOCK ACQUIRED
         :param till: WHEN TO GIVE UP WAITING FOR ANOTHER THREAD TO SIGNAL
-        :return: True IF SIGNALED TO GO, False IF TIMEOUT HAPPENED
+        :return: True IF SIGNALED TO GO, False IF till WAS SIGNALED
         """
         waiter = Signal()
         if self.waiting:

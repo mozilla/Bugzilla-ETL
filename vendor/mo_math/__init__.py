@@ -153,8 +153,8 @@ class Math(object):
     def round(value, decimal=7, digits=None):
         """
         ROUND TO GIVEN NUMBER OF DIGITS, OR GIVEN NUMBER OF DECIMAL PLACES
-        decimal - NUMBER OF SIGNIFICANT DIGITS (LESS THAN 1 IS INVALID)
-        digits - NUMBER OF DIGITS AFTER DECIMAL POINT (NEGATIVE IS VALID)
+        decimal - NUMBER OF DIGITS AFTER DECIMAL POINT (NEGATIVE IS VALID)
+        digits - NUMBER OF SIGNIFICANT DIGITS (LESS THAN 1 IS INVALID)
         """
         if value == None:
             return None
@@ -297,6 +297,12 @@ def MIN(values, *others):
 
 
 def MAX(values, *others):
+    """
+    DECISIVE MAX
+    :param values:
+    :param others:
+    :return:
+    """
 
     if others:
         from mo_logs import Log

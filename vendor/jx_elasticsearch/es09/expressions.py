@@ -15,6 +15,9 @@ from collections import Mapping
 from datetime import datetime
 import re
 
+from jx_base.queries import keyword_pattern
+
+from mo_future import text_type
 from pyLibrary import convert
 from mo_collections import reverse
 from mo_logs import Log
@@ -48,7 +51,7 @@ class _MVEL(object):
         body = "var output = \"\";\n" + \
                code.replace(
                    "<CODE>",
-                   "if (" + _where(whereClause, lambda(v): self._translate(v)) + "){\n" +
+                   "if (" + _where(whereClause, lambda v: self._translate(v)) + "){\n" +
                    select.body +
                    "}\n"
                ) + \
@@ -128,13 +131,13 @@ class _MVEL(object):
         list = []
         for s in selectList:
             if is_deep:
-                if s.value and isKeyword(s.value):
+                if s.value and is_variable_name(s.value):
                     shortForm = self._translate(s.value)
                     list.append("Value2Pipe(" + shortForm + ")\n")
                 else:
                     Log.error("do not know how to handle yet")
             else:
-                if s.value and isKeyword(s.value):
+                if s.value and is_variable_name(s.value):
                     list.append("Value2Pipe(getDocValue(" + value2MVEL(s.value) + "))\n")
                 elif s.value:
                     shortForm = self._translate(s.value)
@@ -169,9 +172,9 @@ class _MVEL(object):
         if len(split_field(self.fromData.name)) == 1 and fields:
             if isinstance(fields, Mapping):
                 # CONVERT UNORDERED FIELD DEFS
-                jx_fields, es_fields = zip(*[(k, fields[k]) for k in sorted(fields.keys())])
+                jx_fields, es_fields = transpose(*[(k, fields[k]) for k in sorted(fields.keys())])
             else:
-                jx_fields, es_fields = zip(*[(i, e) for i, e in enumerate(fields)])
+                jx_fields, es_fields = transpose(*[(i, e) for i, e in enumerate(fields)])
 
             # NO LOOPS BECAUSE QUERY IS SHALLOW
             # DOMAIN IS FROM A DIMENSION, USE IT'S FIELD DEFS TO PULL
@@ -489,19 +492,8 @@ def _where(esFilter, _translate):
 
 
 VAR_CHAR = "abcdefghijklmnopqurstvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_.\""
-keyword_pattern = re.compile(r"\.*\w*(?:\.\w+)*")
 
 
-def isKeyword(value):
-    """
-    RETURN TRUE IF THE value IS JUST A NAME OF A FIELD, A LIST OF FIELDS, (OR A VALUE)
-    """
-    if not value or not isinstance(value, basestring):
-        Log.error("Expecting a string")
-
-    if keyword_pattern.match(value):
-        return True
-    return False
 
 
 def value2MVEL(value):
@@ -584,7 +576,7 @@ FUNCTIONS = {
         "}};\n",
 
     "Value2Pipe":
-        'var Value2Pipe = function(value){\n' + # SPACES ARE IMPORTANT BETWEEN "="
+        'var Value2Pipe = function(value){\n' +  # SPACES ARE IMPORTANT BETWEEN "=".
         "if (value==null){ \"0\" }else " +
         "if (value is ArrayList || value is org.elasticsearch.common.mvel2.util.FastList){" +
         "var out = \"\";\n" +

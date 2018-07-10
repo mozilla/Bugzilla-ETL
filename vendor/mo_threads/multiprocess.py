@@ -13,8 +13,8 @@ from __future__ import unicode_literals
 import os
 import subprocess
 
-from mo_dots import set_default, unwrap, NullType
-from mo_future import none_type, binary_type, text_type
+from mo_dots import set_default, NullType
+from mo_future import none_type, binary_type
 from mo_logs import Log, strings
 from mo_logs.exceptions import Except
 from mo_threads.lock import Lock
@@ -36,13 +36,13 @@ class Process(object):
         try:
             self.debug = debug or DEBUG
             self.service = service = subprocess.Popen(
-                params,
+                [str(p) for p in params],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 bufsize=bufsize,
-                cwd=cwd if isinstance(cwd, (text_type, binary_type, NullType, none_type)) else cwd.abspath,
-                env=unwrap(set_default(env, os.environ)),
+                cwd=cwd if isinstance(cwd, (str, NullType, none_type)) else cwd.abspath,
+                env={str(k): str(v) for k, v in set_default(env, os.environ).items()},
                 shell=shell
             )
 
@@ -68,7 +68,7 @@ class Process(object):
         self.join(raise_on_error=True)
 
     def stop(self):
-        self.stdin.add("exit")  # ONE MORE SEND
+        self.stdin.add(THREAD_STOP)  # ONE MORE SEND
         self.please_stop.go()
 
     def join(self, raise_on_error=False):
@@ -146,12 +146,12 @@ class Process(object):
             if line:
                 if self.debug:
                     Log.note("{{process}} (stdin): {{line}}", process=self.name, line=line.rstrip())
-                pipe.write(line + b"\n")
-        pipe.close()
+                pipe.write(line.encode('utf8') + b"\n")
 
     def _kill(self):
         try:
             self.service.kill()
+            Log.note("Service was successfully terminated.")
         except Exception as e:
             ee = Except.wrap(e)
             if 'The operation completed successfully' in ee:
