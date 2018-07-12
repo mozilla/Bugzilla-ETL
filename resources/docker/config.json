@@ -57,7 +57,7 @@
 		"log": [
 			{
 				"log_type": "mozlog",
-				"appname": {"$ref":"env://ETL_APPNAME"}
+				"appname": {"$ref":"env://LOG_APPNAME"}
 			},
 			{
 				"class": "logging.handlers.RotatingFileHandler",
@@ -65,10 +65,6 @@
 				"maxBytes": 10000000,
 				"backupCount": 20,
 				"encoding": "utf8"
-			},
-			{
-				"log_type": "stream",
-				"stream": "sys.stdout"
 			}
 		]
 	}

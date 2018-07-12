@@ -353,6 +353,7 @@ def full_etl(resume_from_last_run, param, db, esq, esq_comments, output_queue, k
 
 @override
 def main(param, es, es_comments, bugzilla, kwargs):
+    param.allow_private_bugs = param.allow_private_bugs in [True, "true"]
     if not param.allow_private_bugs and es and not es_comments:
         Log.error("Must have ES for comments")
 
