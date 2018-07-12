@@ -45,3 +45,5 @@ RUN addgroup --gid 10001 $USER \
 
 USER $USER
 RUN python -m pip --no-cache-dir install --user -r requirements.txt
+
+#  python bzETL/bz_etl.py --settings=resources/docker/config.json
