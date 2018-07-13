@@ -1,0 +1,70 @@
+{
+	"param": {
+		"start": 0,
+		"increment": 1000,
+		"first_run_time": "logs/first_run_time.txt",
+		"last_run_time": "logs/last_run_time.txt",
+		"look_back": 3600000,  // HOUR = 60*60*1000
+		"allow_private_bugs": {"$ref":"env://ETL_PRIVATE_BUGS"}
+	},
+	"alias": {
+		"start": 0,
+		"increment": 100000,
+		"elasticsearch": {
+			"host": "http://localhost",
+			"index": "bug_aliases"
+		},
+		"file": {
+			"path": "resources/schema/bugzilla_aliases.json",
+			"key": {"$ref": "env://ETL_ALIAS_KEY"}
+		}
+	},
+	"bugzilla": {
+		"$ref": "file://~/private.json#bugzilla-dev",
+		"preamble": "from https://github.com/klahnakoski/Bugzilla-ETL",
+		"host": {"$ref":"env://MYSQL_HOST"},
+		"port": {"$ref":"env://MYSQL_PORT"},
+		"schema": {"$ref":"env://MYSQL_SCHEMA"},
+		"debug": false
+	},
+	"es": {
+		"host": {"$ref":"env://ES_HOST"},
+		"port": {"$ref":"env://ES_PORT"},
+		"index": {"$ref":"env://ETL_BUGS"},
+		"type": "bug_version",
+		"schema": {
+			"$ref": "../schema/bug_version.json"
+		},
+		"timeout": 60
+	},
+	"es_comments": {
+		"host": "http://localhost",
+		"port": 9200,
+		"index": {"$ref":"env://ETL_COMMENTS"},
+		"type": "bug_comment",
+		"schema": {
+			"$ref": "../schema/bug_comments.json"
+		},
+		"timeout": 60
+	},
+	"constants":{
+		"pyLibrary.sql.mysql.EXECUTE_TIMEOUT": 0,
+		"pyLibrary.env.http.default_headers": {"Referer": "https://github.com/mozilla/Bugzilla-ETL"}
+	},
+	"debug": {
+		"trace": true,
+		"log": [
+			{
+				"log_type": "mozlog",
+				"appname": {"$ref":"env://LOG_APPNAME"}
+			},
+			{
+				"class": "logging.handlers.RotatingFileHandler",
+				"filename": "./logs/bz_etl.log",
+				"maxBytes": 10000000,
+				"backupCount": 20,
+				"encoding": "utf8"
+			}
+		]
+	}
+}
