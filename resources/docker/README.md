@@ -19,7 +19,7 @@ docker build \
 
 ### Configuration
 
-The `config.json` file is the single source for all parameters required to run Bugzilla-ETL. It is properly configured for running both public and private ETL. Notice it contains references to environment variables (eg `{"$ref":"env://ETL_APPNAME"}`) and those variables are defined in the `*.env` files as examples. It is expected you will `docker run` with `-e` for each of those variables you want to override, or provide your own environment file with the secrets set.
+The `config.json` file is the single source for all parameters required to run Bugzilla-ETL. It is properly configured for running both public and private ETL. Notice it contains references to environment variables (eg `{"$ref":"env://LOG_APPNAME"}`) and those variables are defined in the `*.env` files as examples. It is expected you will `docker run` with `-e` for each of those variables you want to override, or provide your own environment file with the secrets set.
 
 ### Run
 
