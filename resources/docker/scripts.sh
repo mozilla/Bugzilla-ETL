@@ -27,17 +27,20 @@ https://jonathas.com/scheduling-tasks-with-cron-on-docker/
 https://stackoverflow.com/questions/19585028/i-lose-my-data-when-the-container-exits#19616598
 
 
-# USE ubuntu IMAGE SO THERE ARE TOOLS
-
-# ADD CRON ENTRY
-https://www.ekito.fr/people/run-a-cron-job-with-docker/
-
 # ADD VOLUME TO STORE STATE
 
 
 
 cd ~/Bugzilla-ETL  # ENSURE YOU ARE IN THE ROOT OF THE Bugzilla-ETL REPO
 docker build --file resources\docker\etl.dockerfile --no-cache --tag test-etl .
+
+
+
+
+
+docker run --interactive --tty --user app --env-file ../../dev_private_etl.env --mount source=public_etl_state,destination=/app/logs test-etl bash
+
+python bzETL/bz_etl.py --settings=resources/docker/config.json
 
 
 
