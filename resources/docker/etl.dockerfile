@@ -25,8 +25,7 @@ RUN mkdir -p /etc/dpkg/dpkg.cfg.d \
     && git clone $REPO_URL $HOME \
     && if [ -z ${REPO_TAG+x}]; then git checkout tags/$REPO_TAG; else git checkout $REPO_BRANCH; fi \
     && git config --global user.email "klahnakoski@mozilla.com" \
-    && git config --global user.name "Kyle Lahnakoski" \
-    && cp resources/docker/crontab /etc/cron.daily/$USER
+    && git config --global user.name "Kyle Lahnakoski" 
 
 RUN addgroup --gid 10001 $USER \
     && adduser \
