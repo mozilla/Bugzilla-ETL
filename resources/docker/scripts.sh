@@ -36,7 +36,11 @@ docker build --file resources\docker\etl.dockerfile --no-cache --tag test-etl .
 
 
 
-python bzETL/bz_etl.py --settings=resources/docker/dev-config.json
+
+
+docker run --interactive --tty --user app --env-file ../../dev_private_etl.env --mount source=public_etl_state,destination=/app/logs test-etl bash
+
+python bzETL/bz_etl.py --settings=resources/docker/config.json
 
 
 

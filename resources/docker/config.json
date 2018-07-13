@@ -11,7 +11,8 @@
 		"start": 0,
 		"increment": 100000,
 		"elasticsearch": {
-			"host": "http://localhost",
+			"host": {"$ref":"env://ES_HOST"},
+			"port": {"$ref":"env://ES_PORT"},
 			"index": "bug_aliases"
 		},
 		"file": {
@@ -39,8 +40,8 @@
 		"timeout": 60
 	},
 	"es_comments": {
-		"host": "http://localhost",
-		"port": 9200,
+		"host": {"$ref":"env://ES_HOST"},
+		"port": {"$ref":"env://ES_PORT"},
 		"index": {"$ref":"env://ETL_COMMENTS"},
 		"type": "bug_comment",
 		"schema": {
