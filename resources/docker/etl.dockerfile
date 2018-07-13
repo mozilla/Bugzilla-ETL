@@ -2,7 +2,7 @@ FROM python:3.6.4
 
 ARG REPO_TAG=
 ARG REPO_URL=https://github.com/mozilla/Bugzilla-ETL.git
-ARG REPO_BRANCH=no-cron
+ARG REPO_BRANCH=v2
 ARG HOME=/app
 ARG USER=app
 
@@ -43,4 +43,4 @@ RUN addgroup --gid 10001 $USER \
 USER $USER
 RUN python -m pip --no-cache-dir install --user -r requirements.txt
 
-# CMD python bzETL/bz_etl.py --settings=resources/docker/config.json
+CMD python bzETL/bz_etl.py --settings=resources/docker/config.json
