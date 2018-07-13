@@ -2,7 +2,7 @@ FROM python:3.6.4
 
 ARG REPO_TAG=
 ARG REPO_URL=https://github.com/mozilla/Bugzilla-ETL.git
-ARG REPO_BRANCH=dev
+ARG REPO_BRANCH=no-cron
 ARG HOME=/app
 ARG USER=app
 
@@ -26,8 +26,6 @@ RUN mkdir -p /etc/dpkg/dpkg.cfg.d \
     && if [ -z ${REPO_TAG+x}]; then git checkout tags/$REPO_TAG; else git checkout $REPO_BRANCH; fi \
     && git config --global user.email "klahnakoski@mozilla.com" \
     && git config --global user.name "Kyle Lahnakoski" \
-    && chmod a+x resources/docker/crontab \
-    && chmod a+x resources/docker/etl.sh \
     && cp resources/docker/crontab /etc/cron.daily/$USER
 
 RUN addgroup --gid 10001 $USER \
@@ -46,4 +44,4 @@ RUN addgroup --gid 10001 $USER \
 USER $USER
 RUN python -m pip --no-cache-dir install --user -r requirements.txt
 
-#  python bzETL/bz_etl.py --settings=resources/docker/config.json
+# CMD python bzETL/bz_etl.py --settings=resources/docker/config.json
