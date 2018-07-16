@@ -228,6 +228,8 @@ class Index(Features):
         self.cluster.post("/" + self.settings.index + "/_refresh")
 
     def delete_record(self, filter):
+        filter = wrap(filter)
+
         if self.settings.read_only:
             Log.error("Index opened in read only mode, no changes allowed")
         self.cluster.get_metadata()
@@ -269,8 +271,8 @@ class Index(Features):
 
         elif self.cluster.info.version.number.startswith(("5.", "6.")):
             query = {"query": filter}
-
-            Log.warning("filter is not typed")
+            if filter.terms.bug_id['~n~'] != None:
+                Log.warning("filter is not typed")
 
             wait_for_active_shards = coalesce(  # EARLIER VERSIONS USED "consistency" AS A PARAMETER
                 self.settings.wait_for_active_shards,

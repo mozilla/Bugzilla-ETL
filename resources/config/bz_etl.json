@@ -49,7 +49,7 @@
 	},
 	"constants":{
 		"pyLibrary.sql.mysql.EXECUTE_TIMEOUT": 0,
-		"pyLibrary.env.http.default_headers": {"Referer": "https://github.com/mozilla/Bugzilla-ETL"}
+		"pyLibrary.env.http.default_headers": {"Referer": "https://github.com/mozilla/Bugzilla-ETL"},
 	},
 	"debug": {
 		"trace": true,
