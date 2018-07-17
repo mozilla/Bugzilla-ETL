@@ -56,6 +56,12 @@
 		"pyLibrary.env.http.default_headers": {"Referer": "https://github.com/mozilla/Bugzilla-ETL"}
 	},
 	"debug": {
-		"trace": true
+		"trace": true,
+		"log": [
+			{
+				"log_type": "mozlog",
+				"appname": {"$ref":"env://LOG_APPNAME"}
+			}
+		]
 	}
 }

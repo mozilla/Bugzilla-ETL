@@ -288,8 +288,9 @@ def full_etl(resume_from_last_run, param, db, esq, esq_comments, output_queue, k
     end = coalesce(param.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
     start = coalesce(param.start, 0)
     if resume_from_last_run:
-        end = coalesce(param.end, Math.ceiling(get_min_bug_id(esq), param.increment), 0)
-
+        # FIND THE LAST GOOD BUG NUMBER PROCESSED (WE GO BACKWARDS, SO LOOK FOR MINIMUM BUG, AND ROUND UP)
+        end = coalesce(param.end, Math.ceiling(get_min_bug_id(esq), param.increment), end)
+    Log.note("full etl from {{min}} to {{max}}", min=start, max=end)
     #############################################################
     ## MAIN ETL LOOP
     #############################################################
@@ -451,7 +452,7 @@ def get_bug_ids(esq, filter):
 
 def get_min_bug_id(esq):
     try:
-        result = esq.query({"from":esq.name, "select": {"value": "bug_id", "aggregate": "max"}, "format": "cube"})
+        result = esq.query({"from":esq.name, "select": {"value": "bug_id", "aggregate": "min"}, "format": "cube"})
         return result.data['bug_id']
     except Exception as e:
         Log.error(
