@@ -116,13 +116,13 @@ class ColumnList(Table):
         return [
             column
             for t, cs in self.data.items()
-            for c, css in cs.items()
+            for _, css in cs.items()
             for column in css
         ]
 
     def __iter__(self):
-        self._update_meta()
         with self.locker:
+            self._update_meta()
             return iter(self._all_columns())
 
     def __len__(self):
