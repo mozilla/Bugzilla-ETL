@@ -141,10 +141,14 @@ class ElasticsearchMetadata(Namespace):
 
     def _parse_properties(self, alias, mapping, meta):
         abs_columns = elasticsearch.parse_properties(alias, None, mapping.properties)
-        if any(c.cardinality == 0 for c in abs_columns):
+        if any(c.cardinality == 0 and c.names['.'] != '_id' for c in abs_columns):
             Log.warning(
                 "Some columns are not stored {{names}}",
-                names=[(c.es_index, c.names['.']) for c in abs_columns if c.cardinality == 0]
+                names=[
+                    ".".join((c.es_index, c.names['.']))
+                    for c in abs_columns
+                    if c.cardinality == 0
+                ]
             )
 
         with Timer("upserting {{num}} columns", {"num": len(abs_columns)}, debug=DEBUG):
@@ -356,7 +360,7 @@ class ElasticsearchMetadata(Namespace):
                 })
                 return
             elif column.es_type in elasticsearch.ES_NUMERIC_TYPES and cardinality > 30:
-                DEBUG and Log.note("{{field}} has {{num}} parts", field=column.es_index, num=cardinality)
+                DEBUG and Log.note("{{table}}.{{field}} has {{num}} parts", table=column.es_index, field=column.es_column, num=cardinality)
                 self.meta.columns.update({
                     "set": {
                         "count": count,
@@ -454,23 +458,23 @@ class ElasticsearchMetadata(Namespace):
                     if column is THREAD_STOP:
                         continue
 
-                    DEBUG and Log.note("update {{table}}.{{column}}", table=column.es_index, column=column.es_column)
-                    if column.es_index in self.index_does_not_exist:
-                        self.meta.columns.update({
-                            "clear": ".",
-                            "where": {"eq": {"es_index": column.es_index}}
-                        })
-                        continue
-                    if column.jx_type in STRUCT or column.es_column.endswith("." + EXISTS_TYPE):
-                        column.last_updated = Date.now()
-                        continue
-                    elif column.last_updated >= Date.now()-TOO_OLD:
-                        continue
-                    try:
-                        self._update_cardinality(column)
-                        (DEBUG and not column.es_index.startswith(TEST_TABLE_PREFIX)) and Log.note("updated {{column.name}}", column=column)
-                    except Exception as e:
-                        Log.warning("problem getting cardinality for {{column.name}}", column=column, cause=e)
+                    with Timer("update {{table}}.{{column}}", param={"table":column.es_index, "column":column.es_column}, debug=DEBUG):
+                        if column.es_index in self.index_does_not_exist:
+                            self.meta.columns.update({
+                                "clear": ".",
+                                "where": {"eq": {"es_index": column.es_index}}
+                            })
+                            continue
+                        if column.jx_type in STRUCT or column.es_column.endswith("." + EXISTS_TYPE):
+                            column.last_updated = Date.now()
+                            continue
+                        elif column.last_updated >= Date.now()-TOO_OLD:
+                            continue
+                        try:
+                            self._update_cardinality(column)
+                            (DEBUG and not column.es_index.startswith(TEST_TABLE_PREFIX)) and Log.note("updated {{column.name}}", column=column)
+                        except Exception as e:
+                            Log.warning("problem getting cardinality for {{column.name}}", column=column, cause=e)
             except Exception as e:
                 Log.warning("problem in cardinality monitor", cause=e)
 
@@ -541,8 +545,8 @@ class Snowflake(object):
         """
         RETURN ALL COLUMNS FROM ORIGIN OF FACT TABLE
         """
-        if any("verify_no_private_attachments" in t['method'] for t in extract_stack()):
-            pass
+
+
 
         return self.namespace.get_columns(literal_field(self.alias))
 

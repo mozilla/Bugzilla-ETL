@@ -151,8 +151,11 @@ def setup_es(settings, db):
         try:
             last_run_time = MIN_TIMESTAMP
             current_run_time = unix2datetime(long(File(settings.param.first_run_time).read())/1000)
-            esq = jx_elasticsearch.new_instance(read_only=False, kwargs=settings.es)
-            esq_comments = jx_elasticsearch.new_instance(read_only=False, kwargs=settings.es_comments)
+
+            bugs = Cluster(settings.es).get_best_matching_index(settings.es.index)
+            esq = jx_elasticsearch.new_instance(index=bugs.index, read_only=False, kwargs=settings.es)
+            comments = Cluster(settings.es_comments).get_best_matching_index(settings.es_comments.index)
+            esq_comments = jx_elasticsearch.new_instance(index=comments.index, read_only=False, kwargs=settings.es_comments)
             esq.es.set_refresh_interval(1)  #REQUIRED SO WE CAN SEE WHAT BUGS HAVE BEEN LOADED ALREADY
         except Exception as e:
             Log.warning("can not resume ETL, restarting", cause=e)
@@ -285,7 +288,7 @@ def full_etl(resume_from_last_run, param, db, esq, esq_comments, output_queue, k
     end = coalesce(param.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
     start = coalesce(param.start, 0)
     if resume_from_last_run:
-        start = coalesce(param.start, Math.floor(get_max_bug_id(esq), param.increment), 0)
+        end = coalesce(param.end, Math.ceiling(get_min_bug_id(esq), param.increment), 0)
 
     #############################################################
     ## MAIN ETL LOOP
@@ -446,7 +449,7 @@ def get_bug_ids(esq, filter):
         )
 
 
-def get_max_bug_id(esq):
+def get_min_bug_id(esq):
     try:
         result = esq.query({"from":esq.name, "select": {"value": "bug_id", "aggregate": "max"}, "format": "cube"})
         return result.data['bug_id']
