@@ -2,7 +2,7 @@ FROM python:3.6.4
 
 ARG REPO_TAG=
 ARG REPO_URL=https://github.com/mozilla/Bugzilla-ETL.git
-ARG REPO_BRANCH=v2
+ARG REPO_BRANCH=dev
 ARG HOME=/app
 ARG USER=app
 

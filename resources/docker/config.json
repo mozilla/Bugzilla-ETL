@@ -56,19 +56,6 @@
 		"pyLibrary.env.http.default_headers": {"Referer": "https://github.com/mozilla/Bugzilla-ETL"}
 	},
 	"debug": {
-		"trace": true,
-		"log": [
-			{
-				"log_type": "mozlog",
-				"appname": {"$ref":"env://LOG_APPNAME"}
-			},
-			{
-				"class": "logging.handlers.RotatingFileHandler",
-				"filename": "./logs/bz_etl.log",
-				"maxBytes": 10000000,
-				"backupCount": 20,
-				"encoding": "utf8"
-			}
-		]
+		"trace": true
 	}
 }
