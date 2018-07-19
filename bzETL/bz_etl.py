@@ -285,7 +285,7 @@ def incremental_etl(param, db, esq, esq_comments, output_queue, kwargs):
 
 @override
 def full_etl(resume_from_last_run, param, db, esq, esq_comments, output_queue, kwargs):
-    end = coalesce(param.end, db.query("SELECT max(bug_id)+1 bug_id FROM bugs")[0].bug_id)
+    end = coalesce(param.end, db.query("SELECT max(bug_id) bug_id FROM bugs")[0].bug_id)
     start = coalesce(param.start, 0)
     if resume_from_last_run:
         # FIND THE LAST GOOD BUG NUMBER PROCESSED (WE GO BACKWARDS, SO LOOK FOR MINIMUM BUG, AND ROUND UP)
