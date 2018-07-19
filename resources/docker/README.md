@@ -27,13 +27,10 @@ Once the docker image is built, you may run it:
 
 ```bash
 docker run \
-       --interactive \
-       --tty \
        --user app \
        --env-file ./resources/docker/public_etl.env \
        --mount source=public_etl_state,destination=/app/logs \
-       test-etl \
-       bash
+       test-etl 
 ```
 
 This will not work until you update the enviroment file (`public_etl.env`) with suitable values.

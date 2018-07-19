@@ -793,8 +793,6 @@ class BugHistoryParser(object):
         except Exception as e:
             Log.error("", e)
 
-
-
     def addValues(self, total, add, valueType, field_name, target):
         if not add:
             return total
@@ -935,7 +933,7 @@ class BugHistoryParser(object):
                     "attach_id": target.attach_id
                 })
 
-            if diff:
+            if diff and field_name not in ['blocked', 'dependson']:  # HAPPENS BECAUSE OF MISSING PRIVATE BUGS
                 Log.note("[Bug {{bug_id}}]: PROBLEM Unable to find {{type}} value in {{object}}.{{field_name}}: (All {{missing}}" + " not in : {{existing}})", {
                     "bug_id": target.bug_id,
                     "type": valueType,

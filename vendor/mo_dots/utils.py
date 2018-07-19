@@ -40,13 +40,13 @@ def get_module(name):
 
 class PoorLogger(object):
     def note(self, note, **kwargs):
-        sys.stdout.write(note+"\n")
+        sys.stdout.write(str(note+"\n"))
 
     def warning(self, note, **kwargs):
-        sys.stdout.write("WARNING: "+note+"\n")
+        sys.stdout.write(str("WARNING: "+note+"\n"))
 
     def error(self, note, **kwargs):
-        sys.stderr.write(note)
+        sys.stderr.write(str(note))
         if "cause" in kwargs:
             raise kwargs["cause"]
         else:
