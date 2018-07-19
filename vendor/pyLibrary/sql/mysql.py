@@ -260,8 +260,7 @@ class MySQL(object):
             if param:
                 sql = expand_template(sql, quote_param(param))
             sql = self.preamble + outdent(sql)
-            if self.debug:
-                Log.note("Execute SQL:\n{{sql}}", sql=indent(sql))
+            self.debug and Log.note("Execute SQL:\n{{sql}}", sql=indent(sql))
 
             self.cursor.execute(sql)
             if row_tuples:
@@ -299,8 +298,7 @@ class MySQL(object):
             if param:
                 sql = expand_template(sql, quote_param(param))
             sql = self.preamble + outdent(sql)
-            if self.debug:
-                Log.note("Execute SQL:\n{{sql}}", sql=indent(sql))
+            self.debug and Log.note("Execute SQL:\n{{sql}}", sql=indent(sql))
 
             self.cursor.execute(sql)
             grid = [[utf8_to_unicode(c) for c in row] for row in self.cursor]
@@ -331,8 +329,7 @@ class MySQL(object):
             if param:
                 sql = expand_template(sql, quote_param(param))
             sql = self.preamble + outdent(sql)
-            if self.debug:
-                Log.note("Execute SQL:\n{{sql}}", sql=indent(sql))
+            self.debug and Log.note("Execute SQL:\n{{sql}}", sql=indent(sql))
             self.cursor.execute(sql)
 
             columns = tuple([utf8_to_unicode(d[0]) for d in self.cursor.description])
@@ -370,8 +367,7 @@ class MySQL(object):
             for b in backlog:
                 sql = self.preamble + b
                 try:
-                    if self.debug:
-                        Log.note("Execute SQL:\n{{sql|indent}}", sql=sql)
+                    self.debug and Log.note("Execute SQL:\n{{sql|indent}}", sql=sql)
                     self.cursor.execute(b)
                 except Exception as e:
                     Log.error("Can not execute sql:\n{{sql}}", sql=sql, cause=e)
@@ -382,8 +378,7 @@ class MySQL(object):
             for i, g in jx.groupby(backlog, size=MAX_BATCH_SIZE):
                 sql = self.preamble + ";\n".join(g)
                 try:
-                    if self.debug:
-                        Log.note("Execute block of SQL:\n{{sql|indent}}", sql=sql)
+                    self.debug and Log.note("Execute block of SQL:\n{{sql|indent}}", sql=sql)
                     self.cursor.execute(sql)
                     self.cursor.close()
                     self.cursor = self.db.cursor()
@@ -625,10 +620,6 @@ def quote_column(column_name, table=None):
         return SQL(sql_alias(column_name.value, quote_column(column_name.name)))
 
 
-def quote_list(value):
-    return sql_iso(sql_list(map(quote_value, value)))
-
-
 def quote_sql(value, param=None):
     """
     USED TO EXPAND THE PARAMETERS TO THE SQL() OBJECT
@@ -644,7 +635,7 @@ def quote_sql(value, param=None):
         elif isinstance(value, Mapping):
             return quote_value(json_encode(value))
         elif hasattr(value, '__iter__'):
-            return sql_iso(sql_list(map(quote_value, value)))
+            return quote_list(value)
         else:
             return text_type(value)
     except Exception as e:
