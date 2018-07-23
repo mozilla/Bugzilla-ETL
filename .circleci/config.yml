@@ -101,10 +101,10 @@ workflows:
   version: 2
   test_and_dockerize:
     jobs:
-      - test
+#      - test
       - dock:
-          requires:
-            - test
+#          requires:
+#            - test
           filters:
             tags:
               only: /.*/
