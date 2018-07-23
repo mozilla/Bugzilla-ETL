@@ -85,28 +85,24 @@ jobs:
           name: Build Docker Image
           command: |
             echo BUILDING BUGZILLA-ETL WITH TAG = $CIRCLE_TAG
-            docker build --file resources/docker/activedata.dockerfile --build-arg REPO_TAG=${CIRCLE_TAG} --no-cache --tag bugzilla-etl .
+            docker build --file resources/docker/etl.dockerfile --build-arg REPO_TAG=$CIRCLE_TAG --no-cache --tag bugzilla-etl .
       - run:
           name: Save Docker image layer cache
           command: |
             docker save -o /tmp/bugzilla-etl.tar bugzilla-etl
 
       - store_artifacts:
-          path: /tmp/activedata.tar
+          path: /tmp/bugzilla-etl.tar
 
 workflows:
   version: 2
   test_and_dockerize:
     jobs:
-      - test:
-          filters:
-            branches:
-              only:
-                - v2
+      - test
       - dock:
           requires:
             - test
           filters:
             tags:
-              only: /.*/
+              only: /v.*/
 

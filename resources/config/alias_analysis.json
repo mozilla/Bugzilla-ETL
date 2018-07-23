@@ -45,7 +45,7 @@
 				"log_type": "email",
 				"from_address": "klahnakoski@mozilla.com",
 				"to_address": "klahnakoski@mozilla.com",
-				"subject": "[ALERT][DEV]Problem with ActiveData Server",
+				"subject": "[ALERT][DEV]Problem with Alias Analysis",
 				"$ref": "file://~/private.json#email"
 			}
 
