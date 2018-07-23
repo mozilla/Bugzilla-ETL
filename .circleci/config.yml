@@ -85,7 +85,7 @@ jobs:
           name: Build Docker Image
           command: |
             echo BUILDING BUGZILLA-ETL WITH TAG = $CIRCLE_TAG
-            docker build --file resources/docker/etl.dockerfile --build-arg REPO_TAG=${CIRCLE_TAG} --no-cache --tag bugzilla-etl .
+            docker build --file resources/docker/etl.dockerfile --build-arg REPO_TAG=$CIRCLE_TAG --no-cache --tag bugzilla-etl .
       - run:
           name: Save Docker image layer cache
           command: |
