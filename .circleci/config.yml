@@ -32,7 +32,7 @@ jobs:
     working_directory: ~/repo
 
     environment:
-      PYTHON_PATH: .:vendor
+      PYTHONPATH: .:vendor
       MYSQL_USERNAME: root
       MYSQL_PASSWORD: password
 
@@ -72,7 +72,7 @@ jobs:
           path: test-reports
           destination: test-reports
 
-  dock:
+  dockeraize:
     working_directory: ~/repo
 
     docker:
@@ -102,10 +102,10 @@ workflows:
           filters:
             branches:
               only:
-                - bugzilla-etl
+                - v2
             tags:
               only: /^v.*/
-      - dock:
+      - dockerize:
           requires:
             - test
           filters:
