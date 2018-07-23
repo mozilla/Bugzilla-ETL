@@ -79,7 +79,7 @@ jobs:
       - image: docker:18.06-git
 
     environment:
-      REPO_TAG=$CIRCLE_TAG
+      REPO_TAG=${CIRCLE_TAG}
 
     steps:
       - checkout
