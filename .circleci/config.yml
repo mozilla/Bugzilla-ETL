@@ -98,7 +98,10 @@ workflows:
   version: 2
   test_and_dockerize:
     jobs:
-      - test
+      - test:
+          filters:
+            tags:
+              only: /.*/
       - dock:
           requires:
             - test
