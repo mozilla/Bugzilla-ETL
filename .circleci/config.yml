@@ -100,12 +100,17 @@ workflows:
     jobs:
       - test:
           filters:
+            branches:
+              only:
+                - bugzilla-etl
             tags:
-              only: /.*/
+              only: /^v.*/
       - dock:
           requires:
             - test
           filters:
+            branches:
+              ignore: /.*/
             tags:
-              only: /v.*/
+              only: /^v.*/
 
