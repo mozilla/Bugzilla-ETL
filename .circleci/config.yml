@@ -89,7 +89,7 @@ jobs:
       - run:
           name: Push to Dockerhub
           command: |
-            echo "${DOCKER_PASSWORD}" | docker login -u="${DOCKER_USERNAME}" --password-stdin
+            echo "${DOCKER_PASS}" | docker login -u="${DOCKER_USER}" --password-stdin
 
             export DOCKER_IMAGE="mozilla/bugzilla-etl:${CIRCLE_TAG}"
             docker tag "bugzilla-etl" "${DOCKER_IMAGE}"
