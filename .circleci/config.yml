@@ -72,7 +72,7 @@ jobs:
           path: test-reports
           destination: test-reports
 
-  dockeraize:
+  dockerize:
     working_directory: ~/repo
 
     docker:
