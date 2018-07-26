@@ -91,11 +91,11 @@ jobs:
           command: |
             echo "${DOCKER_PASS}" | docker login -u="${DOCKER_USER}" --password-stdin
 
-            export DOCKER_IMAGE="mozilla/bugzilla-etl:${CIRCLE_TAG}"
+            export DOCKER_IMAGE="mozilla/bugzilla_etl:${CIRCLE_TAG}"
             docker tag "bugzilla-etl" "${DOCKER_IMAGE}"
             docker push "${DOCKER_IMAGE}"
 
-            export DOCKER_IMAGE="mozilla/bugzilla-etl:latest"
+            export DOCKER_IMAGE="mozilla/bugzilla_etl:latest"
             docker tag "bugzilla-etl" "${DOCKER_IMAGE}"
             docker push "${DOCKER_IMAGE}"
 
