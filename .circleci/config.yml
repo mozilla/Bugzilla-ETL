@@ -87,12 +87,18 @@ jobs:
             echo BUILDING BUGZILLA-ETL WITH TAG = $CIRCLE_TAG
             docker build --file resources/docker/etl.dockerfile --build-arg REPO_TAG=$CIRCLE_TAG --no-cache --tag bugzilla-etl .
       - run:
-          name: Save Docker image layer cache
+          name: Push to Dockerhub
           command: |
-            docker save -o /tmp/bugzilla-etl.tar bugzilla-etl
+            echo "${DOCKER_PASSWORD}" | docker login -u="${DOCKER_USERNAME}" --password-stdin
 
-      - store_artifacts:
-          path: /tmp/bugzilla-etl.tar
+            export DOCKER_IMAGE="mozilla/bugzilla-etl:${CIRCLE_TAG}"
+            docker tag "bugzilla-etl" "${DOCKER_IMAGE}"
+            docker push "${DOCKER_IMAGE}"
+
+            export DOCKER_IMAGE="mozilla/bugzilla-etl:latest"
+            docker tag "bugzilla-etl" "${DOCKER_IMAGE}"
+            docker push "${DOCKER_IMAGE}"
+
 
 workflows:
   version: 2
