@@ -35,7 +35,7 @@ from mo_math.randoms import Random
 from mo_threads import ThreadedQueue, Till
 from mo_times import Timer, Date
 from pyLibrary import convert
-from pyLibrary.env import elasticsearch as real_elasticsearch
+from pyLibrary.env import elasticsearch as real_elasticsearch, elasticsearch
 from pyLibrary.sql.mysql import all_db, MySQL
 from pyLibrary.testing import elasticsearch as fake_elasticsearch
 from util import database, compare_es
@@ -188,7 +188,7 @@ class TestETL(unittest.TestCase):
                     break
             Log.error("Comments do not match reference\n{{sample}}", sample=can[MIN([0, found - 100]):found + 100])
 
-    @skipIf(True, "problem with reference json")
+    # @skipIf(True, "problem with reference json")
     def test_public_etl(self):
         """
         ENSURE ETL GENERATES WHAT'S IN THE REFERENCE FILE
@@ -198,15 +198,13 @@ class TestETL(unittest.TestCase):
         self.settings.param.allow_private_bugs = Null
 
         database.make_test_instance(self.settings.bugzilla)
-        # es = elasticsearch.make_test_instance("candidate", self.settings.public.bugs)
-        # es_c = elasticsearch.make_test_instance("candidate_comments", self.settings.public.comments)
         bz_etl.main(
             es=self.settings.public.bugs,
             es_comments=self.settings.public.comments,
             kwargs=self.settings
         )
 
-        es = fake_elasticsearch.open_test_instance("candidate", self.settings.public.bugs)
+        es = elasticsearch.Cluster(self.settings.public.bugs).get_index(self.settings.public.bugs)
         ref = fake_elasticsearch.open_test_instance("reference", self.settings.reference.public.bugs)
         compare_both(es, ref, self.settings, self.settings.param.bugs)
 

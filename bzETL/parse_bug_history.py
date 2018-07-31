@@ -47,7 +47,7 @@ from bzETL.alias_analysis import AliasAnalyzer
 from bzETL.extract_bugzilla import MAX_TIMESTAMP
 from bzETL.transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS, DIFF_FIELDS, NULL_VALUES, TIME_FIELDS
 from jx_python import jx, meta
-from mo_dots import inverse, coalesce, wrap, unwrap
+from mo_dots import inverse, coalesce, wrap, unwrap, literal_field, listwrap
 from mo_dots.datas import Data
 from mo_dots.lists import FlatList
 from mo_dots.nones import Null
@@ -83,11 +83,11 @@ KNOWN_INCONSISTENT_FIELDS = {
     "cf_last_resolved",  # CHANGES IN DATABASE TIMEZONE
     "cf_crash_signature"
 }
-FIELDS_CHANGED = {
+FIELDS_CHANGED = wrap({
     # SOME FIELD VALUES ARE CHANGED WITHOUT HISTORY BEING CHANGED TOO https://bugzilla.mozilla.org/show_bug.cgi?id=997228
-    # MAP FROM PROPERTY NAME TO (MAP FROM OLD VALUE TO NEW VALUE}
-    "cf_blocking_b2g":{"1.5":"2.0"}
-}
+    # MAP FROM PROPERTY NAME TO (MAP FROM OLD VALUE TO LISTOF OBSERVED NEW VALUES}
+    "cf_blocking_b2g":{"1.5":["2.0"]}
+})
 EMAIL_FIELDS = {'cc', 'assigned_to', 'modified_by', 'created_by', 'qa_contact', 'bug_mentor'}
 
 STOP_BUG = 999999999  # AN UNFORTUNATE SIDE EFFECT OF DATAFLOW PROGRAMMING (http://en.wikipedia.org/wiki/Dataflow_programming)
@@ -414,19 +414,19 @@ class BugHistoryParser(object):
                             else:
                                 self.alias_analyzer.add_alias(lost=new_value, found=expected_value)
                         else:
-                            lookup = FIELDS_CHANGED.setdefault(row_in.field_name, {})
                             # RECORD INCONSISTENCIES, MAYBE WE WILL FIND PATTERNS
-                            if expected_value:
-                                lookup[new_value] = expected_value
-                            File("expected_values.json").write(value2json(FIELDS_CHANGED, pretty=True))
+                            expected_list = FIELDS_CHANGED[row_in.field_name][literal_field(new_value)]
+                            if expected_value not in expected_list:
+                                expected_list += [expected_value]
+                                File("expected_values.json").write(value2json(FIELDS_CHANGED, pretty=True))
 
-                            Log.note(
-                                "[Bug {{bug_id}}]: PROBLEM inconsistent change: {{field}} was {{expecting|quote}} got {{observed|quote}}",
-                                bug_id=self.currBugID,
-                                field=row_in.field_name,
-                                expecting=expected_value,
-                                observed=new_value
-                            )
+                                Log.note(
+                                    "[Bug {{bug_id}}]: PROBLEM inconsistent change: {{field}} was {{expecting|quote}} got {{observed|quote}}",
+                                    bug_id=self.currBugID,
+                                    field=row_in.field_name,
+                                    expecting=expected_value,
+                                    observed=new_value
+                                )
 
                 # WE DO NOT ATTEMPT TO CHANGE THE VALUES IN HISTORY TO BE CONSISTENT WITH THE FUTURE
                 self.currActivity.changes.append({
@@ -1008,7 +1008,14 @@ class BugHistoryParser(object):
             return None
         if field in EMAIL_FIELDS:
             return self.email_alias(value)
-        return FIELDS_CHANGED.get(field, {}).get(value, value)
+
+        candidates = FIELDS_CHANGED[field][value]
+        if candidates == None:
+            return value
+        elif len(candidates) == 1:
+            return candidates[0]
+        else:
+            return value
 
     def email_alias(self, name):
         return self.alias_analyzer.get_canonical(name)
