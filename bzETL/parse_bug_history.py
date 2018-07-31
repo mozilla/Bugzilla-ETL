@@ -399,14 +399,14 @@ class BugHistoryParser(object):
                         cause=e
                     )
             elif row_in.field_name in LONG_FIELDS:
-                text = row_in.new_value
-                expected_value = self.currBugState[row_in.field_name]
+                new_value = row_in.new_value
+                curr_value = self.currBugState[row_in.field_name]
                 try:
-                    old_value = LongField(self.currBugID, row_in.modified_ts, expected_value, text)
+                    old_value = LongField(self.currBugID, row_in.modified_ts, curr_value, row_in.old_value)
                     self.currBugState[row_in.field_name] = old_value
                     self.currActivity.changes.append({
                         "field_name": row_in.field_name,
-                        "new_value": expected_value,
+                        "new_value": curr_value,
                         "old_value": old_value,
                         "attach_id": row_in.attach_id
                     })
@@ -415,7 +415,7 @@ class BugHistoryParser(object):
                         "[Bug {{bug_id}}]: PROBLEM Unable to process {{field_name}} text:\n{{text|indent}}",
                         bug_id=self.currBugID,
                         field_name=row_in.field_name,
-                        diff=text,
+                        text=new_value,
                         cause=e
                     )
             else:
@@ -1205,22 +1205,27 @@ class LongField(object):
             return self.value
 
     def __data__(self):
-        return self.__str__()
+        return text_type(self)
 
     def __gt__(self, other):
-        return str(self) > str(other)
+        return text_type(self) > text_type(other)
 
     def __lt__(self, other):
-        return str(self) < str(other)
+        return text_type(self) < text_type(other)
 
     def __eq__(self, other):
         if other == None:
             return False  # DO NOT ACTUALIZE
-        return str(self) == str(other)
+        return text_type(self) == text_type(other)
 
     def __str__(self):
         if self.prev_value:
             return str(self.prev_value)
+        return self.value
+
+    def __unicode__(self):
+        if self.prev_value:
+            return text_type(self.prev_value)
         return self.value
 
 
