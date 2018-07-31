@@ -527,7 +527,7 @@ class BugHistoryParser(object):
                 self.currBugState.changes = currVersion.changes = changes
 
                 for c, change in enumerate(changes):
-                    if change.old_value == change.new_value:
+                    if change.old_value == change.new_value and not change.attach_id:
                         # THIS HAPPENS FOR LONG FIELDS AND DIFF FIELDS
                         changes[c] = Null
                         continue
@@ -1038,7 +1038,7 @@ class BugHistoryParser(object):
         if field in EMAIL_FIELDS:
             return self.email_alias(value)
 
-        candidates = FIELDS_CHANGED[field][value]
+        candidates = FIELDS_CHANGED[field][literal_field(str(value))]
         if candidates == None:
             return value
         elif len(candidates) == 1:

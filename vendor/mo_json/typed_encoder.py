@@ -18,7 +18,7 @@ from json.encoder import encode_basestring
 from datetime import date, datetime, timedelta
 import time
 from jx_base import Column, python_type_to_json_type, NESTED, EXISTS, STRING, NUMBER, INTEGER, BOOLEAN
-from mo_dots import Data, FlatList, NullType, join_field, split_field
+from mo_dots import Data, FlatList, NullType, join_field, split_field, unwraplist
 from mo_future import text_type, binary_type, sort_using_key, long
 from mo_logs import Log
 from mo_logs.strings import quote, utf82unicode
@@ -65,10 +65,20 @@ def _untype(value):
         for k, v in value.items():
             if k == EXISTS_TYPE:
                 continue
+            elif k == NESTED_TYPE:
+                return _untype(v)
             elif k.startswith(TYPE_PREFIX):
                 return v
             else:
-                output[decode_property(k)] = _untype(v)
+                new_v = _untype(v)
+                if isinstance(new_v, list):
+                    len_v = len(new_v)
+                    if len_v==1:
+                        output[decode_property(k)] = new_v[0]
+                    elif len_v>1:
+                        output[decode_property(k)] = new_v
+                elif new_v != None:
+                    output[decode_property(k)] = new_v
         return output
     elif isinstance(value, list):
         return [_untype(v) for v in value]
