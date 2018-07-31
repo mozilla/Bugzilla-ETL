@@ -45,7 +45,7 @@ import re
 
 from bzETL.alias_analysis import AliasAnalyzer
 from bzETL.extract_bugzilla import MAX_TIMESTAMP
-from bzETL.transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS, DIFF_FIELDS, NULL_VALUES, TIME_FIELDS
+from bzETL.transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS, DIFF_FIELDS, NULL_VALUES, TIME_FIELDS, LONG_FIELDS
 from jx_python import jx, meta
 from mo_dots import inverse, coalesce, wrap, unwrap, literal_field, listwrap
 from mo_dots.datas import Data
@@ -398,6 +398,26 @@ class BugHistoryParser(object):
                         diff=diff,
                         cause=e
                     )
+            elif row_in.field_name in LONG_FIELDS:
+                text = row_in.new_value
+                expected_value = self.currBugState[row_in.field_name]
+                try:
+                    old_value = LongField(self.currBugID, row_in.modified_ts, expected_value, text)
+                    self.currBugState[row_in.field_name] = old_value
+                    self.currActivity.changes.append({
+                        "field_name": row_in.field_name,
+                        "new_value": expected_value,
+                        "old_value": old_value,
+                        "attach_id": row_in.attach_id
+                    })
+                except Exception as e:
+                    Log.warning(
+                        "[Bug {{bug_id}}]: PROBLEM Unable to process {{field_name}} text:\n{{text|indent}}",
+                        bug_id=self.currBugID,
+                        field_name=row_in.field_name,
+                        diff=text,
+                        cause=e
+                    )
             else:
                 if DEBUG_CHANGES and row_in.field_name not in KNOWN_INCONSISTENT_FIELDS:
                     expected_value = self.canonical(row_in.field_name, self.currBugState[row_in.field_name])
@@ -507,10 +527,19 @@ class BugHistoryParser(object):
                 self.currBugState.changes = currVersion.changes = changes
 
                 for c, change in enumerate(changes):
+                    if change.old_value == change.new_value:
+                        # THIS HAPPENS FOR LONG FIELDS AND DIFF FIELDS
+                        changes[c] = Null
+                        continue
                     if c + 1 < len(changes):
                         # PACK ADDS AND REMOVES TO SINGLE CHANGE TO MATCH ORIGINAL
                         next = changes[c + 1]
                         if change.attach_id == next.attach_id and change.field_name == next.field_name:
+                            if change.new_value == next.old_value:
+                                next.old_value = change.old_value
+                                changes[c] = Null
+                                continue
+
                             if not is_null(change.old_value) and is_null(next.old_value):
                                 next.old_value = change.old_value
                                 change.old_value = Null
@@ -1145,5 +1174,56 @@ class ApplyDiff(object):
         return self.result
 
 
+class LongField(object):
+
+    def __init__(self, bug_id, timestamp, next_value, text):
+        """
+        THE BUGZILLA LONG FIELDS ARE ACROSS MULTIPLE RECORDS, THEY MUST BE APPENDED
+        :param timestamp: DATABASE bug_activity TIMESTAMP THAT WILL BE THE SAME FOR ALL IN A HUNK
+        :param next_value: THE ORIGINAL TEXT (OR A PROMISE OF TEXT)
+        :param text: THE PARTITAL CONTENT
+        :return: A PROMISE TO RETURN THE FULL TEXT
+        """
+        self.bug_id = bug_id
+        self.timestamp = timestamp
+        self.value = text
+        self.prev_value = None
+        self.next_value = None
+
+        if isinstance(next_value, LongField) and next_value.timestamp == timestamp:
+            # CHAIN THE DIFF
+            self.next_value = next_value
+            next_value.prev_value = self
+
+    @property
+    def text(self):
+        # WHEN GOING BACKWARDS IN TIME, THE DIFF WILL ARRIVE IN REVERSE ORDER
+        # LUCKY THAT THE STACK OF DiffApply REVERSES THE REVERSE ORDER
+        if self.next_value is not None:
+            return self.value + self.next_value.text
+        else:
+            return self.value
+
+    def __data__(self):
+        return self.__str__()
+
+    def __gt__(self, other):
+        return str(self) > str(other)
+
+    def __lt__(self, other):
+        return str(self) < str(other)
+
+    def __eq__(self, other):
+        if other == None:
+            return False  # DO NOT ACTUALIZE
+        return str(self) == str(other)
+
+    def __str__(self):
+        if self.prev_value:
+            return str(self.prev_value)
+        return self.value
+
+
 # ENSURE WE REGISTER THIS PROMISE AS A STRING
 meta._type_to_name[ApplyDiff] = "string"
+meta._type_to_name[LongField] = "string"
