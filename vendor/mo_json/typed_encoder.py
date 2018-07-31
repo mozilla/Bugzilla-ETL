@@ -191,16 +191,16 @@ def typed_encode(value, sub_schema, path, net_new_properties, buffer):
             for c in value:
                 append(buffer, ESCAPE_DCT.get(c, c))
             append(buffer, '"}')
-        elif _type in (int, long, Decimal):
+        elif _type in (int, long):
             if NUMBER_TYPE not in sub_schema:
                 sub_schema[NUMBER_TYPE] = True
                 net_new_properties.append(path + [NUMBER_TYPE])
 
             append(buffer, '{')
             append(buffer, QUOTED_NUMBER_TYPE)
-            append(buffer, float2json(value))
+            append(buffer, text_type(value))
             append(buffer, '}')
-        elif _type is float:
+        elif _type in (float, Decimal):
             if NUMBER_TYPE not in sub_schema:
                 sub_schema[NUMBER_TYPE] = True
                 net_new_properties.append(path + [NUMBER_TYPE])
@@ -362,7 +362,7 @@ def _dict2json(value, sub_schema, path, net_new_properties, buffer):
         if k not in sub_schema:
             sub_schema[k] = {}
             net_new_properties.append(path + [k])
-        append(buffer, encode_basestring(k))
+        append(buffer, encode_basestring(encode_property(k)))
         append(buffer, COLON)
         typed_encode(v, sub_schema[k], path + [k], net_new_properties, buffer)
     if prefix is COMMA:
