@@ -22,7 +22,7 @@ from pyLibrary.sql.mysql import MySQL, quote_column, execute_file
 
 
 def make_test_instance(db_settings):
-    if not db_settings.filename:
+    if db_settings.filename == None:
         Log.note("Database schema will not be touched")
         return
 

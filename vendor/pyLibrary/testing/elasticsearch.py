@@ -14,7 +14,7 @@ from __future__ import unicode_literals
 import mo_json
 from mo_files import File
 from mo_logs import Log
-from mo_dots import Data
+from mo_dots import Data, Null
 from mo_dots import unwrap, wrap
 from pyLibrary import convert
 from pyLibrary.env.elasticsearch import Index, Cluster
@@ -22,14 +22,15 @@ from mo_kwargs import override
 from jx_python import jx
 
 
-def make_test_instance(name, settings):
-    if settings.filename:
-        File(settings.filename).delete()
-    return open_test_instance(name, settings)
+@override
+def make_test_instance(name, filename, kwargs):
+    if filename != None:
+        File(filename).delete()
+    return open_test_instance(name, kwargs)
 
 
 def open_test_instance(name, settings):
-    if settings.filename:
+    if settings.filename != None:
         Log.note(
             "Using {{filename}} as {{type}}",
             filename=settings.filename,
@@ -60,9 +61,10 @@ class FakeES():
     @override
     def __init__(self, filename, host="fake", index="fake", kwargs=None):
         self.settings = kwargs
-        self.filename = filename
+        self.file = File(filename)
+        self.cluster= Null
         try:
-            self.data = mo_json.json2value(File(self.filename).read())
+            self.data = mo_json.json2value(self.file.read())
         except Exception as e:
             self.data = Data()
 
@@ -85,11 +87,8 @@ class FakeES():
         }
 
         unwrap(self.data).update(records)
-
-        data_as_json = mo_json.value2json(self.data, pretty=True)
-
-        File(self.filename).write(data_as_json)
-        Log.note("{{num}} documents added",  num= len(records))
+        self.refresh()
+        Log.note("{{num}} documents added", num=len(records))
 
     def add(self, record):
         if isinstance(record, list):
@@ -97,8 +96,13 @@ class FakeES():
         return self.extend([record])
 
     def delete_record(self, filter):
-        f = convert.esfilter2where(filter)
+        f = esfilter2where(filter)
         self.data = wrap({k: v for k, v in self.data.items() if not f(v)})
+
+    def refresh(self, *args, **kwargs):
+        data_as_json = mo_json.value2json(self.data, pretty=True)
+        self.file.write(data_as_json)
+
 
     def set_refresh_interval(self, seconds):
         pass

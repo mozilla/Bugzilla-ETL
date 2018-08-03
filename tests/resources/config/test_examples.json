@@ -79,6 +79,7 @@
 		"readonly": true
 	},
 	"elasticsearch": {
+		"name":"candidate",
 		"filename": "tests/results/test_results.json",
 		"host": "http://localhost",
 		"port": 9200,
@@ -86,7 +87,7 @@
 			"$ref": "../../../resources/schema/bug_version.json"
 		},
 		"index": "test_bugs",
-		"type": "bug_version",
+		"type": "bug_version"
 	},
 	"constants": {
 		"pyLibrary.env.http.default_headers": {

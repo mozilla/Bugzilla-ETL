@@ -604,7 +604,6 @@ class BugHistoryParser(object):
                         target[change.field_name] = change.new_value
 
                 self.currBugState.bug_version_num = self.bug_version_num
-                self.currBugState.exists = True
 
                 if not mergeBugVersion:
                     # This is not a "merge", so output a row for this bug version.
@@ -655,34 +654,32 @@ class BugHistoryParser(object):
 
 
     def processFlagChange(self, target, change, modified_ts, modified_by):
-        if target.flags == None:
-            Log.note("[Bug {{bug_id}}]: PROBLEM  processFlagChange called with unset 'flags'", bug_id=self.currBugState.bug_id)
-            target.flags = []
+        target.flags = listwrap(target.flags)
 
-        addedFlags, change.new_value = change.new_value, set(c.value for c in change.new_value)
-        removedFlags, change.old_value = change.old_value, set(c.value for c in change.old_value)
+        added_flags, change.new_value = change.new_value, set(c.value for c in change.new_value)
+        removed_flags, change.old_value = change.old_value, set(c.value for c in change.old_value)
 
         # First, mark any removed flags as straight-up deletions.
-        for removed_flag in removedFlags:
-            existingFlag = self.findFlag(target.flags, removed_flag)
+        for removed_flag in removed_flags:
+            existing_flag = self.findFlag(target.flags, removed_flag)
 
-            if existingFlag:
+            if existing_flag:
                 # Carry forward some previous values:
-                existingFlag["previous_modified_ts"] = existingFlag["modified_ts"]
-                existingFlag["modified_ts"] = modified_ts
-                if existingFlag["modified_by"] != modified_by:
-                    existingFlag["previous_modified_by"] = existingFlag["modified_by"]
-                    existingFlag["modified_by"] = modified_by
+                existing_flag["previous_modified_ts"] = existing_flag["modified_ts"]
+                existing_flag["modified_ts"] = modified_ts
+                if existing_flag["modified_by"] != modified_by:
+                    existing_flag["previous_modified_by"] = existing_flag["modified_by"]
+                    existing_flag["modified_by"] = modified_by
 
                 # Add changed stuff:
-                existingFlag["previous_status"] = removed_flag["request_status"]
-                existingFlag["request_status"] = "d"
-                existingFlag["previous_value"] = removed_flag.value
-                existingFlag["value"] = Null            #SPECIAL INDICATOR
+                existing_flag["previous_status"] = removed_flag["request_status"]
+                existing_flag["request_status"] = "d"
+                existing_flag["previous_value"] = removed_flag.value
+                existing_flag["value"] = Null            #SPECIAL INDICATOR
                 # request_type stays the same.
                 # requestee stays the same.
 
-                duration_ms = existingFlag["modified_ts"] - existingFlag["previous_modified_ts"]
+                duration_ms = existing_flag["modified_ts"] - existing_flag["previous_modified_ts"]
                 # existingFlag["duration_days"] = math.floor(duration_ms / (1000.0 * 60 * 60 * 24))  # TODO: REMOVE floor
             else:
                 self.findFlag(target.flags, removed_flag)
@@ -695,7 +692,7 @@ class BugHistoryParser(object):
 
         # See if we can align any of the added flags with previous deletions.
         # If so, try to match them up with a "dangling" removed flag
-        for added_flag in addedFlags:
+        for added_flag in added_flags:
             candidates = wrap([
                 unwrap(element)
                 for element in target.flags

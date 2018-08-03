@@ -188,7 +188,6 @@ class TestETL(unittest.TestCase):
                     break
             Log.error("Comments do not match reference\n{{sample}}", sample=can[MIN([0, found - 100]):found + 100])
 
-    # @skipIf(True, "problem with reference json")
     def test_public_etl(self):
         """
         ENSURE ETL GENERATES WHAT'S IN THE REFERENCE FILE
@@ -672,19 +671,22 @@ def verify_no_private_comments(es, private_comments):
 
 
 #COMPARE ALL BUGS
-def compare_both(candidate, reference, settings, some_bugs):
-    File(settings.param.errors).delete()
-    try_dir = settings.param.errors + "/try/"
-    ref_dir = settings.param.errors + "/ref/"
+def compare_both(candidate, reference, settings, bug_ids):
+    errors_dir = File(settings.param.errors)
+    errors_dir.delete()
+    try_dir = errors_dir / "try"
+    ref_dir = errors_dir / "ref"
 
     max_time = coalesce(milli2datetime(reference.settings.max_timestamp), datetime.utcnow())
+
+    # test_output = fake_elasticsearch.make_test_instance("candidate", filename=errors_dir.parent / "test_output.json")
 
     with Timer("Comparing to reference"):
         candidateq = get_esq(candidate)
         referenceq = get_esq(reference)
 
         found_errors = False
-        for bug_id in some_bugs:
+        for bug_id in bug_ids:
             Log.note("compare {{bug}}", bug=bug_id)
             try:
                 versions = jx.sort(
@@ -695,6 +697,10 @@ def compare_both(candidate, reference, settings, some_bugs):
                     v.etl.timestamp = None
 
                 pre_ref_versions = get_all_bug_versions(None, bug_id, max_time, esq=referenceq)
+                # test_output.extend([
+                #     {"id": r.id, "value": r}
+                #     for r in pre_ref_versions
+                # ])
                 ref_versions = jx.sort(
                     # ADDED TO FIX OLD PRODUCTION BUG VERSIONS
                     [compare_es.old2new(x, settings.bugzilla.expires_on) for x in pre_ref_versions],
@@ -707,8 +713,8 @@ def compare_both(candidate, reference, settings, some_bugs):
                 ref = value2json(ref_versions, pretty=True)
                 if can != ref:
                     found_errors = True
-                    File(try_dir + text_type(bug_id) + ".txt").write(can)
-                    File(ref_dir + text_type(bug_id) + ".txt").write(ref)
+                    (try_dir / text_type(bug_id)).set_extension("txt").write(can)
+                    (ref_dir / text_type(bug_id)).set_extension("txt").write(ref)
             except Exception as e:
                 found_errors = True
                 Log.warning("Problem ETL'ing bug {{bug_id}}", bug_id=bug_id, cause=e)

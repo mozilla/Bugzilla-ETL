@@ -150,7 +150,6 @@ def normalize(bug, old_school=False):
             Log.error("problem with converting date to milli (type={{type}}, value={{value}})", {"value":bug[dateField], "type":type(bug[dateField]).name}, e)
 
     bug.votes = None
-    bug.exists = True
 
     bug.etl.timestamp = Date.now()
 

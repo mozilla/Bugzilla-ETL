@@ -25,9 +25,9 @@ from json.encoder import encode_basestring
 import sys
 
 from mo_dots import coalesce, wrap, get_module, Data
-from mo_future import text_type, xrange, binary_type, round as _round, PY3, get_function_name, zip_longest
+from mo_future import text_type, xrange, binary_type, round as _round, PY3, get_function_name, zip_longest, transpose
 from mo_logs.convert import datetime2unix, datetime2string, value2json, milli2datetime, unix2datetime
-from mo_logs.url import value2url_param
+# from mo_files.url import value2url_param
 
 FORMATTERS = {}
 
@@ -46,7 +46,7 @@ def _late_import():
     try:
         _json_encoder = get_module("mo_json.encoder").json_encoder
     except Exception:
-        _json_encoder = _json.dumps
+        _json_encoder = lambda value, pretty: _json.dumps(value)
     from mo_logs import Log as _Log
     from mo_logs.exceptions import Except as _Except
     from mo_times.durations import Duration as _Duration
@@ -110,13 +110,13 @@ def unix(value):
 
     return str(datetime2unix(value))
 
-
-@formatter
-def url(value):
-    """
-    convert FROM dict OR string TO URL PARAMETERS
-    """
-    return value2url_param(value)
+#
+# @formatter
+# def url(value):
+#     """
+#     convert FROM dict OR string TO URL PARAMETERS
+#     """
+#     return value2url_param(value)
 
 
 @formatter
