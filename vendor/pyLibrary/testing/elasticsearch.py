@@ -12,49 +12,48 @@ from __future__ import division
 from __future__ import unicode_literals
 
 import mo_json
-from mo_files import File
-from mo_logs import Log
-from mo_dots import Data, Null
-from mo_dots import unwrap, wrap
-from pyLibrary import convert
-from pyLibrary.env.elasticsearch import Index, Cluster
-from mo_kwargs import override
 from jx_python import jx
+from mo_dots import Data, Null, unwrap, wrap
+from mo_files import File
+from mo_kwargs import override
+from mo_logs import Log
+from pyLibrary.env.elasticsearch import Cluster
 
 
 @override
-def make_test_instance(name, filename, kwargs):
+def make_test_instance(name, filename=None, kwargs=None):
     if filename != None:
         File(filename).delete()
-    return open_test_instance(name, kwargs)
+    return open_test_instance(kwargs)
 
 
-def open_test_instance(name, settings):
-    if settings.filename != None:
+@override
+def open_test_instance(name, filename=None, es=None, kwargs=None):
+    if filename != None:
         Log.note(
             "Using {{filename}} as {{type}}",
-            filename=settings.filename,
+            filename=filename,
             type=name
         )
-        return FakeES(settings)
+        return FakeES(filename=filename)
     else:
         Log.note(
             "Using ES cluster at {{host}} as {{type}}",
-            host=settings.host,
+            host=es.host,
             type=name
         )
-        cluster = Cluster(settings)
+        cluster = Cluster(es)
         try:
-            old_index = cluster.get_index(kwargs=settings)
+            old_index = cluster.get_index(es)
             cluster.delete_index(old_index.settings.index)
         except Exception as e:
             if "Can not find index" not in e:
                 Log.error("unexpected", cause=e)
 
-        es = cluster.create_index(limit_replicas=True, limit_replicas_warning=False, kwargs=settings)
-        es.delete_all_but_self()
-        es.add_alias(settings.index)
-        return es
+        output = cluster.create_index(limit_replicas=True, limit_replicas_warning=False, kwargs=es)
+        output.delete_all_but_self()
+        output.add_alias(es.index)
+        return output
 
 
 class FakeES():

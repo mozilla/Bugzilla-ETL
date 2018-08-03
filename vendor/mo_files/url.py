@@ -9,7 +9,7 @@
 
 from collections import Mapping
 
-from mo_dots import wrap, Data, coalesce
+from mo_dots import wrap, Data, coalesce, Null
 from mo_future import urlparse, text_type, PY2, unichr
 from mo_logs import Log
 
@@ -144,6 +144,8 @@ def url_param2value(param):
     """
     if isinstance(param, text_type):
         param = param.encode("ascii")
+    if param == None:
+        return Null
 
     def _decode(v):
         output = []

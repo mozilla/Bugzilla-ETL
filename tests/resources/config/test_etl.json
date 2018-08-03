@@ -17,20 +17,32 @@
 			10575,
 			11040,
 			12911,
+			13534,
 			67742,
 			96421,
 			123203,
 			178960,
+			248970,
+			248971,
 			367518,
+			372836,
+			393845,
 			457765,
 			458397,
 			471427,
 			544327,
 			547727,
+			520943,
 			643420,
+			671185,
 			692436,
 			726635,
-			813650
+			813650,
+			937428,
+			1007019,
+			1165765,
+			1393332,
+			1390946
 		],
 		"temp_dir": "tests/resources",
 		"errors": "tests/results/errors",
@@ -59,58 +71,70 @@
 		"schema": "bugs",
 		"debug": true
 	},
-	"reference":{
-		"public":{
-			"bugs":{"filename":"tests/resources/reference/public_bugs.json"},
-			"comments":{"filename":"tests/resources/reference/public_comments.json"}
+	"reference": {
+		"public": {
+			"bugs": {"filename": "tests/resources/reference/public_bugs.json"},
+			"comments": {"filename": "tests/resources/reference/public_comments.json"}
 		},
-		"private":{
-			"bugs":{"filename":"tests/resources/reference/private_bugs.json"},
-			"comments":{"filename":"tests/resources/reference/private_comments.json"}
+		"private": {
+			"bugs": {"filename": "tests/resources/reference/private_bugs.json"},
+			"comments": {"filename": "tests/resources/reference/private_comments.json"}
 		}
 	},
 	"public": {
 		"bugs": {
-			"host": "http://localhost",
-			"port": 9200,
-			"index": "public_bugs",
-			"type": "bug_version",
-			"typed": true,
-			"schema": {"$ref":"..../resources/schema/bug_version.json"},
-			"timeout": 60,
-			"debug": true
+			"name": "candidate",
+			"es": {
+				"host": "http://localhost",
+				"port": 9200,
+				"index": "public_bugs",
+				"type": "bug_version",
+				"typed": true,
+				"schema": {"$ref": "..../resources/schema/bug_version.json"},
+				"timeout": 60,
+				"debug": true
+			}
 		},
 		"comments": {
-			"host": "http://localhost",
-			"port": 9200,
-			"index": "public_comments",
-			"type": "bug_comment",
-			"typed": true,
-			"schema": {"$ref":"..../resources/schema/bug_comments.json"},
-			"timeout": 60,
-			"debug": true
+			"name": "candidate_comments",
+			"es": {
+				"host": "http://localhost",
+				"port": 9200,
+				"index": "public_comments",
+				"type": "bug_comment",
+				"typed": true,
+				"schema": {"$ref": "..../resources/schema/bug_comments.json"},
+				"timeout": 60,
+				"debug": true
+			}
 		}
 	},
 	"private": {
 		"bugs": {
-			"host": "http://localhost",
-			"port": 9200,
-			"index": "private_bugs",
-			"type": "bug_version",
-			"typed": true,
-			"schema": {"$ref":"..../resources/schema/bug_version.json"},
-			"timeout": 60,
-			"debug": true
+			"name": "candidate",
+			"es": {
+				"host": "http://localhost",
+				"port": 9200,
+				"index": "private_bugs",
+				"type": "bug_version",
+				"typed": true,
+				"schema": {"$ref": "..../resources/schema/bug_version.json"},
+				"timeout": 60,
+				"debug": true
+			}
 		},
 		"comments": {
-			"host": "http://localhost",
-			"port": 9200,
-			"index": "private_comments",
-			"type": "bug_comment",
-			"typed": true,
-			"schema": {"$ref":"..../resources/schema/bug_comments.json"},
-			"timeout": 60,
-			"debug": true
+			"name": "candidate_comments",
+			"es": {
+				"host": "http://localhost",
+				"port": 9200,
+				"index": "private_comments",
+				"type": "bug_comment",
+				"typed": true,
+				"schema": {"$ref": "..../resources/schema/bug_comments.json"},
+				"timeout": 60,
+				"debug": true
+			}
 		}
 	},
 	"constants": {
