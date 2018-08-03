@@ -97,9 +97,9 @@ class URL(object):
             else:
                 url += "/" + str(self.path)
         if self.query:
-            url = url + '?' + value2url_param(self.query)
+            url = url + "?" + value2url_param(self.query)
         if self.fragment:
-            url = url + '#' + value2url_param(self.fragment)
+            url = url + "#" + value2url_param(self.fragment)
         return url
 
 
