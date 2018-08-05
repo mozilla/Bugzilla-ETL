@@ -15,6 +15,8 @@ from collections import Mapping
 from datetime import date
 from datetime import datetime
 
+from decimal import Decimal
+
 import jx_base
 from jx_base import python_type_to_json_type
 from jx_base import STRUCT, Column, Table
@@ -388,6 +390,7 @@ _type_to_name = {
     list: "nested",
     FlatList: "nested",
     Date: "double",
+    Decimal: "double",
     datetime: "double",
     date: "double"
 }

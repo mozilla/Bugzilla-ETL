@@ -125,9 +125,7 @@ def old2new(bug, max_date):
     except Exception as e:
         pass
 
-    bug = transform_bugzilla.rename_attachments(bug)
     for c in listwrap(bug.changes):
-        c.field_name = c.field_name.replace("attachments.", "attachments_")
         if c.attach_id == '':
             c.attach_id = None
         else:
@@ -138,8 +136,8 @@ def old2new(bug, max_date):
         a.attach_id = convert.value2int(a.attach_id)
         for k, v in list(a.items()):
             if k.endswith("isobsolete") or k.endswith("ispatch") or k.endswith("isprivate"):
-                unwrap(a)[k] = convert.value2int(v) # PREVENT dot (.) INTERPRETATION
-                a[k.split(".")[-1].split("_")[-1]] = convert.value2int(v)
+                k = k.replace('attachments.', '')
+                a[k] = convert.value2int(v)
 
     bug = transform_bugzilla.normalize(bug)
     return bug

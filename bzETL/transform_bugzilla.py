@@ -17,13 +17,10 @@ from datetime import date
 from jx_python import jx
 from mo_dots import listwrap
 from mo_future import text_type, long
-from mo_json import json2value, value2json
 from mo_logs import Log
 from mo_times import Date
 from pyLibrary import convert
 from pyLibrary.env import elasticsearch
-
-USE_ATTACHMENTS_DOT = True  # REMOVE THIS, ASSUME False
 
 DIFF_FIELDS = ["cf_user_story"]
 LONG_FIELDS = ["short_desc"]
@@ -52,18 +49,8 @@ DATE_PATTERN_STRICT_SHORT = re.compile("^[0-9]{4}[\\/-][0-9]{2}[\\/-][0-9]{2} [0
 DATE_PATTERN_RELAXED = re.compile("^[0-9]{4}[\\/-][0-9]{2}[\\/-][0-9]{2}")
 
 
-# WE ARE RENAMING THE ATTACHMENTS FIELDS TO CAUSE LESS PROBLEMS IN ES QUERIES
-# TODO: REMOVE THIS OLD FOMAT
-def rename_attachments(bug_version):
-    if bug_version.attachments == None: return bug_version
-    if not USE_ATTACHMENTS_DOT:
-        bug_version.attachments=json2value(value2json(bug_version.attachments).replace("attachments.", "attachments_"))
-    return bug_version
-
-
-
 #NORMALIZE BUG VERSION TO STANDARD FORM
-def normalize(bug, old_school=False):
+def normalize(bug):
     bug=bug.copy()
     bug.id = text_type(bug.bug_id) + "_" + text_type(bug.modified_ts)[:-3]
     bug._id = None
@@ -73,24 +60,15 @@ def normalize(bug, old_school=False):
     bug.flags=sort(bug.flags, "value")
 
     if bug.attachments:
-        if USE_ATTACHMENTS_DOT:
-            bug.attachments=json2value(value2json(bug.attachments).replace("attachments_", "attachments."))
-
         bug.attachments = sort(bug.attachments, "attach_id")
         for a in bug.attachments:
             for k,v in list(a.items()):
                 if k.startswith("attachments") and (k.endswith("isobsolete") or k.endswith("ispatch") or k.endswith("isprivate")):
-                    new_v=convert.value2int(v)
-                    new_k=k[12:]
-                    a[k.replace(".", "\\.")]=new_v
-                    if not old_school:
-                        a[new_k]=new_v
+                    new_v = convert.value2int(v)
+                    a[k[12:]] = new_v
             a.flags = sort(a.flags, ["modified_ts", "requestee", "value"])
 
     if bug.changes != None:
-        if USE_ATTACHMENTS_DOT:
-            json = value2json(bug.changes).replace("attachments_", "attachments.")
-            bug.changes=json2value(json)
         for c in listwrap(bug.changes):
             c.new_value = sort(c.new_value)
             c.old_value = sort(c.old_value)
@@ -150,10 +128,9 @@ def normalize(bug, old_school=False):
             Log.error("problem with converting date to milli (type={{type}}, value={{value}})", {"value":bug[dateField], "type":type(bug[dateField]).name}, e)
 
     bug.votes = None
-
     bug.etl.timestamp = Date.now()
 
-    return elasticsearch.scrub(bug)
+    return bug
 
 
 def sort(value, param=None):
