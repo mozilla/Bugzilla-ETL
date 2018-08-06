@@ -65,7 +65,11 @@ def normalize(bug):
             for k,v in list(a.items()):
                 if k.startswith("attachments") and (k.endswith("isobsolete") or k.endswith("ispatch") or k.endswith("isprivate")):
                     new_v = convert.value2int(v)
+                    del a[k]
                     a[k[12:]] = new_v
+                elif k.startswith("attachments") and k.endswith("mimetype"):
+                    del a[k]
+                    a[k[12:]] = v
             a.flags = sort(a.flags, ["modified_ts", "requestee", "value"])
 
     if bug.changes != None:

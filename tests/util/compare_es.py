@@ -136,8 +136,15 @@ def old2new(bug, max_date):
         a.attach_id = convert.value2int(a.attach_id)
         for k, v in list(a.items()):
             if k.endswith("isobsolete") or k.endswith("ispatch") or k.endswith("isprivate"):
-                k = k.replace('attachments.', '')
+                del a[k]
+                k = k.replace('attachments.', '').replace('attachments_', '')
                 a[k] = convert.value2int(v)
+            elif k in ('attachments_mimetype','attachments.mimetype'):
+                del a[k]
+                k = k.replace('attachments.', '').replace('attachments_', '')
+                a[k] = v
+
+
 
     bug = transform_bugzilla.normalize(bug)
     return bug
