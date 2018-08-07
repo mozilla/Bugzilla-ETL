@@ -52,7 +52,7 @@ from mo_dots.datas import Data
 from mo_dots.lists import FlatList
 from mo_dots.nones import Null
 from mo_files import File
-from mo_future import text_type
+from mo_future import text_type, long
 from mo_json import value2json
 from mo_logs import Log, strings
 from mo_logs.strings import apply_diff
@@ -63,6 +63,7 @@ from pyLibrary import convert
 # Used to split a flag into (type, status [,requestee])
 # Example: "review?(mreid@mozilla.com)" -> (review, ?, mreid@mozilla.com)
 # Example: "review-" -> (review, -)
+from pyLibrary.convert import value2number
 
 FLAG_PATTERN = re.compile("^(.*)([?+-])(\\([^)]*\\))?$")
 
@@ -224,9 +225,8 @@ class BugHistoryParser(object):
             # Problem: No entry found in the 'bugs' table.
             Log.warning("Current bugs table record not found for bug_id: {{bug_id}}  (merge order should have been 1, but was {{start_time}})", **row_in)
 
-
     def processSingleValueTableItem(self, field_name, new_value):
-        self.currBugState[field_name] = new_value
+        self.currBugState[field_name] = self.canonical(field_name, new_value)
 
     def processMultiValueTableItem(self, field_name, new_value):
         if field_name in NUMERIC_FIELDS:
@@ -327,21 +327,7 @@ class BugHistoryParser(object):
             if attachment == None:
                 # THIS HAPPENS WHEN ATTACHMENT IS PRIVATE
                 pass
-                # if DEBUG_MISSING_ATTACHMENTS:
-                #     Log.note(
-                #         "[Bug {{bug_id}}]: PROBLEM Unable to find attachment {{attach_id}} {{start_time}}: {{start_time}}",
-                #         attach_id=row_in.attach_id,
-                #         bug_id=self.currBugID,
-                #         attachments=self.currBugAttachmentsMap
-                #     )
-                # self.currActivity.changes.append({
-                #     "field_name": row_in.field_name,
-                #     "new_value": row_in.new_value,
-                #     "old_value": row_in.old_value,
-                #     "attach_id": row_in.attach_id
-                # })
             else:
-
                 if row_in.field_name == "flags":
                     total = attachment[row_in.field_name]
                     total = self.processFlags(total, multi_field_old_value, multi_field_new_value, row_in.modified_ts, row_in.modified_by, "attachment", attachment)
@@ -419,6 +405,8 @@ class BugHistoryParser(object):
                         cause=e
                     )
             else:
+                row_in.old_value = self.canonical(row_in.field_name, row_in.old_value)
+
                 if DEBUG_CHANGES and row_in.field_name not in KNOWN_INCONSISTENT_FIELDS:
                     expected_value = self.canonical(row_in.field_name, self.currBugState[row_in.field_name])
                     new_value = self.canonical(row_in.field_name, row_in.new_value)
@@ -1030,18 +1018,26 @@ class BugHistoryParser(object):
         return total
 
     def canonical(self, field, value):
-        if value in NULL_VALUES:
-            return None
-        if field in EMAIL_FIELDS:
-            return self.email_alias(value)
+        try:
+            if value in NULL_VALUES:
+                return None
+            elif field in EMAIL_FIELDS:
+                return self.email_alias(value)
+            elif field in TIME_FIELDS:
+                value = long(Date(value).unix) * 1000
+            elif field in NUMERIC_FIELDS:
+                value = value2number(value)
 
-        candidates = FIELDS_CHANGED[field][literal_field(str(value))]
-        if candidates == None:
+            candidates = FIELDS_CHANGED[field][literal_field(str(value))]
+            if candidates == None:
+                return value
+            elif len(candidates) == 1:
+                return candidates[0]
+            else:
+                return value
+        except Exception:
             return value
-        elif len(candidates) == 1:
-            return candidates[0]
-        else:
-            return value
+
 
     def email_alias(self, name):
         return self.alias_analyzer.get_canonical(name)

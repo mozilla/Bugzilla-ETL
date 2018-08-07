@@ -3,9 +3,9 @@
 		"increment": 10000,
 		"bugs": [
 			384,  //minor email diff
-			1108,  //ok
 			1045,  //ok
 			1046,  //ok
+			1108,  //ok
 			1157,  //ok
 			1877,  //minor email diff
 			1865,  //ok

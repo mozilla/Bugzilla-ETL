@@ -25,7 +25,7 @@ from pyLibrary.env import elasticsearch
 DIFF_FIELDS = ["cf_user_story"]
 LONG_FIELDS = ["short_desc"]
 MULTI_FIELDS = ["cc", "blocked", "dependson", "dupe_by", "dupe_of", "keywords", "bug_group", "see_also"]
-TIME_FIELDS = ["cf_due_date"]
+TIME_FIELDS = ["cf_due_date", "cf_last_resolved"]
 NUMERIC_FIELDS=[
     "blocked",
     "dependson",
@@ -38,7 +38,7 @@ NUMERIC_FIELDS=[
     "uncertain",
     "remaining_time"
 ]
-
+ZERO_IS_NULL = ["votes", "remaining_time"]
 NULL_VALUES = ['--', '---', '']
 
 # Used to reformat incoming dates into the expected form.
@@ -78,7 +78,6 @@ def normalize(bug):
             c.old_value = sort(c.old_value)
         bug.changes = sort(bug.changes, ["attach_id", "field_name"])
 
-    bug = elasticsearch.scrub(bug)
     for k, v in list(bug.items()):
         if v in NULL_VALUES:
             bug[k] = None
@@ -92,7 +91,7 @@ def normalize(bug):
                 bug[f] = jx.sort(convert.value2intlist(v))
             except Exception as e:
                 Log.error("not expected", cause=e)
-        elif convert.value2number(v) == 0:
+        elif f in ZERO_IS_NULL and convert.value2number(v) == 0:
             del bug[f]
         else:
             bug[f]=convert.value2number(v)
@@ -105,11 +104,12 @@ def normalize(bug):
     # Also reformat some date fields
     for dateField in ["deadline", "cf_due_date", "cf_last_resolved"]:
         v = bug[dateField]
-        if v == None: continue
+        if v == None:
+            continue
         try:
             if isinstance(v, date):
                 bug[dateField] = convert.datetime2milli(v)
-            elif isinstance(v, (long, int, float)) and len(text_type(v)) in [12, 13]:
+            elif isinstance(v, (long, int, float)) and (text_type(v).endswith(('e+11', 'e+12')) or len(text_type(v)) in [12, 13]):
                 bug[dateField] = v
             elif not isinstance(v, text_type):
                 Log.error("situation not handled")
@@ -129,11 +129,12 @@ def normalize(bug):
                 #          bug 726635 (cf_due_date)
                 bug[dateField] = convert.datetime2milli(convert.string2datetime(v[0:10], "%Y-%m-%d"))
         except Exception as e:
-            Log.error("problem with converting date to milli (type={{type}}, value={{value}})", {"value":bug[dateField], "type":type(bug[dateField]).name}, e)
+            Log.error("problem with converting date to milli (type={{type}}, value={{value}})", value=v, type=type(v), cause=e)
 
     bug.votes = None
     bug.etl.timestamp = Date.now()
 
+    bug = elasticsearch.scrub(bug)
     return bug
 
 

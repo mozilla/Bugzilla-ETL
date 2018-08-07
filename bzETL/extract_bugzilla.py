@@ -240,7 +240,6 @@ def get_bugs(db, param):
         get_bugs_table_columns(db, db.settings.schema)
         get_screened_whiteboard(db)
 
-
         def lower(col):
             if col.column_type.startswith("varchar") or col.column_type.endswith('text'):
                 return "lower(" + quote_column(col.column_name, "b") + ") " + quote_column(col.column_name)
