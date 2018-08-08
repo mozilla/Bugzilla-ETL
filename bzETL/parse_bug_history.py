@@ -86,7 +86,7 @@ KNOWN_INCONSISTENT_FIELDS = {
 }
 FIELDS_CHANGED = wrap({
     # SOME FIELD VALUES ARE CHANGED WITHOUT HISTORY BEING CHANGED TOO https://bugzilla.mozilla.org/show_bug.cgi?id=997228
-    # MAP FROM PROPERTY NAME TO (MAP FROM OLD VALUE TO LISTOF OBSERVED NEW VALUES}
+    # MAP FROM PROPERTY NAME TO (MAP FROM OLD VALUE TO LIST OF OBSERVED NEW VALUES}
     "cf_blocking_b2g":{"1.5":["2.0"]}
 })
 EMAIL_FIELDS = {'cc', 'assigned_to', 'modified_by', 'created_by', 'qa_contact', 'bug_mentor'}
@@ -405,15 +405,13 @@ class BugHistoryParser(object):
                         cause=e
                     )
             else:
-                row_in.old_value = self.canonical(row_in.field_name, row_in.old_value)
+                old_value = self.canonical(row_in.field_name, row_in.old_value)
 
                 if DEBUG_CHANGES and row_in.field_name not in KNOWN_INCONSISTENT_FIELDS:
                     expected_value = self.canonical(row_in.field_name, self.currBugState[row_in.field_name])
                     new_value = self.canonical(row_in.field_name, row_in.new_value)
 
-                    if row_in.field_name in TIME_FIELDS and Date(new_value) == Date(expected_value):
-                        pass
-                    elif text_type(new_value) != text_type(expected_value):
+                    if text_type(new_value) != text_type(expected_value):
                         if row_in.field_name in EMAIL_FIELDS:
                             if Math.is_integer(new_value) or Math.is_integer(expected_value) and row_in.modified_ts<=927814152000:
                                 pass # BEFORE 1999-05-27 14:09:12 THE qa_contact FIELD WAS A NUMBER, NOT THE EMAIL
@@ -440,10 +438,10 @@ class BugHistoryParser(object):
                 self.currActivity.changes.append({
                     "field_name": row_in.field_name,
                     "new_value": self.currBugState[row_in.field_name],
-                    "old_value": row_in.old_value,
+                    "old_value": old_value,
                     "attach_id": row_in.attach_id
                 })
-                self.currBugState[row_in.field_name] = row_in.old_value
+                self.currBugState[row_in.field_name] = old_value
 
     def populateIntermediateVersionObjects(self):
         # Make sure the self.bugVersions are in descending order by modification time.
@@ -1028,13 +1026,13 @@ class BugHistoryParser(object):
             elif field in NUMERIC_FIELDS:
                 value = value2number(value)
 
-            candidates = FIELDS_CHANGED[field][literal_field(str(value))]
-            if candidates == None:
-                return value
-            elif len(candidates) == 1:
-                return candidates[0]
-            else:
-                return value
+            # candidates = FIELDS_CHANGED[field][literal_field(str(value))]
+            # if candidates == None:
+            #     return value
+            # elif len(candidates) == 1:
+            #     return candidates[0]
+            # else:
+            return value
         except Exception:
             return value
 

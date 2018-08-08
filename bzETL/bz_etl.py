@@ -58,7 +58,7 @@ get_stuff_from_bugzilla = [
 ]
 
 
-def etl_comments(db, esq, param, please_stop):
+def etl_comments(db, output_queue, param, please_stop):
     # CONNECTIONS ARE EXPENSIVE, CACHE HERE
     global comment_db_cache
     with comment_db_cache_lock:
@@ -72,10 +72,10 @@ def etl_comments(db, esq, param, please_stop):
 
     for g, block_of_comments in jx.groupby(comments, size=500):
         with Timer("Write {{num}} comments to ElasticSearch", {"num": len(block_of_comments)}):
-            esq.es.extend({"id": comment.comment_id, "value": comment} for comment in block_of_comments)
+            output_queue.extend({"id": comment.comment_id, "value": comment} for comment in block_of_comments)
 
 
-def etl(db, output_queue, param, alias_analyzer, please_stop):
+def etl(db, bug_output_queue, param, alias_analyzer, please_stop):
     """
     PROCESS RANGE, AS SPECIFIED IN param AND PUSH
     BUG VERSION RECORDS TO output_queue
@@ -115,16 +115,16 @@ def etl(db, output_queue, param, alias_analyzer, please_stop):
         {"id": "desc"}
     ])
 
-    process = BugHistoryParser(param, alias_analyzer, output_queue)
+    process = BugHistoryParser(param, alias_analyzer, bug_output_queue)
     for i, s in enumerate(sorted):
         process.processRow(s)
     process.processRow(wrap({"bug_id": parse_bug_history.STOP_BUG, "_merge_order": 1}))
     process.alias_analyzer.save_aliases()
 
 
-def run_both_etl(db, output_queue, esq_comments, param, alias_analyzer):
-    comment_thread = Thread.run("etl comments", etl_comments, db, esq_comments, param)
-    process_thread = Thread.run("etl", etl, db, output_queue, param, alias_analyzer)
+def run_both_etl(db, bug_output_queue, comment_output_queue, param, alias_analyzer):
+    comment_thread = Thread.run("etl comments", etl_comments, db, comment_output_queue, param)
+    process_thread = Thread.run("etl", etl, db, bug_output_queue, param, alias_analyzer)
 
     result = comment_thread.join()
     if result.exception:
@@ -177,7 +177,7 @@ def setup_es(settings, db):
     return current_run_time, esq, esq_comments, last_run_time
 
 @override
-def incremental_etl(param, db, esq, esq_comments, output_queue, kwargs):
+def incremental_etl(param, db, esq, esq_comments, bug_output_queue, comment_output_queue, kwargs):
     ####################################################################
     ## ES TAKES TIME TO DELETE RECORDS, DO DELETE FIRST WITH HOPE THE
     ## INDEX GETS A REWRITE DURING ADD OF NEW RECORDS
@@ -220,8 +220,8 @@ def incremental_etl(param, db, esq, esq_comments, output_queue, kwargs):
 
         try:
             analyzer = AliasAnalyzer(kwargs.alias)
-            etl(db, output_queue, refresh_param.copy(), analyzer, please_stop=None)
-            etl_comments(db, esq_comments, refresh_param.copy(), please_stop=None)
+            etl(db, bug_output_queue, refresh_param.copy(), analyzer, please_stop=None)
+            etl_comments(db, esq_comments.es, refresh_param.copy(), please_stop=None)
         except Exception as e:
             Log.error(
                 "Problem with etl using parameters {{parameters}}",
@@ -277,14 +277,14 @@ def incremental_etl(param, db, esq, esq_comments, output_queue, kwargs):
         param.bug_list = bug_list
         run_both_etl(
             db=db,
-            output_queue=output_queue,
-            esq_comments=esq_comments,
+            bug_output_queue=bug_output_queue,
+            comment_output_queue=comment_output_queue,
             param=param.copy(),
             alias_analyzer=AliasAnalyzer(kwargs.alias)
         )
 
 @override
-def full_etl(resume_from_last_run, param, db, esq, esq_comments, output_queue, kwargs):
+def full_etl(resume_from_last_run, param, db, esq, esq_comments, bug_output_queue, comment_output_queue, kwargs):
     end = coalesce(param.end, db.query("SELECT max(bug_id) bug_id FROM bugs")[0].bug_id)
     start = coalesce(param.start, 0)
     if resume_from_last_run:
@@ -341,8 +341,8 @@ def full_etl(resume_from_last_run, param, db, esq, esq_comments, output_queue, k
                 param.bug_list = bug_list
                 run_both_etl(
                     db,
-                    output_queue,
-                    esq_comments,
+                    bug_output_queue,
+                    comment_output_queue,
                     param.copy(),
                     alias_analyzer=AliasAnalyzer(kwargs=kwargs.alias)
                 )
@@ -397,7 +397,8 @@ def main(param, es, es_comments, bugzilla, kwargs):
                             db=db,
                             esq=esq,
                             esq_comments=esq_comments,
-                            output_queue=output_queue,
+                            bug_output_queue=output_queue,
+                            comment_output_queue=esq_comments.es,
                             kwargs=kwargs
                         )
                 else:
@@ -408,7 +409,8 @@ def main(param, es, es_comments, bugzilla, kwargs):
                             db=db,
                             esq=esq,
                             esq_comments=esq_comments,
-                            output_queue=output_queue,
+                            bug_output_queue=output_queue,
+                            comment_output_queue=esq_comments.es,
                             kwargs=kwargs
                         )
 

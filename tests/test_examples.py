@@ -15,7 +15,7 @@ import unittest
 
 from bzETL import bz_etl, extract_bugzilla
 from bzETL.alias_analysis import AliasAnalyzer
-from bzETL.bz_etl import etl
+from bzETL.bz_etl import etl, etl_comments
 from bzETL.extract_bugzilla import get_current_time
 from mo_dots import Data
 from mo_logs import startup, Log, constants
@@ -57,7 +57,8 @@ class TestExamples(unittest.TestCase):
         THOSE VERSIONS TO A REFERENCE ES (ALSO CHECKED INTO REPOSITORY)
         """
         reference = FakeES(self.settings.reference)
-        candidate = elasticsearch.make_test_instance(self.settings.elasticsearch)
+        candidate = elasticsearch.make_test_instance(self.settings.bugs)
+        candidate_comments = elasticsearch.make_test_instance(self.settings.comments)
 
         make_test_instance(self.settings.bugzilla)
         with MySQL(self.settings.bugzilla) as db:
@@ -74,19 +75,9 @@ class TestExamples(unittest.TestCase):
 
             with ThreadedQueue("etl queue", candidate, batch_size=1000) as output:
                 etl(db, output, param, self.alias_analyzer, please_stop=None)
+            with ThreadedQueue("etl queue", candidate_comments, batch_size=1000) as output:
+                etl_comments(db, output, param, please_stop=None)
 
         # COMPARE ALL BUGS
         refresh_metadata(candidate)
         compare_both(candidate, reference, self.settings, self.settings.param.bugs)
-
-
-        #TODO: INCLUDE OPTION TO USE REAL ES (AND ENSURE REALLY WORKING)
-        # es_settings=Data(**{
-        #     "host": "http://localhost",
-        #     "port": 9200,
-        #     "index": ElasticSearch.proto_name("test_public_bugs"),
-        #     "type": "bug_version",
-        #     "schema_file": "resources/json/bug_version.json"
-        # })
-        # es = ElasticSearch.create_index(es_settings, File(es_settings.schema_file).read())
-        # es.delete_all_but("test_public_bugs", es_settings.index)

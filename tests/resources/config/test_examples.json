@@ -76,9 +76,9 @@
 		"filename": "tests/resources/reference/test_examples.json",
 //		"max_timestamp": 1372867005000  // MAX TIME IN THE REFERENCE
 	},
-	"elasticsearch": {
+	"bugs": {
 		"name":"candidate",
-		"filename": "tests/results/test_results.json",
+		"filename": "tests/results/test_results_bugs.json",
 		"es": {
 			"host": "http://localhost",
 			"port": 9200,
@@ -88,6 +88,10 @@
 			"index": "test_bugs",
 			"type": "bug_version"
 		}
+	},
+	"comments": {
+		"name":"candidate",
+		"filename": "tests/results/test_results_comments.json"
 	},
 	"constants": {
 		"pyLibrary.env.http.default_headers": {
