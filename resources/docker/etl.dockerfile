@@ -22,7 +22,8 @@ RUN mkdir -p /etc/dpkg/dpkg.cfg.d \
         sudo \
     && rm -rf /var/lib/apt/lists/* /usr/share/doc/* /usr/share/man/* /usr/share/locale/* \
     && git clone $REPO_URL $HOME \
-    && git checkout $REPO_CHECKOUT
+    && git checkout $REPO_CHECKOUT \
+    && chmod u+x resources/docker/etl.sh
 
 RUN addgroup --gid 10001 $USER \
     && adduser \
@@ -38,7 +39,6 @@ RUN addgroup --gid 10001 $USER \
     && chown -R $USER:$USER $HOME
 
 USER $USER
-RUN python -m pip --no-cache-dir install --user -r requirements.txt \
-    && export PYTHONPATH=.:vendor
+RUN python -m pip --no-cache-dir install --user -r requirements.txt
 
-CMD python bzETL/bz_etl.py --settings=resources/docker/config.json
+CMD resources/docker/etl.sh
