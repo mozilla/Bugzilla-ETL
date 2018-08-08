@@ -425,8 +425,8 @@ class BugHistoryParser(object):
                             # RECORD INCONSISTENCIES, MAYBE WE WILL FIND PATTERNS
                             expected_list = FIELDS_CHANGED[row_in.field_name][literal_field(new_value)]
                             if expected_value not in expected_list:
-                                expected_list += [expected_value]
-                                File("expected_values.json").write(value2json(FIELDS_CHANGED, pretty=True))
+                                # expected_list += [expected_value]
+                                # File("expected_values.json").write(value2json(FIELDS_CHANGED, pretty=True))
 
                                 Log.note(
                                     "[Bug {{bug_id}}]: PROBLEM inconsistent change: {{field}} was {{expecting|quote}} got {{observed|quote}}",
