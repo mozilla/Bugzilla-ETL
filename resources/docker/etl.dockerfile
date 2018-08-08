@@ -1,6 +1,6 @@
 FROM python:3.6.4
 
-ARG REPO_TAG=
+ARG REPO_CHECKOUT=
 ARG REPO_URL=https://github.com/mozilla/Bugzilla-ETL.git
 ARG HOME=/app
 ARG USER=app
@@ -22,7 +22,7 @@ RUN mkdir -p /etc/dpkg/dpkg.cfg.d \
         sudo \
     && rm -rf /var/lib/apt/lists/* /usr/share/doc/* /usr/share/man/* /usr/share/locale/* \
     && git clone $REPO_URL $HOME \
-    && git checkout tags/$REPO_TAG
+    && git checkout $REPO_CHECKOUT
 
 RUN addgroup --gid 10001 $USER \
     && adduser \
