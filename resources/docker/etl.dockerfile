@@ -38,6 +38,7 @@ RUN addgroup --gid 10001 $USER \
     && chown -R $USER:$USER $HOME
 
 USER $USER
-RUN python -m pip --no-cache-dir install --user -r requirements.txt
+RUN python -m pip --no-cache-dir install --user -r requirements.txt \
+    export PYTHONPATH=.:vendor
 
 CMD python bzETL/bz_etl.py --settings=resources/docker/config.json
