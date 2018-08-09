@@ -21,8 +21,9 @@ RUN mkdir -p /etc/dpkg/dpkg.cfg.d \
         nano \
         sudo \
     && rm -rf /var/lib/apt/lists/* /usr/share/doc/* /usr/share/man/* /usr/share/locale/* \
-    && git clone $REPO_URL $HOME \
-    && git checkout $REPO_CHECKOUT
+    && git clone $REPO_URL $HOME
+#     && git checkout $REPO_CHECKOUT \
+#     && chmod u+x resources/docker/etl.sh
 
 RUN addgroup --gid 10001 $USER \
     && adduser \
@@ -37,7 +38,7 @@ RUN addgroup --gid 10001 $USER \
     && mkdir $HOME/logs \
     && chown -R $USER:$USER $HOME
 
-USER $USER
-RUN python -m pip --no-cache-dir install --user -r requirements.txt
+# USER $USER
+# RUN python -m pip --no-cache-dir install --user -r requirements.txt
 
 # CMD resources/docker/etl.sh
