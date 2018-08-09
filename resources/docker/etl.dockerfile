@@ -17,8 +17,8 @@ RUN mkdir -p /etc/dpkg/dpkg.cfg.d \
         curl \
         git \
 #         build-essential \
-        vim-tiny \
-        nano \
+#         vim-tiny \
+#         nano \
     && rm -rf /var/lib/apt/lists/* /usr/share/doc/* /usr/share/man/* /usr/share/locale/* \
     && git clone $REPO_URL $HOME \
     && git checkout $REPO_CHECKOUT \
