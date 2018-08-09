@@ -12,14 +12,13 @@ RUN mkdir -p /etc/dpkg/dpkg.cfg.d \
     &&  echo "path-exclude=/usr/share/doc/*" >> /etc/dpkg/dpkg.cfg.d/excludes \
     &&  apt-get -qq update \
     &&  apt-get -y install --no-install-recommends \
-        build-essential \
         libffi-dev \
         libssl-dev \
         curl \
         git \
+        build-essential \
         vim-tiny \
         nano \
-        sudo \
     && rm -rf /var/lib/apt/lists/* /usr/share/doc/* /usr/share/man/* /usr/share/locale/* \
     && git clone $REPO_URL $HOME \
     && git checkout $REPO_CHECKOUT \
