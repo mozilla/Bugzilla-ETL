@@ -16,9 +16,9 @@ RUN mkdir -p /etc/dpkg/dpkg.cfg.d \
         libssl-dev \
         curl \
         git \
-#         build-essential \
-#         vim-tiny \
-#         nano \
+        build-essential \
+        vim-tiny \
+        nano \
     && rm -rf /var/lib/apt/lists/* /usr/share/doc/* /usr/share/man/* /usr/share/locale/* \
     && git clone $REPO_URL $HOME \
     && git checkout $REPO_CHECKOUT \
@@ -37,7 +37,7 @@ RUN addgroup --gid 10001 $USER \
     && mkdir $HOME/logs \
     && chown -R $USER:$USER $HOME
 
-# USER $USER
-# RUN python -m pip --no-cache-dir install --user -r requirements.txt
+USER $USER
+RUN python -m pip --no-cache-dir install --user -r requirements.txt
 
-# CMD resources/docker/etl.sh
+CMD resources/docker/etl.sh
