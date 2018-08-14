@@ -27,7 +27,7 @@ from mo_kwargs import override
 from mo_logs import Log, startup, constants
 from mo_math import Math
 from mo_threads import Lock, Queue, Thread, THREAD_STOP
-from mo_threads.threads import AllThread
+from mo_threads.threads import AllThread, MAIN_THREAD
 from mo_times.timer import Timer
 from pyLibrary import convert
 from pyLibrary.env.elasticsearch import Cluster
@@ -505,7 +505,7 @@ def setup():
     except Exception as e:
         Log.fatal("Can not start", e)
     finally:
-        Log.stop()
+        MAIN_THREAD.stop()
 
 
 if __name__ == "__main__":
