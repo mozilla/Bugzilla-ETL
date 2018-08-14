@@ -1,6 +1,6 @@
 FROM python:3.6.4
 
-ARG REPO_TAG=
+ARG REPO_CHECKOUT=
 ARG REPO_URL=https://github.com/mozilla/Bugzilla-ETL.git
 ARG HOME=/app
 ARG USER=app
@@ -12,17 +12,17 @@ RUN mkdir -p /etc/dpkg/dpkg.cfg.d \
     &&  echo "path-exclude=/usr/share/doc/*" >> /etc/dpkg/dpkg.cfg.d/excludes \
     &&  apt-get -qq update \
     &&  apt-get -y install --no-install-recommends \
-        build-essential \
         libffi-dev \
         libssl-dev \
         curl \
         git \
+        build-essential \
         vim-tiny \
         nano \
-        sudo \
     && rm -rf /var/lib/apt/lists/* /usr/share/doc/* /usr/share/man/* /usr/share/locale/* \
     && git clone $REPO_URL $HOME \
-    && git checkout tags/$REPO_TAG
+    && git checkout $REPO_CHECKOUT \
+    && python -m pip --no-cache-dir install --user -r requirements.txt
 
 RUN addgroup --gid 10001 $USER \
     && adduser \
@@ -38,6 +38,6 @@ RUN addgroup --gid 10001 $USER \
     && chown -R $USER:$USER $HOME
 
 USER $USER
-RUN python -m pip --no-cache-dir install --user -r requirements.txt
 
-CMD python bzETL/bz_etl.py --settings=resources/docker/config.json
+CMD export PYTHONPATH=.:vendor /
+    && python ./bzETL/bz_etl.py --settings=resources/docker/config.json

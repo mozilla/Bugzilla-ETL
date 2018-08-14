@@ -10,7 +10,7 @@ Extract Bugzilla change history; Transform into bug snapshots; and Load into Ela
 
 ## Requirements
 
-  * PyPy >= 5.9+ to run ETL fast
+  * Python 3.6 (or PyPy to run fast)
   * MySQL/Maria database with Mozilla's Bugzilla schema 
   * ElasticSearch >= 6.1 cluster to hold the bug snapshot documents
 
