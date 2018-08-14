@@ -5,4 +5,4 @@ docker run -it --dns 8.8.8.8 --env-file ../../bugzilla-etl-debug.env --mount sou
 
 
 
-docker run --user app --env-file ../../bugzilla-etl-debug.env --mount source=public_etl_state,destination=/app/logs bugzilla-etl
+docker run --user app --env-file ..\..\bugzilla-etl-debug.env --mount source=public_etl_state,destination=/app/logs bugzilla-etl

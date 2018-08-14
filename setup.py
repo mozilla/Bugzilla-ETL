@@ -35,7 +35,7 @@ setup(
     long_description=long_desc,
     author='Kyle Lahnakoski',
     author_email='kyle@lahnakoski.com',
-    url='https://github.com/klahnakoski/Bugzilla-ETL',
+    url='https://github.com/mozilla/Bugzilla-ETL',
     license='MPL 2.0',
     packages=['bzETL'],
     install_requires=['pymysql', 'requests', 'pytest'],
