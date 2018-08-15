@@ -14,6 +14,8 @@ This has been around for a while now. The "Toronto Server" connections no longer
 
 This is the plan for 2018. Overall, it is correct, but the details must be refined as the details are understood.
 
+#### [Bug 1429487](https://bugzilla.mozilla.org/showdependencytree.cgi?id=1429487&hide_resolved=1) - [meta] Bugzilla-ETL upgrade to ESv6 
+
 ![](Architecture_2018.png)
 
 
@@ -77,10 +79,9 @@ An ActiveData instance will replace the esFrontLine in front of the public clust
 
 The calculations made for review queues and bug hierarchy lookup is done with a post-etl cron job. This does not change the data in the clusters, rather it files new tables with derived review queue and hierarchical information. 
 
-Action Required
+#### Action Required
 
-1. Move server - Even though this server is already setup, it must be re-setup (moved), to work where the rest of the system will be located 
-2. Merge code with Bugzilla-ETL - Arguably, this code could be moved to the Bugzilla-ETL code, so maybe we should do that now.
+1. Merge code with Bugzilla-ETL
 
 #### Why Help?
 
