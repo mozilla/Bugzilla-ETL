@@ -72,7 +72,7 @@ def etl_comments(db, output_queue, param, please_stop):
 
     for g, block_of_comments in jx.groupby(comments, size=500):
         with Timer("Write {{num}} comments to ElasticSearch", {"num": len(block_of_comments)}):
-            output_queue.extend({"id": comment.comment_id, "value": comment} for comment in block_of_comments)
+            output_queue.extend({"id": text_type(comment.comment_id), "value": comment} for comment in block_of_comments)
 
 
 def etl(db, bug_output_queue, param, alias_analyzer, please_stop):

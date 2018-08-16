@@ -41,8 +41,9 @@
 			937428, // whitespace after comma in user story, complex diff
 			1007019, // does not have bug_status, or component, or product
 			1165765, // VERY LONG short_desc (split into multiple records)
+			1388648,  // problem with diff
 			1393332,  // "\\ no newline at end of file"
-			1390946 // mixed case email flag matching
+			1390946, // mixed case email flag matching
 		],
 		"temp_dir": "tests/resources",
 		"errors": "tests/results/errors",
@@ -62,14 +63,23 @@
 			"index": "bug_aliases"
 		}
 	},
+//	"bugzilla": {
+//		"filename": "tests/resources/sql/bugzilla_mini.sql.zip",
+//		"$ref": "file://~/private.json#bugzilla",
+//		"preamble": "from https://github.com/klahnakoski/Bugzilla-ETL",
+//		"host": "localhost",
+//		"port": 3306,
+//		"schema": "bugs",
+//		"debug": true,
+//		"readonly": true
+//	},
 	"bugzilla": {
-		"filename": "tests/resources/sql/bugzilla_mini.sql.zip",
-		"$ref": "file://~/private.json#bugzilla",
+		"$ref": "file://~/private.json#bugzilla-dev",
 		"preamble": "from https://github.com/klahnakoski/Bugzilla-ETL",
 		"host": "localhost",
-		"port": 3306,
+		"port": 3307,
 		"schema": "bugs",
-		"debug": true,
+		"debug": false,
 		"readonly": true
 	},
 	"reference": {

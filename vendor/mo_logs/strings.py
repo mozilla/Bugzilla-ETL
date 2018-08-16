@@ -750,13 +750,12 @@ def apply_diff(text, diff, reverse=False, verify=True):
     if not diff:
         return output
 
-    start_of_hunk = 0
-    while True:
-        if start_of_hunk>=len(diff):
-            break
+    R = xrange(0, len(diff))
+    if reverse:
+        R = reversed(R)
+    for start_of_hunk in R:
         header = diff[start_of_hunk]
-        start_of_hunk += 1
-        if not header.strip():
+        if not header.strip() or not header.startswith("@@"):
             continue
 
         matches = DIFF_PREFIX.match(header.strip())
@@ -766,14 +765,14 @@ def apply_diff(text, diff, reverse=False, verify=True):
 
             _Log.error("Can not handle \n---\n{{diff}}\n---\n",  diff=diff)
 
-        remove = tuple(int(i.strip()) for i in matches.group(1).split(","))  # EXPECTING start_line, length TO REMOVE
-        remove = Data(start=remove[0], length=1 if len(remove) == 1 else remove[1])  # ASSUME FIRST LINE
-        add = tuple(int(i.strip()) for i in matches.group(2).split(","))  # EXPECTING start_line, length TO ADD
-        add = Data(start=add[0], length=1 if len(add) == 1 else add[1])
+        removes = tuple(int(i.strip()) for i in matches.group(1).split(","))  # EXPECTING start_line, length TO REMOVE
+        remove = Data(start=removes[0], length=1 if len(removes) == 1 else removes[1])  # ASSUME FIRST LINE
+        adds = tuple(int(i.strip()) for i in matches.group(2).split(","))  # EXPECTING start_line, length TO ADD
+        add = Data(start=adds[0], length=1 if len(adds) == 1 else adds[1])
 
-        if remove.start == 0 and remove.length == 0:
+        if remove.length == 0:
             remove.start = add.start
-        if add.start == 0 and add.length == 0:
+        if add.length == 0:
             add.start = remove.start
 
         if remove.start != add.start:
@@ -786,7 +785,7 @@ def apply_diff(text, diff, reverse=False, verify=True):
             # ADDED LINE WILL BE APPENDED TO THE LAST DELETED LINE
             # EXAMPLE: -kward has the details.+kward has the details.
             # DETECT THIS PROBLEM FOR THIS HUNK AND FIX THE DIFF
-            problem_line = diff[start_of_hunk + remove.length - 1]
+            problem_line = diff[start_of_hunk+1 + remove.length - 1]
             if reverse:
                 if add.length == 0:
                     return diff
@@ -805,9 +804,9 @@ def apply_diff(text, diff, reverse=False, verify=True):
                     return diff
 
             new_diff = (
-                diff[:start_of_hunk + remove.length - 1] +
+                diff[:start_of_hunk+1 + remove.length - 1] +
                 [problem_line[:split_point], problem_line[split_point:]] +
-                diff[start_of_hunk + remove.length:]
+                diff[start_of_hunk+1 + remove.length:]
             )
             return new_diff
 
@@ -817,17 +816,16 @@ def apply_diff(text, diff, reverse=False, verify=True):
         if reverse:
             new_output = (
                 output[:add.start - 1] +
-                [d[1:] for d in diff[start_of_hunk:start_of_hunk + remove.length]] +
+                [d[1:] for d in diff[start_of_hunk+1:start_of_hunk+1 + remove.length]] +
                 output[add.start + add.length - 1:]
             )
         else:
             # APPLYING DIFF FORWARD REQUIRES WE APPLY THE HUNKS IN REVERSE TO GET THE LINE NUMBERS RIGHT?
             new_output = (
                 output[:remove.start-1] +
-                [d[1:] for d in diff[start_of_hunk + remove.length :start_of_hunk + remove.length + add.length ]] +
+                [d[1:] for d in diff[start_of_hunk+1 + remove.length :start_of_hunk+1 + remove.length + add.length ]] +
                 output[remove.start + remove.length - 1:]
             )
-        start_of_hunk += remove.length + add.length
         output = new_output
 
     if verify:
@@ -862,7 +860,7 @@ def utf82unicode(value):
             try:
                 c.decode("utf8")
             except Exception as f:
-                _Log.error("Can not convert charcode {{c}} in string  index {{i}}", i=i, c=ord(c), cause=[e, _Except.wrap(f)])
+                _Log.error("Can not convert charcode {{c}} in string index {{i}}", i=i, c=ord(c), cause=[e, _Except.wrap(f)])
 
         try:
             latin1 = text_type(value.decode("latin1"))
