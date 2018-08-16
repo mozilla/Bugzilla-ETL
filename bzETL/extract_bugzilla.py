@@ -655,20 +655,20 @@ def get_new_activities(db, param):
                 CASE
                 WHEN a.fieldid IN {{screened_fields}} THEN '[screened]'
                 WHEN m.bug_id IS NOT NULL AND a.fieldid={{whiteboard_field}} AND added IS NOT NULL AND trim(added)<>'' THEN '[screened]'
-                WHEN a.fieldid IN {{mixed_case_fields}} THEN lower(trim(added))
+                WHEN a.fieldid IN {{mixed_case_fields}} THEN lower(added)
                 WHEN trim(added)='' THEN NULL
                 # WHEN new_qa_contact.userid IS NOT NULL THEN new_qa_contact.login_name
-                ELSE lower(trim(added))
+                ELSE lower(added)
                 END
             AS CHAR CHARACTER SET utf8) AS new_value,
             CAST(
                 CASE
                 WHEN a.fieldid IN {{screened_fields}} THEN '[screened]'
                 WHEN m.bug_id IS NOT NULL AND a.fieldid={{whiteboard_field}} AND removed IS NOT NULL AND trim(removed)<>'' THEN '[screened]'
-                WHEN a.fieldid IN {{mixed_case_fields}} THEN lower(trim(removed))
+                WHEN a.fieldid IN {{mixed_case_fields}} THEN lower(removed)
                 WHEN trim(removed)='' THEN NULL
                 # WHEN old_qa_contact.userid IS NOT NULL THEN old_qa_contact.login_name
-                ELSE lower(trim(removed))
+                ELSE lower(removed)
                 END
             AS CHAR CHARACTER SET utf8) AS old_value,
             attach_id,

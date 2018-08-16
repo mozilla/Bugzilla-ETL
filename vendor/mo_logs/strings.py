@@ -778,7 +778,7 @@ def apply_diff(text, diff, reverse=False, verify=True):
         if remove.start != add.start:
             if not _Log:
                 _late_import()
-            _Log.warning("Do not know how to handle")
+            _Log.error("Do not know how to handle")
 
         def repair_hunk(diff):
             # THE LAST DELETED LINE MAY MISS A "\n" MEANING THE FIRST
@@ -816,24 +816,25 @@ def apply_diff(text, diff, reverse=False, verify=True):
         if reverse:
             new_output = (
                 output[:add.start - 1] +
-                [d[1:] for d in diff[start_of_hunk+1:start_of_hunk+1 + remove.length]] +
+                [d[1:] for d in diff[start_of_hunk + 1:start_of_hunk + 1 + add.length + remove.length] if d[0] == '-'] +
                 output[add.start + add.length - 1:]
             )
         else:
             # APPLYING DIFF FORWARD REQUIRES WE APPLY THE HUNKS IN REVERSE TO GET THE LINE NUMBERS RIGHT?
             new_output = (
-                output[:remove.start-1] +
-                [d[1:] for d in diff[start_of_hunk+1 + remove.length :start_of_hunk+1 + remove.length + add.length ]] +
+                output[:remove.start - 1] +
+                [d[1:] for d in diff[start_of_hunk + 1:start_of_hunk + 1 + remove.length + add.length] if d[0] == '+'] +
                 output[remove.start + remove.length - 1:]
             )
         output = new_output
 
     if verify:
         original = apply_diff(output, diff, not reverse, False)
-        if any(t!=o for t, o in zip_longest(text, original)):
-            if not _Log:
-                _late_import()
-            _Log.error("logical verification check failed")
+        for t, o in zip_longest(text, original):
+            if t != o:
+                if not _Log:
+                    _late_import()
+                _Log.error("logical verification check failed")
 
     return output
 
