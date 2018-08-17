@@ -438,8 +438,8 @@ def main(param, es, es_comments, bugzilla, kwargs):
 
 def get_bug_ids(esq, filter):
     try:
-        result = esq.query({"from":esq.name, "select":"bug_id", "where":filter, "limit":20000, "format":"cube"})
-        return set(result.data['bug_id']) - {None}
+        result = esq.query({"from": esq.name, "select": "bug_id", "where": filter, "limit": 20000, "format": "list"})
+        return set(result.data) - {None}
     except Exception as e:
         Log.error(
             "Can not get_max_bug from {{host}}/{{index}}",
@@ -451,8 +451,8 @@ def get_bug_ids(esq, filter):
 
 def get_min_bug_id(esq):
     try:
-        result = esq.query({"from":esq.name, "select": {"value": "bug_id", "aggregate": "min"}, "format": "cube"})
-        return result.data['bug_id']
+        result = esq.query({"from": esq.name, "select": {"value": "bug_id", "aggregate": "min"}, "format": "list"})
+        return result.data
     except Exception as e:
         Log.error(
             "Can not get_max_bug from {{host}}/{{index}}",
