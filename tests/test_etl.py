@@ -15,7 +15,7 @@ import unittest
 from datetime import datetime
 
 import os
-from unittest import skipIf
+from unittest import skipIf, skip
 
 import jx_elasticsearch
 from bzETL import extract_bugzilla, bz_etl
@@ -35,7 +35,7 @@ from mo_math.randoms import Random
 from mo_threads import ThreadedQueue, Till
 from mo_times import Timer, Date
 from pyLibrary import convert
-from pyLibrary.env import elasticsearch as real_elasticsearch
+from pyLibrary.env import elasticsearch as real_elasticsearch, elasticsearch
 from pyLibrary.sql.mysql import all_db, MySQL
 from pyLibrary.testing import elasticsearch as fake_elasticsearch
 from util import database, compare_es
@@ -84,7 +84,7 @@ class TestETL(unittest.TestCase):
         database.make_test_instance(self.settings.bugzilla)
 
         with MySQL(self.settings.bugzilla) as db:
-            es = fake_elasticsearch.make_test_instance("candidate", self.settings.public.bugs)
+            es = fake_elasticsearch.make_test_instance(self.settings.public.bugs)
             reference = fake_elasticsearch.open_test_instance("reference", self.settings.reference.private.bugs)
 
             #SETUP RUN PARAMETERS
@@ -116,7 +116,7 @@ class TestETL(unittest.TestCase):
         MAX_BUG_ID = 900000
 
         with MySQL(self.settings.bugzilla) as db:
-            candidate = fake_elasticsearch.make_test_instance("candidate", self.settings.public.bugs)
+            candidate = fake_elasticsearch.make_test_instance(self.settings.public.bugs)
             reference = elasticsearch.Index(self.settings.reference.private.bugs)
 
             #GO FASTER BY STORING LOCAL FILE
@@ -166,11 +166,11 @@ class TestETL(unittest.TestCase):
         self.settings.param.allow_private_bugs = True
 
         database.make_test_instance(self.settings.bugzilla)
-        es = fake_elasticsearch.make_test_instance("candidate", self.settings.private.bugs)
-        es_c = fake_elasticsearch.make_test_instance("candidate_comments", self.settings.private.comments)
+        es = fake_elasticsearch.make_test_instance(self.settings.private.bugs)
+        es_c = fake_elasticsearch.make_test_instance(self.settings.private.comments)
         bz_etl.main(
-            es=self.settings.private.bugs,
-            es_comments=self.settings.private.comments,
+            es=self.settings.private.bugs.es,
+            es_comments=self.settings.private.comments.es,
             kwargs=self.settings
         )
 
@@ -188,7 +188,7 @@ class TestETL(unittest.TestCase):
                     break
             Log.error("Comments do not match reference\n{{sample}}", sample=can[MIN([0, found - 100]):found + 100])
 
-    @skipIf(True, "problem with reference json")
+    @skip("working on reference file")
     def test_public_etl(self):
         """
         ENSURE ETL GENERATES WHAT'S IN THE REFERENCE FILE
@@ -198,16 +198,14 @@ class TestETL(unittest.TestCase):
         self.settings.param.allow_private_bugs = Null
 
         database.make_test_instance(self.settings.bugzilla)
-        # es = elasticsearch.make_test_instance("candidate", self.settings.public.bugs)
-        # es_c = elasticsearch.make_test_instance("candidate_comments", self.settings.public.comments)
         bz_etl.main(
-            es=self.settings.public.bugs,
-            es_comments=self.settings.public.comments,
+            es=self.settings.public.bugs.es,
+            es_comments=self.settings.public.comments.es,
             kwargs=self.settings
         )
 
-        es = fake_elasticsearch.open_test_instance("candidate", self.settings.public.bugs)
-        ref = fake_elasticsearch.open_test_instance("reference", self.settings.reference.public.bugs)
+        es = elasticsearch.Cluster(self.settings.public.bugs.es).get_index(self.settings.public.bugs.es)
+        ref = fake_elasticsearch.open_test_instance(name="reference", kwargs=self.settings.reference.public.bugs)
         compare_both(es, ref, self.settings, self.settings.param.bugs)
 
         # DIRECT COMPARE THE FILE JSON
@@ -237,12 +235,12 @@ class TestETL(unittest.TestCase):
                 database.add_bug_group(db, b, BUG_GROUP_FOR_TESTING)
 
         bz_etl.main(
-            es=self.settings.public.bugs,
-            es_comments=self.settings.public.comments,
+            es=self.settings.public.bugs.es,
+            es_comments=self.settings.public.comments.es,
             kwargs=self.settings
         )
 
-        es = real_elasticsearch.Index(self.settings.public.bugs)
+        es = real_elasticsearch.Index(self.settings.public.bugs.es)
         refresh_metadata(es)
         verify_no_private_bugs(es, private_bugs)
 
@@ -254,8 +252,8 @@ class TestETL(unittest.TestCase):
         database.make_test_instance(self.settings.bugzilla)
 
         bz_etl.main(
-            es=self.settings.public.bugs,
-            es_comments=self.settings.public.comments,
+            es=self.settings.public.bugs.es,
+            es_comments=self.settings.public.comments.es,
             kwargs=self.settings
         )
 
@@ -292,13 +290,13 @@ class TestETL(unittest.TestCase):
         if not File(self.settings.param.last_run_time).exists:
             Log.error("last_run_time should exist")
         bz_etl.main(
-            es=self.settings.public.bugs,
-            es_comments=self.settings.public.comments,
+            es=self.settings.public.bugs.es,
+            es_comments=self.settings.public.comments.es,
             kwargs=self.settings
         )
 
-        es = real_elasticsearch.Index(self.settings.public.bugs)
-        es_c = real_elasticsearch.Index(self.settings.public.comments)
+        es = real_elasticsearch.Index(self.settings.public.bugs.es)
+        es_c = real_elasticsearch.Index(self.settings.public.comments.es)
         refresh_metadata(es)
         verify_no_private_bugs(es, private_bugs)
         verify_no_private_attachments(es, private_attachments)
@@ -310,8 +308,8 @@ class TestETL(unittest.TestCase):
                 database.remove_bug_group(db, b, BUG_GROUP_FOR_TESTING)
 
         bz_etl.main(
-            es=self.settings.public.bugs,
-            es_comments=self.settings.public.comments,
+            es=self.settings.public.bugs.es,
+            es_comments=self.settings.public.comments.es,
             kwargs=self.settings
         )
 
@@ -346,12 +344,12 @@ class TestETL(unittest.TestCase):
                 database.mark_attachment_private(db, a.attach_id, isprivate=1)
 
         bz_etl.main(
-            es=self.settings.public.bugs,
-            es_comments=self.settings.public.comments,
+            es=self.settings.public.bugs.es,
+            es_comments=self.settings.public.comments.es,
             kwargs=self.settings
         )
 
-        es = real_elasticsearch.Index(self.settings.public.bugs)
+        es = real_elasticsearch.Index(self.settings.public.bugs.es)
         refresh_metadata(es)
         verify_no_private_attachments(es, private_attachments)
 
@@ -377,11 +375,11 @@ class TestETL(unittest.TestCase):
             for c in private_comments:
                 database.mark_comment_private(db, c.comment_id, 1)
 
-        es = fake_elasticsearch.make_test_instance("candidate", self.settings.public.bugs)
-        es_c = fake_elasticsearch.make_test_instance("candidate_comments", self.settings.public.comments)
+        es = fake_elasticsearch.make_test_instance(self.settings.public.bugs)
+        es_c = fake_elasticsearch.make_test_instance(self.settings.public.comments)
         bz_etl.main(
-            es=self.settings.public.bugs,
-            es_comments=self.settings.public.comments,
+            es=self.settings.public.bugs.es,
+            es_comments=self.settings.public.comments.es,
             kwargs=self.settings
         )
 
@@ -404,16 +402,16 @@ class TestETL(unittest.TestCase):
             for b in private_bugs:
                 database.add_bug_group(db, b, BUG_GROUP_FOR_TESTING)
 
-        # elasticsearch.make_test_instance("candidate", self.settings.private.bugs)
-        # elasticsearch.make_test_instance("candidate_comments", self.settings.private.comments)
+        # elasticsearch.make_test_instance(self.settings.private.bugs)
+        # elasticsearch.make_test_instance(self.settings.private.comments)
         bz_etl.main(
-            es=self.settings.private.bugs,
-            es_comments=self.settings.private.comments,
+            es=self.settings.private.bugs.es,
+            es_comments=self.settings.private.comments.es,
             kwargs=self.settings
         )
 
         #VERIFY BUG GROUP STILL EXISTS
-        esq = jx_elasticsearch.new_instance(self.settings.private.bugs)
+        esq = jx_elasticsearch.new_instance(self.settings.private.bugs.es)
         esq.namespace.get_columns(esq.name, force=True)
         results = esq.query({
             "from": esq.name,
@@ -439,8 +437,8 @@ class TestETL(unittest.TestCase):
 
         #RUN INCREMENTAL
         bz_etl.main(
-            es=self.settings.private.bugs,
-            es_comments=self.settings.private.comments,
+            es=self.settings.private.bugs.es,
+            es_comments=self.settings.private.comments.es,
             kwargs=self.settings
         )
 
@@ -479,7 +477,7 @@ class TestETL(unittest.TestCase):
         File(self.settings.param.last_run_time).delete()
 
         with MySQL(self.settings.bugzilla) as db:
-            es = fake_elasticsearch.make_test_instance("candidate", self.settings.public.bugs)
+            es = fake_elasticsearch.make_test_instance(self.settings.public.bugs)
 
             #SETUP RUN PARAMETERS
             param = Data()
@@ -513,7 +511,7 @@ class TestETL(unittest.TestCase):
         database.make_test_instance(self.settings.bugzilla)
 
         with MySQL(self.settings.bugzilla) as db:
-            es = fake_elasticsearch.make_test_instance("candidate", self.settings.public.bugs)
+            es = fake_elasticsearch.make_test_instance(self.settings.public.bugs)
 
             #MARK BUG AS ONE OF THE SCREENED GROUPS
             database.add_bug_group(db, GOOD_BUG_TO_TEST, SCREENED_WHITEBOARD_BUG_GROUPS[0])
@@ -545,7 +543,7 @@ class TestETL(unittest.TestCase):
         database.make_test_instance(self.settings.bugzilla)
 
         with MySQL(self.settings.bugzilla) as db:
-            es = fake_elasticsearch.make_test_instance("candidate", self.settings.private.bugs)
+            es = fake_elasticsearch.make_test_instance(self.settings.private.bugs)
 
             # MARK BUG AS ONE OF THE SCREENED GROUPS
             database.add_bug_group(db, GOOD_BUG_TO_TEST, SCREENED_WHITEBOARD_BUG_GROUPS[0])
@@ -582,7 +580,7 @@ class TestETL(unittest.TestCase):
 
         database.make_test_instance(self.settings.bugzilla)
 
-        es = fake_elasticsearch.make_test_instance("candidate", self.settings.public.bugs)
+        es = fake_elasticsearch.make_test_instance(self.settings.public.bugs)
         with MySQL(self.settings.bugzilla) as db:
             #SETUP FIRST RUN PARAMETERS
             param = Data()
@@ -611,10 +609,10 @@ class TestETL(unittest.TestCase):
                 etl(db, output, param, self.alias_analyzer, please_stop=None)
 
         refresh_metadata(es)
-        esq = jx_elasticsearch.new_instance(self.settings.public.bugs)
+        esq = jx_elasticsearch.new_instance(self.settings.public.bugs.es)
         for b in bugs:
             results = esq.query({
-                "from":self.settings.public.bugs.index,
+                "from":self.settings.public.bugs.es.index,
                 "select": "bug_id",
                 "where": {"and": [
                     {"eq": {"bug_id": b}},
@@ -674,10 +672,11 @@ def verify_no_private_comments(es, private_comments):
 
 
 #COMPARE ALL BUGS
-def compare_both(candidate, reference, settings, some_bugs):
-    File(settings.param.errors).delete()
-    try_dir = settings.param.errors + "/try/"
-    ref_dir = settings.param.errors + "/ref/"
+def compare_both(candidate, reference, settings, bug_ids):
+    errors_dir = File(settings.param.errors)
+    errors_dir.delete()
+    try_dir = errors_dir / "try"
+    ref_dir = errors_dir / "ref"
 
     max_time = coalesce(milli2datetime(reference.settings.max_timestamp), datetime.utcnow())
 
@@ -686,7 +685,7 @@ def compare_both(candidate, reference, settings, some_bugs):
         referenceq = get_esq(reference)
 
         found_errors = False
-        for bug_id in some_bugs:
+        for bug_id in bug_ids:
             Log.note("compare {{bug}}", bug=bug_id)
             try:
                 versions = jx.sort(
@@ -709,8 +708,8 @@ def compare_both(candidate, reference, settings, some_bugs):
                 ref = value2json(ref_versions, pretty=True)
                 if can != ref:
                     found_errors = True
-                    File(try_dir + text_type(bug_id) + ".txt").write(can)
-                    File(ref_dir + text_type(bug_id) + ".txt").write(ref)
+                    (try_dir / text_type(bug_id)).set_extension("txt").write(can)
+                    (ref_dir / text_type(bug_id)).set_extension("txt").write(ref)
             except Exception as e:
                 found_errors = True
                 Log.warning("Problem ETL'ing bug {{bug_id}}", bug_id=bug_id, cause=e)

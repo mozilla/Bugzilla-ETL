@@ -65,9 +65,8 @@ def generateGuid():
 
     a=GenerateGuid()
     import uuid
-    print a
-    print uuid.UUID(a).hex
-
+    print(a)
+    print(uuid.UUID(a).hex)
     """
     return text_type(uuid4())
 
@@ -234,9 +233,8 @@ class TableDesc(DataClass(
 )):
     @property
     def columns(self):
-        Log.error("not implemented")
+        raise NotImplementedError()
         # return singlton.get_columns(table_name=self.name)
-
 
 
 Column = DataClass(

@@ -9,16 +9,15 @@
 #
 import base64
 import io
+import os
 import re
 import shutil
 from datetime import datetime
 from mimetypes import MimeTypes
 from tempfile import mkdtemp, NamedTemporaryFile
 
-import os
-
-from mo_future import text_type, binary_type
 from mo_dots import get_module, coalesce, Null
+from mo_future import text_type, binary_type
 from mo_logs import Log, Except
 from mo_logs.exceptions import extract_stack
 from mo_threads import Thread, Till
@@ -419,7 +418,13 @@ class File(object):
     def copy(cls, from_, to_):
         _copy(File(from_), File(to_))
 
+    def __data__(self):
+        return self._filename
+
     def __unicode__(self):
+        return self.abspath
+
+    def __str__(self):
         return self.abspath
 
 
@@ -471,9 +476,9 @@ def _copy(from_, to_):
 
 def base642bytearray(value):
     if value == None:
-        return bytearray("")
+        return bytearray(b"")
     else:
-        return bytearray(base64.b64decode(value))
+        return bytearray(base64.b64decode(value), encoding='utf8')
 
 
 def datetime2string(value, format="%Y-%m-%d %H:%M:%S"):

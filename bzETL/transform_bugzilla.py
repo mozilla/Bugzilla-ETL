@@ -17,17 +17,15 @@ from datetime import date
 from jx_python import jx
 from mo_dots import listwrap
 from mo_future import text_type, long
-from mo_json import json2value, value2json
 from mo_logs import Log
 from mo_times import Date
 from pyLibrary import convert
 from pyLibrary.env import elasticsearch
 
-USE_ATTACHMENTS_DOT = True  # REMOVE THIS, ASSUME False
-
 DIFF_FIELDS = ["cf_user_story"]
+LONG_FIELDS = ["short_desc"]
 MULTI_FIELDS = ["cc", "blocked", "dependson", "dupe_by", "dupe_of", "keywords", "bug_group", "see_also"]
-TIME_FIELDS = ["cf_due_date"]
+TIME_FIELDS = ["cf_due_date", "cf_last_resolved"]
 NUMERIC_FIELDS=[
     "blocked",
     "dependson",
@@ -40,7 +38,7 @@ NUMERIC_FIELDS=[
     "uncertain",
     "remaining_time"
 ]
-
+ZERO_IS_NULL = ["votes", "remaining_time"]
 NULL_VALUES = ['--', '---', '']
 
 # Used to reformat incoming dates into the expected form.
@@ -51,18 +49,8 @@ DATE_PATTERN_STRICT_SHORT = re.compile("^[0-9]{4}[\\/-][0-9]{2}[\\/-][0-9]{2} [0
 DATE_PATTERN_RELAXED = re.compile("^[0-9]{4}[\\/-][0-9]{2}[\\/-][0-9]{2}")
 
 
-# WE ARE RENAMING THE ATTACHMENTS FIELDS TO CAUSE LESS PROBLEMS IN ES QUERIES
-# TODO: REMOVE THIS OLD FOMAT
-def rename_attachments(bug_version):
-    if bug_version.attachments == None: return bug_version
-    if not USE_ATTACHMENTS_DOT:
-        bug_version.attachments=json2value(value2json(bug_version.attachments).replace("attachments.", "attachments_"))
-    return bug_version
-
-
-
 #NORMALIZE BUG VERSION TO STANDARD FORM
-def normalize(bug, old_school=False):
+def normalize(bug):
     bug=bug.copy()
     bug.id = text_type(bug.bug_id) + "_" + text_type(bug.modified_ts)[:-3]
     bug._id = None
@@ -72,30 +60,24 @@ def normalize(bug, old_school=False):
     bug.flags=sort(bug.flags, "value")
 
     if bug.attachments:
-        if USE_ATTACHMENTS_DOT:
-            bug.attachments=json2value(value2json(bug.attachments).replace("attachments_", "attachments."))
-
         bug.attachments = sort(bug.attachments, "attach_id")
         for a in bug.attachments:
             for k,v in list(a.items()):
                 if k.startswith("attachments") and (k.endswith("isobsolete") or k.endswith("ispatch") or k.endswith("isprivate")):
-                    new_v=convert.value2int(v)
-                    new_k=k[12:]
-                    a[k.replace(".", "\\.")]=new_v
-                    if not old_school:
-                        a[new_k]=new_v
+                    new_v = convert.value2int(v)
+                    del a[k]
+                    a[k[12:]] = new_v
+                elif k.startswith("attachments") and k.endswith("mimetype"):
+                    del a[k]
+                    a[k[12:]] = v
             a.flags = sort(a.flags, ["modified_ts", "requestee", "value"])
 
     if bug.changes != None:
-        if USE_ATTACHMENTS_DOT:
-            json = value2json(bug.changes).replace("attachments_", "attachments.")
-            bug.changes=json2value(json)
         for c in listwrap(bug.changes):
             c.new_value = sort(c.new_value)
             c.old_value = sort(c.old_value)
         bug.changes = sort(bug.changes, ["attach_id", "field_name"])
 
-    bug = elasticsearch.scrub(bug)
     for k, v in list(bug.items()):
         if v in NULL_VALUES:
             bug[k] = None
@@ -109,7 +91,7 @@ def normalize(bug, old_school=False):
                 bug[f] = jx.sort(convert.value2intlist(v))
             except Exception as e:
                 Log.error("not expected", cause=e)
-        elif convert.value2number(v) == 0:
+        elif f in ZERO_IS_NULL and convert.value2number(v) == 0:
             del bug[f]
         else:
             bug[f]=convert.value2number(v)
@@ -122,11 +104,12 @@ def normalize(bug, old_school=False):
     # Also reformat some date fields
     for dateField in ["deadline", "cf_due_date", "cf_last_resolved"]:
         v = bug[dateField]
-        if v == None: continue
+        if v == None:
+            continue
         try:
             if isinstance(v, date):
                 bug[dateField] = convert.datetime2milli(v)
-            elif isinstance(v, (long, int, float)) and len(text_type(v)) in [12, 13]:
+            elif isinstance(v, (long, int, float)) and (text_type(v).endswith(('e+11', 'e+12')) or len(text_type(v)) in [12, 13]):
                 bug[dateField] = v
             elif not isinstance(v, text_type):
                 Log.error("situation not handled")
@@ -146,14 +129,13 @@ def normalize(bug, old_school=False):
                 #          bug 726635 (cf_due_date)
                 bug[dateField] = convert.datetime2milli(convert.string2datetime(v[0:10], "%Y-%m-%d"))
         except Exception as e:
-            Log.error("problem with converting date to milli (type={{type}}, value={{value}})", {"value":bug[dateField], "type":type(bug[dateField]).name}, e)
+            Log.error("problem with converting date to milli (type={{type}}, value={{value}})", value=v, type=type(v), cause=e)
 
     bug.votes = None
-    bug.exists = True
-
     bug.etl.timestamp = Date.now()
 
-    return elasticsearch.scrub(bug)
+    bug = elasticsearch.scrub(bug)
+    return bug
 
 
 def sort(value, param=None):

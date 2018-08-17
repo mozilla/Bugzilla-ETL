@@ -1,6 +1,15 @@
+# encoding: utf-8
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this file,
+# You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Author: Kyle Lahnakoski (kyle@lahnakoski.com)
+#
+
 from collections import Mapping
 
-from mo_dots import wrap, Data
+from mo_dots import wrap, Data, coalesce, Null
 from mo_future import urlparse, text_type, PY2, unichr
 from mo_logs import Log
 
@@ -12,14 +21,14 @@ class URL(object):
     [1] https://docs.python.org/3/library/urllib.parse.html
     """
 
-    def __init__(self, value):
+    def __init__(self, value, port=None, path=None, query=None, fragment=None):
         try:
             self.scheme = None
             self.host = None
-            self.port = None
-            self.path = ""
-            self.query = ""
-            self.fragment = ""
+            self.port = port
+            self.path = path
+            self.query = query
+            self.fragment = fragment
 
             if value == None:
                 return
@@ -33,11 +42,11 @@ class URL(object):
             else:
                 output = urlparse(value)
                 self.scheme = output.scheme
-                self.port = output.port
+                self.port = coalesce(port, output.port)
                 self.host = output.netloc.split(":")[0]
-                self.path = output.path
-                self.query = wrap(url_param2value(output.query))
-                self.fragment = output.fragment
+                self.path = coalesce(path, output.path)
+                self.query = coalesce(query, wrap(url_param2value(output.query)))
+                self.fragment = coalesce(fragment, output.fragment)
         except Exception as e:
             Log.error("problem parsing {{value}} to URL", value=value, cause=e)
 
@@ -71,6 +80,8 @@ class URL(object):
         output.fragment = self.fragment
         return output
 
+    def __data__(self):
+        return str(self)
 
     def __str__(self):
         url = ""
@@ -86,9 +97,9 @@ class URL(object):
             else:
                 url += "/" + str(self.path)
         if self.query:
-            url = url + '?' + value2url_param(self.query)
+            url = url + "?" + value2url_param(self.query)
         if self.fragment:
-            url = url + '#' + value2url_param(self.fragment)
+            url = url + "#" + value2url_param(self.fragment)
         return url
 
 
@@ -133,6 +144,8 @@ def url_param2value(param):
     """
     if isinstance(param, text_type):
         param = param.encode("ascii")
+    if param == None:
+        return Null
 
     def _decode(v):
         output = []

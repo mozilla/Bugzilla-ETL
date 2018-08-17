@@ -45,16 +45,15 @@ import re
 
 from bzETL.alias_analysis import AliasAnalyzer
 from bzETL.extract_bugzilla import MAX_TIMESTAMP
-from bzETL.transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS, DIFF_FIELDS, NULL_VALUES, TIME_FIELDS
+from bzETL.transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS, DIFF_FIELDS, NULL_VALUES, TIME_FIELDS, LONG_FIELDS
 from jx_python import jx, meta
-from mo_dots import inverse, coalesce, wrap, unwrap
+from mo_dots import inverse, coalesce, wrap, unwrap, literal_field, listwrap
 from mo_dots.datas import Data
 from mo_dots.lists import FlatList
 from mo_dots.nones import Null
-from mo_files import File
-from mo_future import text_type
+from mo_future import text_type, long
 from mo_json import value2json
-from mo_logs import Log, strings
+from mo_logs import Log, strings, Except
 from mo_logs.strings import apply_diff
 from mo_math import MIN, Math
 from mo_times import Date
@@ -63,6 +62,7 @@ from pyLibrary import convert
 # Used to split a flag into (type, status [,requestee])
 # Example: "review?(mreid@mozilla.com)" -> (review, ?, mreid@mozilla.com)
 # Example: "review-" -> (review, -)
+from pyLibrary.convert import value2number
 
 FLAG_PATTERN = re.compile("^(.*)([?+-])(\\([^)]*\\))?$")
 
@@ -71,6 +71,8 @@ DEBUG_STATUS = False    # SHOW CURRENT STATE OF PROCESSING
 DEBUG_CC_CHANGES = False  # SHOW MISMATCHED CC CHANGES
 DEBUG_FLAG_MATCHES = False
 DEBUG_MISSING_ATTACHMENTS = False
+DEBUG_MEMORY = False
+DEBUG_DIFF = False
 USE_PREVIOUS_VALUE_OBJECTS = False
 
 # Fields that could have been truncated per bug 55161
@@ -83,15 +85,14 @@ KNOWN_INCONSISTENT_FIELDS = {
     "cf_last_resolved",  # CHANGES IN DATABASE TIMEZONE
     "cf_crash_signature"
 }
-FIELDS_CHANGED = {
+FIELDS_CHANGED = wrap({
     # SOME FIELD VALUES ARE CHANGED WITHOUT HISTORY BEING CHANGED TOO https://bugzilla.mozilla.org/show_bug.cgi?id=997228
-    # MAP FROM PROPERTY NAME TO (MAP FROM OLD VALUE TO NEW VALUE}
-    "cf_blocking_b2g":{"1.5":"2.0"}
-}
+    # MAP FROM PROPERTY NAME TO (MAP FROM OLD VALUE TO LIST OF OBSERVED NEW VALUES}
+    "cf_blocking_b2g":{"1.5":["2.0"]}
+})
 EMAIL_FIELDS = {'cc', 'assigned_to', 'modified_by', 'created_by', 'qa_contact', 'bug_mentor'}
 
 STOP_BUG = 999999999  # AN UNFORTUNATE SIDE EFFECT OF DATAFLOW PROGRAMMING (http://en.wikipedia.org/wiki/Dataflow_programming)
-
 
 
 class BugHistoryParser(object):
@@ -124,6 +125,13 @@ class BugHistoryParser(object):
                 if row_in.bug_id == STOP_BUG:
                     return
                 self.startNewBug(row_in)
+                if DEBUG_MEMORY:
+                    import objgraph
+
+                    result = objgraph.growth()
+                    if result:
+                        width = max(len(name) for name, _, _ in result)
+                        Log.note("objgraph.growth:\n{{data}}", data="\n".join('%-*s%9d %+9d' % (width, name, count, delta) for name, count, delta in result))
 
             # Bugzilla bug workaround - some values were truncated, introducing uncertainty / errors:
             # https://bugzilla.mozilla.org/show_bug.cgi?id=55161
@@ -224,9 +232,8 @@ class BugHistoryParser(object):
             # Problem: No entry found in the 'bugs' table.
             Log.warning("Current bugs table record not found for bug_id: {{bug_id}}  (merge order should have been 1, but was {{start_time}})", **row_in)
 
-
     def processSingleValueTableItem(self, field_name, new_value):
-        self.currBugState[field_name] = new_value
+        self.currBugState[field_name] = self.canonical(field_name, new_value)
 
     def processMultiValueTableItem(self, field_name, new_value):
         if field_name in NUMERIC_FIELDS:
@@ -327,21 +334,7 @@ class BugHistoryParser(object):
             if attachment == None:
                 # THIS HAPPENS WHEN ATTACHMENT IS PRIVATE
                 pass
-                # if DEBUG_MISSING_ATTACHMENTS:
-                #     Log.note(
-                #         "[Bug {{bug_id}}]: PROBLEM Unable to find attachment {{attach_id}} {{start_time}}: {{start_time}}",
-                #         attach_id=row_in.attach_id,
-                #         bug_id=self.currBugID,
-                #         attachments=self.currBugAttachmentsMap
-                #     )
-                # self.currActivity.changes.append({
-                #     "field_name": row_in.field_name,
-                #     "new_value": row_in.new_value,
-                #     "old_value": row_in.old_value,
-                #     "attach_id": row_in.attach_id
-                # })
             else:
-
                 if row_in.field_name == "flags":
                     total = attachment[row_in.field_name]
                     total = self.processFlags(total, multi_field_old_value, multi_field_new_value, row_in.modified_ts, row_in.modified_by, "attachment", attachment)
@@ -398,14 +391,34 @@ class BugHistoryParser(object):
                         diff=diff,
                         cause=e
                     )
+            elif row_in.field_name in LONG_FIELDS:
+                new_value = row_in.new_value
+                curr_value = self.currBugState[row_in.field_name]
+                try:
+                    old_value = LongField(self.currBugID, row_in.modified_ts, curr_value, row_in.old_value)
+                    self.currBugState[row_in.field_name] = old_value
+                    self.currActivity.changes.append({
+                        "field_name": row_in.field_name,
+                        "new_value": curr_value,
+                        "old_value": old_value,
+                        "attach_id": row_in.attach_id
+                    })
+                except Exception as e:
+                    Log.warning(
+                        "[Bug {{bug_id}}]: PROBLEM Unable to process {{field_name}} text:\n{{text|indent}}",
+                        bug_id=self.currBugID,
+                        field_name=row_in.field_name,
+                        text=new_value,
+                        cause=e
+                    )
             else:
+                old_value = self.canonical(row_in.field_name, row_in.old_value)
+
                 if DEBUG_CHANGES and row_in.field_name not in KNOWN_INCONSISTENT_FIELDS:
                     expected_value = self.canonical(row_in.field_name, self.currBugState[row_in.field_name])
                     new_value = self.canonical(row_in.field_name, row_in.new_value)
 
-                    if row_in.field_name in TIME_FIELDS and Date(new_value) == Date(expected_value):
-                        pass
-                    elif text_type(new_value) != text_type(expected_value):
+                    if text_type(new_value) != text_type(expected_value):
                         if row_in.field_name in EMAIL_FIELDS:
                             if Math.is_integer(new_value) or Math.is_integer(expected_value) and row_in.modified_ts<=927814152000:
                                 pass # BEFORE 1999-05-27 14:09:12 THE qa_contact FIELD WAS A NUMBER, NOT THE EMAIL
@@ -414,28 +427,28 @@ class BugHistoryParser(object):
                             else:
                                 self.alias_analyzer.add_alias(lost=new_value, found=expected_value)
                         else:
-                            lookup = FIELDS_CHANGED.setdefault(row_in.field_name, {})
                             # RECORD INCONSISTENCIES, MAYBE WE WILL FIND PATTERNS
-                            if expected_value:
-                                lookup[new_value] = expected_value
-                            File("expected_values.json").write(value2json(FIELDS_CHANGED, pretty=True))
+                            expected_list = FIELDS_CHANGED[row_in.field_name][literal_field(new_value)]
+                            if expected_value not in expected_list:
+                                # expected_list += [expected_value]
+                                # File("expected_values.json").write(value2json(FIELDS_CHANGED, pretty=True))
 
-                            Log.note(
-                                "[Bug {{bug_id}}]: PROBLEM inconsistent change: {{field}} was {{expecting|quote}} got {{observed|quote}}",
-                                bug_id=self.currBugID,
-                                field=row_in.field_name,
-                                expecting=expected_value,
-                                observed=new_value
-                            )
+                                Log.note(
+                                    "[Bug {{bug_id}}]: PROBLEM inconsistent change: {{field}} was {{expecting|quote}} got {{observed|quote}}",
+                                    bug_id=self.currBugID,
+                                    field=row_in.field_name,
+                                    expecting=expected_value,
+                                    observed=new_value
+                                )
 
                 # WE DO NOT ATTEMPT TO CHANGE THE VALUES IN HISTORY TO BE CONSISTENT WITH THE FUTURE
                 self.currActivity.changes.append({
                     "field_name": row_in.field_name,
                     "new_value": self.currBugState[row_in.field_name],
-                    "old_value": row_in.old_value,
+                    "old_value": old_value,
                     "attach_id": row_in.attach_id
                 })
-                self.currBugState[row_in.field_name] = row_in.old_value
+                self.currBugState[row_in.field_name] = old_value
 
     def populateIntermediateVersionObjects(self):
         # Make sure the self.bugVersions are in descending order by modification time.
@@ -507,10 +520,19 @@ class BugHistoryParser(object):
                 self.currBugState.changes = currVersion.changes = changes
 
                 for c, change in enumerate(changes):
+                    if change.old_value == change.new_value and not change.attach_id:
+                        # THIS HAPPENS FOR LONG FIELDS AND DIFF FIELDS
+                        changes[c] = Null
+                        continue
                     if c + 1 < len(changes):
                         # PACK ADDS AND REMOVES TO SINGLE CHANGE TO MATCH ORIGINAL
                         next = changes[c + 1]
                         if change.attach_id == next.attach_id and change.field_name == next.field_name:
+                            if change.new_value == next.old_value:
+                                next.old_value = change.old_value
+                                changes[c] = Null
+                                continue
+
                             if not is_null(change.old_value) and is_null(next.old_value):
                                 next.old_value = change.old_value
                                 change.old_value = Null
@@ -575,7 +597,6 @@ class BugHistoryParser(object):
                         target[change.field_name] = change.new_value
 
                 self.currBugState.bug_version_num = self.bug_version_num
-                self.currBugState.exists = True
 
                 if not mergeBugVersion:
                     # This is not a "merge", so output a row for this bug version.
@@ -626,34 +647,32 @@ class BugHistoryParser(object):
 
 
     def processFlagChange(self, target, change, modified_ts, modified_by):
-        if target.flags == None:
-            Log.note("[Bug {{bug_id}}]: PROBLEM  processFlagChange called with unset 'flags'", bug_id=self.currBugState.bug_id)
-            target.flags = []
+        target.flags = listwrap(target.flags)
 
-        addedFlags, change.new_value = change.new_value, set(c.value for c in change.new_value)
-        removedFlags, change.old_value = change.old_value, set(c.value for c in change.old_value)
+        added_flags, change.new_value = change.new_value, set(c.value for c in change.new_value)
+        removed_flags, change.old_value = change.old_value, set(c.value for c in change.old_value)
 
         # First, mark any removed flags as straight-up deletions.
-        for removed_flag in removedFlags:
-            existingFlag = self.findFlag(target.flags, removed_flag)
+        for removed_flag in removed_flags:
+            existing_flag = self.findFlag(target.flags, removed_flag)
 
-            if existingFlag:
+            if existing_flag:
                 # Carry forward some previous values:
-                existingFlag["previous_modified_ts"] = existingFlag["modified_ts"]
-                existingFlag["modified_ts"] = modified_ts
-                if existingFlag["modified_by"] != modified_by:
-                    existingFlag["previous_modified_by"] = existingFlag["modified_by"]
-                    existingFlag["modified_by"] = modified_by
+                existing_flag["previous_modified_ts"] = existing_flag["modified_ts"]
+                existing_flag["modified_ts"] = modified_ts
+                if existing_flag["modified_by"] != modified_by:
+                    existing_flag["previous_modified_by"] = existing_flag["modified_by"]
+                    existing_flag["modified_by"] = modified_by
 
                 # Add changed stuff:
-                existingFlag["previous_status"] = removed_flag["request_status"]
-                existingFlag["request_status"] = "d"
-                existingFlag["previous_value"] = removed_flag.value
-                existingFlag["value"] = Null            #SPECIAL INDICATOR
+                existing_flag["previous_status"] = removed_flag["request_status"]
+                existing_flag["request_status"] = "d"
+                existing_flag["previous_value"] = removed_flag.value
+                existing_flag["value"] = Null            #SPECIAL INDICATOR
                 # request_type stays the same.
                 # requestee stays the same.
 
-                duration_ms = existingFlag["modified_ts"] - existingFlag["previous_modified_ts"]
+                duration_ms = existing_flag["modified_ts"] - existing_flag["previous_modified_ts"]
                 # existingFlag["duration_days"] = math.floor(duration_ms / (1000.0 * 60 * 60 * 24))  # TODO: REMOVE floor
             else:
                 self.findFlag(target.flags, removed_flag)
@@ -666,7 +685,7 @@ class BugHistoryParser(object):
 
         # See if we can align any of the added flags with previous deletions.
         # If so, try to match them up with a "dangling" removed flag
-        for added_flag in addedFlags:
+        for added_flag in added_flags:
             candidates = wrap([
                 unwrap(element)
                 for element in target.flags
@@ -1004,11 +1023,26 @@ class BugHistoryParser(object):
         return total
 
     def canonical(self, field, value):
-        if value in NULL_VALUES:
-            return None
-        if field in EMAIL_FIELDS:
-            return self.email_alias(value)
-        return FIELDS_CHANGED.get(field, {}).get(value, value)
+        try:
+            if value in NULL_VALUES:
+                return None
+            elif field in EMAIL_FIELDS:
+                return self.email_alias(value)
+            elif field in TIME_FIELDS:
+                value = long(Date(value).unix) * 1000
+            elif field in NUMERIC_FIELDS:
+                value = value2number(value)
+
+            # candidates = FIELDS_CHANGED[field][literal_field(str(value))]
+            # if candidates == None:
+            #     return value
+            # elif len(candidates) == 1:
+            #     return candidates[0]
+            # else:
+            return value
+        except Exception:
+            return value
+
 
     def email_alias(self, name):
         return self.alias_analyzer.get_canonical(name)
@@ -1077,9 +1111,9 @@ class ApplyDiff(object):
         """
         self.bug_id = bug_id
         self.timestamp = timestamp
-        self._text=text
-        self._diff=diff
-        self.reverse=reverse
+        self._text = coalesce(text, "")
+        self._diff = diff
+        self.reverse = reverse
         self.parent = None
         self.result = None
 
@@ -1130,13 +1164,70 @@ class ApplyDiff(object):
         diff = self.diff
         if not self.result:
             try:
-                self.result = "\r\n".join(apply_diff(text.split("\n"), diff.split("\n"), self.reverse))
+                self.result = "\n".join(apply_diff(text.split("\n"), diff.split("\n"), reverse=self.reverse, verify=DEBUG_DIFF))
             except Exception as e:
+                e = Except.wrap(e)
                 self.result = "<ERROR>"
-                # Log.warning("problem applying diff for bug {{bug}}", bug=self.bug_id, cause=e)
+                Log.warning("problem applying diff for bug {{bug}}", bug=self.bug_id, cause=e)
 
         return self.result
 
 
+class LongField(object):
+
+    def __init__(self, bug_id, timestamp, next_value, text):
+        """
+        THE BUGZILLA LONG FIELDS ARE ACROSS MULTIPLE RECORDS, THEY MUST BE APPENDED
+        :param timestamp: DATABASE bug_activity TIMESTAMP THAT WILL BE THE SAME FOR ALL IN A HUNK
+        :param next_value: THE ORIGINAL TEXT (OR A PROMISE OF TEXT)
+        :param text: THE PARTITAL CONTENT
+        :return: A PROMISE TO RETURN THE FULL TEXT
+        """
+        self.bug_id = bug_id
+        self.timestamp = timestamp
+        self.value = text
+        self.prev_value = None
+        self.next_value = None
+
+        if isinstance(next_value, LongField) and next_value.timestamp == timestamp:
+            # CHAIN THE DIFF
+            self.next_value = next_value
+            next_value.prev_value = self
+
+    @property
+    def text(self):
+        # WHEN GOING BACKWARDS IN TIME, THE DIFF WILL ARRIVE IN REVERSE ORDER
+        # LUCKY THAT THE STACK OF DiffApply REVERSES THE REVERSE ORDER
+        if self.next_value is not None:
+            return self.value + self.next_value.text
+        else:
+            return self.value
+
+    def __data__(self):
+        return text_type(self)
+
+    def __gt__(self, other):
+        return text_type(self) > text_type(other)
+
+    def __lt__(self, other):
+        return text_type(self) < text_type(other)
+
+    def __eq__(self, other):
+        if other == None:
+            return False  # DO NOT ACTUALIZE
+        return text_type(self) == text_type(other)
+
+    def __str__(self):
+        if self.prev_value:
+            return str(self.prev_value)
+        return self.value
+
+    def __unicode__(self):
+        if self.prev_value:
+            return text_type(self.prev_value)
+        return self.value
+
+
 # ENSURE WE REGISTER THIS PROMISE AS A STRING
 meta._type_to_name[ApplyDiff] = "string"
+meta._type_to_name[LongField] = "string"

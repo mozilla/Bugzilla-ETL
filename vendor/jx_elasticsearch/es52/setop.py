@@ -102,11 +102,20 @@ def es_setop(es, query):
             leaves = schema.leaves(s_column)
             nested_selects = {}
             if leaves:
-                if s_column == '.' or any(c.jx_type == NESTED for c in leaves):
+                if s_column == '.':
+                    # PULL ALL SOURCE
+                    es_query.stored_fields = ["_source"]
+                    new_select.append({
+                        "name": select.name,
+                        "value": select.value,
+                        "put": {"name": select.name, "index": put_index, "child": "."},
+                        "pull": get_pull_source(".")
+                    })
+                elif any(c.jx_type == NESTED for c in leaves):
                     # PULL WHOLE NESTED ARRAYS
                     es_query.stored_fields = ["_source"]
                     for c in leaves:
-                        if len(c.nested_path) == 1:
+                        if len(c.nested_path) == 1:  # NESTED PROPERTIES ARE IGNORED, CAPTURED BY THESE FIRT LEVEL PROPERTIES
                             jx_name = untype_path(c.names["."])
                             new_select.append({
                                 "name": select.name,
@@ -193,6 +202,8 @@ def es_setop(es, query):
             if es_query.stored_fields[0] == "_source":
                 es_query.stored_fields = ["_source"]
                 n.pull = get_pull_source(n.value.var)
+            elif n.value == "_id":
+                n.pull = jx_expression_to_function("_id")
             else:
                 n.pull = jx_expression_to_function(concat_field("fields", literal_field(n.value.var)))
         else:

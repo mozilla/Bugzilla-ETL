@@ -3,9 +3,9 @@
 		"increment": 10000,
 		"bugs": [
 			384,  //minor email diff
-			1108,  //ok
 			1045,  //ok
 			1046,  //ok
+			1108,  //ok
 			1157,  //ok
 			1877,  //minor email diff
 			1865,  //ok
@@ -23,8 +23,10 @@
 			123203,//expiry only
 			178960,//minor email
 			248970, // another cutoff review request
+			248971, // another cutoff review request
 			367518,//ok
 			372836, // (REVIEW FLAGS TEST)
+			393845, // added blocking1.9+ twice
 			457765,//ok
 			458397,//minor email
 			471427,//minor email
@@ -32,19 +34,23 @@
 			547727,//extra history
 			520943,//review flags bug 927494
 			643420,//ok
+			671185, // *many* review requests
 			692436,//minor email
 			726635,//alias problem
 			813650,//ERROR in blocked
-			937428, // whitespace after comma in user story, complex diff
-			1165765, // VERY LONG short_desc
+			937428,   // whitespace after comma in user story, complex diff
+			1007019,  // does not have bug_status, or component, or product
+			1165765,  // VERY LONG short_desc (split into multiple records)
+			1367660,  // empty lines in diff (no +/- prefix)
+			1367671,  // diff lost a colon in 'reports: https://goo.gl/70o6w6'
+			1370314,  // jumbled diff
+			1379514,  // pre and post start lines for hunks
+			1388648,  // order of the reversed diff application
+			1388678,  // interlaced + and - in diff
+			1392967,  // zero lines and \r correctness
+			1393407,  // space in multipart diff
 			1393332,  // "\\ no newline at end of file"
-			1390946, // mixed case email flag matching
-
-//			NOT VERIFIED
-			248971, // another cutoff review request
-			393845, // added blocking1.9+ twice
-			671185, // *many* review requests
-			1007019, // does not have bug_status, or component, or product
+			1390946,  // mixed case email flag matching
 		],
 		"temp_dir": "tests/resources",
 		"errors": "tests/results/errors",
@@ -64,34 +70,52 @@
 			"index": "bug_aliases"
 		}
 	},
+//	"bugzilla": {
+//		"filename": "tests/resources/sql/bugzilla_mini.sql.zip",
+//		"$ref": "file://~/private.json#bugzilla",
+//		"preamble": "from https://github.com/klahnakoski/Bugzilla-ETL",
+//		"host": "localhost",
+//		"port": 3306,
+//		"schema": "bugs",
+//		"debug": true,
+//		"readonly": true
+//	},
+	"bugzilla": {
+		"$ref": "file://~/private.json#bugzilla-dev",
+		"preamble": "from https://github.com/klahnakoski/Bugzilla-ETL",
+		"host": "localhost",
+		"port": 3307,
+		"schema": "bugs",
+		"debug": false,
+		"readonly": true
+	},
 	"reference": {
 		"filename": "tests/resources/reference/test_examples.json",
 //		"max_timestamp": 1372867005000  // MAX TIME IN THE REFERENCE
 	},
-	"bugzilla": {
-		"filename": "tests/resources/sql/bugzilla_mini.sql.zip",
-		"$ref": "file://~/private.json#bugzilla",
-		"preamble": "from https://github.com/klahnakoski/Bugzilla-ETL",
-		"host": "localhost",
-		"port": 3306,
-		"schema": "bugs",
-		"debug": true,
-		"readonly": true
+	"bugs": {
+		"name":"candidate",
+		"filename": "tests/results/test_results_bugs.json",
+		"es": {
+			"host": "http://localhost",
+			"port": 9200,
+			"schema": {
+				"$ref": "../../../resources/schema/bug_version.json"
+			},
+			"index": "test_bugs",
+			"type": "bug_version"
+		}
 	},
-	"elasticsearch": {
-		"filename": "tests/results/test_results.json",
-		"host": "http://localhost",
-		"port": 9200,
-		"schema": {
-			"$ref": "../../../resources/schema/bug_version.json"
-		},
-		"index": "test_bugs",
-		"type": "bug_version",
+	"comments": {
+		"name":"candidate",
+		"filename": "tests/results/test_results_comments.json"
 	},
 	"constants": {
 		"pyLibrary.env.http.default_headers": {
 			"Referer": "https://wiki.mozilla.org/BMO/ElasticSearch"
-		}
+		},
+		"jx_elasticsearch.meta.ENABLE_META_SCAN": false,
+		"mo_json.SNAP_TO_BASE_10": false
 	},
 	"debug": {
 		"trace": true,
@@ -107,13 +131,6 @@
 			{
 				"log_type": "stream",
 				"stream": "sys.stdout"
-			},
-			{
-				"log_type": "email",
-				"from_address": "klahnakoski@mozilla.com",
-				"to_address": "klahnakoski@mozilla.com",
-				"subject": "[ALERT][testing]Problem with Bugzilla-ETL",
-				"$ref": "file://~/private.json#email"
 			}
 		]
 	}

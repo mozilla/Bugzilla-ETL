@@ -75,10 +75,10 @@ def get_private_bugs(es):
         output = set([])
         for bug in data.hits.hits:
             output.add(bug.fields.bug_id)
-            output |= set(coalesce(convert.value2intlist(bug.fields.blocked), []))
-            output |= set(coalesce(convert.value2intlist(bug.fields.dependson), []))
-            output |= set(coalesce(convert.value2intlist(bug.fields.dupe_of), []))
-            output |= set(coalesce(convert.value2intlist(bug.fields.dupe_by), []))
+            output |= set(convert.value2intlist(bug.fields.blocked))
+            output |= set(convert.value2intlist(bug.fields.dependson))
+            output |= set(convert.value2intlist(bug.fields.dupe_of))
+            output |= set(convert.value2intlist(bug.fields.dupe_by))
 
     output.add(551988, 636964)
     return output
@@ -89,45 +89,45 @@ def old2new(bug, max_date):
     CONVERT THE OLD ES FORMAT TO THE NEW
     THESE ARE KNOWN CHANGES THAT SHOULD BE MADE TO THE PRODUCTION VERSION
     """
-    if bug.everconfirmed != None:
-        if bug.everconfirmed == "":
-            bug.everconfirmed = None
-        else:
-            bug.everconfirmed = int(bug.everconfirmed)
+    # if bug.everconfirmed != None:
+    #     if bug.everconfirmed == "":
+    #         bug.everconfirmed = None
+    #     else:
+    #         bug.everconfirmed = int(bug.everconfirmed)
 
-    bug = json2value(value2json(bug).replace("bugzilla: other b.m.o issues ", "bugzilla: other b.m.o issues"))
+    # bug = json2value(value2json(bug).replace("bugzilla: other b.m.o issues ", "bugzilla: other b.m.o issues"))
 
-    if bug.expires_on > max_date:
-        bug.expires_on = MAX_TIMESTAMP
-    if bug.votes != None:
-        bug.votes = int(bug.votes)
-    bug.dupe_by = convert.value2intlist(bug.dupe_by)
-    if bug.votes == 0:
-        del bug["votes"]
+    # if bug.expires_on > max_date:
+    #     bug.expires_on = MAX_TIMESTAMP
+    # if bug.votes != None:
+    #     bug.votes = int(bug.votes)
+    # bug.dupe_by = convert.value2intlist(bug.dupe_by)
+    # if bug.votes == 0:
+    #     del bug["votes"]
         # if Math.is_integer(bug.remaining_time) and int(bug.remaining_time) == 0:
     #     bug.remaining_time = 0
-    if bug.cf_due_date != None and not Math.is_number(bug.cf_due_date):
-        bug.cf_due_date = convert.datetime2milli(
-            convert.string2datetime(bug.cf_due_date, "%Y-%m-%d")
-        )
-    bug.changes = jx.sort(listwrap(bug.changes), "field_name")
+    # if bug.cf_due_date != None and not Math.is_number(bug.cf_due_date):
+    #     bug.cf_due_date = convert.datetime2milli(
+    #         convert.string2datetime(bug.cf_due_date, "%Y-%m-%d")
+    #     )
+    # bug.changes = jx.sort(listwrap(bug.changes), "field_name")
 
-    if bug.everconfirmed == 0:
-        del bug["everconfirmed"]
-    if bug.id == "692436_1336314345":
-        bug.votes = 3
+    # if bug.everconfirmed == 0:
+    #     del bug["everconfirmed"]
+    # if bug.id == "692436_1336314345":
+    #     bug.votes = 3
 
-    try:
-        if Math.is_number(bug.cf_last_resolved):
-            bug.cf_last_resolved = long(bug.cf_last_resolved)
-        else:
-            bug.cf_last_resolved = convert.datetime2milli(convert.string2datetime(bug.cf_last_resolved, "%Y-%m-%d %H:%M:%S"))
-    except Exception as e:
-        pass
+    # try:
+    #     if bug.cf_last_resolved == None:
+    #         pass
+    #     elif Math.is_number(bug.cf_last_resolved):
+    #         bug.cf_last_resolved = long(bug.cf_last_resolved)
+    #     else:
+    #         bug.cf_last_resolved = convert.datetime2milli(convert.string2datetime(bug.cf_last_resolved, "%Y-%m-%d %H:%M:%S"))
+    # except Exception as e:
+    #     pass
 
-    bug = transform_bugzilla.rename_attachments(bug)
     for c in listwrap(bug.changes):
-        c.field_name = c.field_name.replace("attachments.", "attachments_")
         if c.attach_id == '':
             c.attach_id = None
         else:
@@ -137,9 +137,14 @@ def old2new(bug, max_date):
     for a in bug.attachments:
         a.attach_id = convert.value2int(a.attach_id)
         for k, v in list(a.items()):
-            if k.endswith("isobsolete") or k.endswith("ispatch") or k.endswith("isprivate"):
-                unwrap(a)[k] = convert.value2int(v) # PREVENT dot (.) INTERPRETATION
-                a[k.split(".")[-1].split("_")[-1]] = convert.value2int(v)
+            if k.startswith('attachments') and k.endswith("isobsolete") or k.endswith("ispatch") or k.endswith("isprivate"):
+                del a[k]
+                k = k.replace('attachments.', '').replace('attachments_', '')
+                a[k] = convert.value2int(v)
+            elif k in ('attachments_mimetype','attachments.mimetype'):
+                del a[k]
+                k = k.replace('attachments.', '').replace('attachments_', '')
+                a[k] = v
 
     bug = transform_bugzilla.normalize(bug)
     return bug
