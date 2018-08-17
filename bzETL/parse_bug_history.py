@@ -95,11 +95,6 @@ EMAIL_FIELDS = {'cc', 'assigned_to', 'modified_by', 'created_by', 'qa_contact', 
 STOP_BUG = 999999999  # AN UNFORTUNATE SIDE EFFECT OF DATAFLOW PROGRAMMING (http://en.wikipedia.org/wiki/Dataflow_programming)
 
 
-if DEBUG_MEMORY:
-    import gc
-    import objgraph
-
-
 class BugHistoryParser(object):
     def __init__(self, settings, alias_analyzer, output_queue):
         self.startNewBug(wrap({"bug_id": 0, "modified_ts": 0, "_merge_order": 1}))
@@ -131,7 +126,8 @@ class BugHistoryParser(object):
                     return
                 self.startNewBug(row_in)
                 if DEBUG_MEMORY:
-                    # gc.collect()
+                    import objgraph
+
                     result = objgraph.growth()
                     if result:
                         width = max(len(name) for name, _, _ in result)

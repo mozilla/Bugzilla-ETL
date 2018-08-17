@@ -171,7 +171,6 @@ def setup_es(settings, db):
         esq = jx_elasticsearch.new_instance(read_only=False, index=es.settings.index, kwargs=settings.es)
         esq_comments = jx_elasticsearch.new_instance(read_only=False, index=es_comments.settings.index, kwargs=settings.es_comments)
 
-
     return current_run_time, esq, esq_comments, last_run_time
 
 @override
