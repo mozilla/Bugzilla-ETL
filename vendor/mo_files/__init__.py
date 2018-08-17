@@ -17,7 +17,7 @@ from mimetypes import MimeTypes
 from tempfile import mkdtemp, NamedTemporaryFile
 
 from mo_dots import get_module, coalesce, Null
-from mo_future import text_type, binary_type
+from mo_future import text_type, binary_type, PY3
 from mo_logs import Log, Except
 from mo_logs.exceptions import extract_stack
 from mo_threads import Thread, Till
@@ -476,11 +476,18 @@ def _copy(from_, to_):
         File.new_instance(to_).write_bytes(File.new_instance(from_).read_bytes())
 
 
-def base642bytearray(value):
-    if value == None:
-        return bytearray(b"")
-    else:
-        return bytearray(base64.b64decode(value))
+if PY3:
+    def base642bytearray(value):
+        if value == None:
+            return bytearray(b"")
+        else:
+            return bytearray(base64.b64decode(value))
+else:
+    def base642bytearray(value):
+        if value == None:
+            return bytearray(b"")
+        else:
+            return bytearray(base64.b64decode(value), encoding='utf8')
 
 
 def datetime2string(value, format="%Y-%m-%d %H:%M:%S"):
