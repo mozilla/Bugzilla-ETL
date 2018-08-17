@@ -42,16 +42,21 @@
 		"port": 9200,
 		"index": "public_comments",
 		"type": "bug_comment",
+		"typed": true,
 		"schema": {
 			"$ref": "../schema/bug_comments.json"
 		},
-		"timeout": 60
+		"timeout": 60,
+		"debug": false
 	},
 	"constants":{
 		"jx_elasticsearch.meta.DEBUG": true,
 		"jx_elasticsearch.meta.ENABLE_META_SCAN": false,
 		"pyLibrary.sql.mysql.EXECUTE_TIMEOUT": 0,
-		"pyLibrary.env.http.default_headers": {"Referer": "https://github.com/mozilla/Bugzilla-ETL"},
+		"pyLibrary.env.http.default_headers": {
+			"Referer": "https://github.com/mozilla/Bugzilla-ETL"
+		},
+		"mo_json.SNAP_TO_BASE_10": false,
 		"bzETL.parse_bug_history.DEBUG_DIFF": false
 	},
 	"debug": {

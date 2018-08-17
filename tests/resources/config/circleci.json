@@ -79,7 +79,7 @@
 			"typed": true,
 			"schema": {"$ref":"..../resources/schema/bug_version.json"},
 			"timeout": 60,
-			"debug": true
+			"debug": false
 		},
 		"comments": {
 			"host": "http://localhost",
@@ -89,7 +89,7 @@
 			"typed": true,
 			"schema": {"$ref":"..../resources/schema/bug_comments.json"},
 			"timeout": 60,
-			"debug": true
+			"debug": false
 		}
 	},
 	"private": {
@@ -101,7 +101,7 @@
 			"typed": true,
 			"schema": {"$ref":"..../resources/schema/bug_version.json"},
 			"timeout": 60,
-			"debug": true
+			"debug": false
 		},
 		"comments": {
 			"host": "http://localhost",
@@ -111,7 +111,7 @@
 			"typed": true,
 			"schema": {"$ref":"..../resources/schema/bug_comments.json"},
 			"timeout": 60,
-			"debug": true
+			"debug": false
 		}
 	},
 	"constants": {

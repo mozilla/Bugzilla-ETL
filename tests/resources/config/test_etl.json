@@ -103,7 +103,9 @@
 				"index": "public_comments",
 				"type": "bug_comment",
 				"typed": true,
-				"schema": {"$ref": "..../resources/schema/bug_comments.json"},
+				"schema": {
+					"$ref": "..../resources/schema/bug_comments.json"
+				},
 				"timeout": 60,
 				"debug": false
 			}
@@ -138,20 +140,21 @@
 		}
 	},
 	"constants": {
-		"pyLibrary.env.http.default_headers": {
-			"Referer": "https://wiki.mozilla.org/BMO/ElasticSearch"
-		},
+		"jx_elasticsearch.meta.DEBUG": true,
 		"jx_elasticsearch.meta.ENABLE_META_SCAN": false,
+		"pyLibrary.sql.mysql.EXECUTE_TIMEOUT": 0,
+		"pyLibrary.env.http.default_headers": {
+			"Referer": "https://github.com/mozilla/Bugzilla-ETL"
+		},
 		"mo_json.SNAP_TO_BASE_10": false,
 		"bzETL.parse_bug_history.DEBUG_MEMORY": true
 	},
 	"debug": {
 		"trace": true,
-		"profile": false,
 		"log": [
 			{
 				"class": "logging.handlers.RotatingFileHandler",
-				"filename": "./results/logs/bz_etl.log",
+				"filename": "results/logs/bz_etl.log",
 				"maxBytes": 10000000,
 				"backupCount": 10,
 				"encoding": "utf8"
