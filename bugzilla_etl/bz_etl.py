@@ -182,6 +182,9 @@ def incremental_etl(param, db, esq, esq_comments, bug_output_queue, comment_outp
 
     # REMOVE PRIVATE BUGS
     private_bugs = get_private_bugs_for_delete(db, param)
+
+    alias_analyzer = AliasAnalyzer(kwargs.alias)
+
     Log.note("Ensure the following private bugs are deleted:\n{{private_bugs|indent}}", private_bugs=sorted(private_bugs))
     for g, delete_bugs in jx.groupby(private_bugs, size=1000):
         still_existing = get_bug_ids(esq, {"terms": {"bug_id": delete_bugs}})
@@ -216,8 +219,7 @@ def incremental_etl(param, db, esq, esq_comments, bug_output_queue, comment_outp
         refresh_param.start_time_str = extract_bugzilla.milli2string(db, MIN_TIMESTAMP)
 
         try:
-            analyzer = AliasAnalyzer(kwargs.alias)
-            etl(db, bug_output_queue, refresh_param.copy(), analyzer, please_stop=None)
+            etl(db, bug_output_queue, refresh_param.copy(), alias_analyzer, please_stop=None)
             etl_comments(db, esq_comments.es, refresh_param.copy(), please_stop=None)
         except Exception as e:
             Log.error(
@@ -277,13 +279,14 @@ def incremental_etl(param, db, esq, esq_comments, bug_output_queue, comment_outp
             bug_output_queue=bug_output_queue,
             comment_output_queue=comment_output_queue,
             param=param.copy(),
-            alias_analyzer=AliasAnalyzer(kwargs.alias)
+            alias_analyzer=alias_analyzer
         )
 
 @override
 def full_etl(resume_from_last_run, param, db, esq, esq_comments, bug_output_queue, comment_output_queue, kwargs):
     end = coalesce(param.end, db.query("SELECT max(bug_id) bug_id FROM bugs")[0].bug_id)
     start = coalesce(param.start, 0)
+    alias_analyzer = AliasAnalyzer(kwargs=kwargs.alias)
     if resume_from_last_run:
         # FIND THE LAST GOOD BUG NUMBER PROCESSED (WE GO BACKWARDS, SO LOOK FOR MINIMUM BUG, AND ROUND UP)
         end = coalesce(param.end, Math.ceiling(get_min_bug_id(esq), param.increment), end)
@@ -341,7 +344,7 @@ def full_etl(resume_from_last_run, param, db, esq, esq_comments, bug_output_queu
                     bug_output_queue,
                     comment_output_queue,
                     param.copy(),
-                    alias_analyzer=AliasAnalyzer(kwargs=kwargs.alias)
+                    alias_analyzer=alias_analyzer
                 )
 
             except Exception as e:

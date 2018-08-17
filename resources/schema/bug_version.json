@@ -58,6 +58,7 @@
 	},
 	"mappings": {
 		"bug_version": {
+			"date_detection": false,
 			"properties": {
 				"cf_user_story": {
 					"type": "text",

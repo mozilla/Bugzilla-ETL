@@ -51,7 +51,7 @@ from mo_dots import inverse, coalesce, wrap, unwrap, literal_field, listwrap
 from mo_dots.datas import Data
 from mo_dots.lists import FlatList
 from mo_dots.nones import Null
-from mo_future import text_type, long
+from mo_future import text_type, long, PYPY
 from mo_json import value2json
 from mo_logs import Log, strings, Except
 from mo_logs.strings import apply_diff
@@ -125,7 +125,7 @@ class BugHistoryParser(object):
                 if row_in.bug_id == STOP_BUG:
                     return
                 self.startNewBug(row_in)
-                if DEBUG_MEMORY:
+                if DEBUG_MEMORY and not PYPY:
                     import objgraph
 
                     result = objgraph.growth()
