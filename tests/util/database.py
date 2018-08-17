@@ -11,7 +11,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
-from bzETL.extract_bugzilla import milli2string, get_current_time
+from bugzilla_etl.extract_bugzilla import milli2string, get_current_time
 from mo_dots.datas import Data
 from mo_files import File
 from mo_logs import Log

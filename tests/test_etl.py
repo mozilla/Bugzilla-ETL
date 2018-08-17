@@ -18,10 +18,10 @@ import os
 from unittest import skipIf, skip
 
 import jx_elasticsearch
-from bzETL import extract_bugzilla, bz_etl
-from bzETL.alias_analysis import AliasAnalyzer
-from bzETL.bz_etl import etl, MIN_TIMESTAMP
-from bzETL.extract_bugzilla import get_current_time, SCREENED_WHITEBOARD_BUG_GROUPS
+from bugzilla_etl import extract_bugzilla, bz_etl
+from bugzilla_etl.alias_analysis import AliasAnalyzer
+from bugzilla_etl.bz_etl import etl, MIN_TIMESTAMP
+from bugzilla_etl.extract_bugzilla import get_current_time, SCREENED_WHITEBOARD_BUG_GROUPS
 from jx_mysql import esfilter2sqlwhere
 from jx_python import jx
 from mo_dots import Data, Null, wrap, coalesce, listwrap

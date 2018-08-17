@@ -13,7 +13,7 @@ from __future__ import unicode_literals
 
 import unittest
 
-from bzETL.extract_bugzilla import SCREENED_WHITEBOARD_BUG_GROUPS
+from bugzilla_etl.extract_bugzilla import SCREENED_WHITEBOARD_BUG_GROUPS
 from jx_python import jx
 from mo_dots import Data, set_default, listwrap, wrap, coalesce
 from mo_logs import startup, constants, Log

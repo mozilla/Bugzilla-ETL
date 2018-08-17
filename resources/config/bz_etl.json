@@ -57,7 +57,7 @@
 			"Referer": "https://github.com/mozilla/Bugzilla-ETL"
 		},
 		"mo_json.SNAP_TO_BASE_10": false,
-		"bzETL.parse_bug_history.DEBUG_DIFF": false
+		"bugzilla_etl.parse_bug_history.DEBUG_DIFF": false
 	},
 	"debug": {
 		"trace": true,

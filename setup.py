@@ -37,13 +37,13 @@ setup(
     author_email='kyle@lahnakoski.com',
     url='https://github.com/mozilla/Bugzilla-ETL',
     license='MPL 2.0',
-    packages=['bzETL'],
+    packages=['bugzilla_etl'],
     install_requires=['pymysql', 'requests', 'pytest'],
     include_package_data=True,
     zip_safe=False,
     entry_points={
         "console_scripts": [
-            "bzetl = bzETL.bz_etl:start",
+            "bzetl = bugzilla_etl.bz_etl:start",
             "bzreplicate = bz.ETL.replicate:start"
         ]
     },

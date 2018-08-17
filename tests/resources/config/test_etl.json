@@ -147,7 +147,7 @@
 			"Referer": "https://github.com/mozilla/Bugzilla-ETL"
 		},
 		"mo_json.SNAP_TO_BASE_10": false,
-		"bzETL.parse_bug_history.DEBUG_MEMORY": true
+		"bugzilla_etl.parse_bug_history.DEBUG_MEMORY": true
 	},
 	"debug": {
 		"trace": true,

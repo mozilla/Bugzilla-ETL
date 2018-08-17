@@ -1,2 +1,2 @@
 SET PYTHONPATH=.
-CALL pypy .\bzETL\replicate.py --settings=fileload_settings.json
+CALL pypy .\bugzilla_etl\replicate.py --settings=fileload_settings.json

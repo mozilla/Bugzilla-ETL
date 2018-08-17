@@ -43,9 +43,9 @@ from __future__ import unicode_literals
 import math
 import re
 
-from bzETL.alias_analysis import AliasAnalyzer
-from bzETL.extract_bugzilla import MAX_TIMESTAMP
-from bzETL.transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS, DIFF_FIELDS, NULL_VALUES, TIME_FIELDS, LONG_FIELDS
+from bugzilla_etl.alias_analysis import AliasAnalyzer
+from bugzilla_etl.extract_bugzilla import MAX_TIMESTAMP
+from bugzilla_etl.transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS, DIFF_FIELDS, NULL_VALUES, TIME_FIELDS, LONG_FIELDS
 from jx_python import jx, meta
 from mo_dots import inverse, coalesce, wrap, unwrap, literal_field, listwrap
 from mo_dots.datas import Data

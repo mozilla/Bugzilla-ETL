@@ -1,2 +1,2 @@
 SET PYTHONPATH=.
-pypy bzETL\alias_analysis.py --settings=alias_analysis_settings.json
+pypy bugzilla_etl\alias_analysis.py --settings=alias_analysis_settings.json

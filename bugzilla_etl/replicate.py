@@ -24,7 +24,7 @@ from datetime import datetime, timedelta
 
 from mo_future import text_type
 
-from bzETL import transform_bugzilla
+from bugzilla_etl import transform_bugzilla
 from jx_python import jx
 from mo_collections.multiset import Multiset
 from mo_dots import coalesce

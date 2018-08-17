@@ -13,10 +13,10 @@ from __future__ import unicode_literals
 
 import unittest
 
-from bzETL import bz_etl, extract_bugzilla
-from bzETL.alias_analysis import AliasAnalyzer
-from bzETL.bz_etl import etl, etl_comments
-from bzETL.extract_bugzilla import get_current_time
+from bugzilla_etl import bz_etl, extract_bugzilla
+from bugzilla_etl.alias_analysis import AliasAnalyzer
+from bugzilla_etl.bz_etl import etl, etl_comments
+from bugzilla_etl.extract_bugzilla import get_current_time
 from mo_dots import Data
 from mo_logs import startup, Log, constants
 from mo_threads import ThreadedQueue

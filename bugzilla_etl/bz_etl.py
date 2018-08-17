@@ -14,11 +14,11 @@ from __future__ import unicode_literals
 from mo_times.dates import unix2datetime
 
 import jx_elasticsearch
-from bzETL import extract_bugzilla, alias_analysis, parse_bug_history
-from bzETL.alias_analysis import AliasAnalyzer
-from bzETL.extract_bugzilla import get_comments, get_current_time, MIN_TIMESTAMP, get_private_bugs_for_delete, get_recent_private_bugs, get_recent_private_attachments, get_recent_private_comments, get_comments_by_id, get_bugs, \
+from bugzilla_etl import extract_bugzilla, alias_analysis, parse_bug_history
+from bugzilla_etl.alias_analysis import AliasAnalyzer
+from bugzilla_etl.extract_bugzilla import get_comments, get_current_time, MIN_TIMESTAMP, get_private_bugs_for_delete, get_recent_private_bugs, get_recent_private_attachments, get_recent_private_comments, get_comments_by_id, get_bugs, \
     get_dependencies, get_flags, get_new_activities, get_bug_see_also, get_attachments, get_tracking_flags, get_keywords, get_tags, get_cc, get_bug_groups, get_duplicates
-from bzETL.parse_bug_history import BugHistoryParser
+from bugzilla_etl.parse_bug_history import BugHistoryParser
 from jx_python import jx
 from mo_dots import wrap, coalesce, listwrap, Data
 from mo_files import File

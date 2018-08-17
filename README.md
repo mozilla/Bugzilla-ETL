@@ -86,7 +86,7 @@ Asuming your `settings.json` file is in `~/Bugzilla_ETL`:
 
     cd ~/Bugzilla_ETL
 
-    pypy bzETL\bz_etl.py --settings=settings.json
+    pypy bugzilla_etl\bz_etl.py --settings=settings.json
 
 Use `--help` for more options, and see [example command line script](resources/scripts/bz_etl.bat)
 
@@ -98,7 +98,7 @@ quicker to confirm your configuration is correct, use `--reset
 to the first 1000, and last 1000 bugs.
 
     cd ~/Bugzilla_ETL
-    pypy bzETL\bz_etl.py  --settings=settings.json --reset --quick
+    pypy bugzilla_etl\bz_etl.py  --settings=settings.json --reset --quick
 
 ## Using Cron
 

@@ -40,4 +40,4 @@ RUN addgroup --gid 10001 $USER \
 USER $USER
 
 CMD export PYTHONPATH=.:vendor \
-    && python ./bzETL/bz_etl.py --settings=resources/docker/config.json
+    && python ./bugzilla_etl/bz_etl.py --settings=resources/docker/config.json

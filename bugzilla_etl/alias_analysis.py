@@ -12,7 +12,7 @@ from __future__ import division
 from __future__ import unicode_literals
 
 import jx_elasticsearch
-from bzETL.extract_bugzilla import get_all_cc_changes
+from bugzilla_etl.extract_bugzilla import get_all_cc_changes
 from jx_python import jx
 from mo_collections.multiset import Multiset
 from mo_dots import coalesce

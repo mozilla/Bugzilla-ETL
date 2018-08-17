@@ -10,7 +10,7 @@ exclude *.txt
 exclude README.md
 exclude *.json
 exclude .git*
-recursive-include bzETL/util *.py
+recursive-include bugzilla_etl/util *.py
 recursive-exclude . *.pyc
 include README.txt
 exclude MANIFEST.in

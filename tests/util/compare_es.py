@@ -13,8 +13,8 @@ from __future__ import division
 from __future__ import unicode_literals
 
 import jx_elasticsearch
-from bzETL import transform_bugzilla
-from bzETL.extract_bugzilla import MAX_TIMESTAMP
+from bugzilla_etl import transform_bugzilla
+from bugzilla_etl.extract_bugzilla import MAX_TIMESTAMP
 from jx_python import jx
 from jx_python.containers.list_usingPythonList import ListContainer
 from mo_dots import coalesce, unwrap, listwrap
