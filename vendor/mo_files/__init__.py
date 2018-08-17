@@ -480,7 +480,7 @@ def base642bytearray(value):
     if value == None:
         return bytearray(b"")
     else:
-        return bytearray(base64.b64decode(value), encoding='utf8')
+        return bytearray(base64.b64decode(value))
 
 
 def datetime2string(value, format="%Y-%m-%d %H:%M:%S"):

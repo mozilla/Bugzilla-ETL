@@ -6,7 +6,7 @@ version: 2
 jobs:
   test:
     docker:
-      - image: circleci/python:3.6.1
+      - image: circleci/python:3.6.4
 
       # MYSQL
       # https://hub.docker.com/r/circleci/mysql/
@@ -28,14 +28,12 @@ jobs:
           transport.host: localhost
           discovery.type: single-node
 
-
     working_directory: ~/repo
 
     environment:
       PYTHONPATH: .:vendor
       MYSQL_USERNAME: root
       MYSQL_PASSWORD: password
-
 
     steps:
       - checkout
