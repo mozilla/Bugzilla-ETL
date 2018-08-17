@@ -53,13 +53,13 @@
 	},
 	"alias": {
 		"increment": 1000000,
-		"file": {
-			"path": "resources/schema/bugzilla_aliases.json",
-			"$ref": "file://~/private.json#alias_file"
-		},
 		"elasticsearch": {
 			"host": "http://localhost",
 			"index": "bug_aliases"
+		},
+		"file": {
+			"path": "resources/schema/bugzilla_aliases.json",
+			"$ref": "file://~/private.json#alias_file"
 		}
 	},
 	"bugzilla": {
@@ -69,7 +69,7 @@
 		"host": "localhost",
 		"port": 3306,
 		"schema": "bugs",
-		"debug": true
+		"debug": false
 	},
 	"reference": {
 		"public": {
@@ -92,7 +92,7 @@
 				"typed": true,
 				"schema": {"$ref": "..../resources/schema/bug_version.json"},
 				"timeout": 60,
-				"debug": true
+				"debug": false
 			}
 		},
 		"comments": {
@@ -105,7 +105,7 @@
 				"typed": true,
 				"schema": {"$ref": "..../resources/schema/bug_comments.json"},
 				"timeout": 60,
-				"debug": true
+				"debug": false
 			}
 		}
 	},
@@ -120,7 +120,7 @@
 				"typed": true,
 				"schema": {"$ref": "..../resources/schema/bug_version.json"},
 				"timeout": 60,
-				"debug": true
+				"debug": false
 			}
 		},
 		"comments": {
@@ -133,7 +133,7 @@
 				"typed": true,
 				"schema": {"$ref": "..../resources/schema/bug_comments.json"},
 				"timeout": 60,
-				"debug": true
+				"debug": false
 			}
 		}
 	},
@@ -142,7 +142,8 @@
 			"Referer": "https://wiki.mozilla.org/BMO/ElasticSearch"
 		},
 		"jx_elasticsearch.meta.ENABLE_META_SCAN": false,
-		"mo_json.SNAP_TO_BASE_10": false
+		"mo_json.SNAP_TO_BASE_10": false,
+		"bzETL.parse_bug_history.DEBUG_MEMORY": true
 	},
 	"debug": {
 		"trace": true,

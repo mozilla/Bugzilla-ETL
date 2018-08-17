@@ -67,12 +67,10 @@ def etl_comments(db, output_queue, param, please_stop):
             comment_db_cache = comment_db
 
     with comment_db_cache_lock:
-        Log.note("Read comments from database")
         comments = get_comments(comment_db_cache, param)
 
     for g, block_of_comments in jx.groupby(comments, size=500):
-        with Timer("Write {{num}} comments to ElasticSearch", {"num": len(block_of_comments)}):
-            output_queue.extend({"id": text_type(comment.comment_id), "value": comment} for comment in block_of_comments)
+        output_queue.extend({"id": text_type(comment.comment_id), "value": comment} for comment in block_of_comments)
 
 
 def etl(db, bug_output_queue, param, alias_analyzer, please_stop):
@@ -295,7 +293,7 @@ def full_etl(resume_from_last_run, param, db, esq, esq_comments, bug_output_queu
     ## MAIN ETL LOOP
     #############################################################
     for min, max in jx.reverse(jx.intervals(start, end, param.increment)):
-        with Timer("etl block {{min}}..{{max}}", {"min":min, "max":max}):
+        with Timer("etl block {{min}}..{{max}}", param={"min":min, "max":max}, debug=param.debug):
             if kwargs.args.quick and min < end - param.increment and min != 0:
                 #--quick ONLY DOES FIRST AND LAST BLOCKS
                 continue

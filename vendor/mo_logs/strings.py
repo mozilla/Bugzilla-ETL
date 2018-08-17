@@ -751,8 +751,7 @@ def apply_diff(text, diff, reverse=False, verify=True):
         return output
 
     R = xrange(0, len(diff))
-    if reverse:
-        R = reversed(R)
+    R = reversed(R) if reverse else R
     for start_of_hunk in R:
         header = diff[start_of_hunk]
         if not header.strip() or not header.startswith("@@"):
@@ -770,15 +769,8 @@ def apply_diff(text, diff, reverse=False, verify=True):
         adds = tuple(int(i.strip()) for i in matches.group(2).split(","))  # EXPECTING start_line, length TO ADD
         add = Data(start=adds[0], length=1 if len(adds) == 1 else adds[1])
 
-        if remove.length == 0:
-            remove.start = add.start
-        if add.length == 0:
+        if add.length == 0 and add.start == 0:
             add.start = remove.start
-
-        if remove.start != add.start:
-            if not _Log:
-                _late_import()
-            _Log.error("Do not know how to handle")
 
         def repair_hunk(diff):
             # THE LAST DELETED LINE MAY MISS A "\n" MEANING THE FIRST
@@ -797,7 +789,7 @@ def apply_diff(text, diff, reverse=False, verify=True):
             else:
                 if remove.length == 0:
                     return diff
-                last_removed_line = output[remove.start - 1]
+                last_removed_line = output[add.start - 1]
                 if problem_line.startswith('-' + last_removed_line + "+"):
                     split_point = len(last_removed_line) + 1
                 else:
@@ -809,32 +801,36 @@ def apply_diff(text, diff, reverse=False, verify=True):
                 diff[start_of_hunk+1 + remove.length:]
             )
             return new_diff
-
         diff = repair_hunk(diff)
         diff = [d for d in diff if d != "\\ no newline at end of file"]  # ANOTHER REPAIR
+        hunk_body = diff[start_of_hunk + 1:start_of_hunk + 1 + add.length + remove.length]
 
         if reverse:
             new_output = (
                 output[:add.start - 1] +
-                [d[1:] for d in diff[start_of_hunk + 1:start_of_hunk + 1 + add.length + remove.length] if d[0] == '-'] +
+                [d[1:] for d in hunk_body if d and d[0] == '-'] +
                 output[add.start + add.length - 1:]
             )
         else:
-            # APPLYING DIFF FORWARD REQUIRES WE APPLY THE HUNKS IN REVERSE TO GET THE LINE NUMBERS RIGHT?
             new_output = (
-                output[:remove.start - 1] +
-                [d[1:] for d in diff[start_of_hunk + 1:start_of_hunk + 1 + remove.length + add.length] if d[0] == '+'] +
-                output[remove.start + remove.length - 1:]
+                output[:add.start - 1] +
+                [d[1:] for d in hunk_body if d and d[0] == '+'] +
+                output[add.start + remove.length - 1:]
             )
         output = new_output
 
     if verify:
         original = apply_diff(output, diff, not reverse, False)
-        for t, o in zip_longest(text, original):
-            if t != o:
-                if not _Log:
-                    _late_import()
-                _Log.error("logical verification check failed")
+        if set(text) != set(original):  # bugzilla-etl diffs are a jumble
+
+            for t, o in zip_longest(text, original):
+                if t in ['reports: https://goo.gl/70o6w6\r']:
+                    break  # KNOWN INCONSISTENCIES
+                if t != o:
+                    if not _Log:
+                        _late_import()
+                    _Log.error("logical verification check failed")
+                    break
 
     return output
 

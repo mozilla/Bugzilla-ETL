@@ -287,7 +287,7 @@ def get_bugs(db, param):
                 CASE
                 WHEN bgm.screened AND b.status_whiteboard IS NOT NULL AND trim(b.status_whiteboard)<>''
                 THEN '[screened]'
-                ELSE trim(lower(b.status_whiteboard))
+                ELSE lower(b.status_whiteboard)
                 END status_whiteboard,
                 {{sensitive_columns}},
                 {{bugs_columns_SQL}}

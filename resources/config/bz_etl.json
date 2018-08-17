@@ -52,6 +52,7 @@
 		"jx_elasticsearch.meta.ENABLE_META_SCAN": false,
 		"pyLibrary.sql.mysql.EXECUTE_TIMEOUT": 0,
 		"pyLibrary.env.http.default_headers": {"Referer": "https://github.com/mozilla/Bugzilla-ETL"},
+		"bzETL.parse_bug_history.DEBUG_DIFF": false
 	},
 	"debug": {
 		"trace": true,

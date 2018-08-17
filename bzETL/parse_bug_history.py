@@ -51,10 +51,9 @@ from mo_dots import inverse, coalesce, wrap, unwrap, literal_field, listwrap
 from mo_dots.datas import Data
 from mo_dots.lists import FlatList
 from mo_dots.nones import Null
-from mo_files import File
 from mo_future import text_type, long
 from mo_json import value2json
-from mo_logs import Log, strings
+from mo_logs import Log, strings, Except
 from mo_logs.strings import apply_diff
 from mo_math import MIN, Math
 from mo_times import Date
@@ -72,6 +71,8 @@ DEBUG_STATUS = False    # SHOW CURRENT STATE OF PROCESSING
 DEBUG_CC_CHANGES = False  # SHOW MISMATCHED CC CHANGES
 DEBUG_FLAG_MATCHES = False
 DEBUG_MISSING_ATTACHMENTS = False
+DEBUG_MEMORY = False
+DEBUG_DIFF = False
 USE_PREVIOUS_VALUE_OBJECTS = False
 
 # Fields that could have been truncated per bug 55161
@@ -93,6 +94,10 @@ EMAIL_FIELDS = {'cc', 'assigned_to', 'modified_by', 'created_by', 'qa_contact', 
 
 STOP_BUG = 999999999  # AN UNFORTUNATE SIDE EFFECT OF DATAFLOW PROGRAMMING (http://en.wikipedia.org/wiki/Dataflow_programming)
 
+
+if DEBUG_MEMORY:
+    import gc
+    import objgraph
 
 
 class BugHistoryParser(object):
@@ -125,6 +130,12 @@ class BugHistoryParser(object):
                 if row_in.bug_id == STOP_BUG:
                     return
                 self.startNewBug(row_in)
+                if DEBUG_MEMORY:
+                    # gc.collect()
+                    result = objgraph.growth()
+                    if result:
+                        width = max(len(name) for name, _, _ in result)
+                        Log.note("objgraph.growth:\n{{data}}", data="\n".join('%-*s%9d %+9d' % (width, name, count, delta) for name, count, delta in result))
 
             # Bugzilla bug workaround - some values were truncated, introducing uncertainty / errors:
             # https://bugzilla.mozilla.org/show_bug.cgi?id=55161
@@ -1104,9 +1115,9 @@ class ApplyDiff(object):
         """
         self.bug_id = bug_id
         self.timestamp = timestamp
-        self._text=text
-        self._diff=diff
-        self.reverse=reverse
+        self._text = coalesce(text, "")
+        self._diff = diff
+        self.reverse = reverse
         self.parent = None
         self.result = None
 
@@ -1157,10 +1168,11 @@ class ApplyDiff(object):
         diff = self.diff
         if not self.result:
             try:
-                self.result = "\r\n".join(apply_diff(text.split("\n"), diff.split("\n"), self.reverse))
+                self.result = "\n".join(apply_diff(text.split("\n"), diff.split("\n"), reverse=self.reverse, verify=DEBUG_DIFF))
             except Exception as e:
+                e = Except.wrap(e)
                 self.result = "<ERROR>"
-                # Log.warning("problem applying diff for bug {{bug}}", bug=self.bug_id, cause=e)
+                Log.warning("problem applying diff for bug {{bug}}", bug=self.bug_id, cause=e)
 
         return self.result
 
