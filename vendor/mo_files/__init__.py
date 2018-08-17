@@ -45,6 +45,8 @@ class File(object):
         if filename == None:
             Log.error(u"File must be given a filename")
         elif isinstance(filename, File):
+            self.key = filename.key
+            self._filename = filename._filename
             return
         elif isinstance(filename, (binary_type, text_type)):
             self.key = None
@@ -66,7 +68,6 @@ class File(object):
             # LET ... REFER TO GRANDPARENT, .... REFER TO GREAT-GRAND-PARENT, etc...
             self._filename = self._filename.replace(".../", "../../")
         self.buffering = buffering
-
 
         if suffix:
             self._filename = File.add_suffix(self._filename, suffix)
