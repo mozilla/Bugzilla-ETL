@@ -41,13 +41,13 @@ class File(object):
         """
         YOU MAY SET filename TO {"path":p, "key":k} FOR CRYPTO FILES
         """
-        try:
-            self._mime_type = mime_type
-            if filename == None:
-                Log.error(u"File must be given a filename")
-            elif isinstance(filename, File):
-                return
-            elif isinstance(filename, (binary_type, text_type)):
+        self._mime_type = mime_type
+        if filename == None:
+            Log.error(u"File must be given a filename")
+        elif isinstance(filename, File):
+            return
+        elif isinstance(filename, (binary_type, text_type)):
+            try:
                 self.key = None
                 if filename==".":
                     self._filename = ""
@@ -59,19 +59,22 @@ class File(object):
                         home_path = home_path[:-1]
                     filename = home_path + filename[1::]
                 self._filename = filename.replace(os.sep, "/")  # USE UNIX STANDARD
-            else:
+            except Exception as e:
+                Log.error("can not load {{file}}", file=filename, cause=e)
+        else:
+            try:
                 self.key = base642bytearray(filename.key)
                 self._filename = "/".join(filename.path.split(os.sep))  # USE UNIX STANDARD
+            except Exception as e:
+                Log.error("can not load {{file}}", file=ffilename.path, cause=e)
 
-            while self._filename.find(".../") >= 0:
-                # LET ... REFER TO GRANDPARENT, .... REFER TO GREAT-GRAND-PARENT, etc...
-                self._filename = self._filename.replace(".../", "../../")
-            self.buffering = buffering
+        while self._filename.find(".../") >= 0:
+            # LET ... REFER TO GRANDPARENT, .... REFER TO GREAT-GRAND-PARENT, etc...
+            self._filename = self._filename.replace(".../", "../../")
+        self.buffering = buffering
 
-            if suffix:
-                self._filename = File.add_suffix(self._filename, suffix)
-        except Exception as e:
-            Log.error("can not load {{file}}", file=filename, cause=e)
+        if suffix:
+            self._filename = File.add_suffix(self._filename, suffix)
 
     @classmethod
     def new_instance(cls, *path):
