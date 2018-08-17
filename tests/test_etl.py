@@ -567,7 +567,7 @@ class TestETL(unittest.TestCase):
             refresh_metadata(es)
             versions = get_all_bug_versions(es, GOOD_BUG_TO_TEST)
 
-            if len(versions)==0:
+            if len(versions) == 0:
                 Log.error("expecting records")
             for v in versions:
                 if v.status_whiteboard not in (None, "", "[screened]"):

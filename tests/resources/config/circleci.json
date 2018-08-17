@@ -114,35 +114,35 @@
 		"bugs": {
 			"name": "candidate",
 			"es": {
-			"host": "http://localhost",
-			"port": 9200,
-			"index": "private_bugs",
-			"type": "bug_version",
-			"typed": true,
-			"schema": {"$ref": "..../resources/schema/bug_version.json"},
-			"timeout": 60,
-			"debug": false
+				"host": "http://localhost",
+				"port": 9200,
+				"index": "private_bugs",
+				"type": "bug_version",
+				"typed": true,
+				"schema": {"$ref": "..../resources/schema/bug_version.json"},
+				"timeout": 60,
+				"debug": false
 			}
 		},
 		"comments": {
 			"name": "candidate_comments",
 			"es": {
-			"host": "http://localhost",
-			"port": 9200,
-			"index": "private_comments",
-			"type": "bug_comment",
-			"typed": true,
-			"schema": {"$ref": "..../resources/schema/bug_comments.json"},
-			"timeout": 60,
-			"debug": false
-		}
+				"host": "http://localhost",
+				"port": 9200,
+				"index": "private_comments",
+				"type": "bug_comment",
+				"typed": true,
+				"schema": {"$ref": "..../resources/schema/bug_comments.json"},
+				"timeout": 60,
+				"debug": false
+			}
 		}
 	},
 	"constants": {
 		"jx_elasticsearch.meta.ENABLE_META_SCAN": false,
 		"pyLibrary.sql.mysql.EXECUTE_TIMEOUT": 0,
 		"pyLibrary.env.http.default_headers": {
-			"Referer": "https://wiki.mozilla.org/BMO/ElasticSearch"
+			"Referer": "https://github.com/mozilla/Bugzilla-ETL"
 		},
 		"mo_json.SNAP_TO_BASE_10": false
 	},

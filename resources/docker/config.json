@@ -4,15 +4,15 @@
 		"increment": 1000,
 		"first_run_time": "logs/first_run_time.txt",
 		"last_run_time": "logs/last_run_time.txt",
-		"look_back": 3600000,  // HOUR = 60*60*1000
-		"allow_private_bugs": {"$ref":"env://ETL_PRIVATE_BUGS"}
+		"look_back": 3600000, // HOUR = 60*60*1000
+		"allow_private_bugs": {"$ref": "env://ETL_PRIVATE_BUGS"}
 	},
 	"alias": {
 		"start": 0,
 		"increment": 100000,
 		"elasticsearch": {
-			"host": {"$ref":"env://ES_HOST"},
-			"port": {"$ref":"env://ES_PORT"},
+			"host": {"$ref": "env://ES_HOST"},
+			"port": {"$ref": "env://ES_PORT"},
 			"index": "bug_aliases"
 		},
 		"file": {
@@ -21,18 +21,18 @@
 		}
 	},
 	"bugzilla": {
-		"username":{"$ref":"env://MYSQL_USERNAME"},
-		"password":{"$ref":"env://MYSQL_PASSWORD"},
+		"username": {"$ref": "env://MYSQL_USERNAME"},
+		"password": {"$ref": "env://MYSQL_PASSWORD"},
 		"preamble": "from https://github.com/klahnakoski/Bugzilla-ETL",
-		"host": {"$ref":"env://MYSQL_HOST"},
-		"port": {"$ref":"env://MYSQL_PORT"},
-		"schema": {"$ref":"env://MYSQL_SCHEMA"},
+		"host": {"$ref": "env://MYSQL_HOST"},
+		"port": {"$ref": "env://MYSQL_PORT"},
+		"schema": {"$ref": "env://MYSQL_SCHEMA"},
 		"debug": false
 	},
 	"es": {
-		"host": {"$ref":"env://ES_HOST"},
-		"port": {"$ref":"env://ES_PORT"},
-		"index": {"$ref":"env://ETL_BUGS"},
+		"host": {"$ref": "env://ES_HOST"},
+		"port": {"$ref": "env://ES_PORT"},
+		"index": {"$ref": "env://ETL_BUGS"},
 		"type": "bug_version",
 		"schema": {
 			"$ref": "../schema/bug_version.json"
@@ -40,27 +40,30 @@
 		"timeout": 60
 	},
 	"es_comments": {
-		"host": {"$ref":"env://ES_HOST"},
-		"port": {"$ref":"env://ES_PORT"},
-		"index": {"$ref":"env://ETL_COMMENTS"},
+		"host": {"$ref": "env://ES_HOST"},
+		"port": {"$ref": "env://ES_PORT"},
+		"index": {"$ref": "env://ETL_COMMENTS"},
 		"type": "bug_comment",
 		"schema": {
 			"$ref": "../schema/bug_comments.json"
 		},
 		"timeout": 60
 	},
-	"constants":{
+	"constants": {
 		"jx_elasticsearch.meta.DEBUG": true,
 		"jx_elasticsearch.meta.ENABLE_META_SCAN": false,
 		"pyLibrary.sql.mysql.EXECUTE_TIMEOUT": 0,
-		"pyLibrary.env.http.default_headers": {"Referer": "https://github.com/mozilla/Bugzilla-ETL"}
+		"pyLibrary.env.http.default_headers": {
+			"Referer": "https://github.com/mozilla/Bugzilla-ETL"
+		},
+		"mo_json.SNAP_TO_BASE_10": false
 	},
 	"debug": {
 		"trace": true,
 		"log": [
 			{
 				"log_type": "mozlog",
-				"appname": {"$ref":"env://LOG_APPNAME"}
+				"appname": {"$ref": "env://LOG_APPNAME"}
 			}
 		]
 	}
