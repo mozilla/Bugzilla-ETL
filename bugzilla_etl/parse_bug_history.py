@@ -425,7 +425,9 @@ class BugHistoryParser(object):
                             elif not new_value or not expected_value:
                                 pass
                             else:
-                                self.alias_analyzer.add_alias(lost=new_value, found=expected_value)
+                                pass
+                                # WE CAN NOT ASSUME WE FOUND AN ALIAS WITH JUST A SINGLE MISMATCH
+                                # self.alias_analyzer.add_alias(lost=new_value, found=expected_value)
                         else:
                             # RECORD INCONSISTENCIES, MAYBE WE WILL FIND PATTERNS
                             expected_list = FIELDS_CHANGED[row_in.field_name][literal_field(text_type(new_value))]

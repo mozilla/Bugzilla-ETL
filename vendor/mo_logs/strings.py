@@ -779,31 +779,37 @@ def apply_diff(text, diff, reverse=False, verify=True):
             # ADDED LINE WILL BE APPENDED TO THE LAST DELETED LINE
             # EXAMPLE: -kward has the details.+kward has the details.
             # DETECT THIS PROBLEM FOR THIS HUNK AND FIX THE DIFF
-            problem_line = diff[start_of_hunk+1 + remove.length - 1]
             if reverse:
-                if add.length == 0:
-                    return diff
-                try:
-                    first_added_line = output[add.start - 1]
-                except Exception as e:
-                    pass
-                if problem_line.startswith('-') and problem_line.endswith('+' + first_added_line):
-                    split_point = len(problem_line) - len(first_added_line) - 1
+                last_line = output[-1]
+                for problem_index, problem_line in enumerate(diff[start_of_hunk+1:]):
+                    if problem_line.startswith('@@'):
+                        return diff
+                    if problem_line.startswith('-') and problem_line.endswith('+' + last_line):
+                        split_point = len(problem_line) - (len(last_line) + 1)
+                        break
+                    elif problem_line.startswith('+' + last_line + "-"):
+                        split_point = len(last_line) + 1
+                        break
                 else:
                     return diff
             else:
-                if remove.length == 0:
-                    return diff
-                last_removed_line = output[add.start - 1]
-                if problem_line.startswith('-' + last_removed_line + "+"):
-                    split_point = len(last_removed_line) + 1
+                last_line = output[-1]
+                for problem_index, problem_line in enumerate(diff[start_of_hunk+1:]):
+                    if problem_line.startswith('@@'):
+                        return diff
+                    if problem_line.startswith('+') and problem_line.endswith('-' + last_line):
+                        split_point = len(problem_line) - (len(last_line) + 1)
+                        break
+                    elif problem_line.startswith('-' + last_line + "+"):
+                        split_point = len(last_line) + 1
+                        break
                 else:
                     return diff
 
             new_diff = (
-                diff[:start_of_hunk+1 + remove.length - 1] +
+                diff[:start_of_hunk + 1 + problem_index] +
                 [problem_line[:split_point], problem_line[split_point:]] +
-                diff[start_of_hunk+1 + remove.length:]
+                diff[start_of_hunk + 1 + problem_index + 1:]
             )
             return new_diff
         diff = repair_hunk(diff)
