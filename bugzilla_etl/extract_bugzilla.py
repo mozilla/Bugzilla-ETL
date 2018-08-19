@@ -240,14 +240,8 @@ def get_bugs(db, param):
         get_bugs_table_columns(db, db.settings.schema)
         get_screened_whiteboard(db)
 
-        def lower(col):
-            if col.column_type.startswith("varchar") or col.column_type.endswith('text'):
-                return "lower(" + quote_column(col.column_name, "b") + ") " + quote_column(col.column_name)
-            else:
-                return quote_column(col.column_name, "b")
-
         param.bugs_columns = BUGS_COLUMNS.column_name
-        param.bugs_columns_SQL = sql_list(lower(c) for c in BUGS_COLUMNS)
+        param.bugs_columns_SQL = sql_list(quote_column(c.column_name, "b") for c in BUGS_COLUMNS)
         param.screened_whiteboard = esfilter2sqlwhere({"and": [
             {"exists": "bgm.bug_id"},
             {"terms": {"bgm.group_id": SCREENED_BUG_GROUP_IDS}}
@@ -268,7 +262,7 @@ def get_bugs(db, param):
                 {"missing": "bgm.bug_id"}
             ]})
             param.sensitive_columns = sql_list(
-                lower(c)
+                quote_column(c.column_name, "b")
                 for c in SCREENED_BUG_COLUMNS
             )
 
@@ -277,17 +271,17 @@ def get_bugs(db, param):
             SELECT
                 b.bug_id,
                 UNIX_TIMESTAMP(b.creation_ts)*1000 AS modified_ts,
-                lower(pr.login_name) AS modified_by,
+                pr.login_name AS modified_by,
                 UNIX_TIMESTAMP(b.creation_ts)*1000 AS created_ts,
-                lower(pr.login_name) AS created_by,
-                lower(pa.login_name) AS assigned_to,
-                lower(pq.login_name) AS qa_contact,
-                lower(prod.`name`) AS product,
-                lower(comp.`name`) AS component,
+                pr.login_name AS created_by,
+                pa.login_name AS assigned_to,
+                pq.login_name AS qa_contact,
+                prod.`name` AS product,
+                comp.`name` AS component,
                 CASE
                 WHEN bgm.screened AND b.status_whiteboard IS NOT NULL AND trim(b.status_whiteboard)<>''
                 THEN '[screened]'
-                ELSE lower(b.status_whiteboard)
+                ELSE b.status_whiteboard
                 END status_whiteboard,
                 {{sensitive_columns}},
                 {{bugs_columns_SQL}}
@@ -418,7 +412,7 @@ def get_bug_groups(db, param):
             , CAST(null AS signed) AS modified_ts
             , CAST(null AS CHAR) AS modified_by
             , 'bug_group' AS field_name
-            , lower(CAST(g.`name` AS CHAR)) AS new_value
+            , CAST(g.`name` AS CHAR) AS new_value
             , CAST(null AS CHAR) AS old_value
             , CAST(null AS signed) AS attach_id
             , 2 AS _merge_order
@@ -437,7 +431,7 @@ def get_cc(db, param):
             , CAST(null AS signed) AS modified_ts
             , CAST(null AS CHAR) AS modified_by
             , 'cc' AS field_name
-            , lower(CAST(p.login_name AS CHAR)) AS new_value
+            , CAST(p.login_name AS CHAR) AS new_value
             , CAST(null AS CHAR) AS old_value
             , CAST(null AS signed) AS attach_id
             , 2 AS _merge_order
@@ -462,7 +456,7 @@ def get_all_cc_changes(db, bug_list):
                 bug_id,
                 CAST({{max_time}} AS signed) AS modified_ts,
                 CAST(null AS CHAR) AS new_value,
-                lower(CAST(p.login_name AS CHAR CHARACTER SET utf8)) AS old_value
+                CAST(p.login_name AS CHAR CHARACTER SET utf8) AS old_value
             FROM
                 cc
             LEFT JOIN
@@ -473,8 +467,8 @@ def get_all_cc_changes(db, bug_list):
             SELECT
                 a.bug_id,
                 UNIX_TIMESTAMP(bug_when)*1000 AS modified_ts,
-                lower(CAST(trim(added) AS CHAR CHARACTER SET utf8)) AS new_value,
-                lower(CAST(trim(removed) AS CHAR CHARACTER SET utf8)) AS old_value
+                CAST(trim(added) AS CHAR CHARACTER SET utf8) AS new_value,
+                CAST(trim(removed) AS CHAR CHARACTER SET utf8) AS old_value
             FROM
                 bugs_activity a
             WHERE
@@ -497,8 +491,8 @@ def get_tracking_flags(db, param):
         SELECT
             bug_id,
             CAST({{start_time}} AS signed) AS modified_ts,
-            lower(f.name) AS field_name,
-            lower(t.value) AS new_value,
+            f.name AS field_name,
+            t.value AS new_value,
             1 AS _merge_order
         FROM
             tracking_flags_bugs t
@@ -519,7 +513,7 @@ def get_keywords(db, param):
             , NULL AS modified_ts
             , NULL AS modified_by
             , 'keywords' AS field_name
-            , lower(kd.name) AS new_value
+            , kd.name AS new_value
             , NULL AS old_value
             , NULL AS attach_id
             , 2 AS _merge_order
@@ -541,7 +535,7 @@ def get_tags(db, param):
             NULL AS modified_ts,
             NULL AS modified_by,
             'tags' AS field_name,
-            lower(tag.name) as new_value,
+            tag.name as new_value,
             NULL AS old_value,
             NULL AS attach_id,
             2 AS _merge_order
@@ -572,7 +566,7 @@ def get_attachments(db, param):
     output = db.query("""
         SELECT bug_id
             , UNIX_TIMESTAMP(a.creation_ts)*1000 AS modified_ts
-            , lower(login_name) AS modified_by
+            , login_name AS modified_by
             , UNIX_TIMESTAMP(a.creation_ts)*1000 AS created_ts
             , login_name AS created_by
             , ispatch AS 'attachments_ispatch'
@@ -649,26 +643,26 @@ def get_new_activities(db, param):
             a.id,
             a.bug_id,
             UNIX_TIMESTAMP(bug_when)*1000 AS modified_ts,
-            lower(p.login_name) AS modified_by,
+            p.login_name AS modified_by,
             replace(field.`name`, '.', '_') AS field_name,
             CAST(
                 CASE
                 WHEN a.fieldid IN {{screened_fields}} THEN '[screened]'
                 WHEN m.bug_id IS NOT NULL AND a.fieldid={{whiteboard_field}} AND added IS NOT NULL AND trim(added)<>'' THEN '[screened]'
-                WHEN a.fieldid IN {{mixed_case_fields}} THEN lower(added)
+                WHEN a.fieldid IN {{mixed_case_fields}} THEN added
                 WHEN trim(added)='' THEN NULL
                 # WHEN new_qa_contact.userid IS NOT NULL THEN new_qa_contact.login_name
-                ELSE lower(added)
+                ELSE added
                 END
             AS CHAR CHARACTER SET utf8) AS new_value,
             CAST(
                 CASE
                 WHEN a.fieldid IN {{screened_fields}} THEN '[screened]'
                 WHEN m.bug_id IS NOT NULL AND a.fieldid={{whiteboard_field}} AND removed IS NOT NULL AND trim(removed)<>'' THEN '[screened]'
-                WHEN a.fieldid IN {{mixed_case_fields}} THEN lower(removed)
+                WHEN a.fieldid IN {{mixed_case_fields}} THEN removed
                 WHEN trim(removed)='' THEN NULL
                 # WHEN old_qa_contact.userid IS NOT NULL THEN old_qa_contact.login_name
-                ELSE lower(removed)
+                ELSE removed
                 END
             AS CHAR CHARACTER SET utf8) AS old_value,
             attach_id,
@@ -719,14 +713,14 @@ def get_flags(db, param):
         SELECT
             bug_id,
             UNIX_TIMESTAMP(f.creation_date)*1000 AS modified_ts,
-            lower(ps.login_name) AS modified_by,
+            ps.login_name AS modified_by,
             'flagtypes_name' AS field_name,
             CONCAT(
                 ft.`name`,
                 status,
                 CASE
                 WHEN f.requestee_id IS NULL THEN ''
-                ELSE CONCAT('(', lower(pr.login_name), ')')
+                ELSE CONCAT('(', pr.login_name, ')')
                 END
             ) AS new_value,
             CAST(null AS CHAR) AS old_value,

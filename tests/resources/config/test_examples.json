@@ -42,10 +42,12 @@
 			943528,   // diff: list index out of range
 			1007019,  // does not have bug_status, or component, or product
 			1165765,  // VERY LONG short_desc (split into multiple records)
+			1334937,  //
 			1367660,  // empty lines in diff (no +/- prefix)
 			1367671,  // diff lost a colon in 'reports: https://goo.gl/70o6w6'
 			1370314,  // jumbled diff
 			1379514,  // pre and post start lines for hunks
+			1386206,  // review- added without review? first
 			1388648,  // order of the reversed diff application
 			1388678,  // interlaced + and - in diff
 			1392967,  // zero lines and \r correctness

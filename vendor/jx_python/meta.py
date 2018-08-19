@@ -135,13 +135,25 @@ class ColumnList(Table, jx_base.Container):
             command = wrap(command)
             eq = command.where.eq
             if eq.es_index:
-                with self.locker:
-                    columns = [
-                        c
-                        for cs in self.data.get(eq.es_index, {}).values()
-                        for c in cs
-                        if all(c[k] == v for k, v in eq.items())
-                    ]
+                if eq.es_column and len(eq)==2:
+                    with self.locker:
+                        all_columns =  self.data.get(eq.es_index, {}).values()
+                        columns = [
+                            c
+                            for cs in all_columns
+                            for c in cs
+                            if c.es_column == eq.es_column
+                        ]
+
+                else:
+                    # SLOWER
+                    with self.locker:
+                        columns = [
+                            c
+                            for cs in self.data.get(eq.es_index, {}).values()
+                            for c in cs
+                            if all(c[k] == v for k, v in eq.items())
+                        ]
             else:
                 columns = list(self)
                 columns = jx.filter(columns, command.where)
