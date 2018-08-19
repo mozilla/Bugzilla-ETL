@@ -14,16 +14,15 @@ from __future__ import unicode_literals
 from collections import Mapping
 from datetime import date
 from datetime import datetime
-
 from decimal import Decimal
 
 import jx_base
-from jx_base import python_type_to_json_type
 from jx_base import STRUCT, Column, Table
+from jx_base import python_type_to_json_type
 from jx_base.schema import Schema
 from jx_python import jx
 from mo_collections import UniqueIndex
-from mo_dots import Data, concat_field, get_attr, listwrap, unwraplist, NullType, FlatList, set_default, split_field, join_field, ROOT_PATH, wrap, coalesce
+from mo_dots import Data, concat_field, listwrap, unwraplist, NullType, FlatList, set_default, split_field, join_field, ROOT_PATH, wrap, coalesce
 from mo_future import none_type, text_type, long, PY2
 from mo_json.typed_encoder import untype_path, unnest_path
 from mo_logs import Log
@@ -136,19 +135,20 @@ class ColumnList(Table, jx_base.Container):
             command = wrap(command)
             eq = command.where.eq
             if eq.es_index:
-                columns = self.find(eq.es_index, eq.name)
-                columns = [
-                    c
-                    for c in columns
-                    if all(get_attr(c, k) == v for k, v in eq.items())
-                ]
-            else:
                 with self.locker:
-                    columns = list(self)
-                    columns = jx.filter(columns, command.where)
+                    columns = [
+                        c
+                        for cs in self.data.get(eq.es_index, {}).values()
+                        for c in cs
+                        if all(c[k] == v for k, v in eq.items())
+                    ]
+            else:
+                columns = list(self)
+                columns = jx.filter(columns, command.where)
 
             with self.locker:
-                for col in list(columns):
+                self.dirty = True
+                for col in columns:
                     for k in command["clear"]:
                         if k == ".":
                             columns.remove(col)

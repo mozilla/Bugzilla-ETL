@@ -428,7 +428,7 @@ class BugHistoryParser(object):
                                 self.alias_analyzer.add_alias(lost=new_value, found=expected_value)
                         else:
                             # RECORD INCONSISTENCIES, MAYBE WE WILL FIND PATTERNS
-                            expected_list = FIELDS_CHANGED[row_in.field_name][literal_field(new_value)]
+                            expected_list = FIELDS_CHANGED[row_in.field_name][literal_field(text_type(new_value))]
                             if expected_value not in expected_list:
                                 # expected_list += [expected_value]
                                 # File("expected_values.json").write(value2json(FIELDS_CHANGED, pretty=True))

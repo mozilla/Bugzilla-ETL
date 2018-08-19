@@ -295,7 +295,7 @@ def full_etl(resume_from_last_run, param, db, esq, esq_comments, bug_output_queu
     ## MAIN ETL LOOP
     #############################################################
     for min, max in jx.reverse(jx.intervals(start, end, param.increment)):
-        with Timer("etl block {{min}}..{{max}}", param={"min":min, "max":max}, debug=param.debug):
+        with Timer("etl block {{min}}..{{max}}", param={"min":min, "max":max}, silent=not param.debug):
             if kwargs.args.quick and min < end - param.increment and min != 0:
                 #--quick ONLY DOES FIRST AND LAST BLOCKS
                 continue

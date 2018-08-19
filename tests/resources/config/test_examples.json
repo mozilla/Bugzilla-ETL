@@ -39,6 +39,7 @@
 			726635,//alias problem
 			813650,//ERROR in blocked
 			937428,   // whitespace after comma in user story, complex diff
+			943528,   // diff: list index out of range
 			1007019,  // does not have bug_status, or component, or product
 			1165765,  // VERY LONG short_desc (split into multiple records)
 			1367660,  // empty lines in diff (no +/- prefix)
