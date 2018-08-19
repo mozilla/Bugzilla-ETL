@@ -750,6 +750,8 @@ def apply_diff(text, diff, reverse=False, verify=True):
     if not diff:
         return output
 
+    diff = [d for d in diff if d != "\\ No newline at end of file"]  # ANOTHER REPAIR
+
     R = xrange(0, len(diff))
     R = reversed(R) if reverse else R
     for start_of_hunk in R:
@@ -781,8 +783,11 @@ def apply_diff(text, diff, reverse=False, verify=True):
             if reverse:
                 if add.length == 0:
                     return diff
-                first_added_line = output[add.start - 1]
-                if problem_line.endswith('+' + first_added_line):
+                try:
+                    first_added_line = output[add.start - 1]
+                except Exception as e:
+                    pass
+                if problem_line.startswith('-') and problem_line.endswith('+' + first_added_line):
                     split_point = len(problem_line) - len(first_added_line) - 1
                 else:
                     return diff
@@ -802,7 +807,6 @@ def apply_diff(text, diff, reverse=False, verify=True):
             )
             return new_diff
         diff = repair_hunk(diff)
-        diff = [d for d in diff if d != "\\ no newline at end of file"]  # ANOTHER REPAIR
         hunk_body = diff[start_of_hunk + 1:start_of_hunk + 1 + add.length + remove.length]
 
         if reverse:
