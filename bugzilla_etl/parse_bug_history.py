@@ -668,7 +668,7 @@ class BugHistoryParser(object):
                 existing_flag["previous_status"] = removed_flag["request_status"]
                 existing_flag["request_status"] = "d"
                 existing_flag["previous_value"] = removed_flag.value
-                existing_flag["value"] = Null            #SPECIAL INDICATOR
+                existing_flag["value"] = Null  # SPECIAL INDICATOR FOR DELETED FLAG
                 # request_type stays the same.
                 # requestee stays the same.
 
@@ -690,7 +690,7 @@ class BugHistoryParser(object):
                 unwrap(element)
                 for element in target.flags
                 if (
-                    element["value"] == None  # SPECIAL INDICATOR
+                    element["value"] == None  # SPECIAL INDICATOR FOR DELETED FLAG
                     and added_flag["request_type"] == element["request_type"]
                     and added_flag["request_status"] != element["previous_status"]  # Skip "r?(dre@mozilla)" -> "r?(mark@mozilla)"
                 )
@@ -725,12 +725,9 @@ class BugHistoryParser(object):
                 ]
 
                 if not matched_ts and not matched_req:
-                    Log.note(
-                        "[Bug {{bug_id}}]: PROBLEM: Can not match {{requestee}} in {{flags}}. Skipping match.",
-                        bug_id=self.currBugState.bug_id,
-                        flags=target.flags,
-                        requestee=added_flag
-                    )
+                    # No matching candidate. Totally new flag.
+                    target.flags.append(added_flag)
+                    continue
                 elif len(matched_ts) == 1 or (not matched_req and matched_ts):
                     chosen_one = matched_ts[0]
                     if DEBUG_FLAG_MATCHES:
