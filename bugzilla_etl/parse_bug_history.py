@@ -434,8 +434,9 @@ class BugHistoryParser(object):
                                 # File("expected_values.json").write(value2json(FIELDS_CHANGED, pretty=True))
 
                                 Log.note(
-                                    "[Bug {{bug_id}}]: PROBLEM inconsistent change: {{field}} was {{expecting|quote}} got {{observed|quote}}",
+                                    "[Bug {{bug_id}}]: PROBLEM inconsistent change at {{timestamp}}: {{field}} was {{expecting|quote}} got {{observed|quote}}",
                                     bug_id=self.currBugID,
+                                    timestamp=row_in.modified_timestamp,
                                     field=row_in.field_name,
                                     expecting=expected_value,
                                     observed=new_value

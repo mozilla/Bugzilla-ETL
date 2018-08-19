@@ -165,7 +165,7 @@ class AliasAnalyzer(object):
         :param email:
         :return:
         """
-        record = self.aliases.get(email)
+        record = self.aliases.get(email.lower())
         if record:
             return record["canonical"]
         else:
@@ -175,6 +175,8 @@ class AliasAnalyzer(object):
         if not found.strip():
             Log.error("expecting email")
 
+        lost = lost.lower()
+        found = found.lower()
         old_email = self.get_canonical(lost)
         new_email = self.get_canonical(found)
 
