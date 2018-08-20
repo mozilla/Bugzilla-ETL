@@ -27,7 +27,7 @@ from jx_python import jx
 from mo_dots import Data, Null, wrap, coalesce, listwrap
 from mo_files import File
 from mo_future import text_type
-from mo_json import json2value, value2json
+from mo_json import json2value, value2json, scrub
 from mo_logs import startup, constants, Log
 from mo_logs.convert import milli2datetime
 from mo_math import MIN
@@ -700,8 +700,8 @@ def compare_both(candidate, reference, settings, bug_ids):
                 for v in ref_versions:
                     v.etl.timestamp = None
 
-                can = value2json(versions, pretty=True)
-                ref = value2json(ref_versions, pretty=True)
+                can = value2json(scrub(versions), pretty=True)
+                ref = value2json(scrub(ref_versions), pretty=True)
                 if can != ref:
                     found_errors = True
                     (try_dir / text_type(bug_id)).set_extension("txt").write(can)
