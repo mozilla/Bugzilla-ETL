@@ -188,7 +188,7 @@ class TestETL(unittest.TestCase):
                     break
             Log.error("Comments do not match reference\n{{sample}}", sample=can[MIN([0, found - 100]):found + 100])
 
-    @skip("working on reference file")
+
     def test_public_etl(self):
         """
         ENSURE ETL GENERATES WHAT'S IN THE REFERENCE FILE
@@ -696,11 +696,7 @@ def compare_both(candidate, reference, settings, bug_ids):
                     v.etl.timestamp = None
 
                 pre_ref_versions = get_all_bug_versions(None, bug_id, max_time, esq=referenceq)
-                ref_versions = jx.sort(
-                    # ADDED TO FIX OLD PRODUCTION BUG VERSIONS
-                    [compare_es.old2new(x, settings.bugzilla.expires_on) for x in pre_ref_versions],
-                    "modified_ts"
-                )
+                ref_versions = jx.sort(pre_ref_versions, "modified_ts")
                 for v in ref_versions:
                     v.etl.timestamp = None
 

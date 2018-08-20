@@ -438,7 +438,7 @@ class BugHistoryParser(object):
                                 Log.note(
                                     "[Bug {{bug_id}}]: PROBLEM inconsistent change at {{timestamp}}: {{field}} was {{expecting|quote}} got {{observed|quote}}",
                                     bug_id=self.currBugID,
-                                    timestamp=row_in.modified_timestamp,
+                                    timestamp=row_in.modified_ts,
                                     field=row_in.field_name,
                                     expecting=expected_value,
                                     observed=new_value
@@ -1120,7 +1120,7 @@ class ApplyDiff(object):
         if isinstance(text, ApplyDiff):
             if text.timestamp != timestamp:
                 # DIFFERNT DIFF
-                self._text = str(text) # ACTUALIZE THE EFFECTS OF THE OTHER DIFF
+                self._text = str(text)  # ACTUALIZE THE EFFECTS OF THE OTHER DIFF
             else:
                 # CHAIN THE DIFF
                 text.parent = self
@@ -1143,7 +1143,8 @@ class ApplyDiff(object):
             return self._diff
 
     def __data__(self):
-        return self.__str__()
+        output = self.__str__()
+        return output if output else None
 
     def __gt__(self, other):
         return str(self)>other
@@ -1164,7 +1165,8 @@ class ApplyDiff(object):
         diff = self.diff
         if not self.result:
             try:
-                self.result = "\n".join(apply_diff(text.split("\n"), diff.split("\n"), reverse=self.reverse, verify=DEBUG_DIFF))
+                new_text = apply_diff(coalesce(text, "").split("\n"), diff.split("\n"), reverse=self.reverse, verify=DEBUG_DIFF)
+                self.result = "\n".join(new_text)
             except Exception as e:
                 e = Except.wrap(e)
                 self.result = "<ERROR>"

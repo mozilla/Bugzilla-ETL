@@ -22,11 +22,10 @@ from datetime import datetime as builtin_datetime
 from datetime import timedelta, date
 from json.encoder import encode_basestring
 
-import sys
-
-from mo_dots import coalesce, wrap, get_module, Data
+from mo_dots import coalesce, wrap, get_module, Data, Null
 from mo_future import text_type, xrange, binary_type, round as _round, PY3, get_function_name, zip_longest, transpose
 from mo_logs.convert import datetime2unix, datetime2string, value2json, milli2datetime, unix2datetime
+
 # from mo_files.url import value2url_param
 
 FORMATTERS = {}
@@ -746,19 +745,18 @@ def apply_diff(text, diff, reverse=False, verify=True):
     +Content Team Engagement & Tasks : https://appreview.etherpad.mozilla.org/40
     """
 
-    output = text
     if not diff:
-        return output
+        return text
+    output = text
+    diff = [d for d in diff if d and d != "\\ No newline at end of file"] + ["@@"]  # ANOTHER REPAIR
+    hunks = [
+        (diff[start_hunk], diff[start_hunk+1:end_hunk])
+        for start_hunk, end_hunk in pairwise(i for i, l in enumerate(diff) if l.startswith('@@'))
+    ]
+    if reverse:
+        hunks = reversed(hunks)
 
-    diff = [d for d in diff if d != "\\ No newline at end of file"]  # ANOTHER REPAIR
-
-    R = xrange(0, len(diff))
-    R = reversed(R) if reverse else R
-    for start_of_hunk in R:
-        header = diff[start_of_hunk]
-        if not header.strip() or not header.startswith("@@"):
-            continue
-
+    for header, hunk_body in hunks:
         matches = DIFF_PREFIX.match(header.strip())
         if not matches:
             if not _Log:
@@ -774,16 +772,14 @@ def apply_diff(text, diff, reverse=False, verify=True):
         if add.length == 0 and add.start == 0:
             add.start = remove.start
 
-        def repair_hunk(diff):
+        def repair_hunk(hunk_body):
             # THE LAST DELETED LINE MAY MISS A "\n" MEANING THE FIRST
             # ADDED LINE WILL BE APPENDED TO THE LAST DELETED LINE
             # EXAMPLE: -kward has the details.+kward has the details.
             # DETECT THIS PROBLEM FOR THIS HUNK AND FIX THE DIFF
             if reverse:
-                last_line = output[-1]
-                for problem_index, problem_line in enumerate(diff[start_of_hunk+1:]):
-                    if problem_line.startswith('@@'):
-                        return diff
+                last_line = hunk_body[-1]
+                for problem_index, problem_line in enumerate(hunk_body):
                     if problem_line.startswith('-') and problem_line.endswith('+' + last_line):
                         split_point = len(problem_line) - (len(last_line) + 1)
                         break
@@ -791,12 +787,10 @@ def apply_diff(text, diff, reverse=False, verify=True):
                         split_point = len(last_line) + 1
                         break
                 else:
-                    return diff
+                    return hunk_body
             else:
-                last_line = output[-1]
-                for problem_index, problem_line in enumerate(diff[start_of_hunk+1:]):
-                    if problem_line.startswith('@@'):
-                        return diff
+                last_line = hunk_body[-1]
+                for problem_index, problem_line in enumerate(hunk_body):
                     if problem_line.startswith('+') and problem_line.endswith('-' + last_line):
                         split_point = len(problem_line) - (len(last_line) + 1)
                         break
@@ -804,16 +798,15 @@ def apply_diff(text, diff, reverse=False, verify=True):
                         split_point = len(last_line) + 1
                         break
                 else:
-                    return diff
+                    return hunk_body
 
-            new_diff = (
-                diff[:start_of_hunk + 1 + problem_index] +
+            new_hunk_body = (
+                hunk_body[:problem_index] +
                 [problem_line[:split_point], problem_line[split_point:]] +
-                diff[start_of_hunk + 1 + problem_index + 1:]
+                hunk_body[problem_index + 1:]
             )
-            return new_diff
-        diff = repair_hunk(diff)
-        hunk_body = diff[start_of_hunk + 1:start_of_hunk + 1 + add.length + remove.length]
+            return new_hunk_body
+        hunk_body = repair_hunk(hunk_body)
 
         if reverse:
             new_output = (
@@ -889,3 +882,15 @@ def wordify(value):
 
 
 
+
+def pairwise(values):
+    """
+    WITH values = [a, b, c, d, ...]
+    RETURN [(a, b), (b, c), (c, d), ...]
+    """
+    i = iter(values)
+    a = next(i)
+
+    for b in i:
+        yield (a, b)
+        a = b
