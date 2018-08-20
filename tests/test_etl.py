@@ -189,6 +189,7 @@ class TestETL(unittest.TestCase):
             Log.error("Comments do not match reference\n{{sample}}", sample=can[MIN([0, found - 100]):found + 100])
 
 
+    @skip("user story problems")
     def test_public_etl(self):
         """
         ENSURE ETL GENERATES WHAT'S IN THE REFERENCE FILE
