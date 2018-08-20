@@ -27,7 +27,7 @@ from jx_python import jx
 from mo_dots import Data, Null, wrap, coalesce, listwrap
 from mo_files import File
 from mo_future import text_type
-from mo_json import json2value, value2json
+from mo_json import json2value, value2json, scrub
 from mo_logs import startup, constants, Log
 from mo_logs.convert import milli2datetime
 from mo_math import MIN
@@ -188,7 +188,7 @@ class TestETL(unittest.TestCase):
                     break
             Log.error("Comments do not match reference\n{{sample}}", sample=can[MIN([0, found - 100]):found + 100])
 
-    @skip("working on reference file")
+
     def test_public_etl(self):
         """
         ENSURE ETL GENERATES WHAT'S IN THE REFERENCE FILE
@@ -696,16 +696,12 @@ def compare_both(candidate, reference, settings, bug_ids):
                     v.etl.timestamp = None
 
                 pre_ref_versions = get_all_bug_versions(None, bug_id, max_time, esq=referenceq)
-                ref_versions = jx.sort(
-                    # ADDED TO FIX OLD PRODUCTION BUG VERSIONS
-                    [compare_es.old2new(x, settings.bugzilla.expires_on) for x in pre_ref_versions],
-                    "modified_ts"
-                )
+                ref_versions = jx.sort(pre_ref_versions, "modified_ts")
                 for v in ref_versions:
                     v.etl.timestamp = None
 
-                can = value2json(versions, pretty=True)
-                ref = value2json(ref_versions, pretty=True)
+                can = value2json(scrub(versions), pretty=True)
+                ref = value2json(scrub(ref_versions), pretty=True)
                 if can != ref:
                     found_errors = True
                     (try_dir / text_type(bug_id)).set_extension("txt").write(can)
