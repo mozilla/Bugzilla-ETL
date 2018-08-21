@@ -215,11 +215,11 @@ class TestETL(unittest.TestCase):
                 "limit": 10000,
                 "format": "list"
             }).data,
-            ["bug_id", "modified_ts"]
+            ["bug_id", "modified_ts", "comment_id"]
         )
         ref = jx.sort(
             File(self.settings.reference.public.comments.filename).read_json().values(),
-            ["bug_id", "modified_ts"]
+            ["bug_id", "modified_ts", "comment_id"]
         )
         for i, (c, r) in enumerate(zip(can, ref)):
             if c != r:
