@@ -189,7 +189,6 @@ class TestETL(unittest.TestCase):
             Log.error("Comments do not match reference\n{{sample}}", sample=can[MIN([0, found - 100]):found + 100])
 
 
-    @skip("user story problems")
     def test_public_etl(self):
         """
         ENSURE ETL GENERATES WHAT'S IN THE REFERENCE FILE
@@ -210,15 +209,26 @@ class TestETL(unittest.TestCase):
         compare_both(es, ref, self.settings, self.settings.param.bugs)
 
         # DIRECT COMPARE THE FILE JSON
-        can = File(self.settings.fake.comments.filename).read()
-        ref = File(self.settings.reference.public.comments.filename).read()
-        if can != ref:
-            found = -1
-            for i, c in enumerate(can):
-                if can[i] != ref[i]:
-                    found = i
-                    break
-            Log.error("Comments do not match reference\n{{sample}}", sample=can[MIN(0, found - 100):found + 100:])
+        can = jx.sort(
+            jx_elasticsearch.new_instance(self.settings.public.comments.es).query({
+                "from": "public_bugs",
+                "limit": 10000,
+                "format": "list"
+            }).data,
+            ["bug_id", "modified_ts"]
+        )
+        ref = jx.sort(
+            File(self.settings.reference.public.comments.filename).read_json().values(),
+            ["bug_id", "modified_ts"]
+        )
+        for i, (c, r) in enumerate(zip(can, ref)):
+            if c != r:
+                Log.error(
+                    "Comment\n{{candidate|json}}\ndoes not match reference:\n{{reference|json}}",
+                    candidate=c,
+                    reference=r
+                )
+                break
 
     def test_private_bugs_do_not_show(self):
         self.settings.param.allow_private_bugs = False

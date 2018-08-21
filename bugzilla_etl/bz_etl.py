@@ -11,6 +11,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+from mo_json import scrub
 from mo_times.dates import unix2datetime
 
 import jx_elasticsearch
@@ -70,7 +71,7 @@ def etl_comments(db, output_queue, param, please_stop):
         comments = get_comments(comment_db_cache, param)
 
     for g, block_of_comments in jx.groupby(comments, size=500):
-        output_queue.extend({"id": text_type(comment.comment_id), "value": comment} for comment in block_of_comments)
+        output_queue.extend({"id": text_type(comment.comment_id), "value": scrub(comment)} for comment in block_of_comments)
 
 
 def etl(db, bug_output_queue, param, alias_analyzer, please_stop):
