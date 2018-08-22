@@ -23,22 +23,22 @@ from pyLibrary.sql.sqlite import quote_column
 def bugzilla_extract(config):
     # extract schema with mysqldump
     # mysqldump -u root -p --no-data dbname > schema.sql
-    # p = Process(
-    #     "extract Bugzilla schema only",
-    #     [
-    #         config.mysqldump,
-    #         "-u", config.source.username,
-    #         "-p" + config.source.password,
-    #         "-P", coalesce(config.source.port, 3306),
-    #         "-h", config.source.host,
-    #         "--no-data", config.source.schema,
-    #         "--skip-lock-tables",
-    #         ">", config.schema_file
-    #     ],
-    #     shell=True,
-    #     debug=True
-    # )
-    # p.join()
+    p = Process(
+        "extract Bugzilla schema only",
+        [
+            config.mysqldump,
+            "-u", config.source.username,
+            "-p" + config.source.password,
+            "-P", coalesce(config.source.port, 3306),
+            "-h", config.source.host,
+            "--no-data", config.source.schema,
+            "--skip-lock-tables",
+            ">", config.schema_file
+        ],
+        shell=True,
+        debug=True
+    )
+    p.join()
 
     # copy specific rows in correct table order
     source = MySQL(config.source)
@@ -71,7 +71,14 @@ def bugzilla_extract(config):
         try:
             table_name = query['from']
             filter = esfilter2sqlwhere(coalesce(query.where, True))
-            Log.note("copy {{table}}", table=table_name)
+
+            count = source.query(
+                SQL_SELECT + " COUNT(1) as count " +
+                SQL_FROM + quote_column(table_name) +
+                SQL_WHERE + filter
+            )[0].count
+
+            Log.note("copy {{table}} ({{num}} records)", table=table_name, num=count)
 
             records = source.query(
                 SQL_SELECT + " * " +
@@ -180,9 +187,6 @@ def bugzilla_extract(config):
         debug=True
     )
     p.join()
-
-
-
 
 
 def setup():

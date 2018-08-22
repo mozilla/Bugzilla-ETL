@@ -3537,7 +3537,6 @@
     },
     "10509340": {
         "bug_id": 1165765,
-        "comment": "",
         "comment_id": 10509340,
         "isprivate": 0,
         "modified_by": "bug.autolander@gmail.com",
@@ -6689,7 +6688,6 @@
     },
     "10699": {
         "bug_id": 1877,
-        "comment": "",
         "comment_id": 10699,
         "isprivate": 0,
         "modified_by": "davidm@formerly-netscape.com.tld",
@@ -8689,7 +8687,6 @@
     },
     "11073440": {
         "bug_id": 1165765,
-        "comment": "",
         "comment_id": 11073440,
         "isprivate": 0,
         "modified_by": "bug.autolander@gmail.com",
@@ -8857,7 +8854,6 @@
     },
     "11104359": {
         "bug_id": 1165765,
-        "comment": "",
         "comment_id": 11104359,
         "isprivate": 0,
         "modified_by": "bug.autolander@gmail.com",
@@ -9193,7 +9189,6 @@
     },
     "1193005": {
         "bug_id": 12911,
-        "comment": "",
         "comment_id": 1193005,
         "isprivate": 0,
         "modified_by": "ccarlen@mac.com",
@@ -9721,7 +9716,6 @@
     },
     "1221795": {
         "bug_id": 12911,
-        "comment": "",
         "comment_id": 1221795,
         "isprivate": 0,
         "modified_by": "ccarlen@mac.com",
@@ -9969,7 +9963,6 @@
     },
     "12457111": {
         "bug_id": 1379514,
-        "comment": "",
         "comment_id": 12457111,
         "isprivate": 0,
         "modified_by": "ananuti@gmail.com",
@@ -9977,7 +9970,6 @@
     },
     "12457120": {
         "bug_id": 1379514,
-        "comment": "",
         "comment_id": 12457120,
         "isprivate": 0,
         "modified_by": "ananuti@gmail.com",
@@ -9985,7 +9977,6 @@
     },
     "12462497": {
         "bug_id": 1379514,
-        "comment": "",
         "comment_id": 12462497,
         "isprivate": 0,
         "modified_by": "ananuti@gmail.com",
@@ -10081,7 +10072,6 @@
     },
     "12484701": {
         "bug_id": 1379514,
-        "comment": "",
         "comment_id": 12484701,
         "isprivate": 0,
         "modified_by": "ananuti@gmail.com",
@@ -10337,7 +10327,6 @@
     },
     "12572189": {
         "bug_id": 1390946,
-        "comment": "",
         "comment_id": 12572189,
         "isprivate": 0,
         "modified_by": "dhouse@mozilla.com",
@@ -10345,7 +10334,6 @@
     },
     "12572193": {
         "bug_id": 1390946,
-        "comment": "",
         "comment_id": 12572193,
         "isprivate": 0,
         "modified_by": "dhouse@mozilla.com",
@@ -10361,7 +10349,6 @@
     },
     "1257525": {
         "bug_id": 12911,
-        "comment": "",
         "comment_id": 1257525,
         "isprivate": 0,
         "modified_by": "ccarlen@mac.com",
@@ -10473,7 +10460,6 @@
     },
     "12594525": {
         "bug_id": 1393332,
-        "comment": "",
         "comment_id": 12594525,
         "isprivate": 0,
         "modified_by": "chsiang@mozilla.com",
@@ -10481,7 +10467,6 @@
     },
     "12595613": {
         "bug_id": 1393407,
-        "comment": "",
         "comment_id": 12595613,
         "isprivate": 0,
         "modified_by": "ibc@aliax.net",
@@ -11233,7 +11218,6 @@
     },
     "21621": {
         "bug_id": 3140,
-        "comment": "",
         "comment_id": 21621,
         "isprivate": 0,
         "modified_by": "jonesev@home.com",
@@ -11505,7 +11489,6 @@
     },
     "243675": {
         "bug_id": 1046,
-        "comment": "",
         "comment_id": 243675,
         "isprivate": 0,
         "modified_by": "fantasai.bugs@inkedblade.net",
@@ -11641,7 +11624,6 @@
     },
     "2536554": {
         "bug_id": 6810,
-        "comment": "",
         "comment_id": 2536554,
         "isprivate": 0,
         "modified_by": "helgedt@tihlde.org",
@@ -11681,7 +11663,6 @@
     },
     "2549585": {
         "bug_id": 13534,
-        "comment": "",
         "comment_id": 2549585,
         "isprivate": 0,
         "modified_by": "luis@lu.is",
@@ -11697,7 +11678,6 @@
     },
     "2549589": {
         "bug_id": 13534,
-        "comment": "",
         "comment_id": 2549589,
         "isprivate": 0,
         "modified_by": "luis@lu.is",
@@ -11857,7 +11837,6 @@
     },
     "2946083": {
         "bug_id": 13534,
-        "comment": "",
         "comment_id": 2946083,
         "isprivate": 0,
         "modified_by": "pjdemarco@gmail.com",
@@ -12105,7 +12084,6 @@
     },
     "3169543": {
         "bug_id": 11040,
-        "comment": "",
         "comment_id": 3169543,
         "isprivate": 0,
         "modified_by": "mkmelin+mozilla@iki.fi",
@@ -12113,7 +12091,6 @@
     },
     "3171508": {
         "bug_id": 11040,
-        "comment": "",
         "comment_id": 3171508,
         "isprivate": 0,
         "modified_by": "mkmelin+mozilla@iki.fi",
@@ -12201,7 +12178,6 @@
     },
     "3220668": {
         "bug_id": 248970,
-        "comment": "",
         "comment_id": 3220668,
         "isprivate": 0,
         "modified_by": "glennrp+bmo@gmail.com",
@@ -12473,7 +12449,6 @@
     },
     "3295023": {
         "bug_id": 393845,
-        "comment": "",
         "comment_id": 3295023,
         "isprivate": 0,
         "modified_by": "cbiesinger@gmail.com",
@@ -12505,7 +12480,6 @@
     },
     "330147": {
         "bug_id": 1046,
-        "comment": "",
         "comment_id": 330147,
         "isprivate": 0,
         "modified_by": "dbaron@dbaron.org",
@@ -12577,7 +12551,6 @@
     },
     "331751": {
         "bug_id": 1046,
-        "comment": "",
         "comment_id": 331751,
         "isprivate": 0,
         "modified_by": "pierre@formerly-netscape.com.tld",
@@ -12681,7 +12654,6 @@
     },
     "3428046": {
         "bug_id": 11040,
-        "comment": "",
         "comment_id": 3428046,
         "isprivate": 0,
         "modified_by": "bugzilla@mversen.de",
@@ -13777,7 +13749,6 @@
     },
     "3517112": {
         "bug_id": 393845,
-        "comment": "",
         "comment_id": 3517112,
         "isprivate": 0,
         "modified_by": "jstenback+bmo@gmail.com",
@@ -13809,7 +13780,6 @@
     },
     "3518442": {
         "bug_id": 11040,
-        "comment": "",
         "comment_id": 3518442,
         "isprivate": 0,
         "modified_by": "zug_treno@yahoo.com",
@@ -13913,7 +13883,6 @@
     },
     "3688836": {
         "bug_id": 11040,
-        "comment": "",
         "comment_id": 3688836,
         "isprivate": 0,
         "modified_by": "philringnalda@gmail.com",
@@ -15553,7 +15522,6 @@
     },
     "3811765": {
         "bug_id": 248970,
-        "comment": "",
         "comment_id": 3811765,
         "isprivate": 0,
         "modified_by": "aaron.train@gmail.com",
@@ -15785,7 +15753,6 @@
     },
     "3818116": {
         "bug_id": 11040,
-        "comment": "",
         "comment_id": 3818116,
         "isprivate": 0,
         "modified_by": "ben.bucksch@beonex.com",
@@ -15793,7 +15760,6 @@
     },
     "3818118": {
         "bug_id": 11040,
-        "comment": "",
         "comment_id": 3818118,
         "isprivate": 0,
         "modified_by": "ben.bucksch@beonex.com",
@@ -17209,7 +17175,6 @@
     },
     "3910763": {
         "bug_id": 471427,
-        "comment": "",
         "comment_id": 3910763,
         "isprivate": 0,
         "modified_by": "bhearsum@mozilla.com",
@@ -17545,7 +17510,6 @@
     },
     "4225682": {
         "bug_id": 11040,
-        "comment": "",
         "comment_id": 4225682,
         "isprivate": 0,
         "modified_by": "mkmelin+mozilla@iki.fi",
@@ -17601,7 +17565,6 @@
     },
     "4373787": {
         "bug_id": 520943,
-        "comment": "",
         "comment_id": 4373787,
         "isprivate": 0,
         "modified_by": "dao+bmo@mozilla.com",
@@ -17729,7 +17692,6 @@
     },
     "4581948": {
         "bug_id": 520943,
-        "comment": "",
         "comment_id": 4581948,
         "isprivate": 0,
         "modified_by": "dao+bmo@mozilla.com",
@@ -18081,7 +18043,6 @@
     },
     "4785021": {
         "bug_id": 520943,
-        "comment": "",
         "comment_id": 4785021,
         "isprivate": 0,
         "modified_by": "jmathies@mozilla.com",
@@ -18097,7 +18058,6 @@
     },
     "4807648": {
         "bug_id": 520943,
-        "comment": "",
         "comment_id": 4807648,
         "isprivate": 0,
         "modified_by": "tellrob@gmail.com",
@@ -18641,7 +18601,6 @@
     },
     "5440788": {
         "bug_id": 248970,
-        "comment": "",
         "comment_id": 5440788,
         "isprivate": 0,
         "modified_by": "torisugari@gmail.com",
@@ -19073,7 +19032,6 @@
     },
     "597808": {
         "bug_id": 67742,
-        "comment": "",
         "comment_id": 597808,
         "isprivate": 0,
         "modified_by": "margaret.chan@sun.com",
@@ -19313,7 +19271,6 @@
     },
     "645205": {
         "bug_id": 67742,
-        "comment": "",
         "comment_id": 645205,
         "isprivate": 0,
         "modified_by": "margaret.chan@sun.com",
@@ -19321,7 +19278,6 @@
     },
     "645212": {
         "bug_id": 67742,
-        "comment": "",
         "comment_id": 645212,
         "isprivate": 0,
         "modified_by": "margaret.chan@sun.com",
@@ -19329,7 +19285,6 @@
     },
     "645217": {
         "bug_id": 67742,
-        "comment": "",
         "comment_id": 645217,
         "isprivate": 0,
         "modified_by": "margaret.chan@sun.com",
@@ -20737,7 +20692,6 @@
     },
     "8924734": {
         "bug_id": 1007019,
-        "comment": "",
         "comment_id": 8924734,
         "isprivate": 0,
         "modified_by": "dflanagan@gmail.com",

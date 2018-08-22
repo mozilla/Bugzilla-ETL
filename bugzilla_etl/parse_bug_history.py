@@ -51,7 +51,7 @@ from mo_dots import inverse, coalesce, wrap, unwrap, literal_field, listwrap
 from mo_dots.datas import Data
 from mo_dots.lists import FlatList
 from mo_dots.nones import Null
-from mo_future import text_type, long, PYPY
+from mo_future import text_type, long, PYPY, PY2
 from mo_json import value2json
 from mo_logs import Log, strings, Except
 from mo_logs.strings import apply_diff
@@ -1120,7 +1120,7 @@ class ApplyDiff(object):
         if isinstance(text, ApplyDiff):
             if text.timestamp != timestamp:
                 # DIFFERNT DIFF
-                self._text = str(text)  # ACTUALIZE THE EFFECTS OF THE OTHER DIFF
+                self._text = text_type(text)  # ACTUALIZE THE EFFECTS OF THE OTHER DIFF
             else:
                 # CHAIN THE DIFF
                 text.parent = self
@@ -1143,23 +1143,27 @@ class ApplyDiff(object):
             return self._diff
 
     def __data__(self):
-        output = self.__str__()
+        output = text_type(self)
         return output if output else None
 
     def __gt__(self, other):
-        return str(self)>other
+        return text_type(self)>other
 
     def __lt__(self, other):
-        return str(self)<other
+        return text_type(self)<other
 
     def __eq__(self, other):
         if other == None:
             return False  # DO NOT ACTUALIZE
-        return str(self)==other
+        try:
+            return text_type(self)==other
+        except Exception as e:
+            e = Except.wrap(e)
+            text_type(self)
 
-    def __str__(self):
+    def __unicode__(self):
         if self.parent:
-            return str(self.parent)
+            return text_type(self.parent)
 
         text = self.text
         diff = self.diff
@@ -1173,6 +1177,12 @@ class ApplyDiff(object):
                 Log.warning("problem applying diff for bug {{bug}}", bug=self.bug_id, cause=e)
 
         return self.result
+
+    if PY2:
+        def __str__(self):
+            self.__unicode__().encode('utf8')
+    else:
+        __str__ = __unicode__
 
 
 class LongField(object):
