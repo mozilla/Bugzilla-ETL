@@ -11,6 +11,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+import os
+
 import jx_elasticsearch
 from bugzilla_etl.extract_bugzilla import get_all_cc_changes
 from jx_python import jx
@@ -59,13 +61,18 @@ def full_analysis(kwargs, bug_list=None, please_stop=None):
 
         #Perform analysis on blocks of bugs, in case we crash partway through
         for s, e in Random.combination(jx.intervals(start, end, kwargs.alias.increment)):
-            with db.transaction():
-                Log.note("Load range {{start}}-{{end}}", start=s, end=e)
-                if please_stop:
+            while not please_stop:
+                try:
+                    with db.transaction():
+                        Log.note("Load range {{start}}-{{end}}", start=s, end=e)
+                        if please_stop:
+                            break
+                        data = get_all_cc_changes(db, range(s, e))
+                        analyzer.aggregator(data)
+                    analyzer.analysis(last_run=False, please_stop=please_stop)
                     break
-                data = get_all_cc_changes(db, range(s, e))
-                analyzer.aggregator(data)
-            analyzer.analysis(last_run=False, please_stop=please_stop)
+                except Exception as f:
+                    Log.warning("failure while performing analysis", cause=f)
 
 
 class AliasAnalyzer(object):
@@ -113,7 +120,7 @@ class AliasAnalyzer(object):
         Log.note("running analysis with minimum_diff=={{minimum_diff}}", minimum_diff=minimum_diff)
 
         while try_again and not please_stop:
-            #FIND EMAIL MOST NEEDING REPLACEMENT
+            # FIND EMAIL MOST NEEDING REPLACEMENT
             problem_agg = Multiset(allow_negative=True)
             for bug_id, agg in iteritems(self.bugs):
                 #ONLY COUNT NEGATIVE EMAILS
@@ -121,11 +128,14 @@ class AliasAnalyzer(object):
                     if count < 0:
                         problem_agg.add(self.get_canonical(email), amount=count)
 
-            problems = jx.sort([
-                {"email": e, "count": c}
-                for e, c in iteritems(problem_agg.dic)
-                if not self.not_aliases.get(e, None) and (c <= -(minimum_diff / 2) or last_run)
-            ], ["count", "email"])
+            problems = jx.sort(
+                [
+                    {"email": e, "count": c}
+                    for e, c in iteritems(problem_agg.dic)
+                    if not self.not_aliases.get(e, None) and (c <= -(minimum_diff / 2) or last_run)
+                ],
+                ["count", "email"]
+            )
 
             try_again = False
             for problem in problems:
@@ -192,7 +202,7 @@ class AliasAnalyzer(object):
             if not agg:
                 delete_list.append(bug_id)
 
-        #FOLD bugs ON old_email == new_email
+        # FOLD bugs ON old_email == new_email
         if old_email != lost:
             for bug_id, agg in iteritems(self.bugs):
                 v = agg.dic.get(old_email, 0)
@@ -222,12 +232,28 @@ class AliasAnalyzer(object):
     def load_aliases(self):
         try:
             if self.kwargs.elasticsearch:
-                self.es = Cluster(self.kwargs.elasticsearch).get_or_create_index(
+                cluster= Cluster(self.kwargs.elasticsearch)
+                self.es = cluster.get_or_create_index(
                     kwargs=self.kwargs.elasticsearch,
                     schema=ALIAS_SCHEMA,
                     limit_replicas=True
                 )
                 self.es.add_alias(self.kwargs.elasticsearch.index)
+
+                file_date = os.path.getmtime(File(self.kwargs.file).abspath)
+                index_date = float(cluster.get_metadata().indices[self.es.settings.index].settings.index.creation_date)/1000
+
+                if file_date>index_date:
+                    # LOAD FROM FILE IF THE CLUSTER IS A BIT EMPTY
+                    self.es = cluster.create_index(
+                        kwargs=self.kwargs.elasticsearch,
+                        schema=ALIAS_SCHEMA,
+                        limit_replicas=True
+                    )
+                    self.es.add_alias(self.kwargs.elasticsearch.index)
+                    cluster.delete_all_but(self.es.settings.alias, self.es.settings.index)
+                    self._load_aliases_from_file()
+                    return
 
                 esq = jx_elasticsearch.new_instance(self.es.settings)
                 result = esq.query({
@@ -241,11 +267,6 @@ class AliasAnalyzer(object):
                     self.aliases[r.alias] = {"canonical": r.canonical, "dirty": False}
 
                 num = len(self.aliases.keys())
-                if num<500:
-                    # LOAD FROM FILE IF THE CLUSTER IS A BIT EMPTY
-                    self._load_aliases_from_file()
-                    return
-
                 Log.note("{{num}} aliases loaded from ES", num=num)
 
                 # LOAD THE NON-MATCHES
@@ -283,7 +304,7 @@ class AliasAnalyzer(object):
             def compact():
                 return {
                     "aliases": {a: c['canonical'] for a, c in self.aliases.items() if c['canonical'] != a},
-                    "mot_aliases": self.not_aliases
+                    "not_aliases": self.not_aliases
                 }
 
             data = compact()
@@ -315,7 +336,7 @@ def split_email(value):
 
     if value.startswith("?") or value.endswith("?"):
         return set()
-    return set([s.strip() for s in value.split(",") if s.strip() != ""])
+    return set([s.strip().lower() for s in value.split(",") if s.strip() != ""])
 
 
 def start():

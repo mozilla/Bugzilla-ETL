@@ -73,27 +73,27 @@
 			"index": "bug_aliases"
 		}
 	},
-//	"bugzilla": {
-//		"filename": "tests/resources/sql/bugzilla_mini.sql.zip",
-//		"$ref": "file://~/private.json#bugzilla",
-//		"preamble": "from https://github.com/klahnakoski/Bugzilla-ETL",
-//		"host": "localhost",
-//		"port": 3306,
-//		"schema": "bugs",
-//		"debug": true,
-//		"readonly": true
-//	},
 	"bugzilla": {
-		"$ref": "file://~/private.json#bugzilla-dev",
+		"filename": "tests/resources/sql/bugzilla_mini.sql.zip",
+		"$ref": "file://~/private.json#bugzilla",
 		"preamble": "from https://github.com/klahnakoski/Bugzilla-ETL",
 		"host": "localhost",
-		"port": 3307,
+		"port": 3306,
 		"schema": "bugs",
-		"debug": false,
+		"debug": true,
 		"readonly": true
 	},
+//	"bugzilla": {
+//		"$ref": "file://~/private.json#bugzilla-dev",
+//		"preamble": "from https://github.com/klahnakoski/Bugzilla-ETL",
+//		"host": "localhost",
+//		"port": 3307,
+//		"schema": "bugs",
+//		"debug": false,
+//		"readonly": true
+//	},
 	"reference": {
-		"filename": "tests/resources/reference/test_examples.json",
+		"filename": "tests/resources/reference/public_bugs.json",
 //		"max_timestamp": 1372867005000  // MAX TIME IN THE REFERENCE
 	},
 	"bugs": {

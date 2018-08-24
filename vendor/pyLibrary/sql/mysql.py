@@ -103,11 +103,12 @@ class MySQL(object):
             )
         except Exception as e:
             if self.settings.host.find("://") == -1:
-                Log.error(u"Failure to connect to {{host}}:{{port}}",
-                          host=self.settings.host,
-                          port=self.settings.port,
-                          cause=e
-                          )
+                Log.error(
+                    u"Failure to connect to {{host}}:{{port}}",
+                    host=self.settings.host,
+                    port=self.settings.port,
+                    cause=e
+                )
             else:
                 Log.error(u"Failure to connect.  PROTOCOL PREFIX IS PROBABLY BAD", e)
         self.cursor = None
