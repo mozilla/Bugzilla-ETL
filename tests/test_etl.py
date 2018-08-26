@@ -72,7 +72,6 @@ class TestETL(unittest.TestCase):
 
         Log.stop()
 
-    @skipIf(True, "problem with reference json")
     def test_private_etl(self):
         """
         ENSURE IDENTIFIABLE INFORMATION DOES NOT EXIST ON ANY BUGS
@@ -82,27 +81,37 @@ class TestETL(unittest.TestCase):
         self.settings.param.allow_private_bugs = True
 
         database.make_test_instance(self.settings.bugzilla)
-        es = fake_elasticsearch.make_test_instance(self.settings.private.bugs)
-        es_c = fake_elasticsearch.make_test_instance(self.settings.private.comments)
         bz_etl.main(
             es=self.settings.private.bugs.es,
             es_comments=self.settings.private.comments.es,
             kwargs=self.settings
         )
 
-        ref = fake_elasticsearch.open_test_instance("reference", self.settings.reference.private.bugs)
+        es = elasticsearch.Cluster(self.settings.private.bugs.es).get_index(self.settings.private.bugs.es)
+        ref = fake_elasticsearch.open_test_instance(name="reference", kwargs=self.settings.reference.private.bugs)
         compare_both(es, ref, self.settings, self.settings.param.bugs)
 
         # DIRECT COMPARE THE FILE JSON
-        can = File(self.settings.fake.comments.filename).read()
-        ref = File(self.settings.reference.private.comments.filename).read()
-        if can != ref:
-            for i, c in enumerate(can):
-                found = -1
-                if can[i] != ref[i]:
-                    found = i
-                    break
-            Log.error("Comments do not match reference\n{{sample}}", sample=can[MIN([0, found - 100]):found + 100])
+        can = jx.sort(
+            jx_elasticsearch.new_instance(self.settings.private.comments.es).query({
+                "from": "private_bugs",
+                "limit": 10000,
+                "format": "list"
+            }).data,
+            ["bug_id", "modified_ts", "comment_id"]
+        )
+        ref = jx.sort(
+            File(self.settings.reference.private.comments.filename).read_json().values(),
+            ["bug_id", "modified_ts", "comment_id"]
+        )
+        for i, (c, r) in enumerate(zip(can, ref)):
+            if c != r:
+                Log.error(
+                    "Comment\n{{candidate|json}}\ndoes not match reference:\n{{reference|json}}",
+                    candidate=c,
+                    reference=r
+                )
+                break
 
 
     def test_public_etl(self):
