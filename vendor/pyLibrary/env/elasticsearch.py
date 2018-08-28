@@ -18,7 +18,7 @@ from copy import deepcopy
 from jx_python import jx
 from jx_python.expressions import jx_expression_to_function
 from jx_python.meta import Column
-from mo_dots import wrap, FlatList, coalesce, Null, Data, set_default, listwrap, literal_field, ROOT_PATH, concat_field, split_field
+from mo_dots import wrap, FlatList, coalesce, Null, Data, set_default, listwrap, literal_field, ROOT_PATH, concat_field, split_field, SLOT
 from mo_files.url import URL
 from mo_future import text_type, binary_type
 from mo_json import value2json, json2value
