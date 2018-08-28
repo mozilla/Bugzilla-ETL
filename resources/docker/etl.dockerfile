@@ -22,7 +22,9 @@ RUN mkdir -p /etc/dpkg/dpkg.cfg.d \
     && rm -rf /var/lib/apt/lists/* /usr/share/doc/* /usr/share/man/* /usr/share/locale/* \
     && git clone $REPO_URL $HOME \
     && git checkout $REPO_CHECKOUT \
-    && python -m pip --no-cache-dir install --user -r requirements.txt
+    && python -m pip --no-cache-dir install --user -r requirements.txt \
+    && export PYTHONPATH=.:vendor \
+    && python resources/docker/version.py
 
 RUN addgroup --gid 10001 $USER \
     && adduser \
