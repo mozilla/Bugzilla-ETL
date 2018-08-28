@@ -17,8 +17,6 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 from json.encoder import encode_basestring
 
-# from jx_base import Column, python_type_to_json_type, NESTED, EXISTS, STRING, NUMBER, INTEGER, BOOLEAN
-# from jx_base import Column
 from mo_dots import Data, FlatList, NullType, join_field, split_field
 from mo_future import text_type, binary_type, sort_using_key, long, PY2, none_type
 from mo_json import ESCAPE_DCT, float2json
