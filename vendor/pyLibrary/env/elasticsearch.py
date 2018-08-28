@@ -986,8 +986,8 @@ class Cluster(object):
         try:
             response = http.put(url, **kwargs)
             if response.status_code not in [200]:
-                Log.error(response.reason + ": " + utf82unicode(response.all_content))
-            self.debug and Log.note("response: {{response}}", response=utf82unicode(response.all_content)[0:300:])
+                Log.error(response.reason + ": " + utf82unicode(response.content))
+            self.debug and Log.note("response: {{response}}", response=utf82unicode(response.content)[0:300:])
 
             details = json2value(utf82unicode(response.content))
             if details.error:
@@ -1035,7 +1035,7 @@ def _scrub(r):
             return convert.value2number(r)
         elif isinstance(r, Mapping):
             if isinstance(r, Data):
-                r = object.__getattribute__(r, "_dict")
+                r = object.__getattribute__(r, SLOT)
             output = {}
             for k, v in r.items():
                 v = _scrub(v)
@@ -1487,6 +1487,8 @@ def diff_schema(A, B):
     output =[]
     def _diff_schema(path, A, B):
         for k, av in A.items():
+            if k == "_id" and path == ".":
+                continue  # DO NOT ADD _id TO ANY SCHEMA DIFF
             bv = B[k]
             if bv == None:
                 output.append((concat_field(path, k), av))

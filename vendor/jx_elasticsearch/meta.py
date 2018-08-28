@@ -311,7 +311,7 @@ class ElasticsearchMetadata(Namespace):
                     "size": 0
                 })
                 count = result.hits.total
-                cardinality = 1001
+                cardinality = max(1001, count)
                 multi = 1001
             elif column.es_column == "_id":
                 result = self.es_cluster.post("/" + es_index + "/_search", data={
@@ -419,7 +419,7 @@ class ElasticsearchMetadata(Namespace):
             e = Except.wrap(e)
             TEST_TABLE = "testdata"
             is_missing_index = any(w in e for w in ["IndexMissingException", "index_not_found_exception"])
-            is_test_table = any(column.es_index.startswith(t) for t in [TEST_TABLE_PREFIX, TEST_TABLE])
+            is_test_table = column.es_index.startswith((TEST_TABLE_PREFIX, TEST_TABLE))
             if is_missing_index and is_test_table:
                 # WE EXPECT TEST TABLES TO DISAPPEAR
                 self.meta.columns.update({
@@ -438,7 +438,7 @@ class ElasticsearchMetadata(Namespace):
                         "multi",
                         "partitions",
                     ],
-                    "where": {"eq": {"names.\\.": ".", "es_index": column.es_index, "es_column": column.es_column}}
+                    "where": {"eq": {"es_index": column.es_index, "es_column": column.es_column}}
                 })
                 Log.warning("Could not get {{col.es_index}}.{{col.es_column}} info", col=column, cause=e)
 
@@ -487,7 +487,13 @@ class ElasticsearchMetadata(Namespace):
                             self._update_cardinality(column)
                             (DEBUG and not column.es_index.startswith(TEST_TABLE_PREFIX)) and Log.note("updated {{column.name}}", column=column)
                         except Exception as e:
-                            Log.warning("problem getting cardinality for {{column.name}}", column=column, cause=e)
+                            if '"status":404' in e:
+                                self.meta.columns.update({
+                                    "clear": ".",
+                                    "where": {"eq": {"es_index": column.es_index, "es_column": column.es_column}}
+                                })
+                            else:
+                                Log.warning("problem getting cardinality for {{column.name}}", column=column, cause=e)
             except Exception as e:
                 Log.warning("problem in cardinality monitor", cause=e)
 
