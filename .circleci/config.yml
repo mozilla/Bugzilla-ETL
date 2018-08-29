@@ -71,10 +71,10 @@ jobs:
           destination: test-reports
 
   dockerize:
+    working_directory: ~/repo
+
     docker:
       - image: docker:18.06-git
-
-    working_directory: ~/repo
 
     steps:
       - checkout
