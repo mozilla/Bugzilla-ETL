@@ -33,7 +33,7 @@ docker run \
        test-etl 
 ```
 
-This will not work until you update the enviroment file (`public_etl.env`) with suitable values.
+This will not work until you update the environment file (`public_etl.env`) with suitable values.
 
 **Notes**
 

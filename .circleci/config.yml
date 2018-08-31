@@ -71,6 +71,7 @@ jobs:
           destination: test-reports
 
   dockerize:
+    # FIND THE RESULTING IMAGE AT hub.docker.com/r/mozilla/bugzilla_etl
     working_directory: ~/repo
 
     docker:
@@ -83,7 +84,13 @@ jobs:
           name: Build Docker Image
           command: |
             echo BUILDING BUGZILLA-ETL WITH TAG = $CIRCLE_TAG
-            docker build --file resources/docker/etl.dockerfile --build-arg REPO_CHECKOUT=tags/$CIRCLE_TAG --no-cache --tag bugzilla-etl .
+            docker build \
+              --file resources/docker/etl.dockerfile \
+              --build-arg REPO_CHECKOUT=tags/$CIRCLE_TAG \
+              --build-arg BUILD_URL=$CIRCLE_BUILD_URL \
+              --no-cache \
+              --tag bugzilla-etl \
+              .
       - run:
           name: Push to Dockerhub
           command: |

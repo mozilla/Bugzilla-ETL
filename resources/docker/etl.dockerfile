@@ -1,5 +1,6 @@
 FROM python:3.6.4
 
+ARG BUILD_URL=
 ARG REPO_CHECKOUT=
 ARG REPO_URL=https://github.com/mozilla/Bugzilla-ETL.git
 ARG HOME=/app
