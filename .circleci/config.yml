@@ -71,6 +71,7 @@ jobs:
           destination: test-reports
 
   dockerize:
+    # FIND THE RESULTING IMAGE AT hub.docker.com/r/mozilla/bugzilla_etl
     working_directory: ~/repo
 
     docker:
