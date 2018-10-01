@@ -354,7 +354,7 @@ def start():
 ALIAS_SCHEMA = {
     "kwargs": {"index": {
         "number_of_shards": 3,
-        "number_of_replicas": 0
+        "number_of_replicas": 2
     }},
     "mappings": {
         "alias": {

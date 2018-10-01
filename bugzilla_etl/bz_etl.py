@@ -125,13 +125,8 @@ def run_both_etl(db, bug_output_queue, comment_output_queue, param, alias_analyz
     comment_thread = Thread.run("etl comments", etl_comments, db, comment_output_queue, param)
     process_thread = Thread.run("etl", etl, db, bug_output_queue, param, alias_analyzer)
 
-    result = comment_thread.join()
-    if result.exception:
-        Log.error("etl_comments had problems", cause=result.exception)
-
-    result = process_thread.join()
-    if result.exception:
-        Log.error("etl had problems", cause=result.exception)
+    comment_thread.join()
+    process_thread.join()
 
 
 def setup_es(settings, db):
@@ -370,21 +365,11 @@ def main(param, es, es_comments, bugzilla, kwargs):
             current_run_time, esq, esq_comments, last_run_time = setup_es(kwargs, db)
 
             with esq.es.threaded_queue(max_size=500, silent=True) as output_queue:
-
-                # def _add(value):
-                #     if not isinstance(value, text_type):
-                #         value = wrap(value)
-                #         if value.value.bug_id==1877:
-                #             Log.note("{{group}}", group= value.value.bug_group)
-                #     _output_queue.add(value)
-                # output_queue = Data(add=_add)
-
                 #SETUP RUN PARAMETERS
                 param_new = Data()
                 param_new.end_time = convert.datetime2milli(get_current_time(db))
                 # MySQL WRITES ARE DELAYED, RESULTING IN UNORDERED bug_when IN bugs_activity (AS IS ASSUMED FOR bugs(delats_ts))
                 # THIS JITTER IS USUALLY NO MORE THAN ONE SECOND, BUT WE WILL GO BACK 60sec, JUST IN CASE.
-                # THERE ARE OCCASIONAL WRITES THAT ARE IN GMT, BUT SINCE THEY LOOK LIKE THE FUTURE, WE CAPTURE THEM
                 param_new.start_time = last_run_time - coalesce(param.look_back, 5 * 60 * 1000)  # 5 MINUTE LOOK_BACK
                 param_new.start_time_str = extract_bugzilla.milli2string(db, param_new.start_time)
                 param_new.alias = param.alias
