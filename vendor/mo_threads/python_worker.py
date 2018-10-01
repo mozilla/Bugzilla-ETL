@@ -22,7 +22,7 @@ from mo_dots import set_default, listwrap, coalesce
 from mo_future import text_type, PY3
 from mo_json import json2value, value2json
 from mo_logs import Log, constants
-from mo_threads import Signal, Till
+from mo_threads import Signal
 
 if PY3:
     STDOUT = sys.stdout.buffer
@@ -77,6 +77,17 @@ def command_loop(local):
             STDOUT.write('\n')
         finally:
             STDOUT.flush()
+
+
+num_temps = 0
+
+
+def temp_var():
+    global num_temps
+    try:
+        return "temp_var" + text_type(num_temps)
+    finally:
+        num_temps += 1
 
 
 if __name__ == "__main__":
