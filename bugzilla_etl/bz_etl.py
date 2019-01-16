@@ -11,10 +11,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
-from mo_json import scrub
-from mo_times.dates import unix2datetime
-
 import jx_elasticsearch
+import mo_math
 from bugzilla_etl import extract_bugzilla, alias_analysis, parse_bug_history
 from bugzilla_etl.alias_analysis import AliasAnalyzer
 from bugzilla_etl.extract_bugzilla import get_comments, get_current_time, MIN_TIMESTAMP, get_private_bugs_for_delete, get_recent_private_bugs, get_recent_private_attachments, get_recent_private_comments, get_comments_by_id, get_bugs, \
@@ -24,11 +22,12 @@ from jx_python import jx
 from mo_dots import wrap, coalesce, listwrap, Data
 from mo_files import File
 from mo_future import text_type, long
+from mo_json import scrub
 from mo_kwargs import override
 from mo_logs import Log, startup, constants
-from mo_math import Math
 from mo_threads import Lock, Queue, Thread, THREAD_STOP
 from mo_threads.threads import AllThread, MAIN_THREAD
+from mo_times.dates import unix2datetime
 from mo_times.timer import Timer
 from pyLibrary import convert
 from pyLibrary.env.elasticsearch import Cluster
@@ -99,7 +98,7 @@ def etl(db, bug_output_queue, param, alias_analyzer, please_stop):
     with AllThread() as all:
         with db_cache_lock:
             # SPLIT TASK EVENLY, HAVE EACH BUG USE SAME CONNECTION FOR ALL DATA
-            size = Math.ceiling(len(param.bug_list)/len(db_cache))
+            size = mo_math.ceiling(len(param.bug_list)/len(db_cache))
             for g, bug_ids in jx.groupby(param.bug_list, size=size):
                 param = param.copy()
                 param.bug_list = bug_ids
@@ -285,7 +284,7 @@ def full_etl(resume_from_last_run, param, db, esq, esq_comments, bug_output_queu
     alias_analyzer = AliasAnalyzer(kwargs=kwargs.alias)
     if resume_from_last_run:
         # FIND THE LAST GOOD BUG NUMBER PROCESSED (WE GO BACKWARDS, SO LOOK FOR MINIMUM BUG, AND ROUND UP)
-        end = coalesce(param.end, Math.ceiling(get_min_bug_id(esq), param.increment), end)
+        end = coalesce(param.end, mo_math.ceiling(get_min_bug_id(esq), param.increment), end)
     Log.note("full etl from {{min}} to {{max}}", min=start, max=end)
     #############################################################
     ## MAIN ETL LOOP
@@ -489,7 +488,7 @@ def setup():
             Log.start(settings.debug)
             main(settings)
     except Exception as e:
-        Log.fatal("Can not start", e)
+        Log.error("Can not start", e)
     finally:
         MAIN_THREAD.stop()
 

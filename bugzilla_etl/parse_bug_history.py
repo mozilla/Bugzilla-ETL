@@ -46,6 +46,7 @@ import re
 from bugzilla_etl.alias_analysis import AliasAnalyzer
 from bugzilla_etl.extract_bugzilla import MAX_TIMESTAMP
 from bugzilla_etl.transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS, DIFF_FIELDS, NULL_VALUES, TIME_FIELDS, LONG_FIELDS
+from jx_elasticsearch.meta import python_type_to_es_type
 from jx_python import jx, meta
 from mo_dots import inverse, coalesce, wrap, unwrap, literal_field, listwrap
 from mo_dots.datas import Data
@@ -55,7 +56,7 @@ from mo_future import text_type, long, PYPY, PY2
 from mo_json import value2json
 from mo_logs import Log, strings, Except
 from mo_logs.strings import apply_diff
-from mo_math import MIN, Math
+from mo_math import MIN, is_integer
 from mo_times import Date
 from pyLibrary import convert
 
@@ -420,7 +421,7 @@ class BugHistoryParser(object):
 
                     if text_type(new_value) != text_type(expected_value):
                         if row_in.field_name in EMAIL_FIELDS:
-                            if Math.is_integer(new_value) or Math.is_integer(expected_value) and row_in.modified_ts<=927814152000:
+                            if is_integer(new_value) or is_integer(expected_value) and row_in.modified_ts<=927814152000:
                                 pass # BEFORE 1999-05-27 14:09:12 THE qa_contact FIELD WAS A NUMBER, NOT THE EMAIL
                             elif not new_value or not expected_value:
                                 pass
@@ -1241,5 +1242,5 @@ class LongField(object):
 
 
 # ENSURE WE REGISTER THIS PROMISE AS A STRING
-meta._type_to_name[ApplyDiff] = "string"
-meta._type_to_name[LongField] = "string"
+python_type_to_es_type[ApplyDiff] = "string"
+python_type_to_es_type[LongField] = "string"

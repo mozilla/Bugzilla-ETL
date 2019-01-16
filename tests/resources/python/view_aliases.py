@@ -59,7 +59,7 @@ def start():
         Log.start(settings.debug)
         main(settings)
     except Exception as e:
-        Log.fatal("Problems exist", e)
+        Log.error("Problems exist", e)
     finally:
         Log.stop()
 

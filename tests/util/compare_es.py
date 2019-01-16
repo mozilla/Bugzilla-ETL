@@ -13,15 +13,8 @@ from __future__ import division
 from __future__ import unicode_literals
 
 import jx_elasticsearch
-from bugzilla_etl import transform_bugzilla
-from bugzilla_etl.extract_bugzilla import MAX_TIMESTAMP
-from jx_python import jx
 from jx_python.containers.list_usingPythonList import ListContainer
-from mo_dots import coalesce, unwrap, listwrap
-from mo_future import long
-from mo_json import json2value, value2json
 from mo_logs import Log
-from mo_math import Math
 from mo_times.timer import Timer
 from pyLibrary import convert
 from pyLibrary.env import elasticsearch

@@ -196,7 +196,7 @@ def setup():
         Log.start(settings.debug)
         bugzilla_extract(settings)
     except Exception as e:
-        Log.fatal("Can not start", e)
+        Log.error("Can not start", e)
     finally:
         Log.stop()
 
