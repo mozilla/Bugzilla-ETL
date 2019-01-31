@@ -1,21 +1,17 @@
 
 
-## Caring for Bugzilla-ETL
+## Operations Support for Bugzilla-ETL
 
-This project fills an ES cluster with bug snapshots. If there is a problem, you may want to investigate:
+Mozilla runs an instance of this software to fill an ES cluster with bug snapshots. If there is a problem, you may want to investigate:
 
-- **Information from an OPS perspective** - [https://mana.mozilla.org/wiki/pages/viewpage.action?pageId=83788855](https://mana.mozilla.org/wiki/pages/viewpage.action?pageId=83788855)
-- **Accessing Logs** - [https://mana.mozilla.org/wiki/display/SVCOPS/Accessing+the+logging+bastions+and+rawlogs+hosts](https://mana.mozilla.org/wiki/display/SVCOPS/Accessing+the+logging+bastions+and+rawlogs+hosts)
+- **[Information from an OPS perspective](https://mana.mozilla.org/wiki/pages/viewpage.action?pageId=83788855)** - all the pointers to machines
+- **[Accessing Logs](https://mana.mozilla.org/wiki/display/SVCOPS/Accessing+the+logging+bastions+and+rawlogs+hosts)** - URLs for getting to the logging servers, including sample `ssh` commands, and logging directory.
 
-There is an ActiveData instance that serves off the cluster
+Also, there is an ActiveData instance that serves off the ES cluster
 
-- **ActiveData Code** - [https://github.com/mozilla/ActiveData](https://github.com/mozilla/ActiveData)
+- **[ActiveData Code](https://github.com/mozilla/ActiveData)**
  
 ### Viewing Logs
-
-URLs for getting to the logging servers is on Mana.  In includes sample ssh commands and mentions the logging directory.
-
-> [Accessing Logs](https://mana.mozilla.org/wiki/display/SVCOPS/Accessing+the+logging+bastions+and+rawlogs+hosts) (same link as above)
 
 The logs are structured logs, so you will need `jq` to format them nicely:
 
@@ -27,6 +23,6 @@ The `-R fromjson?` is required to filter out the non-json also found in the logs
 
 ### New Bugs
 
-https://bugzilla.mozilla.org/enter_bug.cgi?product=Cloud%20Services&component=Operations%3A%20Bzetl
+If there is a problem, open a bug in Buzilla: [`Cloud Services::Operations: Bzetl`](https://bugzilla.mozilla.org/enter_bug.cgi?product=Cloud%20Services&component=Operations%3A%20Bzetl)
 
 
