@@ -13,6 +13,10 @@ There is an ActiveData instance that serves off the cluster
  
 ### Viewing Logs
 
+URLs for getting to the logging servers is on Mana.  In includes sample ssh commands and mentions the logging directory.
+
+> [Accessing Logs](https://mana.mozilla.org/wiki/display/SVCOPS/Accessing+the+logging+bastions+and+rawlogs+hosts) (same link as above)
+
 The logs are structured logs, so you will need `jq` to format them nicely:
 
 ```bash
@@ -20,3 +24,9 @@ The logs are structured logs, so you will need `jq` to format them nicely:
 ```
 
 The `-R fromjson?` is required to filter out the non-json also found in the logs. These non-json lines are during the short period of time at startup (and shutdown) when the program is generating logs, but the structured logging module has not started.
+
+### New Bugs
+
+https://bugzilla.mozilla.org/enter_bug.cgi?product=Cloud%20Services&component=Operations%3A%20Bzetl
+
+
