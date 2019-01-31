@@ -4,6 +4,11 @@
 Extract Bugzilla change history; Transform into bug snapshots; and Load into Elasticsearch  
 
 
+## Support
+
+If you are here because the Mozilla's instance is down, please read the [Operation Support Document](docs/Operations%20Support.md)
+
+
 ## Motivation and Details
 
 [https://wiki.mozilla.org/BMO/ElasticSearch](https://wiki.mozilla.org/BMO/ElasticSearch)
