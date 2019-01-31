@@ -9,7 +9,6 @@
 #
 from __future__ import absolute_import, division, unicode_literals
 
-import itertools
 from datetime import date, datetime
 from decimal import Decimal
 

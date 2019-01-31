@@ -229,6 +229,7 @@ Column = DataClass(
     ],
     constraint={
         "and": [
+            # {"not": {"eq": {"es_column": "."}}},
             {"not": {"eq": {"es_column": "string"}}},
             {"eq": [{"last": "nested_path"}, {"literal": "."}]},
         ]

@@ -41,7 +41,7 @@ if PY3:
     text_type = str
     string_types = str
     binary_type = bytes
-    integer_types = int
+    integer_types = (int, )
     number_types = (int, float)
     long = int
     unichr = chr

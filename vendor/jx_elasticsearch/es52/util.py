@@ -56,6 +56,7 @@ def es_query_template(path):
         return output, wrap([f0])
 
 
+
 def jx_sort_to_es_sort(sort, schema):
     if not sort:
         return []
