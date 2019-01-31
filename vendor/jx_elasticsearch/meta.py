@@ -9,10 +9,9 @@
 #
 from __future__ import absolute_import, division, unicode_literals
 
-from mo_future import is_text, is_binary
+import itertools
 from datetime import date, datetime
 from decimal import Decimal
-import itertools
 
 import jx_base
 from jx_base import TableDesc

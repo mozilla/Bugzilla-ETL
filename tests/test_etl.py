@@ -333,7 +333,7 @@ class TestETL(unittest.TestCase):
 
         database.make_test_instance(self.settings.bugzilla)
 
-        #MARK SOME BUGS PRIVATE
+        # MARK SOME BUGS PRIVATE
         with MySQL(self.settings.bugzilla) as db:
             for b in private_bugs:
                 database.add_bug_group(db, b, BUG_GROUP_FOR_TESTING)
@@ -346,9 +346,10 @@ class TestETL(unittest.TestCase):
             kwargs=self.settings
         )
 
-        #VERIFY BUG GROUP STILL EXISTS
+        # VERIFY BUG GROUP STILL EXISTS
+
         esq = jx_elasticsearch.new_instance(self.settings.private.bugs.es)
-        esq.namespace.get_columns(esq.name, force=True)
+        esq.namespace.get_columns(esq.name, after=Date.now())
         results = esq.query({
             "from": esq.name,
             "where": {"and": [
