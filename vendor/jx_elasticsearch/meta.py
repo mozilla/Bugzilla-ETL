@@ -9,6 +9,7 @@
 #
 from __future__ import absolute_import, division, unicode_literals
 
+import itertools
 from datetime import date, datetime
 from decimal import Decimal
 
@@ -574,6 +575,8 @@ class ElasticsearchMetadata(Namespace):
             column = self.todo.pop()
             if column == THREAD_STOP:
                 break
+            # if untype_path(column.name) in ["build.type", "run.type"]:
+            #     Log.note("found")
 
             if column.jx_type in STRUCT or split_field(column.es_column)[-1] == EXISTS_TYPE:
                 DEBUG and Log.note("{{column.es_column}} is a struct", column=column)
