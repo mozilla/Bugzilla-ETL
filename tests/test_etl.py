@@ -360,6 +360,16 @@ class TestETL(unittest.TestCase):
             "format": "list"
         })
         if set(results.data.bug_id) != set(private_bugs):
+            results = esq.query({
+                "from": esq.name,
+                "where": {"and": [
+                    {"in": {"bug_id": private_bugs}},
+                    {"gte": {"expires_on": Date.now().milli}}
+                ]},
+                "limit": 200000,
+                "format": "list"
+            })
+
             Log.error("Expecting private bugs to exist")
 
         # MAKE A CHANGE TO THE PRIVATE BUGS

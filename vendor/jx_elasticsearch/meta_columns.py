@@ -36,6 +36,7 @@ from mo_future import binary_type, items, long, none_type, reduce, text_type
 from mo_json import INTEGER, NUMBER, STRING, STRUCT, python_type_to_json_type
 from mo_json.typed_encoder import unnest_path, untype_path, untyped
 from mo_logs import Except, Log
+from mo_math import MAX
 from mo_threads import Lock, Queue, Thread, Till
 from mo_times.dates import Date
 
@@ -43,8 +44,6 @@ DEBUG = True
 singlton = None
 META_INDEX_NAME = "meta.columns"
 META_TYPE_NAME = "column"
-
-DELETE_INDEX, UPDATE, DELETE = "delete_index", "update", "delete"
 
 
 class ColumnList(Table, jx_base.Container):
@@ -82,13 +81,15 @@ class ColumnList(Table, jx_base.Container):
         }
 
         self.es_index = self.es_cluster.create_index(
-            index=META_INDEX_NAME, schema=schema
+            id={"field": ["es_index", "es_column"], "version": "last_updated"},
+            index=META_INDEX_NAME,
+            schema=schema,
         )
         self.es_index.add_alias(META_INDEX_NAME)
 
         for c in METADATA_COLUMNS:
             self._add(c)
-            self.es_index.add({"id": get_id(c), "value": c.__dict__()})
+            self.es_index.add({"value": c.__dict__()})
 
     def _db_load(self):
         self.last_load = Date.now()
@@ -100,9 +101,12 @@ class ColumnList(Table, jx_base.Container):
 
             result = self.es_index.search(
                 {
-                    "query": {"match_all": {}},
+                    "query": {"bool": {"should": [
+                        {"bool": {"must_not": {"exists": {"field": "cardinality.~n~"}}}},
+                        {"range": {"cardinality.~n~": {"gt": 0}}}  # ASSUME UNUSED COLUMNS DO NOT EXIST
+                    ]}},
                     "sort": ["es_index.~s~", "name.~s~", "es_column.~s~"],
-                    "size": 10000
+                    "size": 10000,
                 }
             )
 
@@ -118,7 +122,6 @@ class ColumnList(Table, jx_base.Container):
             self._db_create()
 
     def _db_worker(self, please_stop):
-        batch_size = 10000
         while not please_stop:
             try:
                 result = self.es_index.search(
@@ -128,46 +131,24 @@ class ColumnList(Table, jx_base.Container):
                         },
                         "sort": ["es_index.~s~", "name.~s~", "es_column.~s~"],
                         "from": 0,
-                        "size": batch_size,
+                        "size": 10000,
                     }
                 )
-                batch_size = 10
 
                 with self.locker:
                     for r in result.hits.hits._source:
                         c = doc_to_column(r)
                         self._add(c)
-                        if c.last_updated > self.last_load:
-                            self.last_load = c.last_updated
+                        self.last_load = MAX((self.last_load, c.last_updated))
 
                 updates = self.todo.pop_all()
                 DEBUG and updates and Log.note(
                     "{{num}} columns to push to db", num=len(updates)
                 )
-                for action, column in updates:
-                    if please_stop:
-                        return
-                    try:
-                        DEBUG and Log.note(
-                            "{{action}} db for {{table}}.{{column}}",
-                            action=action,
-                            table=column.es_index,
-                            column=column.es_column,
-                        )
-                        if action is DELETE_INDEX:
-                            self.es_index.delete_record(
-                                {"term": {"es_index.~s~": column}}
-                            )
-                        elif action is UPDATE:
-                            self.es_index.add(
-                                {"id": get_id(column), "value": column.__dict__()}
-                            )
-                        elif action is DELETE:
-                            self.es_index.delete_id(get_id(column))
-                    except Exception as e:
-                        e = Except.wrap(e)
-                        Log.warning("problem updataing database", cause=e)
-
+                self.es_index.extend(
+                    {"value": column.__dict__()}
+                    for column in updates
+                )
             except Exception as e:
                 Log.warning("problem updating database", cause=e)
 
@@ -205,7 +186,7 @@ class ColumnList(Table, jx_base.Container):
             canonical = self._add(column)
         if canonical == None:
             return column  # ALREADY ADDED
-        self.todo.add((UPDATE, canonical))
+        self.todo.add(canonical)
         return canonical
 
     def remove_table(self, table_name):
@@ -299,9 +280,15 @@ class ColumnList(Table, jx_base.Container):
             if eq.es_index:
                 if len(eq) == 1:
                     if unwraplist(command.clear) == ".":
+                        d = self.data
+                        i = eq.es_index
                         with self.locker:
-                            del self.data[eq.es_index]
-                        self.todo.add((DELETE_INDEX, eq.es_index))
+                            cols = d[i]
+                            del d[i]
+
+                        for c in cols:
+                            mark_as_deleted(c)
+                            self.todo.add(c)
                         return
 
                     # FASTEST
@@ -344,7 +331,8 @@ class ColumnList(Table, jx_base.Container):
                     )
                     for k in command["clear"]:
                         if k == ".":
-                            self.todo.add((DELETE, col))
+                            mark_as_deleted(col)
+                            self.todo.add(col)
                             lst = self.data[col.es_index]
                             cols = lst[col.name]
                             cols.remove(col)
@@ -359,7 +347,7 @@ class ColumnList(Table, jx_base.Container):
                         # DID NOT DELETE COLUMNM ("."), CONTINUE TO SET PROPERTIES
                         for k, v in command.set.items():
                             col[k] = v
-                        self.todo.add((UPDATE, col))
+                        self.todo.add( col)
 
         except Exception as e:
             Log.error("should not happen", cause=e)
@@ -585,6 +573,14 @@ METADATA_COLUMNS = (
 
 def doc_to_column(doc):
     return Column(**wrap(untyped(doc)))
+
+
+def mark_as_deleted(col):
+    col.count = 0
+    col.cardinality = 0
+    col.multi = 0
+    col.partitions = None
+    col.last_updated = Data.now()
 
 
 SIMPLE_METADATA_COLUMNS = (  # FOR PURELY INTERNAL PYTHON LISTS, NOT MAPPING TO ANOTHER DATASTORE
