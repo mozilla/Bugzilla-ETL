@@ -19,7 +19,7 @@ from mo_json import STRUCT
 from mo_json.typed_encoder import unnest_path, untype_path, untyped
 from mo_logs import Log
 from mo_math import MAX
-from mo_threads import Lock, Queue, Thread, Till
+from mo_threads import Lock, Queue, Thread, Till, MAIN_THREAD
 from mo_times.dates import Date
 
 DEBUG = False
@@ -43,10 +43,14 @@ class ColumnList(Table, jx_base.Container):
         self.es_index = None
         self.last_load = Null
         self.todo = Queue(
-            "update columns to db"
+            "update columns to es"
         )  # HOLD (action, column) PAIR, WHERE action in ['insert', 'update']
         self._db_load()
-        Thread.run("update " + META_INDEX_NAME, self._db_worker)
+        Thread.run(
+            "update " + META_INDEX_NAME,
+            self._push_to_es_worker,
+            parent_thread=MAIN_THREAD,
+        )
 
     def _query(self, query):
         result = Data()
@@ -115,51 +119,44 @@ class ColumnList(Table, jx_base.Container):
             )
             self._db_create()
 
-    def _db_worker(self, please_stop):
-        while not please_stop:
-            try:
-                result = self.es_index.search(
-                    {
-                        "query": {
-                            "range": {"last_updated.~n~": {"gt": self.last_load}}
-                        },
-                        "sort": ["es_index.~s~", "name.~s~", "es_column.~s~"],
-                        "from": 0,
-                        "size": 10000,
-                    }
-                )
-
-                with self.locker:
-                    for r in result.hits.hits._source:
-                        c = doc_to_column(r)
-                        self._add(c)
-                        self.last_load = MAX((self.last_load, c.last_updated))
-
-                while not please_stop:
-                    updates = self.todo.pop_all()
-                    if not updates:
-                        break
-
-                    DEBUG and updates and Log.note(
-                        "{{num}} columns to push to db", num=len(updates)
+    def _push_to_es_worker(self, please_stop):
+        try:
+            while not please_stop:
+                try:
+                    result = self.es_index.search(
+                        {
+                            "query": {
+                                "range": {"last_updated.~n~": {"gt": self.last_load}}
+                            },
+                            "sort": ["es_index.~s~", "name.~s~", "es_column.~s~"],
+                            "from": 0,
+                            "size": 10000,
+                        }
                     )
-                    self.es_index.extend(
-                        {"value": column.__dict__()} for column in updates
-                    )
-            except Exception as e:
-                Log.warning("problem updating database", cause=e)
 
-            (Till(seconds=10) | please_stop).wait()
+                    with self.locker:
+                        for r in result.hits.hits._source:
+                            c = doc_to_column(r)
+                            self._add(c)
+                            self.last_load = MAX((self.last_load, c.last_updated))
 
-    def __copy__(self):
-        output = object.__new__(ColumnList)
-        Table.__init__(output, META_INDEX_NAME)
-        output.data = {
-            t: {c: list(cs) for c, cs in dd.items()} for t, dd in self.data.items()
-        }
-        output.locker = Lock()
-        output._schema = None
-        return output
+                    while not please_stop:
+                        updates = self.todo.pop_all()
+                        if not updates:
+                            break
+
+                        DEBUG and updates and Log.note(
+                            "{{num}} columns to push to db", num=len(updates)
+                        )
+                        self.es_index.extend(
+                            {"value": column.__dict__()} for column in updates
+                        )
+                except Exception as e:
+                    Log.warning("problem updating database", cause=e)
+
+                (Till(seconds=10) | please_stop).wait()
+        finally:
+            Log.note("done")
 
     def find(self, es_index, abs_column_name=None):
         with self.locker:
