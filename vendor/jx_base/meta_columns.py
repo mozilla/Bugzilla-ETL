@@ -36,28 +36,30 @@ META_INDEX_NAME = "meta.columns"
 META_TYPE_NAME = "column"
 
 
-def get_schema_from_list(table_name, frum):
+def get_schema_from_list(table_name, frum, native_type_to_json_type=python_type_to_json_type):
     """
     SCAN THE LIST FOR COLUMN TYPES
     """
     columns = UniqueIndex(keys=("name",))
-    _get_schema_from_list(frum, ".", parent=".", nested_path=ROOT_PATH, columns=columns)
+    _get_schema_from_list(
+        frum,
+        ".",
+        parent=".",
+        nested_path=ROOT_PATH,
+        columns=columns,
+        native_type_to_json_type=native_type_to_json_type,
+    )
     return Schema(table_name=table_name, columns=list(columns))
 
 
 def _get_schema_from_list(
-    frum, table_name, parent, nested_path, columns, native_type_to_json_type
+    frum, # The list
+    table_name, # Name of the table this list holds records for
+    parent, # parent path
+    nested_path, # each nested array, in reverse order
+    columns, # map from full name to column definition
+    native_type_to_json_type # dict from storage type name to json type name
 ):
-    """
-    :param frum: The list
-    :param table_name: Name of the table this list holds records for
-    :param parent: parent path
-    :param nested_path: each nested array, in reverse order
-    :param columns: map from full name to column definition
-    :param native_type_to_json_type: dict from storage type name to json type name
-    :return:
-    """
-
     for d in frum:
         row_type = python_type_to_json_type[d.__class__]
 
@@ -77,7 +79,7 @@ def _get_schema_from_list(
                 )
                 columns.add(column)
             column.es_type = _merge_python_type(column.es_type, d.__class__)
-            column.jx_type = python_type_to_json_type[column.es_type]
+            column.jx_type = native_type_to_json_type[column.es_type]
         else:
             for name, value in d.items():
                 full_name = concat_field(parent, name)
@@ -113,7 +115,7 @@ def _get_schema_from_list(
 
                 if this_type in {"object", "dict", "Mapping", "Data"}:
                     _get_schema_from_list(
-                        [value], table_name, full_name, nested_path, columns
+                        [value], table_name, full_name, nested_path, columns, native_type_to_json_type
                     )
                 elif this_type in {"list", "FlatList"}:
                     np = listwrap(nested_path)

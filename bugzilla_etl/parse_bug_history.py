@@ -46,7 +46,7 @@ import re
 from bugzilla_etl.alias_analysis import AliasAnalyzer
 from bugzilla_etl.extract_bugzilla import MAX_TIMESTAMP
 from bugzilla_etl.transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS, DIFF_FIELDS, NULL_VALUES, TIME_FIELDS, LONG_FIELDS
-from jx_elasticsearch import meta_columns
+from jx_base import meta_columns
 from jx_elasticsearch.meta import python_type_to_es_type
 from jx_python import jx
 from mo_dots import inverse, coalesce, wrap, unwrap, literal_field, listwrap
@@ -54,7 +54,7 @@ from mo_dots.datas import Data
 from mo_dots.lists import FlatList
 from mo_dots.nones import Null
 from mo_future import text_type, long, PYPY, PY2
-from mo_json import value2json
+from mo_json import value2json, python_type_to_json_type, STRING
 from mo_logs import Log, strings, Except
 from mo_logs.strings import apply_diff
 from mo_math import MIN, is_integer
@@ -1245,7 +1245,7 @@ class LongField(object):
 # ENSURE WE REGISTER THIS PROMISE AS A STRING
 meta_columns._merge_order['ApplyDiff'] = 6
 meta_columns._merge_order['LongField'] = 6
-# python_type_to_es_type[ApplyDiff] = "string"
-# python_type_to_es_type[LongField] = "string"
-# python_type_to_es_type['ApplyDiff'] = "string"
-# python_type_to_es_type['LongField'] = "string"
+python_type_to_json_type[ApplyDiff] = STRING
+python_type_to_json_type[LongField] = STRING
+python_type_to_json_type['ApplyDiff'] = STRING
+python_type_to_json_type['LongField'] = STRING
