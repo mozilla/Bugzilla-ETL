@@ -9,37 +9,18 @@
 #
 from __future__ import absolute_import, division, unicode_literals
 
-from collections import Mapping
-
 import jx_base
 from jx_base import Column, Table
+from jx_base.meta_columns import METADATA_COLUMNS, SIMPLE_METADATA_COLUMNS
 from jx_base.schema import Schema
 from jx_python import jx
-from mo_collections import UniqueIndex
-from mo_dots import (
-    Data,
-    FlatList,
-    Null,
-    NullType,
-    ROOT_PATH,
-    concat_field,
-    is_container,
-    is_data,
-    is_list,
-    join_field,
-    listwrap,
-    split_field,
-    unwraplist,
-    wrap,
-)
-from mo_future import binary_type, items, long, none_type, reduce, text_type
-from mo_json import INTEGER, NUMBER, STRING, STRUCT, python_type_to_json_type
+from mo_dots import Data, Null, is_data, is_list, unwraplist, wrap
+from mo_json import STRUCT
 from mo_json.typed_encoder import unnest_path, untype_path, untyped
-from mo_logs import Except, Log
+from mo_logs import Log
 from mo_math import MAX
 from mo_threads import Lock, Queue, Thread, Till
 from mo_times.dates import Date
-from pyLibrary.env.elasticsearch import es_type_to_json_type
 
 DEBUG = False
 singlton = None
@@ -102,10 +83,22 @@ class ColumnList(Table, jx_base.Container):
 
             result = self.es_index.search(
                 {
-                    "query": {"bool": {"should": [
-                        {"bool": {"must_not": {"exists": {"field": "cardinality.~n~"}}}},
-                        {"range": {"cardinality.~n~": {"gt": 0}}}  # ASSUME UNUSED COLUMNS DO NOT EXIST
-                    ]}},
+                    "query": {
+                        "bool": {
+                            "should": [
+                                {
+                                    "bool": {
+                                        "must_not": {
+                                            "exists": {"field": "cardinality.~n~"}
+                                        }
+                                    }
+                                },
+                                {
+                                    "range": {"cardinality.~n~": {"gt": 0}}
+                                },  # ASSUME UNUSED COLUMNS DO NOT EXIST
+                            ]
+                        }
+                    },
                     "sort": ["es_index.~s~", "name.~s~", "es_column.~s~"],
                     "size": 10000,
                 }
@@ -151,8 +144,7 @@ class ColumnList(Table, jx_base.Container):
                         "{{num}} columns to push to db", num=len(updates)
                     )
                     self.es_index.extend(
-                        {"value": column.__dict__()}
-                        for column in updates
+                        {"value": column.__dict__()} for column in updates
                     )
             except Exception as e:
                 Log.warning("problem updating database", cause=e)
@@ -352,7 +344,7 @@ class ColumnList(Table, jx_base.Container):
                         # DID NOT DELETE COLUMNM ("."), CONTINUE TO SET PROPERTIES
                         for k, v in command.set.items():
                             col[k] = v
-                        self.todo.add( col)
+                        self.todo.add(col)
 
         except Exception as e:
             Log.error("should not happen", cause=e)
@@ -440,142 +432,6 @@ class ColumnList(Table, jx_base.Container):
         )
 
 
-def get_schema_from_list(table_name, frum):
-    """
-    SCAN THE LIST FOR COLUMN TYPES
-    """
-    columns = UniqueIndex(keys=("name",))
-    _get_schema_from_list(frum, ".", parent=".", nested_path=ROOT_PATH, columns=columns)
-    return Schema(table_name=table_name, columns=list(columns))
-
-
-def _get_schema_from_list(frum, table_name, parent, nested_path, columns):
-    """
-    :param frum: The list
-    :param table_name: Name of the table this list holds records for
-    :param parent: parent path
-    :param nested_path: each nested array, in reverse order
-    :param columns: map from full name to column definition
-    :return:
-    """
-
-    for d in frum:
-        row_type = python_type_to_json_type[d.__class__]
-
-        if row_type != "object":
-            # EXPECTING PRIMITIVE VALUE
-            full_name = parent
-            column = columns[full_name]
-            if not column:
-                column = Column(
-                    name=concat_field(table_name, full_name),
-                    es_column=full_name,
-                    es_index=".",
-                    es_type=d.__class__.__name__,
-                    jx_type=None,  # WILL BE SET BELOW
-                    last_updated=Date.now(),
-                    nested_path=nested_path,
-                )
-                columns.add(column)
-            column.es_type = _merge_python_type(column.es_type, d.__class__)
-            column.jx_type = python_type_to_json_type[column.es_type]
-        else:
-            for name, value in d.items():
-                full_name = concat_field(parent, name)
-                column = columns[full_name]
-                if not column:
-                    column = Column(
-                        name=concat_field(table_name, full_name),
-                        es_column=full_name,
-                        es_index=".",
-                        es_type=value.__class__.__name__,
-                        jx_type=None,  # WILL BE SET BELOW
-                        last_updated=Date.now(),
-                        nested_path=nested_path,
-                    )
-                    columns.add(column)
-                if is_container(value):  # GET TYPE OF MULTIVALUE
-                    v = list(value)
-                    if len(v) == 0:
-                        this_type = none_type.__name__
-                    elif len(v) == 1:
-                        this_type = v[0].__class__.__name__
-                    else:
-                        this_type = reduce(
-                            _merge_python_type, (vi.__class__.__name__ for vi in value)
-                        )
-                else:
-                    this_type = value.__class__.__name__
-                column.es_type = _merge_python_type(column.es_type, this_type)
-                column.jx_type = es_type_to_json_type[column.es_type]
-
-                if this_type in {"object", "dict", "Mapping", "Data"}:
-                    _get_schema_from_list(
-                        [value], table_name, full_name, nested_path, columns
-                    )
-                elif this_type in {"list", "FlatList"}:
-                    np = listwrap(nested_path)
-                    newpath = unwraplist([join_field(split_field(np[0]) + [name])] + np)
-                    _get_schema_from_list(
-                        value, table_name, full_name, newpath, columns
-                    )
-
-
-def get_id(column):
-    """
-    :param column:
-    :return: Elasticsearch id for column
-    """
-    return column.es_index + "|" + column.es_column
-
-
-METADATA_COLUMNS = (
-    [
-        Column(
-            name=c,
-            es_index=META_INDEX_NAME,
-            es_column=c,
-            es_type="keyword",
-            jx_type=STRING,
-            last_updated=Date.now(),
-            nested_path=ROOT_PATH,
-        )
-        for c in [
-            "name",
-            "es_type",
-            "jx_type",
-            "nested_path",
-            "es_column",
-            "es_index",
-            "partitions",
-        ]
-    ]
-    + [
-        Column(
-            name=c,
-            es_index=META_INDEX_NAME,
-            es_column=c,
-            es_type="integer",
-            jx_type=INTEGER,
-            last_updated=Date.now(),
-            nested_path=ROOT_PATH,
-        )
-        for c in ["count", "cardinality", "multi"]
-    ]
-    + [
-        Column(
-            name="last_updated",
-            es_index=META_INDEX_NAME,
-            es_column="last_updated",
-            es_type="double",
-            jx_type=NUMBER,
-            last_updated=Date.now(),
-            nested_path=ROOT_PATH,
-        )
-    ]
-)
-
-
 def doc_to_column(doc):
     return Column(**wrap(untyped(doc)))
 
@@ -586,78 +442,3 @@ def mark_as_deleted(col):
     col.multi = 0
     col.partitions = None
     col.last_updated = Date.now()
-
-
-SIMPLE_METADATA_COLUMNS = (  # FOR PURELY INTERNAL PYTHON LISTS, NOT MAPPING TO ANOTHER DATASTORE
-    [
-        Column(
-            name=c,
-            es_index=META_INDEX_NAME,
-            es_column=c,
-            es_type="string",
-            jx_type=STRING,
-            last_updated=Date.now(),
-            nested_path=ROOT_PATH,
-        )
-        for c in ["table", "name", "type", "nested_path"]
-    ]
-    + [
-        Column(
-            name=c,
-            es_index=META_INDEX_NAME,
-            es_column=c,
-            es_type="long",
-            jx_type=INTEGER,
-            last_updated=Date.now(),
-            nested_path=ROOT_PATH,
-        )
-        for c in ["count", "cardinality", "multi"]
-    ]
-    + [
-        Column(
-            name="last_updated",
-            es_index=META_INDEX_NAME,
-            es_column="last_updated",
-            es_type="time",
-            jx_type=NUMBER,
-            last_updated=Date.now(),
-            nested_path=ROOT_PATH,
-        )
-    ]
-)
-
-_merge_order = {
-    none_type: 0,
-    NullType: 1,
-    bool: 2,
-    int: 3,
-    long: 3,
-    Date: 4,
-    float: 5,
-    text_type: 6,
-    binary_type: 6,
-    object: 7,
-    dict: 8,
-    Mapping: 9,
-    Data: 10,
-    list: 11,
-    FlatList: 12,
-}
-
-for k, v in items(_merge_order):
-    _merge_order[k.__name__] = v
-
-
-def _merge_python_type(A, B):
-    a = _merge_order[A]
-    b = _merge_order[B]
-
-    if a >= b:
-        output = A
-    else:
-        output = B
-
-    if isinstance(output, str):
-        return output
-    else:
-        return output.__name__
