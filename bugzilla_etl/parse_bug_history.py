@@ -1168,7 +1168,7 @@ class ApplyDiff(object):
 
         text = self.text
         diff = self.diff
-        if not self.result:
+        if self.result == None:
             try:
                 new_text = apply_diff(coalesce(text, "").split("\n"), diff.split("\n"), reverse=self.reverse, verify=DEBUG_DIFF)
                 self.result = "\n".join(new_text)
