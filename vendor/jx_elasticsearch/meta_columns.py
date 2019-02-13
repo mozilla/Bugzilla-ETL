@@ -39,6 +39,7 @@ from mo_logs import Except, Log
 from mo_math import MAX
 from mo_threads import Lock, Queue, Thread, Till
 from mo_times.dates import Date
+from pyLibrary.env.elasticsearch import es_type_to_json_type
 
 DEBUG = False
 singlton = None
@@ -506,7 +507,7 @@ def _get_schema_from_list(frum, table_name, parent, nested_path, columns):
                 else:
                     this_type = value.__class__.__name__
                 column.es_type = _merge_python_type(column.es_type, this_type)
-                column.jx_type = python_type_to_json_type[column.es_type]
+                column.jx_type = es_type_to_json_type[column.es_type]
 
                 if this_type in {"object", "dict", "Mapping", "Data"}:
                     _get_schema_from_list(

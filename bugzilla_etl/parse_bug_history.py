@@ -60,7 +60,6 @@ from mo_logs.strings import apply_diff
 from mo_math import MIN, is_integer
 from mo_times import Date
 from pyLibrary import convert
-
 # Used to split a flag into (type, status [,requestee])
 # Example: "review?(mreid@mozilla.com)" -> (review, ?, mreid@mozilla.com)
 # Example: "review-" -> (review, -)
@@ -1244,7 +1243,9 @@ class LongField(object):
 
 
 # ENSURE WE REGISTER THIS PROMISE AS A STRING
-meta_columns._merge_order[ApplyDiff] = 6
-meta_columns._merge_order[LongField] = 6
-python_type_to_es_type[ApplyDiff] = "string"
-python_type_to_es_type[LongField] = "string"
+meta_columns._merge_order['ApplyDiff'] = 6
+meta_columns._merge_order['LongField'] = 6
+# python_type_to_es_type[ApplyDiff] = "string"
+# python_type_to_es_type[LongField] = "string"
+# python_type_to_es_type['ApplyDiff'] = "string"
+# python_type_to_es_type['LongField'] = "string"
