@@ -46,8 +46,9 @@ import re
 from bugzilla_etl.alias_analysis import AliasAnalyzer
 from bugzilla_etl.extract_bugzilla import MAX_TIMESTAMP
 from bugzilla_etl.transform_bugzilla import normalize, NUMERIC_FIELDS, MULTI_FIELDS, DIFF_FIELDS, NULL_VALUES, TIME_FIELDS, LONG_FIELDS
+from jx_elasticsearch import meta_columns
 from jx_elasticsearch.meta import python_type_to_es_type
-from jx_python import jx, meta
+from jx_python import jx
 from mo_dots import inverse, coalesce, wrap, unwrap, literal_field, listwrap
 from mo_dots.datas import Data
 from mo_dots.lists import FlatList
@@ -1241,6 +1242,9 @@ class LongField(object):
         return self.value
 
 
+
 # ENSURE WE REGISTER THIS PROMISE AS A STRING
+meta_columns._merge_order[ApplyDiff] = 6
+meta_columns._merge_order[LongField] = 6
 python_type_to_es_type[ApplyDiff] = "string"
 python_type_to_es_type[LongField] = "string"

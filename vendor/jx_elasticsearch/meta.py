@@ -35,7 +35,7 @@ from pyLibrary.env.elasticsearch import _get_best_type_from_mapping, es_type_to_
 
 MAX_COLUMN_METADATA_AGE = 12 * HOUR
 ENABLE_META_SCAN = True
-DEBUG = True
+DEBUG = False
 TOO_OLD = 2*HOUR
 OLD_METADATA = MINUTE
 TEST_TABLE_PREFIX = "testing"  # USED TO TURN OFF COMPLAINING ABOUT TEST INDEXES

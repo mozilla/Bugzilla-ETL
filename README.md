@@ -133,6 +133,15 @@ set PYTHONPATH=.;vendor
 python -m unittest discover -v -s tests
 ```
 
+## Fixing tests
+
+Test runs are compared to documents found in the reference files at `tests/resources/reference`. They may need updating after changing the code.   
+
+    python -m unittest test_examples 
+
+The output file is found in `tests/results`, and can replace the reference file. Be sure to review the `git diff`; it will show the change in the reference file, just to be sure nothing went wrong.
+
+
 ## Upgrades
 
 There may be enhancements from time to time.  To get them

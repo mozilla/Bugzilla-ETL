@@ -98,7 +98,7 @@
 		}
 	},
 	"constants": {
-		"jx_elasticsearch.meta.DEBUG": true,
+		"jx_elasticsearch.meta.DEBUG": false,
 		"jx_elasticsearch.meta.ENABLE_META_SCAN": false,
 		"pyLibrary.sql.mysql.EXECUTE_TIMEOUT": 0,
 		"pyLibrary.env.http.default_headers": {

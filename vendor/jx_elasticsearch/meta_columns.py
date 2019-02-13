@@ -40,7 +40,7 @@ from mo_math import MAX
 from mo_threads import Lock, Queue, Thread, Till
 from mo_times.dates import Date
 
-DEBUG = True
+DEBUG = False
 singlton = None
 META_INDEX_NAME = "meta.columns"
 META_TYPE_NAME = "column"
@@ -141,14 +141,18 @@ class ColumnList(Table, jx_base.Container):
                         self._add(c)
                         self.last_load = MAX((self.last_load, c.last_updated))
 
-                updates = self.todo.pop_all()
-                DEBUG and updates and Log.note(
-                    "{{num}} columns to push to db", num=len(updates)
-                )
-                self.es_index.extend(
-                    {"value": column.__dict__()}
-                    for column in updates
-                )
+                while not please_stop:
+                    updates = self.todo.pop_all()
+                    if not updates:
+                        break
+
+                    DEBUG and updates and Log.note(
+                        "{{num}} columns to push to db", num=len(updates)
+                    )
+                    self.es_index.extend(
+                        {"value": column.__dict__()}
+                        for column in updates
+                    )
             except Exception as e:
                 Log.warning("problem updating database", cause=e)
 
@@ -580,7 +584,7 @@ def mark_as_deleted(col):
     col.cardinality = 0
     col.multi = 0
     col.partitions = None
-    col.last_updated = Data.now()
+    col.last_updated = Date.now()
 
 
 SIMPLE_METADATA_COLUMNS = (  # FOR PURELY INTERNAL PYTHON LISTS, NOT MAPPING TO ANOTHER DATASTORE
