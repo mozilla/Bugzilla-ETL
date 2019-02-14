@@ -466,7 +466,7 @@ class InOp(InOp_):
             var = self.value.var
             cols = schema.leaves(var)
             if not cols:
-                Log.error("expecting {{var}} to be a column", var=var)
+                return MATCH_NONE
             col = first(cols)
             var = col.es_column
 
