@@ -14,15 +14,14 @@ from datetime import date, datetime
 from decimal import Decimal
 
 import jx_base
-from jx_base import TableDesc
+from jx_base import TableDesc, Column
 from jx_base.namespace import Namespace
 from jx_base.query import QueryOp
+from jx_elasticsearch.meta_columns import ColumnList
 from jx_python import jx
 from jx_python.containers.list_usingPythonList import ListContainer
-from jx_python.meta import Column, ColumnList
 from mo_dots import Data, FlatList, Null, NullType, ROOT_PATH, coalesce, concat_field, is_list, literal_field, relative_field, set_default, split_field, startswith_field, tail_field, wrap
-from mo_files import URL
-from mo_future import PY2, none_type, text_type
+from mo_future import long, none_type, text_type
 from mo_json import BOOLEAN, EXISTS, INTEGER, OBJECT, STRING, STRUCT
 from mo_json.typed_encoder import BOOLEAN_TYPE, EXISTS_TYPE, NUMBER_TYPE, STRING_TYPE, unnest_path, untype_path
 from mo_kwargs import override
@@ -78,7 +77,7 @@ class ElasticsearchMetadata(Namespace):
         self.metadata_last_updated = Date.now() - OLD_METADATA
 
         self.meta = Data()
-        self.meta.columns = ColumnList(URL(self.es_cluster.settings.host).host)
+        self.meta.columns = ColumnList(self.es_cluster)
 
         self.alias_to_query_paths = {
             "meta.columns": [ROOT_PATH],
@@ -143,7 +142,7 @@ class ElasticsearchMetadata(Namespace):
                 for d in diff:
                     dirty = True
                     i1.add_property(*d)
-        meta = self.es_cluster.get_metadata(force=dirty).indices[canonical_index]
+        meta = self.es_cluster.get_metadata(force=dirty).indices[literal_field(canonical_index)]
 
         data_type, mapping = _get_best_type_from_mapping(meta.mappings)
         mapping.properties["_id"] = {"type": "string", "index": "not_analyzed"}
@@ -277,7 +276,7 @@ class ElasticsearchMetadata(Namespace):
                 columns = self.meta.columns.find(alias, column_name)
                 DEBUG and Log.note("columns from find()")
 
-            DEBUG and Log.note("columns are {{ids}}", ids=[id(c) for c in columns])
+            DEBUG and Log.note("columns for {{table}} are {{ids}}", table=table_name, ids=[id(c) for c in columns])
 
             columns = jx.sort(columns, "name")
 
@@ -286,7 +285,7 @@ class ElasticsearchMetadata(Namespace):
 
             # WAIT FOR THE COLUMNS TO UPDATE
             while True:
-                pending = [c for c in columns if after >= c.last_updated or (c.cardinality == None and c.jx_type not in STRUCT)]
+                pending = [c for c in columns if after >= c.last_updated]
                 if not pending:
                     break
                 if timeout:
@@ -314,19 +313,6 @@ class ElasticsearchMetadata(Namespace):
         if column.jx_type in STRUCT:
             Log.error("not supported")
         try:
-            if column.es_index == "meta.columns":
-                partitions = jx.sort([g[column.es_column] for g, _ in jx.groupby(self.meta.columns, column.es_column) if g[column.es_column] != None])
-                self.meta.columns.update({
-                    "set": {
-                        "partitions": partitions,
-                        "count": len(self.meta.columns),
-                        "cardinality": len(partitions),
-                        "multi": 1,
-                        "last_updated": now
-                    },
-                    "where": {"eq": {"es_index": column.es_index, "es_column": column.es_column}}
-                })
-                return
             if column.es_index == "meta.tables":
                 partitions = jx.sort([g[column.es_column] for g, _ in jx.groupby(self.meta.tables, column.es_column) if g[column.es_column] != None])
                 self.meta.columns.update({
@@ -521,7 +507,7 @@ class ElasticsearchMetadata(Namespace):
                     old_columns = [
                         c
                         for c in self.meta.columns
-                        if ((c.last_updated < Date.now() - MAX_COLUMN_METADATA_AGE) or c.cardinality == None) and c.jx_type not in STRUCT
+                        if (c.last_updated < Date.now() - MAX_COLUMN_METADATA_AGE)  and c.jx_type not in STRUCT
                     ]
                     if old_columns:
                         DEBUG and Log.note(
@@ -552,7 +538,7 @@ class ElasticsearchMetadata(Namespace):
                             continue
                         elif column.last_updated > Date.now() - TOO_OLD and column.cardinality is not None:
                             # DO NOT UPDATE FRESH COLUMN METADATA
-                            DEBUG and Log.note("{{column.es_column}} is still fresh ({{ago}} ago)", column=column, ago=(Date.now()-Date(column.last_updated)).seconds)
+                            DEBUG and Log.note("{{column.es_column}} is still fresh ({{ago}} ago)", column=column, ago=(Date.now()-Date(column.last_updated)))
                             continue
                         try:
                             self._update_cardinality(column)
@@ -575,26 +561,34 @@ class ElasticsearchMetadata(Namespace):
             column = self.todo.pop()
             if column == THREAD_STOP:
                 break
-            # if untype_path(column.name) in ["build.type", "run.type"]:
-            #     Log.note("found")
-
-            if column.jx_type in STRUCT or split_field(column.es_column)[-1] == EXISTS_TYPE:
-                DEBUG and Log.note("{{column.es_column}} is a struct", column=column)
-                column.last_updated = Date.now()
-                continue
-            elif column.last_updated > Date.now() - TOO_OLD and column.cardinality is not None:
-                # DO NOT UPDATE FRESH COLUMN METADATA
-                DEBUG and Log.note("{{column.es_column}} is still fresh ({{ago}} ago)", column=column, ago=(Date.now()-Date(column.last_updated)).seconds)
-                continue
 
             with Timer("Update {{col.es_index}}.{{col.es_column}}", param={"col": column}, silent=not DEBUG, too_long=0.05):
+                if column.jx_type in STRUCT or split_field(column.es_column)[-1] == EXISTS_TYPE:
+                    DEBUG and Log.note("{{column.es_column}} is a struct", column=column)
+                    continue
+                elif column.last_updated > Date.now() - TOO_OLD and column.cardinality>0:
+                    # DO NOT UPDATE FRESH COLUMN METADATA
+                    DEBUG and Log.note("{{column.es_column}} is still fresh ({{ago}} ago)", column=column, ago=(Date.now()-Date(column.last_updated)).seconds)
+                    continue
                 if untype_path(column.name) in ["build.type", "run.type"]:
                     try:
                         self._update_cardinality(column)
                     except Exception as e:
                         Log.warning("problem getting cardinality for {{column.name}}", column=column, cause=e)
-                else:
-                    column.last_updated = Date.now()
+                    continue
+
+                self.meta.columns.update({
+                    "set": {
+                        "last_updated": Date.now()
+                    },
+                    "clear": [
+                        "count",
+                        "cardinality",
+                        "multi",
+                        "partitions",
+                    ],
+                    "where": {"eq": {"es_index": column.es_index, "es_column": column.es_column}}
+                })
 
 
     def get_table(self, name):
@@ -904,6 +898,7 @@ python_type_to_es_type = {
     str: "string",
     text_type: "string",
     int: "integer",
+    long: "integer",
     float: "double",
     Data: "object",
     dict: "object",
@@ -915,9 +910,6 @@ python_type_to_es_type = {
     datetime: "double",
     date: "double"
 }
-
-if PY2:
-    python_type_to_es_type[long] = "integer"
 
 _merge_es_type = {
     "undefined": {

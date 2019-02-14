@@ -360,6 +360,16 @@ class TestETL(unittest.TestCase):
             "format": "list"
         })
         if set(results.data.bug_id) != set(private_bugs):
+            results = esq.query({
+                "from": esq.name,
+                "where": {"and": [
+                    {"in": {"bug_id": private_bugs}},
+                    {"gte": {"expires_on": Date.now().milli}}
+                ]},
+                "limit": 200000,
+                "format": "list"
+            })
+
             Log.error("Expecting private bugs to exist")
 
         # MAKE A CHANGE TO THE PRIVATE BUGS
@@ -630,12 +640,12 @@ def compare_both(candidate, reference, settings, bug_ids):
                     "modified_ts"
                 )
                 for v in versions:
-                    v.etl.timestamp = None
+                    v.etl = None
 
                 pre_ref_versions = get_all_bug_versions(None, bug_id, max_time, esq=referenceq)
                 ref_versions = jx.sort(pre_ref_versions, "modified_ts")
                 for v in ref_versions:
-                    v.etl.timestamp = None
+                    v.etl = None
 
                 can = value2json(scrub(versions), pretty=True)
                 ref = value2json(scrub(ref_versions), pretty=True)
