@@ -640,12 +640,12 @@ def compare_both(candidate, reference, settings, bug_ids):
                     "modified_ts"
                 )
                 for v in versions:
-                    v.etl.timestamp = None
+                    v.etl = None
 
                 pre_ref_versions = get_all_bug_versions(None, bug_id, max_time, esq=referenceq)
                 ref_versions = jx.sort(pre_ref_versions, "modified_ts")
                 for v in ref_versions:
-                    v.etl.timestamp = None
+                    v.etl = None
 
                 can = value2json(scrub(versions), pretty=True)
                 ref = value2json(scrub(ref_versions), pretty=True)
