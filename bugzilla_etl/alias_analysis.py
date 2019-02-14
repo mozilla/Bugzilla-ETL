@@ -233,12 +233,23 @@ class AliasAnalyzer(object):
         try:
             if self.kwargs.elasticsearch:
                 cluster= Cluster(self.kwargs.elasticsearch)
-                self.es = cluster.get_or_create_index(
-                    kwargs=self.kwargs.elasticsearch,
-                    schema=ALIAS_SCHEMA,
-                    limit_replicas=True
-                )
-                self.es.add_alias(self.kwargs.elasticsearch.index)
+                if cluster.get_best_matching_index(index=self.kwargs.elasticsearch.index, alias=self.kwargs.elasticsearch.alias):
+                    self.es = cluster.get_index(
+                        kwargs=self.kwargs.elasticsearch,
+                        schema=ALIAS_SCHEMA,
+                        limit_replicas=True
+                    )
+                else:
+                    self.es = cluster.create_index(
+                        kwargs=self.kwargs.elasticsearch,
+                        schema=ALIAS_SCHEMA,
+                        limit_replicas=True
+                    )
+                    self.es.add_alias(self.kwargs.elasticsearch.index)
+                    cluster.delete_all_but(self.es.settings.alias, self.es.settings.index)
+                    self._load_aliases_from_file()
+                    self.save_aliases()
+                    return
 
                 file_date = os.path.getmtime(File(self.kwargs.file).abspath)
                 index_date = float(cluster.get_metadata().indices[self.es.settings.index].settings.index.creation_date)/1000
@@ -253,6 +264,7 @@ class AliasAnalyzer(object):
                     self.es.add_alias(self.kwargs.elasticsearch.index)
                     cluster.delete_all_but(self.es.settings.alias, self.es.settings.index)
                     self._load_aliases_from_file()
+                    self.save_aliases()
                     return
 
                 esq = jx_elasticsearch.new_instance(self.es.settings)
@@ -296,10 +308,15 @@ class AliasAnalyzer(object):
             for k, v in self.aliases.items():
                 if v["dirty"]:
                     records.append({"id": k, "value": {"canonical": v["canonical"], "alias": k}})
+                    v['dirty'] = False
 
             if records:
                 Log.note("Net new aliases saved: {{num}}", num=len(records))
                 self.es.extend(records)
+
+            for k, v in self.aliases.items():
+                v['dirty'] = False
+
         elif self.kwargs.file:
             def compact():
                 return {

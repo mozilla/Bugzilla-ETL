@@ -623,7 +623,7 @@ class Cluster(object):
         return Index(kwargs=kwargs, cluster=self)
 
     @override
-    def get_index(self, index, type, alias=None, typed=None, read_only=True, kwargs=None):
+    def get_index(self, index, alias=None, typed=None, read_only=True, kwargs=None):
         """
         TESTS THAT THE INDEX EXISTS BEFORE RETURNING A HANDLE
         """
