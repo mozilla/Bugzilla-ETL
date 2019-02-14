@@ -237,6 +237,7 @@ class AliasAnalyzer(object):
                     self.es = cluster.get_index(
                         kwargs=self.kwargs.elasticsearch,
                         schema=ALIAS_SCHEMA,
+                        read_only=False,
                         limit_replicas=True
                     )
                 else:
