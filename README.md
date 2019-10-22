@@ -64,7 +64,7 @@ in the ``settings.json``` file.
 
 ### Alias Analysis ###
 
-You will require an alias file that matches the various email addresses that users have over time.  This analysis is neccesary for proper CC list history and patch review history.  [More on alias analysis](https://wiki.mozilla.org/Auto-tools/Projects/PublicES#Alias_Analysis).
+You will require an alias file that matches the various email addresses that users have over time.  This analysis is necessary for proper CC list history and patch review history.  [More on alias analysis](https://wiki.mozilla.org/Auto-tools/Projects/PublicES#Alias_Analysis).
 
   * Make an ```alias_analysis_settings.json``` file.  Which can be the same main ETL settings.json file.
   * The ```param.alias_file.key``` can be ```null```, or set to a AES256 key of your choice.
