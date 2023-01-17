@@ -1,127 +1,19 @@
-# Python CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-python/ for more details
-#
-version: 2
+version: 2.1
+# bump
+
 jobs:
-  test:
+  dump-envs:
     docker:
-      - image: circleci/python:3.6.4
-
-      # MYSQL
-      # https://hub.docker.com/r/circleci/mysql/
-      # https://hub.docker.com/_/mysql/
-      - image: circleci/mysql:5.7-ram
-        environment:
-          MYSQL_DATABASE: bugs
-          MYSQL_HOST: 127.0.0.1
-          MYSQL_ROOT_PASSWORD: password
-
-      # ELASTICSEARCH
-      # https://www.elastic.co/guide/en/elasticsearch/reference/6.3/docker.html
-      - image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.3.0
-        environment:
-          cluster.name: bugzilla-etl
-          bootstrap.memory_lock: true
-          ES_JAVA_OPTS: "-Xms512m -Xmx512m"
-          bootstrap.system_call_filter: false
-          transport.host: localhost
-          discovery.type: single-node
-
-    working_directory: ~/repo
-
-    environment:
-      PYTHONPATH: .:vendor
-      MYSQL_USERNAME: root
-      MYSQL_PASSWORD: password
-
+      - image: cimg/base:stable
     steps:
       - checkout
-
-      # Download and cache dependencies
-      - restore_cache:
-          keys:
-          - v1-dependencies-{{ checksum "requirements.txt" }}
-          # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
-
       - run:
-          name: install dependencies
-          command: |
-            python3 -m venv venv
-            . venv/bin/activate
-            pip install -r requirements.txt
-
-      - save_cache:
-          paths:
-            - ./venv
-          key: v1-dependencies-{{ checksum "requirements.txt" }}
-
-      - run:
-          name: run tests
-          environment:
-            PYTHONPATH: .:vendor
-            TEST_CONFIG: tests/resources/config/circleci.json
-          command: |
-            . venv/bin/activate
-            python -m unittest discover -v -s tests -p test_etl.py
-
-      - store_artifacts:
-          path: test-reports
-          destination: test-reports
-
-  dockerize:
-    # FIND THE RESULTING IMAGE AT hub.docker.com/r/mozilla/bugzilla_etl
-    working_directory: ~/repo
-
-    docker:
-      - image: docker:18.06-git
-
-    steps:
-      - checkout
-      - setup_remote_docker
-      - run:
-          name: Build Docker Image
-          command: |
-            echo BUILDING BUGZILLA-ETL WITH TAG = $CIRCLE_TAG
-            docker build \
-              --file resources/docker/etl.dockerfile \
-              --build-arg REPO_CHECKOUT=tags/$CIRCLE_TAG \
-              --build-arg BUILD_URL=$CIRCLE_BUILD_URL \
-              --no-cache \
-              --tag bugzilla-etl \
-              .
-      - run:
-          name: Push to Dockerhub
-          command: |
-            echo "${DOCKER_PASS}" | docker login -u="${DOCKER_USER}" --password-stdin
-
-            export DOCKER_IMAGE="mozilla/bugzilla_etl:${CIRCLE_TAG}"
-            docker tag "bugzilla-etl" "${DOCKER_IMAGE}"
-            docker push "${DOCKER_IMAGE}"
-
-            export DOCKER_IMAGE="mozilla/bugzilla_etl:latest"
-            docker tag "bugzilla-etl" "${DOCKER_IMAGE}"
-            docker push "${DOCKER_IMAGE}"
-
-
+          name: "Say hello"
+          command: "echo Hello, World!"
 workflows:
-  version: 2
-  test_and_dockerize:
+  dump-envs-workflow:
     jobs:
-      - test:
+      - dump-envs:
           filters:
             branches:
-              only:
-                - v2
-            tags:
-              only: /^v.*/
-      - dockerize:
-          requires:
-            - test
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /^v.*/
-
+              only: dump-envs
